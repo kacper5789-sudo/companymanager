@@ -3380,3 +3380,157 @@ button[data-registration-reject]{
   min-width: 64px;
   overflow: visible;
 }
+
+
+/* CompanyManager v2.1 — mobile panel left rail optimization */
+@media (max-width: 760px) {
+  html, body {
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+
+  .bm-main.bm-main-top {
+    padding: 0 0 56px 0 !important;
+  }
+
+  .bm-panel-workspace {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+    width: 100% !important;
+  }
+
+  .bm-left-info-panel {
+    position: relative !important;
+    top: auto !important;
+    z-index: auto !important;
+    width: calc(100% - 20px) !important;
+    max-width: none !important;
+    margin: 10px 10px 0 10px !important;
+    padding: 14px !important;
+    border-radius: 18px !important;
+    border: 1px solid rgba(56,189,248,.18) !important;
+    text-align: left !important;
+  }
+
+  .bm-left-info-panel .bm-identity-block,
+  .bm-left-info-panel .bm-user-stack,
+  .bm-left-info-panel .bm-mini-calendar,
+  .bm-left-info-panel .bm-calendar-center {
+    align-items: flex-start !important;
+    justify-content: flex-start !important;
+    text-align: left !important;
+    width: 100% !important;
+  }
+
+  .bm-left-info-panel .bm-today {
+    justify-content: flex-start !important;
+    text-align: left !important;
+    width: 100% !important;
+    padding-left: 0 !important;
+  }
+
+  .bm-left-info-panel .bm-live-clock,
+  .bm-left-info-panel .bm-user-stack strong {
+    text-align: left !important;
+    width: 100% !important;
+  }
+
+  .bm-left-info-panel .bm-admin-dropdown,
+  .bm-left-info-panel .bm-admin-dropdown-toggle,
+  .bm-left-info-panel .bm-undo-time-btn,
+  .bm-left-info-panel .bm-owner-link,
+  .bm-left-info-panel .cm-language-picker {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  .bm-left-info-panel .bm-admin-dropdown-toggle,
+  .bm-left-info-panel .bm-undo-time-btn,
+  .bm-left-info-panel .bm-owner-link {
+    justify-content: flex-start !important;
+    text-align: left !important;
+  }
+
+  .bm-left-info-panel .cm-language-picker {
+    justify-content: flex-start !important;
+    margin-top: 4px !important;
+  }
+
+  .bm-left-info-panel .cm-language-toggle {
+    justify-content: flex-start !important;
+  }
+
+  .bm-panel-area {
+    width: 100% !important;
+    padding: 0 10px 56px !important;
+    min-width: 0 !important;
+  }
+
+  .bm-horizontal-menu {
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 9000 !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    -webkit-overflow-scrolling: touch !important;
+    white-space: nowrap !important;
+  }
+
+  .bm-nav-top {
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    gap: 6px !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    -webkit-overflow-scrolling: touch !important;
+    width: 100% !important;
+    padding-bottom: 2px !important;
+  }
+
+  .bm-nav-top a,
+  .bm-owner-top-companies {
+    flex: 0 0 auto !important;
+    white-space: nowrap !important;
+  }
+
+  .bm-page-card,
+  .bm-admin-hero,
+  .bm-topbar {
+    width: 100% !important;
+    max-width: 100% !important;
+    padding: 14px !important;
+    border-radius: 18px !important;
+  }
+
+  .bm-table-wrap,
+  .table-wrap {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+
+  .bm-table,
+  .data-table {
+    min-width: 720px;
+  }
+}
+
+@media (max-width: 420px) {
+  .bm-left-info-panel {
+    width: calc(100% - 16px) !important;
+    margin: 8px 8px 0 8px !important;
+    padding: 12px !important;
+  }
+
+  .bm-panel-area {
+    padding-left: 8px !important;
+    padding-right: 8px !important;
+  }
+
+  .bm-left-info-panel .bm-owner-link,
+  .bm-left-info-panel .bm-admin-dropdown-toggle,
+  .bm-left-info-panel .bm-undo-time-btn {
+    font-size: 13px !important;
+    padding: 9px 10px !important;
+  }
+}
