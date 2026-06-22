@@ -413,10 +413,10 @@
       ${pagination(filtered.length)}
     </section>`;
 
-    bindActions(ctx, data, usersById, clientsById, status);
+    bindActions(ctx, data, usersById, clientsById, servicesById, status);
   }
 
-  function bindActions(ctx, data, usersById, clientsById, status) {
+  function bindActions(ctx, data, usersById, clientsById, servicesById, status) {
     const addPanel = document.querySelector("#addPassPanel");
     const deletePanel = document.querySelector("#deletePassPanel");
     const panels = [addPanel, deletePanel];
@@ -447,13 +447,16 @@
       const form = document.querySelector("#addPassForm");
       try {
         const client = await insertInlineClient(ctx, form);
-        const select = form?.querySelector('[name="customerId"]');
-        if (select && client) {
-          const option = document.createElement("option");
-          option.value = client.id;
-          option.textContent = clientName(client) || "Nowy klient";
-          option.selected = true;
-          select.appendChild(option);
+        if (client) {
+          ["buyerClientId", "beneficiaryClientId"].forEach((selectName) => {
+            const select = form?.querySelector(`[name="${selectName}"]`);
+            if (!select) return;
+            const option = document.createElement("option");
+            option.value = client.id;
+            option.textContent = clientName(client) || "Nowy klient";
+            option.selected = true;
+            select.appendChild(option);
+          });
         }
         ["newCustomerName", "newCustomerPhone", "newCustomerEmail", "newCustomerDescription"].forEach((name) => { if (form?.[name]) form[name].value = ""; });
         const panel = document.querySelector("#inlinePassCustomerPanel");
