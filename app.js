@@ -925,10 +925,106 @@ document.addEventListener('DOMContentLoaded', () => {
     try { return JSON.parse(localStorage.getItem('cm_access') || 'null'); } catch { return null; }
   };
 
+  const normalizeSupabasePermissions = (raw) => {
+    if (!raw) return {};
+    if (typeof raw === 'object' && !Array.isArray(raw)) return raw;
+    try { return JSON.parse(raw); } catch (_) { return {}; }
+  };
+
+  const supabaseOpenPermissionMap = {
+    open_company_manager: ['dashboard','companyPanel','calendar','settings'],
+    open_positions: ['positions'],
+    open_team: ['employees','users'],
+    open_days_off: ['daysOff'],
+    open_clients: ['customers'],
+    open_services: ['services'],
+    open_products: ['products'],
+    open_appointments: ['visits'],
+    open_sales_without_visit: ['walkins'],
+    open_marketing: ['marketing'],
+    open_passes: ['passes'],
+    open_owner_page: ['owner'],
+    open_sales: ['sales'],
+    open_stats: ['reports'],
+    open_customer_reports: ['customersReports'],
+    open_daily_report: ['dailyReport'],
+    open_period_report: ['periodReport'],
+    open_employees: ['employeesReports'],
+    open_work_schedule: ['workSchedule'],
+    open_sms: ['smsReports'],
+    open_email: ['emailReports']
+  };
+
+  const supabaseActionPermissionMap = {
+    positions_add: ['stanowiska pracy (dodawanie, edycja, usuwanie)'],
+    positions_edit: ['stanowiska pracy (dodawanie, edycja, usuwanie)'],
+    positions_delete: ['stanowiska pracy (dodawanie, edycja, usuwanie)'],
+    users_add: ['Zespół - użytkownicy (dodawanie, edycja, usuwanie)', 'Użytkownicy (dodawanie, edycja, usuwanie)'],
+    users_edit: ['Zespół - użytkownicy (dodawanie, edycja, usuwanie)', 'Użytkownicy (dodawanie, edycja, usuwanie)'],
+    users_delete: ['Zespół - użytkownicy (dodawanie, edycja, usuwanie)', 'Użytkownicy (dodawanie, edycja, usuwanie)'],
+    days_off_add: ['dni wolne (dodawanie)'],
+    days_off_edit: ['dni wolne (usuwanie, edycja)', 'dni wolne(dodawanie,edycja,usuwanie)'],
+    days_off_delete: ['dni wolne (usuwanie, edycja)', 'dni wolne(dodawanie,edycja,usuwanie)'],
+    clients_add: ['klienci (dodawanie, edycja, usuwanie)'],
+    clients_edit: ['klienci (dodawanie, edycja, usuwanie)'],
+    clients_delete: ['klienci (dodawanie, edycja, usuwanie)'],
+    clients_history: ['klienci - historia (przeglądanie historii klientów)', 'klienci - historia (przeglądanie historii klientów - tabeli poniżej)'],
+    services_add: ['usługi (dodawanie, edycja, usuwanie)'],
+    services_edit: ['usługi (dodawanie, edycja, usuwanie)'],
+    services_delete: ['usługi (dodawanie, edycja, usuwanie)'],
+    products_add: ['produkty (dodawanie, edycja, usuwanie)'],
+    products_edit: ['produkty (dodawanie, edycja, usuwanie)'],
+    products_delete: ['produkty (dodawanie, edycja, usuwanie)'],
+    warehouse_manage: ['produkty (magazyn)'],
+    appointments_add: ['wizyty (dodawanie, edycja, zakończenie, usuwanie)'],
+    appointments_edit: ['wizyty (dodawanie, edycja, zakończenie, usuwanie)', 'wizyty niezakończone (dodawanie, edycja, usuwanie / odwołanie)'],
+    appointments_finish: ['wizyty (dodawanie, edycja, zakończenie, usuwanie)'],
+    appointments_delete: ['wizyty (dodawanie, edycja, zakończenie, usuwanie)', 'wizyty niezakończone (dodawanie, edycja, usuwanie / odwołanie)'],
+    appointments_unfinished_history: ['wizyty (niezakończone) - dostęp do historii'],
+    appointments_unfinished_manage: ['wizyty niezakończone (dodawanie, edycja, usuwanie / odwołanie)'],
+    appointments_history: ['wizyty - historia (przeglądanie historii wizyt)', 'wizyty (zakończone, zaplanowane, usunięte) - dostęp do historii (tabeli poniżej)'],
+    sales_without_visit_add: ['sprzedaż bez wizyt (dodawanie, edycja, usuwanie)'],
+    sales_without_visit_edit: ['sprzedaż bez wizyt (dodawanie, edycja, usuwanie)'],
+    sales_without_visit_delete: ['sprzedaż bez wizyt (dodawanie, edycja, usuwanie)'],
+    sales_without_visit_history: ['sprzedaż bez wizyt (dostęp do historii - tabeli poniżej)'],
+    marketing_sms: ['marketing (wysyłka reklamy sms/email)', 'marketing (wysyłka reklamy sms/email/usuń)'],
+    marketing_email: ['marketing (wysyłka reklamy sms/email)', 'marketing (wysyłka reklamy sms/email/usuń)'],
+    marketing_delete: ['marketing (wysyłka reklamy sms/email/usuń)'],
+    passes_add: ['karnety (dodawanie, edycja, usuwanie)'],
+    passes_edit: ['karnety (dodawanie, edycja, usuwanie)'],
+    passes_delete: ['karnety (dodawanie, edycja, usuwanie)'],
+    daily_report_today: ['raport dzienny dzisiejszy (przeglądanie)'],
+    daily_report_other_days: ['raport dzienny wczorajszy, jutrzejszy (przeglądanie)'],
+    work_schedule_add: ['grafik pracy (dodawanie)', 'grafik pracy (dodawanie,edycja,usuwanie)'],
+    work_schedule_edit: ['grafik pracy (edycja, usuwanie)', 'grafik pracy (dodawanie,edycja,usuwanie)'],
+    work_schedule_delete: ['grafik pracy (edycja, usuwanie)', 'grafik pracy (dodawanie,edycja,usuwanie)'],
+    reports_access: ['dostęp do raportów'],
+    export_data: ['export danych z całej platformy', 'export/import danych'],
+    import_data: ['import danych do całej platformy', 'export/import danych']
+  };
+
+  const isPermissionOn = (permissions, key) => permissions?.[key] === true || permissions?.[key] === 'true' || permissions?.[key] === 1 || permissions?.[key] === '1';
+
+  const supabasePermissionsToLegacy = (rawPermissions) => {
+    const permissions = normalizeSupabasePermissions(rawPermissions);
+    const legacy = new Set();
+    Object.entries(supabaseOpenPermissionMap).forEach(([key, pages]) => {
+      if (isPermissionOn(permissions, key)) pages.forEach(page => legacy.add(`open:${page}`));
+    });
+    Object.entries(supabaseActionPermissionMap).forEach(([key, labels]) => {
+      if (isPermissionOn(permissions, key)) labels.forEach(label => legacy.add(label));
+    });
+    return Array.from(legacy);
+  };
+
   const buildSupabasePanelUser = (session, access) => {
     if (!session || session.source !== 'supabase' || !access || access.allowed !== true) return null;
     const role = String(access.role || session.role || 'EMPLOYEE').toLowerCase();
     const companyId = access.company_id || session.activeCompanyId || session.companyId || '';
+    const supabasePermissions = normalizeSupabasePermissions(access.permissions || {});
+    const legacyPermissions = Array.isArray(access.legacy_permissions)
+      ? access.legacy_permissions
+      : supabasePermissionsToLegacy(supabasePermissions);
     return {
       id: access.user_id || session.userId || access.email || 'supabase_user',
       login: access.email || session.userId || 'supabase_user',
@@ -938,8 +1034,8 @@ document.addEventListener('DOMContentLoaded', () => {
       role: role === 'owner' ? 'owner' : role === 'admin' ? 'admin' : 'employee',
       companyId,
       positionId: access.position_id || '',
-      permissions: Array.isArray(access.legacy_permissions) ? access.legacy_permissions : [],
-      supabasePermissions: access.permissions || {},
+      permissions: legacyPermissions,
+      supabasePermissions,
       source: 'supabase'
     };
   };
@@ -1006,6 +1102,11 @@ document.addEventListener('DOMContentLoaded', () => {
   const hasSystemPermission = (user, permissionLabel) => {
     const role = user?.role || 'employee';
     if (role === 'owner' || role === 'admin') return true;
+    const supabasePermissions = normalizeSupabasePermissions(user?.supabasePermissions || {});
+    const mappedLabels = Object.entries(supabaseActionPermissionMap)
+      .filter(([key]) => isPermissionOn(supabasePermissions, key))
+      .flatMap(([, labels]) => labels);
+    if (mappedLabels.includes(permissionLabel)) return true;
     if (!Array.isArray(user?.permissions)) return false;
     if (user.permissions.includes(permissionLabel)) return true;
     const aliases = permissionAliases[permissionLabel] || [];
