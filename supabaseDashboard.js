@@ -220,7 +220,7 @@
           const end = minutesFromTime(appointmentEnd(item));
           return slotMin != null && start != null && end != null && slotMin >= start && slotMin < end;
         });
-        if (!visit) return `<td class="bm-schedule-slot free" data-employee-id="${escapeHtml(employee.id)}" data-time="${escapeHtml(time)}"><span>FREE</span></td>`;
+        if (!visit) return `<td class="bm-schedule-slot free" data-employee-id="${escapeHtml(employee.id)}" data-time="${escapeHtml(time)}" data-date="${escapeHtml(dateIso)}"><span>FREE</span></td>`;
         const client = lookups.clientsById[appointmentClientId(visit)];
         const service = lookups.servicesById[visit.service_id];
         const product = lookups.productsById[visit.product_id];
@@ -235,7 +235,7 @@
           `Pracownik: ${personName(employee)}`,
           `Opis: ${visit.note || "Brak opisu"}`
         ].join("\n");
-        return `<td class="bm-schedule-slot busy" data-slot-tooltip="${escapeHtml(tooltip)}"><span>${label}</span></td>`;
+        return `<td class="bm-schedule-slot busy" data-visit-id="${escapeHtml(visit.id)}" data-employee-id="${escapeHtml(employee.id)}" data-time="${escapeHtml(time)}" data-date="${escapeHtml(dateIso)}" data-slot-tooltip="${escapeHtml(tooltip)}"><span>${label}</span></td>`;
       }).join("");
       return `<tr><th class="bm-time-col">${escapeHtml(time)}</th>${cells}</tr>`;
     }).join("");
@@ -431,6 +431,46 @@
     document.querySelector("#dashEditVisitBtn")?.addEventListener("click", () => showOnly(editPanel, panels));
     document.querySelector("#dashCancelVisitBtn")?.addEventListener("click", () => showOnly(cancelPanel, panels));
 
+    function openAddFromSlot(slot) {
+      if (!allowAdd) {
+        setMessage("#dashboardAppointmentMessage", "Brak uprawnienia do dodawania wizyt.", false);
+        return;
+      }
+      showOnly(addPanel, panels);
+      const form = document.querySelector("#dashboardAppointmentAddForm");
+      if (!form) return;
+      const slotDate = slot?.dataset?.date || selectedDate;
+      const slotTime = slot?.dataset?.time || "10:00";
+      const employeeId = slot?.dataset?.employeeId || "";
+      if (form.elements.date) form.elements.date.value = slotDate;
+      if (form.elements.start) form.elements.start.value = slotTime;
+      if (form.elements.end) {
+        const startMin = minutesFromTime(slotTime);
+        const endMin = startMin == null ? minutesFromTime("10:30") : startMin + 30;
+        const endValue = `${String(Math.floor(endMin / 60)).padStart(2, "0")}:${String(endMin % 60).padStart(2, "0")}`;
+        form.elements.end.value = endValue;
+      }
+      if (form.elements.employeeId) form.elements.employeeId.value = employeeId;
+      const firstInput = form.querySelector('select[name="customerId"], input, select, textarea');
+      if (firstInput) window.setTimeout(() => firstInput.focus(), 50);
+      if (typeof window.cmRefreshGlobalModalState === "function") window.cmRefreshGlobalModalState();
+    }
+
+    function openEditFromSlot(slot) {
+      if (!allowEdit) {
+        setMessage("#dashboardEditVisitMessage", "Brak uprawnienia do edycji wizyt.", false);
+        return;
+      }
+      const visitId = slot?.dataset?.visitId || "";
+      const selected = data.appointments.find((item) => item.id === visitId);
+      if (!selected) return;
+      showOnly(editPanel, panels);
+      const select = document.querySelector("#dashEditVisitSelect");
+      if (select) select.value = visitId;
+      fillEditForm(document.querySelector("#dashboardEditVisitForm"), selected);
+      if (typeof window.cmRefreshGlobalModalState === "function") window.cmRefreshGlobalModalState();
+    }
+
     document.querySelectorAll(".bm-schedule-slot").forEach((slot) => {
       slot.addEventListener("mouseenter", () => {
         const tooltip = document.querySelector("#dashSlotTooltip");
@@ -442,6 +482,12 @@
       slot.addEventListener("mouseleave", () => {
         const tooltip = document.querySelector("#dashSlotTooltip");
         if (tooltip) tooltip.hidden = true;
+      });
+      slot.addEventListener("click", () => {
+        const tooltip = document.querySelector("#dashSlotTooltip");
+        if (tooltip) tooltip.hidden = true;
+        if (slot.classList.contains("busy") && slot.dataset.visitId) openEditFromSlot(slot);
+        else openAddFromSlot(slot);
       });
     });
 
