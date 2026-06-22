@@ -6661,6 +6661,11 @@ document.addEventListener('DOMContentLoaded', () => {
       renderPanelFrame(ctx, 'companies', '<section class="bm-page-card"><h2>Brak dostępu</h2><p>Ta zakładka jest dostępna wyłącznie dla właściciela platformy.</p></section>', 'Brak dostępu', 'Moduł właściciela platformy.');
       return;
     }
+
+    if (window.CM_DISABLE_LOCAL_COMPANIES_RENDER) {
+      renderPanelFrame(ctx, 'companies', '<section class="bm-page-card cm-companies-page"><div class="bm-page-head"><div><span class="bm-tag">Tylko właściciel</span><h2>Firmy</h2><p class="bm-muted">Ładowanie danych z Supabase...</p></div></div></section>', '', '');
+      return;
+    }
     const activeCompanyId = ctx.company?.id || ctx.session?.activeCompanyId || ctx.session?.companyId;
     const companies = (Array.isArray(ctx.db?.companies) ? ctx.db.companies : []).filter(company => {
       const text = [company.id, company.name, company.ownerName, company.ownerEmail].join(' ');
