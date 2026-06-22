@@ -62,6 +62,30 @@
     updateState();
   }
 
+  function hardCloseAll() {
+    document.querySelectorAll('.' + MODAL_ACTIVE + ', .' + MODAL_CLASS).forEach(function (panel) {
+      if (!panel) return;
+      panel.hidden = true;
+      panel.classList.remove(MODAL_ACTIVE, MODAL_CLASS);
+    });
+    document.body.classList.remove(BODY_OPEN);
+    const overlay = document.getElementById(OVERLAY_ID);
+    if (overlay) {
+      overlay.setAttribute('aria-hidden', 'true');
+      overlay.style.pointerEvents = 'none';
+      overlay.style.opacity = '0';
+      window.setTimeout(function () {
+        if (!document.body.classList.contains(BODY_OPEN)) {
+          overlay.removeAttribute('style');
+        }
+      }, 80);
+    }
+    updateState();
+    if (!document.querySelector('.' + MODAL_ACTIVE + ':not([hidden]), .' + MODAL_CLASS + ':not([hidden])')) {
+      document.body.classList.remove(BODY_OPEN);
+    }
+  }
+
   function showOnly(targetPanel, panels) {
     const list = (panels && panels.length ? panels : [targetPanel]).filter(Boolean);
     const shouldOpen = !!targetPanel && targetPanel.hidden;
@@ -124,5 +148,7 @@
   window.cmOpenModalPanel = open;
   window.cmCloseModalPanel = closePanel;
   window.cmCloseAllModalPanels = closeAll;
+  window.cmHardCloseAllModalPanels = hardCloseAll;
   window.cmUpdateGlobalModalState = updateState;
+  window.cmRefreshGlobalModalState = updateState;
 })();

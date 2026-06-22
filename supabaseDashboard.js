@@ -344,6 +344,34 @@
     allPanels.forEach((item) => { if (item) item.hidden = item !== panel; });
   }
 
+
+  function closeDashboardModals(panels = []) {
+    panels.filter(Boolean).forEach((panel) => {
+      panel.hidden = true;
+      panel.classList.remove('cm-modal-active', 'cm-as-modal');
+    });
+    if (typeof window.cmHardCloseAllModalPanels === 'function') {
+      window.cmHardCloseAllModalPanels();
+    } else if (typeof window.cmCloseAllModalPanels === 'function') {
+      window.cmCloseAllModalPanels(panels);
+    }
+    document.querySelectorAll('#dashboardAppointmentForm, #dashboardEditVisitPanel, #dashboardCancelVisitPanel').forEach((panel) => {
+      panel.hidden = true;
+      panel.classList.remove('cm-modal-active', 'cm-as-modal');
+    });
+    document.body.classList.remove('cm-modal-open');
+    const overlay = document.getElementById('cmGlobalFormOverlay');
+    if (overlay) {
+      overlay.setAttribute('aria-hidden', 'true');
+      overlay.style.pointerEvents = 'none';
+      overlay.style.opacity = '0';
+      window.setTimeout(() => {
+        if (!document.body.classList.contains('cm-modal-open')) overlay.removeAttribute('style');
+      }, 80);
+    }
+    if (typeof window.cmUpdateGlobalModalState === 'function') window.cmUpdateGlobalModalState();
+  }
+
   function payloadFromForm(ctx, formData) {
     const serviceId = String(formData.get("serviceId") || "").trim();
     const productId = String(formData.get("productId") || "").trim();
@@ -690,7 +718,8 @@
       if (error) { setMessage("#dashboardAppointmentMessage", `Błąd zapisu: ${error.message}`, false); return; }
       await window.cmUndo?.record({ module: "dashboard", actionType: "insert", targetTable: "appointments", targetId: inserted?.id, afterData: inserted || payload, companyId: ctx.companyId });
       setMessage("#dashboardAppointmentMessage", "Wizyta zapisana w Supabase.", true);
-      setTimeout(renderDashboard, 500);
+      closeDashboardModals(panels);
+      window.setTimeout(renderDashboard, 180);
     });
 
     document.querySelector("#dashEditVisitSelect")?.addEventListener("change", (event) => {
@@ -712,7 +741,8 @@
       if (error) { setMessage("#dashboardEditVisitMessage", `Błąd edycji: ${error.message}`, false); return; }
       await window.cmUndo?.record({ module: "dashboard", actionType: "update", targetTable: "appointments", targetId: visitId, beforeData: before, afterData: updated || payload, companyId: ctx.companyId });
       setMessage("#dashboardEditVisitMessage", "Wizyta zaktualizowana.", true);
-      setTimeout(renderDashboard, 500);
+      closeDashboardModals(panels);
+      window.setTimeout(renderDashboard, 180);
     });
 
     document.querySelector("#dashboardCancelVisitForm")?.addEventListener("submit", async (event) => {
@@ -728,7 +758,8 @@
       if (error) { setMessage("#dashboardCancelVisitMessage", `Błąd odwołania: ${error.message}`, false); return; }
       await window.cmUndo?.record({ module: "dashboard", actionType: "update", targetTable: "appointments", targetId: visitId, beforeData: before, afterData: updated || patch, companyId: ctx.companyId });
       setMessage("#dashboardCancelVisitMessage", "Wizyta odwołana.", true);
-      setTimeout(renderDashboard, 500);
+      closeDashboardModals(panels);
+      window.setTimeout(renderDashboard, 180);
     });
 
     if (typeof window.cmRefreshGlobalModalState === "function") window.cmRefreshGlobalModalState();
