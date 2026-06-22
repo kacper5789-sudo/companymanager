@@ -1,5 +1,5 @@
 // CompanyManager — Dashboard powered by Supabase
-// 039B: Dashboard Supabase schedule + użycie karnetów przy wizycie.
+// 039H: Dashboard Supabase schedule + wybór karnetu klienta przy dodawaniu i kończeniu wizyty.
 
 (function () {
   function isDashboardPage() {
@@ -372,9 +372,18 @@
   }
 
   function passOptionsFor(data, clientId = "", serviceId = "", selected = "") {
-    const passes = (data.passes || []).filter((pass) => passCanBeUsedFor(pass, clientId, serviceId));
+    const normalizedClientId = String(clientId || "").trim();
+    const normalizedServiceId = String(serviceId || "").trim();
+    if (!normalizedClientId) return `<option value="">Najpierw wybierz klienta</option>`;
+    const passes = (data.passes || []).filter((pass) => passCanBeUsedFor(pass, normalizedClientId, normalizedServiceId));
     if (!passes.length) return `<option value="">Brak aktywnego karnetu klienta</option>`;
-    return `<option value="">Nie używaj karnetu</option>` + passes.map((pass) => `<option value="${escapeHtml(pass.id)}" ${String(pass.id) === String(selected) ? "selected" : ""} data-pass-type="${escapeHtml(pass.pass_type || "amount")}" data-remaining="${escapeHtml(String(pass.remaining || 0))}" data-remaining-units="${escapeHtml(String(pass.remaining_units || 0))}">${escapeHtml(passLabel(pass))}</option>`).join("");
+    return `<option value="">Nie używaj karnetu</option>` + passes.map((pass) => {
+      const selectedAttr = String(pass.id) === String(selected) ? "selected" : "";
+      const type = pass.pass_type || "amount";
+      const isServicePass = type === "service" || type === "units";
+      const note = isServicePass ? "rozliczy usługę" : "pomniejszy kwotę usługi";
+      return `<option value="${escapeHtml(pass.id)}" ${selectedAttr} data-pass-type="${escapeHtml(type)}" data-remaining="${escapeHtml(String(pass.remaining || 0))}" data-remaining-units="${escapeHtml(String(pass.remaining_units || 0))}">${escapeHtml(passLabel(pass) + " — " + note)}</option>`;
+    }).join("");
   }
 
   function findUserByAppointmentEmployeeName(lookups, item) {
@@ -657,7 +666,7 @@
           <label>Pracownik<select name="employeeId" required><option value="">Wybierz pracownika</option>${employeeOptions}</select></label>
           <label>Usługi<select name="serviceId"><option value="">Wybierz usługę</option>${serviceOptions}</select></label>
           <label>Zakup produktów<select name="productId"><option value="">Wybierz produkt</option>${productOptions}</select></label>
-          <label class="bm-full">Karnet klienta<select name="passId">${allPassOptions}</select></label>
+          <label class="bm-full">Karnet klienta<select name="passId"><option value="">Najpierw wybierz klienta</option></select><small class="bm-muted">Karnet pojawi się po wyborze klienta. Karnet usługowy rozlicza usługę, produkty zostają doliczone normalnie.</small></label>
           <label>Razem do zapłaty<input name="total" value="0.00" readonly></label>
           <label>Płatność<select name="payment"><option>gotówka</option><option>karta kredytowa</option><option>karnet</option><option>pakiet</option><option>gratis</option></select></label>
           <label class="bm-full">Opis<textarea name="note" placeholder="Notatka"></textarea></label>
@@ -677,7 +686,7 @@
           <label>Pracownik<select name="employeeId" required><option value="">Wybierz pracownika</option>${employeeOptions}</select></label>
           <label>Usługi<select name="serviceId"><option value="">Wybierz usługę</option>${serviceOptions}</select></label>
           <label>Zakup produktów<select name="productId"><option value="">Wybierz produkt</option>${productOptions}</select></label>
-          <label class="bm-full">Karnet klienta<select name="passId">${allPassOptions}</select></label>
+          <label class="bm-full">Karnet klienta<select name="passId"><option value="">Najpierw wybierz klienta</option></select><small class="bm-muted">Karnet pojawi się po wyborze klienta. Karnet usługowy rozlicza usługę, produkty zostają doliczone normalnie.</small></label>
           <label>Razem do zapłaty<input name="total" value="0.00" readonly></label>
           <label>Płatność<select name="payment"><option>gotówka</option><option>karta kredytowa</option><option>karnet</option><option>pakiet</option><option>gratis</option></select></label>
           <label class="bm-full">Opis<textarea name="note" placeholder="Notatka"></textarea></label>
@@ -692,7 +701,7 @@
           <label class="bm-full">Wybierz wizytę<select name="visitId" required><option value="">Wybierz wizytę</option>${finishVisitOptions}</select></label>
           <label>Kwota do zapłaty<input name="total" value="0.00" readonly></label>
           <label>Zapłacono<input name="paidAmount" value="0.00" inputmode="decimal"></label>
-          <label class="bm-full">Użyj karnetu<select name="passId">${allPassOptions}</select></label>
+          <label class="bm-full">Użyj karnetu<select name="passId"><option value="">Najpierw wybierz wizytę</option></select><small class="bm-muted">Po wyborze wizyty system pokaże aktywne karnety tego klienta pasujące do usługi.</small></label>
           <label>Płatność<select name="payment"><option>gotówka</option><option>karta kredytowa</option><option>karnet</option><option>pakiet</option><option>gratis</option></select></label>
           <label class="bm-full">Opis / notatka<textarea name="note" placeholder="Notatka do sprzedaży"></textarea></label>
           <button type="submit">Zakończ wizytę</button>
@@ -794,6 +803,7 @@
         const selected = form.elements.passId.value || "";
         form.elements.passId.innerHTML = passOptionsFor(data, form.elements.customerId?.value || "", form.elements.serviceId?.value || "", selected);
         if (selected && Array.from(form.elements.passId.options).some((opt) => opt.value === selected)) form.elements.passId.value = selected;
+        if (form.elements.payment && form.elements.passId.value) form.elements.payment.value = "karnet";
         form.elements.passId.dispatchEvent(new Event("change", { bubbles: true }));
       };
       form.elements.customerId?.addEventListener("change", refresh);
@@ -827,6 +837,7 @@
       }
       if (form.elements.employeeId) form.elements.employeeId.value = employeeId;
       if (form.elements.serviceId) form.elements.serviceId.dispatchEvent(new Event("change", { bubbles: true }));
+      if (form.elements.customerId) form.elements.customerId.dispatchEvent(new Event("change", { bubbles: true }));
       if (form.elements.productId) form.elements.productId.dispatchEvent(new Event("change", { bubbles: true }));
       const firstInput = form.querySelector('select[name="customerId"], input, select, textarea');
       if (firstInput) window.setTimeout(() => firstInput.focus(), 50);
@@ -880,7 +891,8 @@
         form.elements.passId.innerHTML = passOptionsFor(data, appointmentClientId(selected || {}), selected?.service_id || "", selected?.pass_id || "");
         form.elements.passId.value = selected?.pass_id || "";
       }
-      if (form.elements.payment && selected?.payment_method) form.elements.payment.value = selected.payment_method;
+      if (form.elements.payment && form.elements.passId?.value) form.elements.payment.value = "karnet";
+      else if (form.elements.payment && selected?.payment_method) form.elements.payment.value = selected.payment_method;
       if (form.elements.note) form.elements.note.value = selected?.note || "";
     }
 
