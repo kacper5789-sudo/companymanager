@@ -219,7 +219,7 @@
     const [appointmentsRes, clientsRes, servicesRes, productsRes, usersRes] = await Promise.all([
       window.cmSupabase
         .from("appointments")
-        .select("id, company_id, date, time, start_time, end_time, customer_id, client_id, employee_id, service_id, position_id, product_id, status, deleted, note, price, total, payment_method, cancellation_reason, cancelled_at, starts_at, ends_at, appointment_datetime, created_at, updated_at")
+        .select("id, company_id, date, time, start_time, end_time, customer_id, client_id, employee_id, employee_name, service_id, position_id, product_id, status, deleted, note, price, total, payment_method, cancellation_reason, cancelled_at, starts_at, ends_at, appointment_datetime, created_at, updated_at")
         .eq("company_id", ctx.companyId)
         .order("date", { ascending: true })
         .order("start_time", { ascending: true }),
@@ -269,7 +269,7 @@
 
   function appointmentLabel(item, lookups) {
     const client = lookups.clientsById[appointmentClientId(item)];
-    const employee = lookups.usersById[item.employee_id];
+    const employee = lookups.usersById[item.employee_id] || findUserByAppointmentEmployeeName(lookups, item);
     const service = lookups.servicesById[item.service_id];
     return [plDate(appointmentDate(item)), appointmentStart(item), appointmentEnd(item), customerName(client), personName(employee), serviceName(service)].filter(Boolean).join(" — ");
   }
@@ -283,6 +283,19 @@
     };
   }
 
+  function findUserByAppointmentEmployeeName(lookups, item) {
+    const wanted = String(item?.employee_name || "").trim().toLowerCase();
+    if (!wanted) return null;
+    return Object.values(lookups.usersById || {}).find((user) => String(personName(user)).trim().toLowerCase() === wanted) || null;
+  }
+
+  function appointmentEmployeeMatches(item, employee) {
+    if (!item || !employee) return false;
+    if (item.employee_id && item.employee_id === employee.id) return true;
+    const savedName = String(item.employee_name || "").trim().toLowerCase();
+    return savedName && savedName === String(personName(employee)).trim().toLowerCase();
+  }
+
   function scheduleRows(data, lookups, dateIso, activeWorkerIds = []) {
     const active = data.appointments.filter((item) => appointmentDate(item) === dateIso && item.deleted !== true && !["odwołana", "odwołane", "usunięte"].includes(String(item.status || "").toLowerCase()));
     const rows = [];
@@ -294,7 +307,7 @@
       const cells = data.users.map((employee) => {
         const slotMin = minutesFromTime(time);
         const visit = active.find((item) => {
-          if (item.employee_id !== employee.id) return false;
+          if (!appointmentEmployeeMatches(item, employee)) return false;
           const start = minutesFromTime(appointmentStart(item));
           const end = minutesFromTime(appointmentEnd(item));
           return slotMin != null && start != null && end != null && slotMin >= start && slotMin < end;
@@ -341,6 +354,9 @@
     const startsAt = combineDateTimeIso(date, start);
     const endsAt = combineDateTimeIso(date, end);
     const total = Number(String(formData.get("total") || "0").replace(",", ".")) || 0;
+    const employeeId = String(formData.get("employeeId") || "").trim();
+    const employeeSelect = Array.from(document.querySelectorAll('#dashboardAppointmentAddForm select[name="employeeId"], #dashboardEditVisitForm select[name="employeeId"]')).find((select) => select.value === employeeId)?.selectedOptions?.[0];
+    const employeeName = employeeSelect?.textContent?.trim() || String(formData.get("employeeName") || "").trim() || null;
     return {
       company_id: ctx.companyId,
       date,
@@ -352,7 +368,10 @@
       appointment_datetime: startsAt,
       customer_id: clientId || null,
       client_id: clientId || null,
-      employee_id: String(formData.get("employeeId") || "").trim() || null,
+      // 037H: nie wysyłamy starego/local employee_id do FK profiles.
+      // Pracownika zapisujemy tekstowo, żeby FK nie blokował zapisu wizyty.
+      employee_id: null,
+      employee_name: employeeName,
       service_id: serviceId || null,
       product_id: productId || null,
       status: String(formData.get("status") || "zaplanowane").trim() || "zaplanowane",
@@ -366,7 +385,7 @@
   }
 
   function validatePayload(payload) {
-    if (!payload.date || !payload.start_time || !payload.end_time || !payload.customer_id || !payload.employee_id) return "Uzupełnij datę, godzinę, klienta i pracownika.";
+    if (!payload.date || !payload.start_time || !payload.end_time || !payload.customer_id || !payload.employee_name) return "Uzupełnij datę, godzinę, klienta i pracownika.";
     if (!payload.service_id && !payload.product_id) return "Wybierz usługę albo produkt.";
     return "";
   }
@@ -378,6 +397,11 @@
     form.elements.end.value = appointmentEnd(item) || "06:30";
     form.elements.customerId.value = appointmentClientId(item) || "";
     form.elements.employeeId.value = item.employee_id || "";
+    if (!form.elements.employeeId.value && item.employee_name) {
+      const targetName = String(item.employee_name).trim().toLowerCase();
+      const option = Array.from(form.elements.employeeId.options || []).find((opt) => String(opt.textContent || "").trim().toLowerCase() === targetName);
+      if (option) form.elements.employeeId.value = option.value;
+    }
     form.elements.serviceId.value = item.service_id || "";
     form.elements.productId.value = item.product_id || "";
     const savedTotal = appointmentTotal(item);
