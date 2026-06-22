@@ -87,11 +87,10 @@
     return true;
   }
 
-  function buildRegistrationRpcPayload(userId) {
+  function buildRegistrationRpcPayload() {
     const plan = selectedPlan();
 
     return {
-      p_user_id: userId,
       p_email: value("email").toLowerCase(),
       p_full_name: value("ownerName"),
       p_phone: value("phone"),
@@ -106,8 +105,7 @@
       p_invoice_postal_code: value("billingPostal"),
       p_invoice_city: value("billingCity"),
       p_nip_vat: value("nip"),
-      p_package: planMap[plan],
-      p_sms_sender: value("smsSender")
+      p_package: planMap[plan]
     };
   }
 
@@ -153,12 +151,11 @@
         throw signUpError;
       }
 
-      const userId = signUpData?.user?.id;
-      if (!userId) {
+      if (!signUpData?.user?.id) {
         throw new Error("Nie udało się utworzyć użytkownika Supabase Auth.");
       }
 
-      const payload = buildRegistrationRpcPayload(userId);
+      const payload = buildRegistrationRpcPayload();
       const { error: requestError } = await window.cmSupabase.rpc(
         "create_company_registration_request_public",
         payload
