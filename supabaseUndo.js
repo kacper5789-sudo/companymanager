@@ -80,18 +80,9 @@
   }
 
   async function refreshUndoButton() {
-    const supabase = getClient();
-    const companyId = await getCompanyId();
     const button = document.querySelector("#undoTimeBtn");
-    if (!button || !supabase || !companyId) return;
-    const { data, error } = await supabase
-      .from("undo_actions")
-      .select("id")
-      .eq("company_id", companyId)
-      .is("undone_at", null)
-      .order("created_at", { ascending: false })
-      .limit(1);
-    if (!error && Array.isArray(data) && data.length) showUndoButton();
+    if (!button) return;
+    showUndoButton();
   }
 
   function bindUndoButton() {

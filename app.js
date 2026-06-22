@@ -2026,7 +2026,7 @@ document.addEventListener('DOMContentLoaded', () => {
                       <button id="panelLogoutBtn" class="bm-admin-dropdown-logout" type="button">Wyloguj się</button>
                     </div>
                   </div>
-                  <button id="undoTimeBtn" class="bm-undo-time-btn" type="button" ${hasUndoSnapshot() ? '' : 'hidden'}>Cofnij Czas</button>
+                  <button id="undoTimeBtn" class="bm-undo-time-btn" type="button">Cofnij Czas</button>
                   <a class="bm-owner-link ${page==='owner'?'active':''}" href="owner.html">Właściciel strony</a>
                   ${canAccessPage(user, 'reports') ? `<a class="bm-owner-link bm-stats-link ${page==='reports'?'active':''}" href="reports.html">Wykres/Statystyka</a>` : ''}
                   ${canAccessPage(user, 'customersReports') ? `<a class="bm-owner-link bm-customers-reports-link ${page==='customersReports'?'active':''}" href="customersraports.html">Klienci</a>` : ''}
