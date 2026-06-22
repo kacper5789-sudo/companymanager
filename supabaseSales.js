@@ -224,7 +224,7 @@
   });
 
   async function fetchData(ctx, fromDate, toDate) {
-    const [salesRes, itemsRes, paymentsRes, clientsRes, servicesRes, productsRes, categoriesRes, usersRes, appointmentsRes] = await Promise.all([
+    const [salesRes, itemsRes, paymentsRes, clientsRes, servicesRes, productsRes, categoriesRes, usersRes, appointmentsRes, passesRes] = await Promise.all([
       window.cmSupabase.from("sales").select("id, company_id, client_id, appointment_id, employee_id, sale_number, status, total_net, total_tax, total_gross, discount_value, payment_status, note, created_at, updated_at").eq("company_id", ctx.companyId).gte("created_at", `${fromDate}T00:00:00`).lte("created_at", `${toDate}T23:59:59`).order("created_at", { ascending: false }),
       window.cmSupabase.from("sale_items").select("id, company_id, sale_id, item_type, service_id, product_id, name, name_snapshot, quantity, unit_price, discount, total, total_price, created_at").eq("company_id", ctx.companyId),
       window.cmSupabase.from("payments").select("id, company_id, sale_id, amount, method, paid_at, created_at").eq("company_id", ctx.companyId).gte("paid_at", `${fromDate}T00:00:00`).lte("paid_at", `${toDate}T23:59:59`).order("paid_at", { ascending: false }),
@@ -233,9 +233,10 @@
       window.cmSupabase.from("products").select("id, name, category, price").eq("company_id", ctx.companyId),
       window.cmSupabase.from("service_categories").select("id, name").eq("company_id", ctx.companyId),
       window.cmSupabase.rpc("company_users_for_dropdown", { target_company_id: ctx.companyId }),
-      window.cmSupabase.from("appointments").select("id, client_id, client_name, service_id, service_name, product_id, product_name, employee_id, employee_name, payment_method, total, price, starts_at, appointment_datetime, date, start_time, created_at").eq("company_id", ctx.companyId)
+      window.cmSupabase.from("appointments").select("id, client_id, client_name, service_id, service_name, product_id, product_name, employee_id, employee_name, payment_method, total, price, starts_at, appointment_datetime, date, start_time, created_at").eq("company_id", ctx.companyId),
+      window.cmSupabase.from("passes").select("id, company_id, customer_id, employee_id, name, number, sale_date, sale_time, valid_until, payment_method, buyer, customer_name, employee_name, value, remaining, description, status, active, created_at").eq("company_id", ctx.companyId).eq("active", true).gte("sale_date", fromDate).lte("sale_date", toDate).order("sale_date", { ascending: false })
     ]);
-    const errors = [salesRes, itemsRes, paymentsRes, clientsRes, servicesRes, productsRes, categoriesRes, usersRes, appointmentsRes].map((res) => res.error).filter(Boolean);
+    const errors = [salesRes, itemsRes, paymentsRes, clientsRes, servicesRes, productsRes, categoriesRes, usersRes, appointmentsRes, passesRes].map((res) => res.error).filter(Boolean);
     if (errors.length) throw errors[0];
     return {
       sales: salesRes.data || [],
@@ -246,7 +247,8 @@
       products: productsRes.data || [],
       serviceCategories: categoriesRes.data || [],
       users: usersRes.data || [],
-      appointments: appointmentsRes.data || []
+      appointments: appointmentsRes.data || [],
+      passes: passesRes.data || []
     };
   }
 
@@ -485,6 +487,22 @@
       })
       .filter((row) => passesFilter("employees", selectedEmployees, row.employeeId) && passesFilter("productCategories", selectedProductCategories, row.productCategory) && passesFilter("productNames", selectedProductNames, row.productId));
 
+    const passItemsRaw = (data.passes || []).map((pass) => {
+      const employeeId = pass.employee_id || "";
+      const clientId = pass.customer_id || "";
+      return {
+        date: pass.sale_date || pass.created_at,
+        time: pass.sale_time || "",
+        employeeId,
+        clientId,
+        employee: userNameOrEmpty(userById[employeeId]) || pass.employee_name || pass.buyer || "(brak)",
+        customer: clientName(clientById[clientId]) || pass.customer_name || "(brak)",
+        value: Number(pass.value || 0),
+        note: pass.description || pass.number || pass.name || "Karnet",
+        paymentMethod: pass.payment_method || "gotówka"
+      };
+    }).filter((row) => passesFilter("employees", selectedEmployees, row.employeeId));
+
     const paymentRowsRaw = data.payments.map((payment) => {
       const sale = salesById[payment.sale_id] || {};
       const appointment = appointmentById[sale.appointment_id] || {};
@@ -500,6 +518,17 @@
       };
     }).filter((row) => passesFilter("employees", selectedEmployees, row.employeeId) && passesFilter("paymentTypes", selectedPaymentTypes, row.type));
 
+    const passPaymentRowsRaw = passItemsRaw.map((pass) => ({
+      date: pass.date,
+      time: pass.time,
+      employeeId: pass.employeeId,
+      employee: pass.employee,
+      customer: pass.customer,
+      type: pass.paymentMethod || "gotówka",
+      value: pass.value
+    })).filter((row) => passesFilter("paymentTypes", selectedPaymentTypes, row.type));
+    const allPaymentRowsRaw = paymentRowsRaw.concat(passPaymentRowsRaw);
+
     const groupRows = (rows, keyFn) => {
       const grouped = new Map();
       rows.forEach((row) => {
@@ -514,9 +543,10 @@
 
     const serviceRows = serviceItemsRaw.map((r) => [displayDateTime(r.date), r.employee, r.customer, r.category, r.name, money(r.value), r.paymentMethod]);
     const productRows = productItemsRaw.map((r) => [displayDateTime(r.date), r.employee, r.customer, r.productCategory, r.name, String(r.qty), money(r.value)]);
-    const paymentRows = paymentRowsRaw.map((r) => [displayDateTime(r.date), r.employee, r.customer, r.type, money(r.value)]);
-    const paymentByTypeRows = groupRows(paymentRowsRaw, (r) => r.type).map((row) => {
-      const totalCount = paymentRowsRaw.length || 1;
+    const passRows = passItemsRaw.map((r) => [displayDateTime(r.date, r.time), r.employee, r.customer, money(r.value), r.note]);
+    const paymentRows = allPaymentRowsRaw.map((r) => [displayDateTime(r.date, r.time), r.employee, r.customer, r.type, money(r.value)]);
+    const paymentByTypeRows = groupRows(allPaymentRowsRaw, (r) => r.type).map((row) => {
+      const totalCount = allPaymentRowsRaw.length || 1;
       const percentage = Math.round(Number(row[1]) / totalCount * 100);
       return [row[0], row[1], `${percentage}%`, row[2]];
     });
@@ -552,10 +582,10 @@
       productsByName: `<h2>Sprzedaż produktów według nazw</h2>${dateFilters(employeeFilter + productCategoryFilter + productNameFilter)}${summary("Liczba produktów", productItemsRaw.reduce((s, r) => s + r.qty, 0), "Wartość produktów", productItemsRaw.reduce((s, r) => s + r.value, 0))}${listTools()}${sectionTable(["Nazwa", "Liczba", "Wartość PLN"], groupRows(productItemsRaw, (r) => r.name))}`,
       productsByCategory: `<h2>Sprzedaż produktów według kategorii</h2>${dateFilters(employeeFilter + productCategoryFilter + productNameFilter)}${summary("Liczba produktów", productItemsRaw.reduce((s, r) => s + r.qty, 0), "Wartość produktów", productItemsRaw.reduce((s, r) => s + r.value, 0))}${listTools()}${sectionTable(["Kategoria", "Liczba", "Wartość PLN"], groupRows(productItemsRaw, (r) => r.productCategory))}`,
       productsByEmployee: `<h2>Sprzedaż produktów według pracowników</h2>${dateFilters(employeeFilter + productCategoryFilter + productNameFilter)}${summary("Liczba produktów", productItemsRaw.reduce((s, r) => s + r.qty, 0), "Wartość produktów", productItemsRaw.reduce((s, r) => s + r.value, 0))}${listTools()}${sectionTable(["Pracownik", "Liczba", "Wartość PLN"], groupRows(productItemsRaw, (r) => r.employee))}`,
-      passes: `<h2>Sprzedaż - karnety</h2>${dateFilters(employeeFilter)}${summary("Liczba szt.", 0, "Wartość", 0)}${listTools()}${sectionTable(["Data sprzedaży", "Pracownik", "Klient", "Wartość", "Notatka"], [])}`,
-      passesByEmployee: `<h2>Sprzedaż - karnety według pracowników</h2>${dateFilters(employeeFilter)}${summary("Liczba szt.", 0, "Wartość", 0)}${listTools()}${sectionTable(["Pracownik", "Liczba", "Wartość PLN"], [])}`,
-      payments: `<h2>Płatności</h2>${dateFilters(employeeFilter + paymentTypeFilter)}${summary("Liczba płatności", paymentRowsRaw.length, "Wartość płatności", paymentRowsRaw.reduce((s, r) => s + r.value, 0))}${listTools()}${sectionTable(["Data sprzedaży", "Pracownik", "Klient", "Typ płatności", "Wartość (PLN)"], paymentRows)}`,
-      paymentsByType: `<h2>Płatności według typów</h2>${dateFilters(employeeFilter + paymentTypeFilter)}${summary("Liczba płatności", paymentRowsRaw.length, "Wartość płatności", paymentRowsRaw.reduce((s, r) => s + r.value, 0))}${listTools()}${sectionTable(["Typ płatności", "Liczba", "Procent", "Wartość PLN"], paymentByTypeRows)}`
+      passes: `<h2>Sprzedaż - karnety</h2>${dateFilters(employeeFilter)}${summary("Liczba szt.", passItemsRaw.length, "Wartość", passItemsRaw.reduce((s, r) => s + r.value, 0))}${listTools()}${sectionTable(["Data sprzedaży", "Pracownik", "Klient", "Wartość", "Notatka"], passRows)}`,
+      passesByEmployee: `<h2>Sprzedaż - karnety według pracowników</h2>${dateFilters(employeeFilter)}${summary("Liczba szt.", passItemsRaw.length, "Wartość", passItemsRaw.reduce((s, r) => s + r.value, 0))}${listTools()}${sectionTable(["Pracownik", "Liczba", "Wartość PLN"], groupRows(passItemsRaw, (r) => r.employee))}`,
+      payments: `<h2>Płatności</h2>${dateFilters(employeeFilter + paymentTypeFilter)}${summary("Liczba płatności", allPaymentRowsRaw.length, "Wartość płatności", allPaymentRowsRaw.reduce((s, r) => s + r.value, 0))}${listTools()}${sectionTable(["Data sprzedaży", "Pracownik", "Klient", "Typ płatności", "Wartość (PLN)"], paymentRows)}`,
+      paymentsByType: `<h2>Płatności według typów</h2>${dateFilters(employeeFilter + paymentTypeFilter)}${summary("Liczba płatności", allPaymentRowsRaw.length, "Wartość płatności", allPaymentRowsRaw.reduce((s, r) => s + r.value, 0))}${listTools()}${sectionTable(["Typ płatności", "Liczba", "Procent", "Wartość PLN"], paymentByTypeRows)}`
     };
 
     const subnav = `<div class="bm-filter-tabs cm-sales-tabs">${views.map(([id, label]) => `<a class="${currentView === id ? "active" : ""}" href="sales.html?view=${encodeURIComponent(id)}">${escapeHtml(label)}</a>`).join("")}</div>`;
