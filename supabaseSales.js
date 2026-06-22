@@ -234,7 +234,7 @@
       window.cmSupabase.from("service_categories").select("id, name").eq("company_id", ctx.companyId),
       window.cmSupabase.rpc("company_users_for_dropdown", { target_company_id: ctx.companyId }),
       window.cmSupabase.from("appointments").select("id, client_id, client_name, service_id, service_name, product_id, product_name, employee_id, employee_name, payment_method, total, price, starts_at, appointment_datetime, date, start_time, created_at").eq("company_id", ctx.companyId),
-      window.cmSupabase.from("passes").select("id, company_id, customer_id, employee_id, name, number, sale_date, sale_time, valid_until, payment_method, buyer, customer_name, employee_name, value, remaining, description, status, active, created_at").eq("company_id", ctx.companyId).eq("active", true).gte("sale_date", fromDate).lte("sale_date", toDate).order("sale_date", { ascending: false })
+      window.cmSupabase.from("passes").select("id, company_id, customer_id, buyer_client_id, beneficiary_client_id, employee_id, service_id, service_name, pass_type, sale_id, name, number, sale_date, sale_time, valid_until, payment_method, buyer, customer_name, employee_name, value, remaining, total_units, remaining_units, description, status, active, created_at").eq("company_id", ctx.companyId).eq("active", true).gte("sale_date", fromDate).lte("sale_date", toDate).order("sale_date", { ascending: false })
     ]);
     const errors = [salesRes, itemsRes, paymentsRes, clientsRes, servicesRes, productsRes, categoriesRes, usersRes, appointmentsRes, passesRes].map((res) => res.error).filter(Boolean);
     if (errors.length) throw errors[0];
@@ -489,7 +489,7 @@
 
     const passItemsRaw = (data.passes || []).map((pass) => {
       const employeeId = pass.employee_id || "";
-      const clientId = pass.customer_id || "";
+      const clientId = pass.beneficiary_client_id || pass.customer_id || "";
       return {
         date: pass.sale_date || pass.created_at,
         time: pass.sale_time || "",
@@ -498,7 +498,8 @@
         employee: userNameOrEmpty(userById[employeeId]) || pass.employee_name || pass.buyer || "(brak)",
         customer: clientName(clientById[clientId]) || pass.customer_name || "(brak)",
         value: Number(pass.value || 0),
-        note: pass.description || pass.number || pass.name || "Karnet",
+        note: [pass.name || "Karnet", pass.number || "", pass.service_name || "", pass.description || ""].filter(Boolean).join(" — "),
+        saleId: pass.sale_id || "",
         paymentMethod: pass.payment_method || "gotówka"
       };
     }).filter((row) => passesFilter("employees", selectedEmployees, row.employeeId));
@@ -518,7 +519,7 @@
       };
     }).filter((row) => passesFilter("employees", selectedEmployees, row.employeeId) && passesFilter("paymentTypes", selectedPaymentTypes, row.type));
 
-    const passPaymentRowsRaw = passItemsRaw.map((pass) => ({
+    const passPaymentRowsRaw = passItemsRaw.filter((pass) => !pass.saleId).map((pass) => ({
       date: pass.date,
       time: pass.time,
       employeeId: pass.employeeId,

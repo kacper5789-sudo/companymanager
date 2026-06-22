@@ -1,5 +1,5 @@
 // CompanyManager — Dashboard powered by Supabase
-// 037A: Dashboard Supabase schedule: appointments + clients + services + positions + users.
+// 039B: Dashboard Supabase schedule + użycie karnetów przy wizycie.
 
 (function () {
   function isDashboardPage() {
@@ -148,6 +148,7 @@
     if (!form) return;
     const serviceSelect = form.elements.serviceId;
     const productSelect = form.elements.productId;
+    const passSelect = form.elements.passId;
     const totalInput = form.elements.total;
     if (!totalInput) return;
 
@@ -158,7 +159,14 @@
       const product = lookups.productsById[String(productSelect?.value || "")];
       const serviceValue = firstPositiveMoney(serviceOption?.getAttribute("data-price"), servicePrice(service));
       const productValue = firstPositiveMoney(productOption?.getAttribute("data-price"), productPrice(product));
-      const total = serviceValue + productValue;
+      const passId = String(passSelect?.value || "");
+      const pass = lookups.passesById?.[passId];
+      let serviceCharge = serviceValue;
+      if (passId && pass) {
+        if (pass.pass_type === "service" || pass.pass_type === "units") serviceCharge = 0;
+        else serviceCharge = Math.max(0, serviceValue - Number(pass.remaining || 0));
+      }
+      const total = serviceCharge + productValue;
       totalInput.value = total.toFixed(2);
     };
 
@@ -166,9 +174,10 @@
     serviceSelect?.addEventListener("input", calculate);
     productSelect?.addEventListener("change", calculate);
     productSelect?.addEventListener("input", calculate);
+    passSelect?.addEventListener("change", calculate);
     form.addEventListener("change", (event) => {
       const name = event.target?.name;
-      if (["serviceId", "productId"].includes(name)) calculate();
+      if (["serviceId", "productId", "passId"].includes(name)) calculate();
     });
     calculate();
   }
@@ -260,10 +269,10 @@
   }
 
   async function fetchDashboardData(ctx) {
-    const [appointmentsRes, clientsRes, servicesRes, productsRes, usersRes] = await Promise.all([
+    const [appointmentsRes, clientsRes, servicesRes, productsRes, usersRes, passesRes] = await Promise.all([
       window.cmSupabase
         .from("appointments")
-        .select("id, company_id, date, time, start_time, end_time, customer_id, client_id, employee_id, employee_name, service_id, service_name, position_id, product_id, product_name, product_price, product_quantity, status, deleted, note, price, total, payment_method, cancellation_reason, cancelled_at, starts_at, ends_at, appointment_datetime, created_at, updated_at")
+        .select("id, company_id, date, time, start_time, end_time, customer_id, client_id, employee_id, employee_name, service_id, service_name, position_id, product_id, product_name, product_price, product_quantity, pass_id, pass_name, pass_used_value, pass_used_units, status, deleted, note, price, total, payment_method, cancellation_reason, cancelled_at, starts_at, ends_at, appointment_datetime, created_at, updated_at")
         .eq("company_id", ctx.companyId)
         .order("date", { ascending: true })
         .order("start_time", { ascending: true }),
@@ -282,19 +291,26 @@
         .select("id, company_id, name, price, sale_price, gross_price, net_price, retail_price, selling_price, sale_gross_price, unit_price, last_purchase_price, active")
         .eq("company_id", ctx.companyId)
         .order("name", { ascending: true }),
-      window.cmSupabase.rpc("company_users_for_dropdown", { target_company_id: ctx.companyId })
+      window.cmSupabase.rpc("company_users_for_dropdown", { target_company_id: ctx.companyId }),
+      window.cmSupabase
+        .from("passes")
+        .select("id, company_id, customer_id, beneficiary_client_id, buyer_client_id, service_id, service_name, name, number, pass_type, value, remaining, total_units, remaining_units, valid_until, status, active")
+        .eq("company_id", ctx.companyId)
+        .eq("active", true)
     ]);
     if (appointmentsRes.error) throw appointmentsRes.error;
     if (clientsRes.error) throw clientsRes.error;
     if (servicesRes.error) throw servicesRes.error;
     if (productsRes.error) throw productsRes.error;
     if (usersRes.error) throw usersRes.error;
+    if (passesRes.error) throw passesRes.error;
     return {
       appointments: appointmentsRes.data || [],
       clients: (clientsRes.data || []).filter((item) => item.status !== "usunięty"),
       services: (servicesRes.data || []).filter((item) => item.active !== false),
       products: (productsRes.data || []).filter((item) => item.active !== false),
-      users: uniqueUsers(usersRes.data || [])
+      users: uniqueUsers(usersRes.data || []),
+      passes: (passesRes.data || []).filter((item) => item.status !== "usunięte" && item.status !== "zrealizowane")
     };
   }
 
@@ -331,8 +347,34 @@
       clientsById: Object.fromEntries(data.clients.map((item) => [item.id, item])),
       servicesById: Object.fromEntries(data.services.map((item) => [item.id, item])),
       productsById: Object.fromEntries(data.products.map((item) => [item.id, item])),
-      usersById: Object.fromEntries(data.users.map((item) => [item.id, item]))
+      usersById: Object.fromEntries(data.users.map((item) => [item.id, item])),
+      passesById: Object.fromEntries((data.passes || []).map((item) => [item.id, item]))
     };
+  }
+
+  function passLabel(pass) {
+    if (!pass) return "";
+    const rest = pass.pass_type === "service" || pass.pass_type === "units"
+      ? `${Number(pass.remaining_units || 0)}/${Number(pass.total_units || 0)} wejść`
+      : `pozostało ${Number(pass.remaining || 0).toFixed(2)} PLN`;
+    return [pass.name || "Karnet", pass.number || "", rest, pass.valid_until ? `ważny do ${plDate(pass.valid_until)}` : ""].filter(Boolean).join(" — ");
+  }
+
+  function passCanBeUsedFor(pass, clientId, serviceId) {
+    if (!pass || pass.active === false) return false;
+    const owner = pass.beneficiary_client_id || pass.customer_id;
+    if (clientId && owner && String(owner) !== String(clientId)) return false;
+    if (pass.valid_until && String(pass.valid_until).slice(0, 10) < iso(new Date())) return false;
+    if ((pass.pass_type === "service" || pass.pass_type === "units") && Number(pass.remaining_units || 0) <= 0) return false;
+    if (!(pass.pass_type === "service" || pass.pass_type === "units") && Number(pass.remaining || 0) <= 0) return false;
+    if (pass.service_id && serviceId && String(pass.service_id) !== String(serviceId)) return false;
+    return true;
+  }
+
+  function passOptionsFor(data, clientId = "", serviceId = "", selected = "") {
+    const passes = (data.passes || []).filter((pass) => passCanBeUsedFor(pass, clientId, serviceId));
+    if (!passes.length) return `<option value="">Brak aktywnego karnetu klienta</option>`;
+    return `<option value="">Nie używaj karnetu</option>` + passes.map((pass) => `<option value="${escapeHtml(pass.id)}" ${String(pass.id) === String(selected) ? "selected" : ""} data-pass-type="${escapeHtml(pass.pass_type || "amount")}" data-remaining="${escapeHtml(String(pass.remaining || 0))}" data-remaining-units="${escapeHtml(String(pass.remaining_units || 0))}">${escapeHtml(passLabel(pass))}</option>`).join("");
   }
 
   function findUserByAppointmentEmployeeName(lookups, item) {
@@ -438,6 +480,7 @@
     const date = String(formData.get("date") || "").trim();
     const startsAt = combineDateTimeIso(date, start);
     const endsAt = combineDateTimeIso(date, end);
+    const passId = String(formData.get("passId") || "").trim();
     const total = Number(String(formData.get("total") || "0").replace(",", ".")) || 0;
     const employeeId = String(formData.get("employeeId") || "").trim();
     const employeeSelect = Array.from(document.querySelectorAll('#dashboardAppointmentAddForm select[name="employeeId"], #dashboardEditVisitForm select[name="employeeId"]')).find((select) => select.value === employeeId)?.selectedOptions?.[0];
@@ -462,6 +505,8 @@
       product_name: productId ? selectedProductName : null,
       product_price: productId ? selectedProductPrice : null,
       product_quantity: productId ? 1 : null,
+      pass_id: passId || null,
+      pass_name: passId ? (document.querySelector(`select[name="passId"] option[value="${CSS.escape(passId)}"]`)?.textContent || "Karnet") : null,
       status: String(formData.get("status") || "zaplanowane").trim() || "zaplanowane",
       deleted: false,
       note: String(formData.get("note") || "").trim() || null,
@@ -492,6 +537,10 @@
     }
     form.elements.serviceId.value = item.service_id || "";
     form.elements.productId.value = item.product_id || "";
+    if (form.elements.passId) {
+      form.elements.passId.innerHTML = passOptionsFor({ passes: Object.values(lookups.passesById || {}) }, appointmentClientId(item), item.service_id || "", item.pass_id || "");
+      form.elements.passId.value = item.pass_id || "";
+    }
     const savedTotal = appointmentTotal(item, lookups);
     form.elements.total.value = savedTotal ? savedTotal.toFixed(2) : "0.00";
     if (!savedTotal) form.elements.serviceId?.dispatchEvent(new Event("change", { bubbles: true }));
@@ -549,6 +598,7 @@
       "Brak produktów",
       (p) => `data-price="${escapeHtml(String(productPrice(p)))}" data-name="${escapeHtml(productName(p))}"`
     );
+    const allPassOptions = passOptionsFor(data);
     const visibleVisits = data.appointments.filter((item) => item.deleted !== true && !["odwołana", "odwołane", "usunięte"].includes(String(item.status || "").toLowerCase()));
     const visitOptions = visibleVisits.map((item) => `<option value="${escapeHtml(item.id)}">${escapeHtml(appointmentLabel(item, lookups))}</option>`).join("");
     const finishableVisits = visibleVisits.filter((item) => !["zakończone", "odwołane", "usunięte"].includes(String(item.status || "").toLowerCase()));
@@ -607,6 +657,7 @@
           <label>Pracownik<select name="employeeId" required><option value="">Wybierz pracownika</option>${employeeOptions}</select></label>
           <label>Usługi<select name="serviceId"><option value="">Wybierz usługę</option>${serviceOptions}</select></label>
           <label>Zakup produktów<select name="productId"><option value="">Wybierz produkt</option>${productOptions}</select></label>
+          <label class="bm-full">Karnet klienta<select name="passId">${allPassOptions}</select></label>
           <label>Razem do zapłaty<input name="total" value="0.00" readonly></label>
           <label>Płatność<select name="payment"><option>gotówka</option><option>karta kredytowa</option><option>karnet</option><option>pakiet</option><option>gratis</option></select></label>
           <label class="bm-full">Opis<textarea name="note" placeholder="Notatka"></textarea></label>
@@ -626,6 +677,7 @@
           <label>Pracownik<select name="employeeId" required><option value="">Wybierz pracownika</option>${employeeOptions}</select></label>
           <label>Usługi<select name="serviceId"><option value="">Wybierz usługę</option>${serviceOptions}</select></label>
           <label>Zakup produktów<select name="productId"><option value="">Wybierz produkt</option>${productOptions}</select></label>
+          <label class="bm-full">Karnet klienta<select name="passId">${allPassOptions}</select></label>
           <label>Razem do zapłaty<input name="total" value="0.00" readonly></label>
           <label>Płatność<select name="payment"><option>gotówka</option><option>karta kredytowa</option><option>karnet</option><option>pakiet</option><option>gratis</option></select></label>
           <label class="bm-full">Opis<textarea name="note" placeholder="Notatka"></textarea></label>
@@ -640,6 +692,7 @@
           <label class="bm-full">Wybierz wizytę<select name="visitId" required><option value="">Wybierz wizytę</option>${finishVisitOptions}</select></label>
           <label>Kwota do zapłaty<input name="total" value="0.00" readonly></label>
           <label>Zapłacono<input name="paidAmount" value="0.00" inputmode="decimal"></label>
+          <label class="bm-full">Użyj karnetu<select name="passId">${allPassOptions}</select></label>
           <label>Płatność<select name="payment"><option>gotówka</option><option>karta kredytowa</option><option>karnet</option><option>pakiet</option><option>gratis</option></select></label>
           <label class="bm-full">Opis / notatka<textarea name="note" placeholder="Notatka do sprzedaży"></textarea></label>
           <button type="submit">Zakończ wizytę</button>
@@ -735,6 +788,21 @@
       workersPopover.hidden = true;
     }, { once: false });
     updateWorkerVisibility(false);
+    function bindPassOptions(form) {
+      if (!form || !form.elements.passId) return;
+      const refresh = () => {
+        const selected = form.elements.passId.value || "";
+        form.elements.passId.innerHTML = passOptionsFor(data, form.elements.customerId?.value || "", form.elements.serviceId?.value || "", selected);
+        if (selected && Array.from(form.elements.passId.options).some((opt) => opt.value === selected)) form.elements.passId.value = selected;
+        form.elements.passId.dispatchEvent(new Event("change", { bubbles: true }));
+      };
+      form.elements.customerId?.addEventListener("change", refresh);
+      form.elements.serviceId?.addEventListener("change", refresh);
+      refresh();
+    }
+    bindPassOptions(document.querySelector("#dashboardAppointmentAddForm"));
+    bindPassOptions(document.querySelector("#dashboardEditVisitForm"));
+    bindPassOptions(document.querySelector("#dashboardFinishVisitForm"));
     bindDashboardTotalCalculator(document.querySelector("#dashboardAppointmentAddForm"), lookups);
     bindDashboardTotalCalculator(document.querySelector("#dashboardEditVisitForm"), lookups);
 
@@ -808,6 +876,10 @@
       const total = selected ? appointmentTotal(selected, lookups) : 0;
       if (form.elements.total) form.elements.total.value = total.toFixed(2);
       if (form.elements.paidAmount) form.elements.paidAmount.value = total.toFixed(2);
+      if (form.elements.passId) {
+        form.elements.passId.innerHTML = passOptionsFor(data, appointmentClientId(selected || {}), selected?.service_id || "", selected?.pass_id || "");
+        form.elements.passId.value = selected?.pass_id || "";
+      }
       if (form.elements.payment && selected?.payment_method) form.elements.payment.value = selected.payment_method;
       if (form.elements.note) form.elements.note.value = selected?.note || "";
     }
@@ -870,7 +942,8 @@
         p_company_id: ctx.companyId,
         p_paid_amount: paidAmount,
         p_payment_method: paymentMethod,
-        p_note: note
+        p_note: note,
+        p_pass_id: String(formData.get("passId") || "").trim() || null
       };
       const { data: result, error } = await window.cmSupabase.rpc("finish_appointment_with_sale", payload);
       if (error) { setMessage("#dashboardFinishVisitMessage", `Błąd zakończenia: ${error.message}`, false); return; }
