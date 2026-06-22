@@ -259,6 +259,14 @@
     return user?.full_name || user?.email || "(brak)";
   }
 
+  function userNameOrEmpty(user) {
+    return user?.full_name || user?.email || "";
+  }
+
+  function employeeDisplayName(userById, employeeId, appointment) {
+    return userNameOrEmpty(userById[employeeId]) || appointment?.employee_name || "(brak)";
+  }
+
   function applySalesFilters() {
     const { currentView, fromDate, toDate } = getParams();
     const form = document.querySelector(".cm-sales-report-controls");
@@ -446,7 +454,7 @@
           clientId,
           serviceId,
           serviceCategoryId: catId,
-          employee: userName(userById[employeeId]) || appointment.employee_name || "(brak)",
+          employee: employeeDisplayName(userById, employeeId, appointment),
           customer: clientName(clientById[clientId]) || appointment.client_name || "(brak)",
           category: categoryById[catId]?.name || service.category || "(brak)",
           name: item.name || item.name_snapshot || service.name || appointment.service_name || "Usługa",
@@ -468,7 +476,7 @@
         return {
           date: sale.created_at || appointment.starts_at || appointment.appointment_datetime || appointment.created_at,
           employeeId, clientId, productId, productCategory: product.category || "(brak)",
-          employee: userName(userById[employeeId]) || appointment.employee_name || "(brak)",
+          employee: employeeDisplayName(userById, employeeId, appointment),
           customer: clientName(clientById[clientId]) || appointment.client_name || "(brak)",
           name: item.name || item.name_snapshot || product.name || appointment.product_name || "Produkt",
           qty: Number(item.quantity || 1),
@@ -479,13 +487,16 @@
 
     const paymentRowsRaw = data.payments.map((payment) => {
       const sale = salesById[payment.sale_id] || {};
+      const appointment = appointmentById[sale.appointment_id] || {};
+      const employeeId = sale.employee_id || appointment.employee_id || "";
+      const clientId = sale.client_id || appointment.client_id || "";
       return {
         date: payment.paid_at || payment.created_at,
-        employeeId: sale.employee_id || "",
-        employee: userName(userById[sale.employee_id]),
-        customer: clientName(clientById[sale.client_id]),
-        type: payment.method || "gotówka",
-        value: Number(payment.amount || sale.total_gross || 0)
+        employeeId,
+        employee: employeeDisplayName(userById, employeeId, appointment),
+        customer: clientName(clientById[clientId]) || appointment.client_name || "(brak)",
+        type: payment.method || appointment.payment_method || "gotówka",
+        value: Number(payment.amount || sale.total_gross || appointment.total || appointment.price || 0)
       };
     }).filter((row) => passesFilter("employees", selectedEmployees, row.employeeId) && passesFilter("paymentTypes", selectedPaymentTypes, row.type));
 
