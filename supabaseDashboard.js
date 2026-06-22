@@ -100,6 +100,40 @@
   function serviceName(service) { return service?.name || "-"; }
   function productName(product) { return product?.name || "-"; }
 
+  function moneyNumber(value) {
+    const n = Number(String(value ?? "").replace(",", "."));
+    return Number.isFinite(n) ? n : 0;
+  }
+
+  function servicePrice(service) {
+    if (!service) return 0;
+    return moneyNumber(service.price_from ?? service.price ?? service.price_to ?? 0);
+  }
+
+  function productPrice(product) {
+    if (!product) return 0;
+    return moneyNumber(product.sale_price ?? product.price ?? 0);
+  }
+
+  function bindDashboardTotalCalculator(form, lookups) {
+    if (!form) return;
+    const serviceSelect = form.elements.serviceId;
+    const productSelect = form.elements.productId;
+    const totalInput = form.elements.total;
+    if (!totalInput) return;
+
+    const calculate = () => {
+      const service = lookups.servicesById[String(serviceSelect?.value || "")];
+      const product = lookups.productsById[String(productSelect?.value || "")];
+      const total = servicePrice(service) + productPrice(product);
+      totalInput.value = total.toFixed(2);
+    };
+
+    serviceSelect?.addEventListener("change", calculate);
+    productSelect?.addEventListener("change", calculate);
+    calculate();
+  }
+
   function uniqueUsers(users) {
     const seen = new Set();
     const out = [];
@@ -329,7 +363,9 @@
     form.elements.employeeId.value = item.employee_id || "";
     form.elements.serviceId.value = item.service_id || "";
     form.elements.productId.value = item.product_id || "";
-    form.elements.total.value = appointmentTotal(item).toFixed(2);
+    const savedTotal = appointmentTotal(item);
+    form.elements.total.value = savedTotal ? savedTotal.toFixed(2) : "0.00";
+    if (!savedTotal) form.elements.serviceId?.dispatchEvent(new Event("change", { bubbles: true }));
     form.elements.payment.value = item.payment_method || "gotówka";
     form.elements.note.value = item.note || "";
   }
@@ -369,8 +405,8 @@
     const allowCancel = canCancelAppointments(ctx);
     const customerOptions = optionList(data.clients, customerName, "Brak klientów");
     const employeeOptions = optionList(data.users, personName, "Brak pracowników/użytkowników");
-    const serviceOptions = optionList(data.services, (s) => `${s.name || "Usługa"}${s.price_from ? ` — ${s.price_from} PLN` : ""}`, "Brak usług");
-    const productOptions = optionList(data.products, productName, "Brak produktów");
+    const serviceOptions = optionList(data.services, (s) => `${s.name || "Usługa"}${servicePrice(s) ? ` — ${servicePrice(s).toFixed(2).replace(".00", "")} PLN` : ""}`, "Brak usług");
+    const productOptions = optionList(data.products, (p) => `${productName(p)}${productPrice(p) ? ` — ${productPrice(p).toFixed(2).replace(".00", "")} PLN` : ""}`, "Brak produktów");
     const visibleVisits = data.appointments.filter((item) => item.deleted !== true && !["odwołana", "odwołane", "usunięte"].includes(String(item.status || "").toLowerCase()));
     const visitOptions = visibleVisits.map((item) => `<option value="${escapeHtml(item.id)}">${escapeHtml(appointmentLabel(item, lookups))}</option>`).join("");
     const appointmentRows = visibleVisits.slice(0, 20).map((item) => {
@@ -426,7 +462,7 @@
           <label>Pracownik<select name="employeeId" required><option value="">Wybierz pracownika</option>${employeeOptions}</select></label>
           <label>Usługi<select name="serviceId"><option value="">Wybierz usługę</option>${serviceOptions}</select></label>
           <label>Zakup produktów<select name="productId"><option value="">Wybierz produkt</option>${productOptions}</select></label>
-          <label>Razem do zapłaty<input name="total" value="0.00"></label>
+          <label>Razem do zapłaty<input name="total" value="0.00" readonly></label>
           <label>Płatność<select name="payment"><option>gotówka</option><option>karta kredytowa</option><option>karnet</option><option>pakiet</option><option>gratis</option></select></label>
           <label class="bm-full">Opis<textarea name="note" placeholder="Notatka"></textarea></label>
           <button type="submit">Dodaj</button>
@@ -445,7 +481,7 @@
           <label>Pracownik<select name="employeeId" required><option value="">Wybierz pracownika</option>${employeeOptions}</select></label>
           <label>Usługi<select name="serviceId"><option value="">Wybierz usługę</option>${serviceOptions}</select></label>
           <label>Zakup produktów<select name="productId"><option value="">Wybierz produkt</option>${productOptions}</select></label>
-          <label>Razem do zapłaty<input name="total" value="0.00"></label>
+          <label>Razem do zapłaty<input name="total" value="0.00" readonly></label>
           <label>Płatność<select name="payment"><option>gotówka</option><option>karta kredytowa</option><option>karnet</option><option>pakiet</option><option>gratis</option></select></label>
           <label class="bm-full">Opis<textarea name="note" placeholder="Notatka"></textarea></label>
           <button type="submit">Zapisz zmiany</button>
@@ -539,6 +575,8 @@
       workersPopover.hidden = true;
     }, { once: false });
     updateWorkerVisibility(false);
+    bindDashboardTotalCalculator(document.querySelector("#dashboardAppointmentAddForm"), lookups);
+    bindDashboardTotalCalculator(document.querySelector("#dashboardEditVisitForm"), lookups);
 
     function openAddFromSlot(slot) {
       if (!allowAdd) {
@@ -560,6 +598,7 @@
         form.elements.end.value = endValue;
       }
       if (form.elements.employeeId) form.elements.employeeId.value = employeeId;
+      if (form.elements.serviceId) form.elements.serviceId.dispatchEvent(new Event("change", { bubbles: true }));
       const firstInput = form.querySelector('select[name="customerId"], input, select, textarea');
       if (firstInput) window.setTimeout(() => firstInput.focus(), 50);
       if (typeof window.cmRefreshGlobalModalState === "function") window.cmRefreshGlobalModalState();
@@ -643,7 +682,7 @@
       const reason = String(formData.get("reason") || "").trim();
       if (!visitId || !reason) { setMessage("#dashboardCancelVisitMessage", "Wybierz wizytę i wpisz powód.", false); return; }
       const before = data.appointments.find((item) => item.id === visitId);
-      const patch = { status: "odwołana", deleted: false, cancellation_reason: reason, cancelled_at: new Date().toISOString(), updated_at: new Date().toISOString() };
+      const patch = { status: "odwołane", deleted: false, cancellation_reason: reason, cancelled_at: new Date().toISOString(), updated_at: new Date().toISOString() };
       const { data: updated, error } = await window.cmSupabase.from("appointments").update(patch).eq("id", visitId).eq("company_id", ctx.companyId).select("*").single();
       if (error) { setMessage("#dashboardCancelVisitMessage", `Błąd odwołania: ${error.message}`, false); return; }
       await window.cmUndo?.record({ module: "dashboard", actionType: "update", targetTable: "appointments", targetId: visitId, beforeData: before, afterData: updated || patch, companyId: ctx.companyId });
