@@ -501,10 +501,27 @@
       }
       if (persist) saveActiveWorkerIds(ctx, selectedDate, active);
     };
-    employeeCountBtn?.addEventListener("click", (event) => {
-      event.preventDefault();
-      if (workersPopover) workersPopover.hidden = !workersPopover.hidden;
-    });
+    function toggleWorkersPopover(event) {
+      if (event) {
+        event.preventDefault();
+        event.stopPropagation();
+      }
+      const popover = document.querySelector("#dashWorkersPopover");
+      if (!popover) return;
+      popover.hidden = !popover.hidden;
+      popover.classList.toggle("is-open", !popover.hidden);
+    }
+
+    employeeCountBtn?.addEventListener("click", toggleWorkersPopover);
+
+    // Bezpiecznik po dynamicznym renderze dashboardu: jeżeli app.js / modal layer
+    // przechwyci standardowy listener, klik w (liczba pracowników) nadal otwiera wybór.
+    document.addEventListener("click", (event) => {
+      const target = event.target instanceof Element ? event.target : null;
+      const btn = target?.closest?.("#dashEmployeeCount");
+      if (!btn) return;
+      toggleWorkersPopover(event);
+    }, true);
     document.querySelectorAll(".dash-worker-toggle").forEach((input) => {
       input.addEventListener("change", () => updateWorkerVisibility(true));
     });
