@@ -1,5 +1,5 @@
 // CompanyManager — Users Module powered by Supabase
-// 036C: Użytkownicy Supabase — lista / dodaj / edytuj / blokada logowania + permissions JSONB 1:1.
+// 036N: Użytkownicy Supabase — safe RPC + poprawne zamykanie modala po sukcesie.
 
 (function () {
   function isUsersPage() {
@@ -243,6 +243,25 @@
     node.style.color = ok ? "#86efac" : "#fca5a5";
   }
 
+  function closeUsersModals() {
+    if (window.cmCloseAllModalPanels) {
+      window.cmCloseAllModalPanels();
+      return;
+    }
+    document.querySelectorAll(".cm-modal-active, .cm-as-modal").forEach((panel) => {
+      panel.hidden = true;
+      panel.classList.remove("cm-modal-active", "cm-as-modal");
+    });
+    document.body?.classList?.remove("cm-modal-open");
+  }
+
+  function rerenderUsersAfterSuccess(delay = 450) {
+    setTimeout(() => {
+      closeUsersModals();
+      renderUsers();
+    }, delay);
+  }
+
   function roleToDb(value) {
     const role = normalizeRole(value);
     return role === "ADMIN" ? "ADMIN" : "EMPLOYEE";
@@ -368,6 +387,7 @@
 
     setupModuleLimitDropdowns(area);
     bindEvents(ctx, users, positions);
+    if (window.cmUpdateGlobalModalState) window.cmUpdateGlobalModalState();
   }
 
   function validatePhone(phone) {
@@ -557,7 +577,7 @@
         });
         if (error) throw error;
         setMessage(msg, "Użytkownik dodany do Supabase. Po potwierdzeniu emaila będzie mógł się zalogować.", true);
-        setTimeout(renderUsers, 700);
+        rerenderUsersAfterSuccess(700);
       } catch (error) {
         const rawMessage = String(error.message || error || "");
         const friendlyMessage = rawMessage.includes("429") || rawMessage.toLowerCase().includes("rate")
@@ -597,7 +617,7 @@
         });
         if (error) throw error;
         setMessage(msg, "Użytkownik zaktualizowany w Supabase.", true);
-        setTimeout(renderUsers, 600);
+        rerenderUsersAfterSuccess(600);
       } catch (error) {
         console.error("CompanyManager users edit error", error);
         setMessage(msg, "Błąd edycji użytkownika: " + (error.message || error), false);
@@ -614,7 +634,7 @@
         const { error } = await window.cmSupabase.rpc("admin_disable_company_user", { p_user_id: userId });
         if (error) throw error;
         setMessage(msg, "Pracownik zablokowany — logowanie wyłączone.", true);
-        setTimeout(renderUsers, 600);
+        rerenderUsersAfterSuccess(600);
       } catch (error) {
         setMessage(msg, "Błąd usuwania/blokady pracownika: " + (error.message || error), false);
       }
@@ -623,6 +643,7 @@
 
   async function renderUsers() {
     if (!isUsersPage()) return;
+    closeUsersModals();
     const area = getPanelArea();
     if (area) area.innerHTML = `<section class="bm-page-card"><h2>Użytkownicy</h2><p>Ładowanie użytkowników z Supabase...</p></section>`;
     try {
