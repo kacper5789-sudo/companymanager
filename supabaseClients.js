@@ -221,21 +221,47 @@
       if (input.dataset.cmClientPickerReady === '1') return;
       input.dataset.cmClientPickerReady = '1';
       input.classList.add('cm-date-input');
+
+      const field = input.closest('.cm-client-date-field');
+      const button = field ? field.querySelector('.cm-client-date-button') : null;
+
       const openPicker = () => {
+        if (input.disabled || input.readOnly) return;
         try {
-          if (typeof input.showPicker === 'function' && !input.disabled && !input.readOnly) {
+          input.focus({ preventScroll: true });
+        } catch (err) {
+          input.focus();
+        }
+        try {
+          if (typeof input.showPicker === 'function') {
             input.showPicker();
+            return;
           }
         } catch (err) {}
+        input.click();
       };
-      input.addEventListener('click', openPicker);
-      input.addEventListener('focus', openPicker);
+
+      input.addEventListener('click', () => {
+        try {
+          if (typeof input.showPicker === 'function') input.showPicker();
+        } catch (err) {}
+      });
+
       input.addEventListener('keydown', (event) => {
         if (event.key === 'Enter' || event.key === ' ') {
           event.preventDefault();
           openPicker();
         }
       });
+
+      if (button) {
+        button.addEventListener('mousedown', (event) => event.preventDefault());
+        button.addEventListener('click', (event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          openPicker();
+        });
+      }
     });
   }
 
@@ -257,7 +283,7 @@
       <label>Skąd klient wie o firmie<input name="source" placeholder="np. Google, Facebook, polecenie" value="${escapeHtml(customer.source || "")}"></label>
       <label>Zgoda na reklamę — SMS<select name="marketingSms">${yesNoOptions.map((v) => `<option value="${v}" ${boolToTakNie(customer.marketing_sms) === v ? "selected" : ""}>${v}</option>`).join("")}</select></label>
       <label>Zgoda na reklamę — Email<select name="marketingEmail">${yesNoOptions.map((v) => `<option value="${v}" ${boolToTakNie(customer.marketing_email) === v ? "selected" : ""}>${v}</option>`).join("")}</select></label>
-      <label>Dzień, miesiąc i rok urodzin<input name="birthDate" type="date" value="${escapeHtml(customer.birth_date || "")}"></label>
+      <label class="cm-client-date-label">Dzień, miesiąc i rok urodzin<span class="cm-client-date-field"><input name="birthDate" type="date" value="${escapeHtml(customer.birth_date || "")}" aria-label="Dzień, miesiąc i rok urodzin"><button type="button" class="cm-client-date-button" aria-label="Otwórz kalendarz">▦</button></span></label>
       <label class="full">Ważna informacja<textarea name="importantInfo" placeholder="Ważna informacja">${escapeHtml(customer.notes || "")}</textarea></label>
     `;
   }
