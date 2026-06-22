@@ -92,6 +92,16 @@
     return h * 60 + m;
   }
 
+
+  function combineDateTimeIso(dateValue, timeValue) {
+    const date = String(dateValue || "").slice(0, 10);
+    const time = normalizeTime(timeValue);
+    if (!date || !time) return null;
+    const localDate = new Date(`${date}T${time}:00`);
+    if (Number.isNaN(localDate.getTime())) return `${date}T${time}:00`;
+    return localDate.toISOString();
+  }
+
   function customerName(customer) {
     return [customer?.first_name, customer?.last_name].filter(Boolean).join(" ") || customer?.full_name || customer?.name || customer?.email || "-";
   }
@@ -209,7 +219,7 @@
     const [appointmentsRes, clientsRes, servicesRes, productsRes, usersRes] = await Promise.all([
       window.cmSupabase
         .from("appointments")
-        .select("id, company_id, date, time, start_time, end_time, customer_id, client_id, employee_id, service_id, position_id, product_id, status, deleted, note, price, total, payment_method, cancellation_reason, cancelled_at, created_at, updated_at")
+        .select("id, company_id, date, time, start_time, end_time, customer_id, client_id, employee_id, service_id, position_id, product_id, status, deleted, note, price, total, payment_method, cancellation_reason, cancelled_at, starts_at, ends_at, appointment_datetime, created_at, updated_at")
         .eq("company_id", ctx.companyId)
         .order("date", { ascending: true })
         .order("start_time", { ascending: true }),
@@ -244,10 +254,10 @@
     };
   }
 
-  function appointmentDate(item) { return item.date || String(item.created_at || "").slice(0, 10); }
-  function appointmentStart(item) { return normalizeTime(item.start_time || item.time || "06:00"); }
+  function appointmentDate(item) { return item.date || String(item.starts_at || item.appointment_datetime || item.created_at || "").slice(0, 10); }
+  function appointmentStart(item) { return normalizeTime(item.start_time || item.time || item.starts_at || item.appointment_datetime || "06:00"); }
   function appointmentEnd(item) {
-    const direct = normalizeTime(item.end_time);
+    const direct = normalizeTime(item.end_time || item.ends_at);
     if (direct) return direct;
     const start = minutesFromTime(appointmentStart(item));
     if (start == null) return "06:05";
@@ -327,22 +337,29 @@
     const start = normalizeTime(formData.get("start"));
     const end = normalizeTime(formData.get("end"));
     const clientId = String(formData.get("customerId") || "").trim();
+    const date = String(formData.get("date") || "").trim();
+    const startsAt = combineDateTimeIso(date, start);
+    const endsAt = combineDateTimeIso(date, end);
+    const total = Number(String(formData.get("total") || "0").replace(",", ".")) || 0;
     return {
       company_id: ctx.companyId,
-      date: String(formData.get("date") || "").trim(),
+      date,
       time: start || null,
       start_time: start || null,
       end_time: end || null,
+      starts_at: startsAt,
+      ends_at: endsAt,
+      appointment_datetime: startsAt,
       customer_id: clientId || null,
       client_id: clientId || null,
       employee_id: String(formData.get("employeeId") || "").trim() || null,
       service_id: serviceId || null,
       product_id: productId || null,
-      status: String(formData.get("status") || "zaplanowane").trim(),
+      status: String(formData.get("status") || "zaplanowane").trim() || "zaplanowane",
       deleted: false,
       note: String(formData.get("note") || "").trim() || null,
-      price: Number(String(formData.get("total") || "0").replace(",", ".")) || 0,
-      total: Number(String(formData.get("total") || "0").replace(",", ".")) || 0,
+      price: total,
+      total,
       payment_method: String(formData.get("payment") || "gotówka").trim(),
       updated_at: new Date().toISOString()
     };
