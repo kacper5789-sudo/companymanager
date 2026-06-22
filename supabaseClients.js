@@ -1,5 +1,5 @@
 // CompanyManager — Clients Module powered by Supabase
-// 029B: zakładka Klienci czyta/dodaje/usuwa dane z public.clients zamiast localStorage.
+// 029C: Klienci pełny CRUD Supabase: lista / dodaj / edytuj / usuń + company_id isolation + permission guard.
 
 (function () {
   function isCustomersPage() {
@@ -37,6 +37,72 @@
     return document.querySelector(".bm-panel-area") || document.getElementById("dashboardRoot");
   }
 
+  function normalizeRole(role) {
+    return String(role || "").trim().toUpperCase();
+  }
+
+  function normalizePermissions(raw) {
+    if (!raw) return {};
+    if (Array.isArray(raw)) {
+      return raw.reduce((acc, item) => {
+        acc[String(item)] = true;
+        return acc;
+      }, {});
+    }
+    if (typeof raw === "object") return raw;
+    try {
+      const parsed = JSON.parse(raw);
+      return normalizePermissions(parsed);
+    } catch (_) {
+      return {};
+    }
+  }
+
+  function hasAnyPermission(ctx, keys) {
+    const role = normalizeRole(ctx?.access?.role || ctx?.context?.role);
+    if (role === "OWNER" || role === "ADMIN") return true;
+    const permissions = normalizePermissions(ctx?.access?.permissions || ctx?.context?.permissions);
+    if (permissions.all === true || permissions.admin === true) return true;
+    return keys.some((key) => permissions[key] === true || permissions[key] === "true" || permissions[key] === 1 || permissions[key] === "1");
+  }
+
+  function canOpenClients(ctx) {
+    return hasAnyPermission(ctx, [
+      "open_clients",
+      "open:customers",
+      "customers_open",
+      "klienci",
+      "Klienci"
+    ]);
+  }
+
+  function canAddClients(ctx) {
+    return hasAnyPermission(ctx, [
+      "clients_add",
+      "customers_add",
+      "klienci_add",
+      "klienci (dodawanie, edycja, usuwanie)"
+    ]);
+  }
+
+  function canEditClients(ctx) {
+    return hasAnyPermission(ctx, [
+      "clients_edit",
+      "customers_edit",
+      "klienci_edit",
+      "klienci (dodawanie, edycja, usuwanie)"
+    ]);
+  }
+
+  function canDeleteClients(ctx) {
+    return hasAnyPermission(ctx, [
+      "clients_delete",
+      "customers_delete",
+      "klienci_delete",
+      "klienci (dodawanie, edycja, usuwanie)"
+    ]);
+  }
+
   async function getContext() {
     if (!window.cmSupabase) {
       return { ok: false, message: "Nie załadowano połączenia z Supabase." };
@@ -58,9 +124,14 @@
       };
     }
 
+    const ctx = { ok: true, access, context, companyId: context.company_id };
+    if (!canOpenClients(ctx)) {
+      return { ok: false, message: "Brak uprawnienia do otwierania zakładki Klienci." };
+    }
+
     localStorage.setItem("cm_access", JSON.stringify(access));
     localStorage.setItem("cm_effective_company", JSON.stringify(context));
-    return { ok: true, access, context, companyId: context.company_id };
+    return ctx;
   }
 
   function table(headers, rows, emptyText) {
@@ -88,6 +159,10 @@
   function clientName(client) {
     const joined = `${client.first_name || ""} ${client.last_name || ""}`.trim();
     return joined || client.full_name || "-";
+  }
+
+  function clientOptionLabel(client) {
+    return [clientName(client), client.phone, client.email].filter(Boolean).join(" — ");
   }
 
   function getCustomerRows(customers) {
@@ -137,15 +212,89 @@
     }
 
     renderContent(ctx, customers || []);
+    setupClientNativeDatePickers();
+  }
+
+
+  function setupClientNativeDatePickers() {
+    document.querySelectorAll('.customers-module input[type="date"]').forEach((input) => {
+      if (input.dataset.cmClientPickerReady === '1') return;
+      input.dataset.cmClientPickerReady = '1';
+      input.classList.add('cm-date-input');
+      const openPicker = () => {
+        try {
+          if (typeof input.showPicker === 'function' && !input.disabled && !input.readOnly) {
+            input.showPicker();
+          }
+        } catch (err) {}
+      };
+      input.addEventListener('click', openPicker);
+      input.addEventListener('focus', openPicker);
+      input.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          openPicker();
+        }
+      });
+    });
+  }
+
+  function customerFormFields(prefix, customer = {}) {
+    const genderOptions = ["kobieta", "mężczyzna"];
+    const statusOptions = ["aktywny", "nieaktywny"];
+    const yesNoOptions = ["tak", "nie"];
+    const status = customer.active === false ? "nieaktywny" : "aktywny";
+    return `
+      <label>Imię<input name="firstName" placeholder="Imię" value="${escapeHtml(customer.first_name || "")}" required></label>
+      <label>Nazwisko<input name="lastName" placeholder="Nazwisko" value="${escapeHtml(customer.last_name || "")}" required></label>
+      <label>Płeć<select name="gender" required>${genderOptions.map((g) => `<option value="${g}" ${String(customer.gender || "") === g ? "selected" : ""}>${g}</option>`).join("")}</select></label>
+      <label>Telefon<input name="phone" placeholder="Telefon" value="${escapeHtml(customer.phone || "")}" required></label>
+      <label>Email<input name="email" type="email" placeholder="email@firma.pl" value="${escapeHtml(customer.email || "")}"></label>
+      <label>Adres<input name="address" placeholder="Adres" value="${escapeHtml(customer.address || "")}"></label>
+      <label>Kod pocztowy<input name="postalCode" placeholder="XX-XXX" value="${escapeHtml(customer.postal_code || "")}"></label>
+      <label>Miejscowość<input name="city" placeholder="Miejscowość" value="${escapeHtml(customer.city || "")}"></label>
+      <label>Status<select name="status">${statusOptions.map((item) => `<option value="${item}" ${status === item ? "selected" : ""}>${item}</option>`).join("")}</select></label>
+      <label>Skąd klient wie o firmie<input name="source" placeholder="np. Google, Facebook, polecenie" value="${escapeHtml(customer.source || "")}"></label>
+      <label>Zgoda na reklamę — SMS<select name="marketingSms">${yesNoOptions.map((v) => `<option value="${v}" ${boolToTakNie(customer.marketing_sms) === v ? "selected" : ""}>${v}</option>`).join("")}</select></label>
+      <label>Zgoda na reklamę — Email<select name="marketingEmail">${yesNoOptions.map((v) => `<option value="${v}" ${boolToTakNie(customer.marketing_email) === v ? "selected" : ""}>${v}</option>`).join("")}</select></label>
+      <label>Dzień, miesiąc i rok urodzin<input name="birthDate" type="date" value="${escapeHtml(customer.birth_date || "")}"></label>
+      <label class="full">Ważna informacja<textarea name="importantInfo" placeholder="Ważna informacja">${escapeHtml(customer.notes || "")}</textarea></label>
+    `;
+  }
+
+  function buildPayload(ctx, data) {
+    const firstName = String(data.firstName || "").trim();
+    const lastName = String(data.lastName || "").trim();
+    const phone = String(data.phone || "").trim();
+    return {
+      company_id: ctx.companyId,
+      first_name: firstName,
+      last_name: lastName,
+      full_name: `${firstName} ${lastName}`.trim(),
+      gender: String(data.gender || "").trim(),
+      phone,
+      email: String(data.email || "").trim() || null,
+      address: String(data.address || "").trim() || null,
+      postal_code: String(data.postalCode || "").trim() || null,
+      city: String(data.city || "").trim() || null,
+      source: String(data.source || "").trim() || null,
+      birth_date: String(data.birthDate || "").trim() || null,
+      notes: String(data.importantInfo || "").trim() || null,
+      marketing_sms: takNieToBool(data.marketingSms),
+      marketing_email: takNieToBool(data.marketingEmail),
+      active: String(data.status || "aktywny") !== "nieaktywny",
+      updated_at: new Date().toISOString()
+    };
   }
 
   function renderContent(ctx, customers) {
     const area = getPanelArea();
     if (!area) return;
 
-    const genderOptions = ["kobieta", "mężczyzna"];
-    const statusOptions = ["aktywny", "nieaktywny"];
-    const yesNoOptions = ["tak", "nie"];
+    const allowAdd = canAddClients(ctx);
+    const allowEdit = canEditClients(ctx);
+    const allowDelete = canDeleteClients(ctx);
+    const customerOptions = customers.map((client) => `<option value="${escapeHtml(client.id)}">${escapeHtml(clientOptionLabel(client))}</option>`).join("");
 
     area.innerHTML = `
       <section class="bm-page-card customers-module">
@@ -155,8 +304,9 @@
             <button id="exportCustomersBtn" type="button" class="bm-excel-btn">Export</button>
             <button id="importCustomersBtn" type="button" class="bm-excel-btn">Import</button>
             <input id="importCustomersFile" type="file" accept=".xls,.xlsx,.csv" hidden>
-            <button id="showAddCustomer" type="button">Dodaj</button>
-            <button id="showDeleteCustomer" type="button" class="bm-danger-btn">Usuń</button>
+            ${allowAdd ? `<button id="showAddCustomer" type="button">Dodaj</button>` : ""}
+            ${allowEdit ? `<button id="showEditCustomer" type="button">Edytuj</button>` : ""}
+            ${allowDelete ? `<button id="showDeleteCustomer" type="button" class="bm-danger-btn">Usuń</button>` : ""}
           </div>
         </div>
 
@@ -165,7 +315,7 @@
         </div>
 
         <div id="customersTableWrap">
-          ${table(["Imie Nazwisko", "Płeć", "Telefon", "Email", "Aktualizacja", "Ostatnia wizyta", "Ważna informacja", "Status"], getCustomerRows(customers), "Brak klientów w Supabase.")}
+          ${table(["Imię Nazwisko", "Płeć", "Telefon", "Email", "Aktualizacja", "Ostatnia wizyta", "Ważna informacja", "Status"], getCustomerRows(customers), "Brak klientów w Supabase.")}
           ${pagination(customers.length)}
         </div>
         <p id="customersMessage" class="panel-message"></p>
@@ -174,33 +324,28 @@
       <section class="bm-page-card" id="customerFormCard" hidden>
         <h2>Dodaj klienta</h2>
         <form id="customerForm" class="bm-form-grid">
-          <label>Imie<input name="firstName" placeholder="Imie" required></label>
-          <label>Nazwisko<input name="lastName" placeholder="Nazwisko" required></label>
-          <label>Płeć<select name="gender" required>${genderOptions.map((g) => `<option value="${g}">${g}</option>`).join("")}</select></label>
-          <label>Telefon<input name="phone" placeholder="Telefon" required></label>
-          <label>Email<input name="email" type="email" placeholder="email@firma.pl"></label>
-          <label>Adres<input name="address" placeholder="Adres"></label>
-          <label>Kod pocztowy<input name="postalCode" placeholder="XX-XXX"></label>
-          <label>Miejscowość<input name="city" placeholder="Miejscowość"></label>
-          <label>Status<select name="status">${statusOptions.map((status) => `<option value="${status}">${status}</option>`).join("")}</select></label>
-          <label>Skąd klient wie o firmie<input name="source" placeholder="np. Google, Facebook, polecenie"></label>
-          <label>Zgoda na reklamę — SMS<select name="marketingSms">${yesNoOptions.map((v) => `<option value="${v}">${v}</option>`).join("")}</select></label>
-          <label>Zgoda na reklamę — Email<select name="marketingEmail">${yesNoOptions.map((v) => `<option value="${v}">${v}</option>`).join("")}</select></label>
-          <label>Dzień, miesiąc i rok urodzin<input name="birthDate" type="date"></label>
-          <label class="full">Ważna informacja<textarea name="importantInfo" placeholder="Ważna informacja"></textarea></label>
+          ${customerFormFields("add")}
           <button type="submit">Zapisz klienta</button>
         </form>
         <p id="customerFormMessage" class="panel-message"></p>
       </section>
 
+      <section class="bm-page-card" id="customerEditCard" hidden>
+        <h2>Edytuj klienta</h2>
+        <form id="customerEditSelectForm" class="bm-form-grid">
+          <label class="full">Wybierz klienta<select name="clientId" required><option value="">Wybierz...</option>${customerOptions}</select></label>
+        </form>
+        <form id="customerEditForm" class="bm-form-grid" hidden>
+          ${customerFormFields("edit")}
+          <button type="submit">Zapisz zmiany</button>
+        </form>
+        <p id="customerEditMessage" class="panel-message"></p>
+      </section>
+
       <section class="bm-page-card" id="customerDeleteCard" hidden>
         <h2>Usuń klienta</h2>
         <form id="customerDeleteForm" class="bm-form-grid">
-          <label>Imie<input name="firstName" placeholder="Imie"></label>
-          <label>Nazwisko<input name="lastName" placeholder="Nazwisko"></label>
-          <label>Płeć<select name="gender"><option value="">Nie bierz pod uwagę</option>${genderOptions.map((g) => `<option value="${g}">${g}</option>`).join("")}</select></label>
-          <label>Telefon<input name="phone" placeholder="Telefon"></label>
-          <label>Email<input name="email" type="email" placeholder="email@firma.pl"></label>
+          <label class="full">Wybierz klienta<select name="clientId" required><option value="">Wybierz...</option>${customerOptions}</select></label>
           <button type="submit" class="bm-danger-btn">Usuń</button>
         </form>
         <p id="customerDeleteMessage" class="panel-message"></p>
@@ -237,24 +382,57 @@
     const wrap = document.querySelector("#customersTableWrap");
     if (!wrap) return;
     wrap.innerHTML = `
-      ${table(["Imie Nazwisko", "Płeć", "Telefon", "Email", "Aktualizacja", "Ostatnia wizyta", "Ważna informacja", "Status"], getCustomerRows(filtered), "Brak klientów w Supabase.")}
+      ${table(["Imię Nazwisko", "Płeć", "Telefon", "Email", "Aktualizacja", "Ostatnia wizyta", "Ważna informacja", "Status"], getCustomerRows(filtered), "Brak klientów w Supabase.")}
       ${pagination(filtered.length)}
     `;
   }
 
+  function showOnly(cardToShow) {
+    ["#customerFormCard", "#customerEditCard", "#customerDeleteCard"].forEach((selector) => {
+      const card = document.querySelector(selector);
+      if (!card) return;
+      card.hidden = card !== cardToShow ? true : !card.hidden;
+    });
+  }
+
+  function fillForm(form, client) {
+    if (!form || !client) return;
+    form.firstName.value = client.first_name || "";
+    form.lastName.value = client.last_name || "";
+    form.gender.value = client.gender || "kobieta";
+    form.phone.value = client.phone || "";
+    form.email.value = client.email || "";
+    form.address.value = client.address || "";
+    form.postalCode.value = client.postal_code || "";
+    form.city.value = client.city || "";
+    form.status.value = client.active === false ? "nieaktywny" : "aktywny";
+    form.source.value = client.source || "";
+    form.marketingSms.value = boolToTakNie(client.marketing_sms);
+    form.marketingEmail.value = boolToTakNie(client.marketing_email);
+    form.birthDate.value = client.birth_date || "";
+    form.importantInfo.value = client.notes || "";
+  }
+
+  function setMessage(selector, text, ok = true) {
+    const msg = document.querySelector(selector);
+    if (!msg) return;
+    msg.textContent = text;
+    msg.style.color = ok ? "#86efac" : "#fca5a5";
+    msg.style.display = "block";
+  }
+
   function bindActions(ctx, customers) {
     const customerFormCard = document.querySelector("#customerFormCard");
+    const customerEditCard = document.querySelector("#customerEditCard");
     const customerDeleteCard = document.querySelector("#customerDeleteCard");
+    const editSelectForm = document.querySelector("#customerEditSelectForm");
+    const editForm = document.querySelector("#customerEditForm");
+    const customersById = Object.fromEntries(customers.map((client) => [client.id, client]));
+    let selectedEditClientId = "";
 
-    document.querySelector("#showAddCustomer")?.addEventListener("click", () => {
-      if (customerDeleteCard) customerDeleteCard.hidden = true;
-      if (customerFormCard) customerFormCard.hidden = !customerFormCard.hidden;
-    });
-
-    document.querySelector("#showDeleteCustomer")?.addEventListener("click", () => {
-      if (customerFormCard) customerFormCard.hidden = true;
-      if (customerDeleteCard) customerDeleteCard.hidden = !customerDeleteCard.hidden;
-    });
+    document.querySelector("#showAddCustomer")?.addEventListener("click", () => showOnly(customerFormCard));
+    document.querySelector("#showEditCustomer")?.addEventListener("click", () => showOnly(customerEditCard));
+    document.querySelector("#showDeleteCustomer")?.addEventListener("click", () => showOnly(customerDeleteCard));
 
     document.querySelector("#customersSearch")?.addEventListener("input", () => rerenderTable(customers));
 
@@ -262,107 +440,97 @@
       event.preventDefault();
       const form = event.currentTarget;
       const data = Object.fromEntries(new FormData(form).entries());
-      const msg = document.querySelector("#customerFormMessage");
-
       const firstName = String(data.firstName || "").trim();
       const lastName = String(data.lastName || "").trim();
       const phone = String(data.phone || "").trim();
 
       if (!firstName || !lastName || !phone) {
-        if (msg) {
-          msg.textContent = "Uzupełnij wymagane dane klienta.";
-          msg.style.color = "#fca5a5";
-          msg.style.display = "block";
-        }
+        setMessage("#customerFormMessage", "Uzupełnij wymagane dane klienta.", false);
         return;
       }
 
-      const payload = {
-        company_id: ctx.companyId,
-        first_name: firstName,
-        last_name: lastName,
-        gender: String(data.gender || "").trim(),
-        phone,
-        email: String(data.email || "").trim() || null,
-        address: String(data.address || "").trim() || null,
-        postal_code: String(data.postalCode || "").trim() || null,
-        city: String(data.city || "").trim() || null,
-        source: String(data.source || "").trim() || null,
-        birth_date: String(data.birthDate || "").trim() || null,
-        notes: String(data.importantInfo || "").trim() || null,
-        marketing_sms: takNieToBool(data.marketingSms),
-        marketing_email: takNieToBool(data.marketingEmail),
-        active: String(data.status || "aktywny") !== "nieaktywny"
-      };
-
+      const payload = buildPayload(ctx, data);
       const { error } = await window.cmSupabase.from("clients").insert(payload);
       if (error) {
-        if (msg) {
-          msg.textContent = "Błąd zapisu: " + error.message;
-          msg.style.color = "#fca5a5";
-          msg.style.display = "block";
-        }
+        setMessage("#customerFormMessage", "Błąd zapisu: " + error.message, false);
         return;
       }
 
-      if (msg) {
-        msg.textContent = "Klient zapisany w Supabase.";
-        msg.style.color = "#86efac";
-        msg.style.display = "block";
-      }
+      setMessage("#customerFormMessage", "Klient zapisany w Supabase.", true);
       form.reset();
+      await renderCustomers();
+    });
+
+    editSelectForm?.clientId?.addEventListener("change", () => {
+      selectedEditClientId = editSelectForm.clientId.value;
+      const selected = customersById[selectedEditClientId];
+      if (!selected) {
+        if (editForm) editForm.hidden = true;
+        return;
+      }
+      fillForm(editForm, selected);
+      if (editForm) editForm.hidden = false;
+    });
+
+    editForm?.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      if (!selectedEditClientId) {
+        setMessage("#customerEditMessage", "Wybierz klienta do edycji.", false);
+        return;
+      }
+      const data = Object.fromEntries(new FormData(editForm).entries());
+      const firstName = String(data.firstName || "").trim();
+      const lastName = String(data.lastName || "").trim();
+      const phone = String(data.phone || "").trim();
+      if (!firstName || !lastName || !phone) {
+        setMessage("#customerEditMessage", "Uzupełnij wymagane dane klienta.", false);
+        return;
+      }
+
+      const payload = buildPayload(ctx, data);
+      const { error } = await window.cmSupabase
+        .from("clients")
+        .update(payload)
+        .eq("id", selectedEditClientId)
+        .eq("company_id", ctx.companyId);
+
+      if (error) {
+        setMessage("#customerEditMessage", "Błąd edycji: " + error.message, false);
+        return;
+      }
+
+      setMessage("#customerEditMessage", "Klient zaktualizowany w Supabase.", true);
       await renderCustomers();
     });
 
     document.querySelector("#customerDeleteForm")?.addEventListener("submit", async (event) => {
       event.preventDefault();
-      const data = Object.fromEntries(new FormData(event.currentTarget).entries());
-      const msg = document.querySelector("#customerDeleteMessage");
-
-      const criteria = {
-        first_name: String(data.firstName || "").trim(),
-        last_name: String(data.lastName || "").trim(),
-        gender: String(data.gender || "").trim(),
-        phone: String(data.phone || "").trim(),
-        email: String(data.email || "").trim()
-      };
-
-      if (!criteria.first_name && !criteria.last_name && !criteria.gender && !criteria.phone && !criteria.email) {
-        if (msg) {
-          msg.textContent = "Podaj przynajmniej jedną daną klienta do usunięcia.";
-          msg.style.color = "#fca5a5";
-          msg.style.display = "block";
-        }
+      const clientId = String(event.currentTarget.clientId?.value || "").trim();
+      const selected = customersById[clientId];
+      if (!clientId || !selected) {
+        setMessage("#customerDeleteMessage", "Wybierz klienta do usunięcia.", false);
         return;
       }
 
-      let query = window.cmSupabase.from("clients").delete().eq("company_id", ctx.companyId);
-      Object.entries(criteria).forEach(([key, value]) => {
-        if (value) query = query.eq(key, value);
-      });
+      if (!confirm(`Usunąć klienta: ${clientOptionLabel(selected)}?`)) return;
 
-      if (!confirm("Usunąć klientów pasujących do podanych danych?")) return;
+      const { error } = await window.cmSupabase
+        .from("clients")
+        .delete()
+        .eq("id", clientId)
+        .eq("company_id", ctx.companyId);
 
-      const { error } = await query;
       if (error) {
-        if (msg) {
-          msg.textContent = "Błąd usuwania: " + error.message;
-          msg.style.color = "#fca5a5";
-          msg.style.display = "block";
-        }
+        setMessage("#customerDeleteMessage", "Błąd usuwania: " + error.message, false);
         return;
       }
 
-      if (msg) {
-        msg.textContent = "Usunięto pasujących klientów z Supabase.";
-        msg.style.color = "#86efac";
-        msg.style.display = "block";
-      }
+      setMessage("#customerDeleteMessage", "Klient usunięty z Supabase.", true);
       await renderCustomers();
     });
 
     document.querySelector("#exportCustomersBtn")?.addEventListener("click", () => {
-      const headers = ["Imie", "Nazwisko", "Płeć", "Telefon", "Email", "Adres", "Kod pocztowy", "Miejscowość", "Urodziny", "Ważna informacja", "Marketing SMS", "Marketing Email", "Status"];
+      const headers = ["Imię", "Nazwisko", "Płeć", "Telefon", "Email", "Adres", "Kod pocztowy", "Miejscowość", "Urodziny", "Ważna informacja", "Marketing SMS", "Marketing Email", "Status"];
       const rows = customers.map((client) => [
         client.first_name || "",
         client.last_name || "",
@@ -394,11 +562,8 @@
 
     document.querySelector("#importCustomersFile")?.addEventListener("change", (event) => {
       const file = event.target.files && event.target.files[0];
-      const msg = document.querySelector("#customersMessage");
-      if (file && msg) {
-        msg.textContent = `Wybrano plik do importu: ${file.name}. Import danych z pliku podepniemy po stabilizacji modułu klientów.`;
-        msg.style.color = "#86efac";
-        msg.style.display = "block";
+      if (file) {
+        setMessage("#customersMessage", `Wybrano plik do importu: ${file.name}. Import danych z pliku podepniemy po stabilizacji CRUD klientów.`, true);
       }
     });
   }
