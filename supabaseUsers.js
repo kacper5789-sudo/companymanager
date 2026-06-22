@@ -434,23 +434,61 @@
   }
 
   async function rpcCreateCompanyUserCompat(ctx, payload) {
-    // 036K: ADMIN tworzy użytkownika z własnego company_id po stronie SQL,
-    // więc najpierw wołamy stabilną wersję bez p_company_id.
-    // Dopiero OWNER / starszy cache / inne warianty dostają fallback z p_company_id.
-    let result = await window.cmSupabase.rpc("admin_create_company_user", payload);
+    const cleanPayload = cleanUsersRpcPayload({ ...payload, p_company_id: ctx?.companyId || null });
+
+    // 036L: jedna bezpieczna funkcja JSONB. Omija problemy z przeciążonymi RPC,
+    // typami time/uuid i cache PostgREST po wielu poprawkach SQL.
+    let result = await window.cmSupabase.rpc("admin_create_company_user_safe", {
+      p_payload: cleanPayload
+    });
     if (!result.error) return result;
 
     const msg = String(result.error.message || result.error || "");
-    const shouldRetryWithCompany =
-      msg.includes("p_company_id") ||
+    const shouldFallback =
       msg.includes("schema cache") ||
       msg.includes("Could not find the function") ||
-      msg.includes("function public.admin_create_company_user") ||
-      result.error.code === "PGRST202";
+      msg.includes("function public.admin_create_company_user_safe") ||
+      result.error.code === "PGRST202" ||
+      result.status === 404;
 
-    if (!shouldRetryWithCompany) return result;
-    const withCompany = { ...payload, p_company_id: ctx?.companyId || null };
-    return window.cmSupabase.rpc("admin_create_company_user", withCompany);
+    if (!shouldFallback) return result;
+
+    result = await window.cmSupabase.rpc("admin_create_company_user", payload);
+    if (!result.error) return result;
+
+    return window.cmSupabase.rpc("admin_create_company_user", { ...payload, p_company_id: ctx?.companyId || null });
+  }
+
+  function cleanUsersRpcPayload(payload) {
+    const out = { ...(payload || {}) };
+    Object.keys(out).forEach((key) => {
+      if (out[key] === "") out[key] = null;
+    });
+    if (!out.p_login_hours_enabled) {
+      out.p_login_hour_from = null;
+      out.p_login_hour_to = null;
+    }
+    if (out.p_role) out.p_role = String(out.p_role).toUpperCase();
+    return out;
+  }
+
+  async function rpcUpdateCompanyUserSafe(ctx, payload) {
+    const cleanPayload = cleanUsersRpcPayload({ ...payload, p_company_id: ctx?.companyId || null });
+    const result = await window.cmSupabase.rpc("admin_update_company_user_safe", {
+      p_payload: cleanPayload
+    });
+    if (!result.error) return result;
+
+    const msg = String(result.error.message || result.error || "");
+    const shouldFallback =
+      msg.includes("schema cache") ||
+      msg.includes("Could not find the function") ||
+      msg.includes("function public.admin_update_company_user_safe") ||
+      result.error.code === "PGRST202" ||
+      result.status === 404;
+
+    if (!shouldFallback) return result;
+    return window.cmSupabase.rpc("admin_update_company_user", cleanPayload);
   }
 
   function bindEvents(ctx, users, positions) {
@@ -578,7 +616,7 @@
       if (!userId) return setMessage(msg, "Wybierz użytkownika do edycji.", false);
       if (!validatePhone(base.phone)) return setMessage(msg, "Podaj numer telefonu w formacie np. +48321321321.", false);
       try {
-        const { error } = await window.cmSupabase.rpc("admin_update_company_user", {
+        const { error } = await rpcUpdateCompanyUserSafe(ctx, {
           p_user_id: userId,
           ...base.rpcBase
         });
@@ -586,6 +624,7 @@
         setMessage(msg, "Użytkownik zaktualizowany w Supabase.", true);
         setTimeout(renderUsers, 600);
       } catch (error) {
+        console.error("CompanyManager users edit error", error);
         setMessage(msg, "Błąd edycji użytkownika: " + (error.message || error), false);
       }
     });
