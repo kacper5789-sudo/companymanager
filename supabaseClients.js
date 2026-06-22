@@ -217,13 +217,32 @@
 
 
   function setupClientNativeDatePickers() {
-    // Klienci mają używać dokładnie natywnego pola date jak działające moduły lokalne (np. Wizyty).
-    // Nie dokładamy osobnych przycisków ani własnych kalendarzy, bo przykrywają one prawdziwy picker przeglądarki.
-    document.querySelectorAll('.customers-module input[type="date"]').forEach((input) => {
+    // Uwaga: formularze Dodaj/Edytuj są osobnymi sekcjami obok .customers-module,
+    // dlatego nie można ograniczać selektora tylko do .customers-module.
+    // Używamy dokładnie natywnego input[type=date] jak w działających lokalnych Wizytach,
+    // ale podpinamy showPicker po renderze Supabase, bo app.js podpinał pickery przed nadpisaniem widoku klientów.
+    document.querySelectorAll('#customerFormCard input[type="date"], #customerEditCard input[type="date"]').forEach((input) => {
       if (input.dataset.cmClientPickerReady === '1') return;
       input.dataset.cmClientPickerReady = '1';
       input.classList.add('cm-date-input');
       input.style.pointerEvents = 'auto';
+
+      const openPicker = () => {
+        if (input.disabled || input.readOnly) return;
+        try {
+          input.focus({ preventScroll: true });
+        } catch (_) {
+          input.focus();
+        }
+        try {
+          if (typeof input.showPicker === 'function') input.showPicker();
+        } catch (_) {
+          // Fallback: jeśli przeglądarka blokuje showPicker, zostaje natywny focus/click.
+        }
+      };
+
+      input.addEventListener('click', openPicker);
+      input.addEventListener('focus', openPicker);
     });
   }
 
