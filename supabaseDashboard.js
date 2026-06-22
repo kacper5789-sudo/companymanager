@@ -512,15 +512,16 @@
       popover.classList.toggle("is-open", !popover.hidden);
     }
 
-    employeeCountBtn?.addEventListener("click", toggleWorkersPopover);
-
-    // Bezpiecznik po dynamicznym renderze dashboardu: jeżeli app.js / modal layer
-    // przechwyci standardowy listener, klik w (liczba pracowników) nadal otwiera wybór.
+    // Klik w licznik pracowników. Uwaga: używamy tylko jednego handlera w capture,
+    // bo wcześniejsza wersja miała dwa listenery i popover otwierał się oraz natychmiast zamykał.
     document.addEventListener("click", (event) => {
       const target = event.target instanceof Element ? event.target : null;
       const btn = target?.closest?.("#dashEmployeeCount");
       if (!btn) return;
-      toggleWorkersPopover(event);
+      event.preventDefault();
+      event.stopPropagation();
+      if (typeof event.stopImmediatePropagation === "function") event.stopImmediatePropagation();
+      toggleWorkersPopover();
     }, true);
     document.querySelectorAll(".dash-worker-toggle").forEach((input) => {
       input.addEventListener("change", () => updateWorkerVisibility(true));
