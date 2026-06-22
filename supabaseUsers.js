@@ -460,7 +460,6 @@
         const userId = await createAuthUser(email, password, base.fullName);
         const { error } = await window.cmSupabase.rpc("admin_create_company_user", {
           p_user_id: userId,
-          p_company_id: ctx.companyId,
           p_email: email,
           ...base.rpcBase
         });
