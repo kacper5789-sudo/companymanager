@@ -436,27 +436,12 @@
   async function rpcCreateCompanyUserCompat(ctx, payload) {
     const cleanPayload = cleanUsersRpcPayload({ ...payload, p_company_id: ctx?.companyId || null });
 
-    // 036L: jedna bezpieczna funkcja JSONB. Omija problemy z przeciążonymi RPC,
-    // typami time/uuid i cache PostgREST po wielu poprawkach SQL.
-    let result = await window.cmSupabase.rpc("admin_create_company_user_safe", {
+    // 036M: dodawanie użytkownika ma iść WYŁĄCZNIE przez JSON-safe RPC.
+    // Nie wracamy do admin_create_company_user, bo stara funkcja ma inne sygnatury
+    // i powodowała 400/404 oraz wielokrotne próby po stronie frontendu.
+    return window.cmSupabase.rpc("admin_create_company_user_safe", {
       p_payload: cleanPayload
     });
-    if (!result.error) return result;
-
-    const msg = String(result.error.message || result.error || "");
-    const shouldFallback =
-      msg.includes("schema cache") ||
-      msg.includes("Could not find the function") ||
-      msg.includes("function public.admin_create_company_user_safe") ||
-      result.error.code === "PGRST202" ||
-      result.status === 404;
-
-    if (!shouldFallback) return result;
-
-    result = await window.cmSupabase.rpc("admin_create_company_user", payload);
-    if (!result.error) return result;
-
-    return window.cmSupabase.rpc("admin_create_company_user", { ...payload, p_company_id: ctx?.companyId || null });
   }
 
   function cleanUsersRpcPayload(payload) {
@@ -474,21 +459,11 @@
 
   async function rpcUpdateCompanyUserSafe(ctx, payload) {
     const cleanPayload = cleanUsersRpcPayload({ ...payload, p_company_id: ctx?.companyId || null });
-    const result = await window.cmSupabase.rpc("admin_update_company_user_safe", {
+
+    // 036M: edycja również tylko przez JSON-safe RPC. Bez fallbacku na starą funkcję.
+    return window.cmSupabase.rpc("admin_update_company_user_safe", {
       p_payload: cleanPayload
     });
-    if (!result.error) return result;
-
-    const msg = String(result.error.message || result.error || "");
-    const shouldFallback =
-      msg.includes("schema cache") ||
-      msg.includes("Could not find the function") ||
-      msg.includes("function public.admin_update_company_user_safe") ||
-      result.error.code === "PGRST202" ||
-      result.status === 404;
-
-    if (!shouldFallback) return result;
-    return window.cmSupabase.rpc("admin_update_company_user", cleanPayload);
   }
 
   function bindEvents(ctx, users, positions) {
