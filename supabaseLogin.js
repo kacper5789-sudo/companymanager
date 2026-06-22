@@ -18,9 +18,6 @@
 
     localStorage.setItem(LEGACY_SESSION_KEY, JSON.stringify(session));
     localStorage.setItem("cm_access", JSON.stringify(accessData));
-    if (typeof window.cmEnsureLegacySupabaseContext === "function") {
-      window.cmEnsureLegacySupabaseContext(accessData);
-    }
   }
 
   document.addEventListener("DOMContentLoaded", () => {
