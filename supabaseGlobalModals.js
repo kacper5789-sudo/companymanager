@@ -9,6 +9,48 @@
   const BODY_OPEN = 'cm-modal-open';
   const OVERLAY_ID = 'cmGlobalFormOverlay';
 
+
+  function reinitNativeDatePickers(root) {
+    const scope = root && root.querySelectorAll ? root : document;
+    const inputs = [];
+
+    if (scope.matches && scope.matches('input[type="date"]')) inputs.push(scope);
+    scope.querySelectorAll('input[type="date"]').forEach(function (input) { inputs.push(input); });
+
+    inputs.forEach(function (input) {
+      if (!input || input.dataset.cmGlobalDatePickerReady === '1') return;
+      input.dataset.cmGlobalDatePickerReady = '1';
+      input.classList.add('cm-date-input');
+      input.style.pointerEvents = 'auto';
+
+      const openPicker = function () {
+        if (input.disabled || input.readOnly) return;
+        try {
+          input.focus({ preventScroll: true });
+        } catch (_) {
+          try { input.focus(); } catch (__) {}
+        }
+        try {
+          if (typeof input.showPicker === 'function') input.showPicker();
+        } catch (_) {
+          // Przeglądarka może zablokować showPicker poza bezpośrednim kliknięciem.
+          // Wtedy zostaje natywny focus/click bez zmiany UI.
+        }
+      };
+
+      input.addEventListener('click', openPicker);
+      input.addEventListener('pointerdown', function () {
+        window.setTimeout(openPicker, 0);
+      });
+      input.addEventListener('focus', openPicker);
+    });
+  }
+
+  function scheduleDatePickerReinit(root) {
+    window.setTimeout(function () { reinitNativeDatePickers(root || document); }, 0);
+    window.setTimeout(function () { reinitNativeDatePickers(root || document); }, 60);
+  }
+
   function ensureOverlay() {
     let overlay = document.getElementById(OVERLAY_ID);
     if (!overlay) {
@@ -117,6 +159,7 @@
     }
 
     updateState();
+    scheduleDatePickerReinit(targetPanel || document);
   }
 
   function open(targetPanel, panels) {
@@ -133,10 +176,33 @@
       ensureCancelButton(targetPanel);
     }
     updateState();
+    scheduleDatePickerReinit(targetPanel || document);
   }
 
   if (!window.__cmSupabaseGlobalModalsReady) {
     window.__cmSupabaseGlobalModalsReady = true;
+
+    scheduleDatePickerReinit();
+
+    if (typeof MutationObserver !== 'undefined') {
+      let datePickerTimer = null;
+      const observer = new MutationObserver(function (mutations) {
+        let shouldReinit = false;
+        mutations.forEach(function (mutation) {
+          mutation.addedNodes.forEach(function (node) {
+            if (!(node instanceof HTMLElement)) return;
+            if (node.matches && node.matches('input[type="date"]')) shouldReinit = true;
+            if (node.querySelector && node.querySelector('input[type="date"]')) shouldReinit = true;
+          });
+        });
+        if (!shouldReinit) return;
+        window.clearTimeout(datePickerTimer);
+        datePickerTimer = window.setTimeout(function () {
+          reinitNativeDatePickers(document);
+        }, 30);
+      });
+      observer.observe(document.documentElement, { childList: true, subtree: true });
+    }
 
     document.addEventListener('click', function (event) {
       const target = event.target;
@@ -166,4 +232,6 @@
   window.cmHardCloseAllModalPanels = hardCloseAll;
   window.cmUpdateGlobalModalState = updateState;
   window.cmRefreshGlobalModalState = updateState;
+  window.cmReinitNativeDatePickers = reinitNativeDatePickers;
+  window.cmScheduleDatePickerReinit = scheduleDatePickerReinit;
 })();
