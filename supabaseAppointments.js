@@ -503,8 +503,9 @@
       const payload = payloadFromForm(ctx, new FormData(event.currentTarget));
       const validation = validatePayload(payload);
       if (validation) { setMessage("#visitMessage", validation, false); return; }
-      const { error } = await window.cmSupabase.from("appointments").insert(payload);
+      const { data: insertedAppointment, error } = await window.cmSupabase.from("appointments").insert(payload).select("*").single();
       if (error) { setMessage("#visitMessage", "Błąd zapisu wizyty: " + error.message, false); return; }
+      await window.cmUndo?.record({ module: "appointments", actionType: "insert", targetTable: "appointments", targetId: insertedAppointment?.id, afterData: insertedAppointment || payload, companyId: ctx.companyId });
       setMessage("#visitMessage", "Wizyta zapisana w Supabase.", true);
       setTimeout(renderAppointments, 450);
     });
@@ -527,8 +528,10 @@
       const validation = validatePayload(payload);
       if (validation) { setMessage("#visitEditMessage", validation, false); return; }
       delete payload.company_id;
-      const { error } = await window.cmSupabase.from("appointments").update(payload).eq("id", visitId).eq("company_id", ctx.companyId);
+      const beforeVisit = data.appointments.find((item) => String(item.id) === String(visitId)) || null;
+      const { data: updatedAppointment, error } = await window.cmSupabase.from("appointments").update(payload).eq("id", visitId).eq("company_id", ctx.companyId).select("*").single();
       if (error) { setMessage("#visitEditMessage", "Błąd edycji wizyty: " + error.message, false); return; }
+      await window.cmUndo?.record({ module: "appointments", actionType: "update", targetTable: "appointments", targetId: visitId, beforeData: beforeVisit, afterData: updatedAppointment || { ...(beforeVisit || {}), ...payload }, companyId: ctx.companyId });
       setMessage("#visitEditMessage", "Wizyta zaktualizowana w Supabase.", true);
       setTimeout(renderAppointments, 450);
     });
@@ -537,12 +540,17 @@
       if (!allowDelete) { setMessage("#visitDeleteMessage", "Brak uprawnienia do usuwania wizyt.", false); return; }
       const visitId = document.querySelector("#deleteVisitSelect")?.value;
       if (!visitId) { setMessage("#visitDeleteMessage", "Wybierz wizytę do usunięcia.", false); return; }
-      const { error } = await window.cmSupabase
+      const beforeVisit = data.appointments.find((item) => String(item.id) === String(visitId)) || null;
+      const deletePayload = { status: "usunięte", deleted: true, updated_at: new Date().toISOString() };
+      const { data: updatedAppointment, error } = await window.cmSupabase
         .from("appointments")
-        .update({ status: "usunięte", deleted: true, updated_at: new Date().toISOString() })
+        .update(deletePayload)
         .eq("id", visitId)
-        .eq("company_id", ctx.companyId);
+        .eq("company_id", ctx.companyId)
+        .select("*")
+        .single();
       if (error) { setMessage("#visitDeleteMessage", "Błąd usuwania wizyty: " + error.message, false); return; }
+      await window.cmUndo?.record({ module: "appointments", actionType: "update", targetTable: "appointments", targetId: visitId, beforeData: beforeVisit, afterData: updatedAppointment || { ...(beforeVisit || {}), ...deletePayload }, companyId: ctx.companyId });
       setMessage("#visitDeleteMessage", "Wizyta przeniesiona do usuniętych w Supabase.", true);
       setTimeout(renderAppointments, 450);
     });

@@ -309,22 +309,27 @@
       }
       if (id) {
         delete data.company_id;
-        const { error } = await window.cmSupabase
+        const beforePosition = positions.find((item) => String(item.id) === String(id)) || null;
+        const { data: updatedPosition, error } = await window.cmSupabase
           .from("positions")
           .update(data)
           .eq("id", id)
-          .eq("company_id", ctx.companyId);
+          .eq("company_id", ctx.companyId)
+          .select("*")
+          .single();
         if (error) {
           setMessage("#positionMessage", "Błąd edycji stanowiska: " + error.message, false);
           return;
         }
+        await window.cmUndo?.record({ module: "positions", actionType: "update", targetTable: "positions", targetId: id, beforeData: beforePosition, afterData: updatedPosition || { ...(beforePosition || {}), ...data }, companyId: ctx.companyId });
         setMessage("#positionMessage", "Stanowisko zaktualizowane w Supabase.", true);
       } else {
-        const { error } = await window.cmSupabase.from("positions").insert(data);
+        const { data: insertedPosition, error } = await window.cmSupabase.from("positions").insert(data).select("*").single();
         if (error) {
           setMessage("#positionMessage", "Błąd zapisu stanowiska: " + error.message, false);
           return;
         }
+        await window.cmUndo?.record({ module: "positions", actionType: "insert", targetTable: "positions", targetId: insertedPosition?.id, afterData: insertedPosition || data, companyId: ctx.companyId });
         setMessage("#positionMessage", "Stanowisko zapisane w Supabase.", true);
       }
       setTimeout(renderPositions, 450);
@@ -336,6 +341,7 @@
         setMessage("#deletePositionMessage", "Wybierz stanowisko do usunięcia.", false);
         return;
       }
+      const beforePosition = positions.find((item) => String(item.id) === String(id)) || null;
       const { error } = await window.cmSupabase
         .from("positions")
         .delete()
@@ -345,6 +351,7 @@
         setMessage("#deletePositionMessage", "Błąd usuwania stanowiska: " + error.message, false);
         return;
       }
+      await window.cmUndo?.record({ module: "positions", actionType: "delete", targetTable: "positions", targetId: id, beforeData: beforePosition, companyId: ctx.companyId });
       setMessage("#deletePositionMessage", "Stanowisko usunięte z Supabase.", true);
       setTimeout(renderPositions, 450);
     });

@@ -359,8 +359,9 @@
       event.preventDefault();
       const payload = productPayload(ctx, new FormData(event.currentTarget));
       if (!payload.name) { setMessage("#productFormMessage", "Podaj nazwę produktu.", false); return; }
-      const { error } = await window.cmSupabase.from("products").insert(payload);
+      const { data: insertedProduct, error } = await window.cmSupabase.from("products").insert(payload).select("*").single();
       if (error) { setMessage("#productFormMessage", "Błąd zapisu produktu: " + error.message, false); return; }
+      await window.cmUndo?.record({ module: "products", actionType: "insert", targetTable: "products", targetId: insertedProduct?.id, afterData: insertedProduct || payload, companyId: ctx.companyId });
       setMessage("#productFormMessage", "Produkt zapisany w Supabase.", true);
       setTimeout(renderProducts, 450);
     });
@@ -368,8 +369,11 @@
     document.querySelector("#deleteProductBtn")?.addEventListener("click", async () => {
       const productId = document.querySelector("#deleteProductSelect")?.value;
       if (!productId) { setMessage("#productDeleteMessage", "Wybierz produkt do usunięcia.", false); return; }
-      const { error } = await window.cmSupabase.from("products").update({ active: false, updated_at: new Date().toISOString() }).eq("id", productId).eq("company_id", ctx.companyId);
+      const beforeProduct = products.find((item) => String(item.id) === String(productId)) || null;
+      const deletePayload = { active: false, updated_at: new Date().toISOString() };
+      const { data: updatedProduct, error } = await window.cmSupabase.from("products").update(deletePayload).eq("id", productId).eq("company_id", ctx.companyId).select("*").single();
       if (error) { setMessage("#productDeleteMessage", "Błąd usuwania produktu: " + error.message, false); return; }
+      await window.cmUndo?.record({ module: "products", actionType: "update", targetTable: "products", targetId: productId, beforeData: beforeProduct, afterData: updatedProduct || { ...(beforeProduct || {}), ...deletePayload }, companyId: ctx.companyId });
       setMessage("#productDeleteMessage", "Produkt usunięty z listy.", true);
       setTimeout(renderProducts, 450);
     });

@@ -530,8 +530,10 @@
       if (!name) { setMessage("#serviceCategoryMessage", "Wpisz nazwę kategorii.", false); return; }
       const exists = categories.some((category) => String(category.name || "").trim().toLowerCase() === name.toLowerCase());
       if (exists) { setMessage("#serviceCategoryMessage", "Taka kategoria już istnieje.", false); return; }
-      const { error } = await window.cmSupabase.from("service_categories").insert({ company_id: ctx.companyId, name, updated_at: new Date().toISOString() });
+      const categoryPayload = { company_id: ctx.companyId, name, updated_at: new Date().toISOString() };
+      const { data: insertedCategory, error } = await window.cmSupabase.from("service_categories").insert(categoryPayload).select("*").single();
       if (error) { setMessage("#serviceCategoryMessage", "Błąd zapisu kategorii: " + error.message, false); return; }
+      await window.cmUndo?.record({ module: "service_categories", actionType: "insert", targetTable: "service_categories", targetId: insertedCategory?.id, afterData: insertedCategory || categoryPayload, companyId: ctx.companyId });
       setMessage("#serviceCategoryMessage", "Kategoria zapisana w Supabase.", true);
       setTimeout(renderServices, 450);
     });
@@ -542,8 +544,9 @@
       const payload = servicePayload(ctx, formData);
       const validation = validateServicePayload(payload);
       if (validation) { setMessage("#serviceMessage", validation, false); return; }
-      const { error } = await window.cmSupabase.from("services").insert(payload);
+      const { data: insertedService, error } = await window.cmSupabase.from("services").insert(payload).select("*").single();
       if (error) { setMessage("#serviceMessage", "Błąd zapisu usługi: " + error.message, false); return; }
+      await window.cmUndo?.record({ module: "services", actionType: "insert", targetTable: "services", targetId: insertedService?.id, afterData: insertedService || payload, companyId: ctx.companyId });
       setMessage("#serviceMessage", "Usługa zapisana w Supabase.", true);
       setTimeout(renderServices, 450);
     });
@@ -567,8 +570,10 @@
       const validation = validateServicePayload(payload);
       if (validation) { setMessage("#serviceEditMessage", validation, false); return; }
       delete payload.company_id;
-      const { error } = await window.cmSupabase.from("services").update(payload).eq("id", selectedEditServiceId).eq("company_id", ctx.companyId);
+      const beforeService = servicesById[selectedEditServiceId] || null;
+      const { data: updatedService, error } = await window.cmSupabase.from("services").update(payload).eq("id", selectedEditServiceId).eq("company_id", ctx.companyId).select("*").single();
       if (error) { setMessage("#serviceEditMessage", "Błąd edycji usługi: " + error.message, false); return; }
+      await window.cmUndo?.record({ module: "services", actionType: "update", targetTable: "services", targetId: selectedEditServiceId, beforeData: beforeService, afterData: updatedService || { ...(beforeService || {}), ...payload }, companyId: ctx.companyId });
       setMessage("#serviceEditMessage", "Usługa zaktualizowana w Supabase.", true);
       setTimeout(renderServices, 450);
     });
@@ -576,8 +581,10 @@
     document.querySelector("#deleteServiceBtn")?.addEventListener("click", async () => {
       const serviceId = document.querySelector("#deleteServiceSelect")?.value;
       if (!serviceId) { setMessage("#serviceDeleteMessage", "Wybierz usługę do usunięcia.", false); return; }
+      const beforeService = servicesById[serviceId] || null;
       const { error } = await window.cmSupabase.from("services").delete().eq("id", serviceId).eq("company_id", ctx.companyId);
       if (error) { setMessage("#serviceDeleteMessage", "Błąd usuwania usługi: " + error.message, false); return; }
+      await window.cmUndo?.record({ module: "services", actionType: "delete", targetTable: "services", targetId: serviceId, beforeData: beforeService, companyId: ctx.companyId });
       setMessage("#serviceDeleteMessage", "Usługa usunięta z Supabase.", true);
       setTimeout(renderServices, 450);
     });
@@ -585,10 +592,14 @@
     document.querySelector("#deleteServiceCategoryBtn")?.addEventListener("click", async () => {
       const categoryId = document.querySelector("#deleteServiceCategorySelect")?.value;
       if (!categoryId) { setMessage("#serviceDeleteMessage", "Wybierz kategorię do usunięcia.", false); return; }
+      const servicesInCategory = services.filter((item) => String(item.category_id || "") === String(categoryId));
+      const categoryBefore = categories.find((item) => String(item.id) === String(categoryId)) || null;
       const { error: servicesError } = await window.cmSupabase.from("services").delete().eq("category_id", categoryId).eq("company_id", ctx.companyId);
       if (servicesError) { setMessage("#serviceDeleteMessage", "Błąd usuwania usług z kategorii: " + servicesError.message, false); return; }
       const { error } = await window.cmSupabase.from("service_categories").delete().eq("id", categoryId).eq("company_id", ctx.companyId);
       if (error) { setMessage("#serviceDeleteMessage", "Błąd usuwania kategorii: " + error.message, false); return; }
+      await window.cmUndo?.record({ module: "service_categories", actionType: "delete", targetTable: "service_categories", targetId: categoryId, beforeData: categoryBefore, companyId: ctx.companyId });
+      for (const svc of servicesInCategory) await window.cmUndo?.record({ module: "services", actionType: "delete", targetTable: "services", targetId: svc.id, beforeData: svc, companyId: ctx.companyId });
       setMessage("#serviceDeleteMessage", "Kategoria i przypisane usługi zostały usunięte z Supabase.", true);
       setTimeout(renderServices, 450);
     });

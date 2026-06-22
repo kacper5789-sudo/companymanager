@@ -526,12 +526,13 @@
       }
 
       const payload = buildPayload(ctx, data);
-      const { error } = await window.cmSupabase.from("clients").insert(payload);
+      const { data: insertedClient, error } = await window.cmSupabase.from("clients").insert(payload).select("*").single();
       if (error) {
         setMessage("#customerFormMessage", "Błąd zapisu: " + error.message, false);
         return;
       }
 
+      await window.cmUndo?.record({ module: "clients", actionType: "insert", targetTable: "clients", targetId: insertedClient?.id, afterData: insertedClient || payload, companyId: ctx.companyId });
       setMessage("#customerFormMessage", "Klient zapisany w Supabase.", true);
       form.reset();
       await renderCustomers();
@@ -564,17 +565,21 @@
       }
 
       const payload = buildPayload(ctx, data);
-      const { error } = await window.cmSupabase
+      const beforeClient = customersById[selectedEditClientId] || null;
+      const { data: updatedClient, error } = await window.cmSupabase
         .from("clients")
         .update(payload)
         .eq("id", selectedEditClientId)
-        .eq("company_id", ctx.companyId);
+        .eq("company_id", ctx.companyId)
+        .select("*")
+        .single();
 
       if (error) {
         setMessage("#customerEditMessage", "Błąd edycji: " + error.message, false);
         return;
       }
 
+      await window.cmUndo?.record({ module: "clients", actionType: "update", targetTable: "clients", targetId: selectedEditClientId, beforeData: beforeClient, afterData: updatedClient || { ...(beforeClient || {}), ...payload }, companyId: ctx.companyId });
       setMessage("#customerEditMessage", "Klient zaktualizowany w Supabase.", true);
       await renderCustomers();
     });
@@ -601,6 +606,7 @@
         return;
       }
 
+      await window.cmUndo?.record({ module: "clients", actionType: "delete", targetTable: "clients", targetId: clientId, beforeData: selected, companyId: ctx.companyId });
       setMessage("#customerDeleteMessage", "Klient usunięty z Supabase.", true);
       await renderCustomers();
     });
