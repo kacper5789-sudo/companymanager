@@ -347,7 +347,7 @@
       <h2>Dodaj użytkownika</h2>
       <form id="addAdminUserForm" class="bm-form-grid cm-admin-user-form">
         ${userFormHtml("add", null, positions)}
-        <button type="submit">Dodaj użytkownika</button>
+        <button id="submitAddAdminUserBtn" type="button">Dodaj użytkownika</button>
       </form>
       <p id="addAdminUserMessage" class="panel-message"></p>
     </section>
@@ -442,33 +442,63 @@
     editSelect?.addEventListener("change", renderEditFields);
     renderEditFields();
 
-    document.querySelector("#addAdminUserForm")?.addEventListener("submit", async (event) => {
-      event.preventDefault();
-      const form = event.currentTarget;
+    const addForm = document.querySelector("#addAdminUserForm");
+    const addButton = document.querySelector("#submitAddAdminUserBtn");
+    let addUserSubmitting = false;
+
+    async function handleAddUserSubmit(form) {
+      if (!form || addUserSubmitting) return;
       const msg = "#addAdminUserMessage";
       const formData = new FormData(form);
       const email = String(formData.get("email") || "").trim().toLowerCase();
       const password = String(formData.get("password") || "");
       const passwordConfirm = String(formData.get("passwordConfirm") || "");
       const base = formBasePayload(form);
+
       if (!email) return setMessage(msg, "Podaj adres email.", false);
+      if (!base.fullName) return setMessage(msg, "Podaj imię i nazwisko.", false);
       if (!validatePhone(base.phone)) return setMessage(msg, "Podaj numer telefonu w formacie np. +48321321321.", false);
       if (!password || password !== passwordConfirm) return setMessage(msg, "Hasła nie są takie same.", false);
+      if (password.length < 6) return setMessage(msg, "Hasło musi mieć minimum 6 znaków.", false);
       if (users.some((u) => String(u.email || "").toLowerCase() === email)) return setMessage(msg, "Konto z takim e-mailem już istnieje.", false);
+
+      addUserSubmitting = true;
+      if (addButton) addButton.disabled = true;
       try {
         setMessage(msg, "Tworzę konto użytkownika...", true);
         const userId = await createAuthUser(email, password, base.fullName);
         const { error } = await window.cmSupabase.rpc("admin_create_company_user", {
           p_user_id: userId,
           p_email: email,
-          ...base.rpcBase
+          p_full_name: base.fullName,
+          p_phone: base.phone,
+          p_position_id: base.rpcBase.p_position_id,
+          p_role: base.role,
+          p_login_allowed: base.rpcBase.p_login_allowed,
+          p_login_hours_enabled: base.rpcBase.p_login_hours_enabled,
+          p_login_hour_from: base.rpcBase.p_login_hour_from,
+          p_login_hour_to: base.rpcBase.p_login_hour_to,
+          p_permissions: base.role === "ADMIN" ? null : base.permissions
         });
         if (error) throw error;
         setMessage(msg, "Użytkownik dodany do Supabase. Po potwierdzeniu emaila będzie mógł się zalogować.", true);
         setTimeout(renderUsers, 700);
       } catch (error) {
         setMessage(msg, "Błąd dodawania użytkownika: " + (error.message || error), false);
+        addUserSubmitting = false;
+        if (addButton) addButton.disabled = false;
       }
+    }
+
+    addForm?.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      await handleAddUserSubmit(event.currentTarget);
+    });
+
+    addButton?.addEventListener("click", async (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      await handleAddUserSubmit(addForm);
     });
 
     document.querySelector("#editAdminUserForm")?.addEventListener("submit", async (event) => {
