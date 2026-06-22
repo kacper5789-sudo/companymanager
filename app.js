@@ -921,12 +921,61 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
 
+  const getSupabaseAccessSnapshot = () => {
+    try { return JSON.parse(localStorage.getItem('cm_access') || 'null'); } catch { return null; }
+  };
+
+  const buildSupabasePanelUser = (session, access) => {
+    if (!session || session.source !== 'supabase' || !access || access.allowed !== true) return null;
+    const role = String(access.role || session.role || 'EMPLOYEE').toLowerCase();
+    const companyId = access.company_id || session.activeCompanyId || session.companyId || '';
+    return {
+      id: access.user_id || session.userId || access.email || 'supabase_user',
+      login: access.email || session.userId || 'supabase_user',
+      email: access.email || '',
+      fullName: access.full_name || access.name || access.email || 'Użytkownik',
+      phone: access.phone || '',
+      role: role === 'owner' ? 'owner' : role === 'admin' ? 'admin' : 'employee',
+      companyId,
+      positionId: access.position_id || '',
+      permissions: Array.isArray(access.legacy_permissions) ? access.legacy_permissions : [],
+      supabasePermissions: access.permissions || {},
+      source: 'supabase'
+    };
+  };
+
+  const buildSupabasePanelCompany = (db, session, access, user) => {
+    const companyId = user?.companyId || access?.company_id || session?.activeCompanyId || session?.companyId || '';
+    if (!companyId) return null;
+    const existing = (db.companies || []).find(item => item.id === companyId);
+    if (existing) return existing;
+    return {
+      id: companyId,
+      name: access?.company_name || access?.companyName || 'Firma',
+      ownerName: access?.full_name || user?.fullName || '',
+      ownerEmail: access?.email || user?.email || '',
+      plan: access?.package || '',
+      planValidUntil: access?.package_expires_at || '',
+      source: 'supabase'
+    };
+  };
+
   const getCurrentContext = () => {
     const db = loadDatabase(); const session = getSession();
     if (!session) return { db, session:null, user:null, company:null };
-    const user = db.users.find(item => item.id === session.userId);
-    const requestedCompanyId = session.activeCompanyId || session.companyId || user?.companyId;
-    const company = db.companies.find(item => item.id === requestedCompanyId) || db.companies.find(item => item.id === user?.companyId);
+    let user = db.users.find(item => item.id === session.userId);
+    let requestedCompanyId = session.activeCompanyId || session.companyId || user?.companyId;
+    let company = db.companies.find(item => item.id === requestedCompanyId) || db.companies.find(item => item.id === user?.companyId);
+
+    if ((!user || !company) && session.source === 'supabase') {
+      const access = getSupabaseAccessSnapshot();
+      const supabaseUser = buildSupabasePanelUser(session, access);
+      if (supabaseUser) {
+        user = user || supabaseUser;
+        company = company || buildSupabasePanelCompany(db, session, access, user);
+      }
+    }
+
     return { db, session, user, company };
   };
 
