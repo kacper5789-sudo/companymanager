@@ -1,5 +1,5 @@
 // CompanyManager — Sales Reports powered by Supabase
-// 035A: Sprzedaż Supabase: sales / sale_items / payments reports + filters + export.
+// 039J: Sprzedaż Supabase: zaplanowane wizyty widoczne jako nieopłacone i nie liczą się do przychodu.
 
 (function () {
   function isSalesPage() {
@@ -233,7 +233,7 @@
       window.cmSupabase.from("products").select("id, name, category, price").eq("company_id", ctx.companyId),
       window.cmSupabase.from("service_categories").select("id, name").eq("company_id", ctx.companyId),
       window.cmSupabase.rpc("company_users_for_dropdown", { target_company_id: ctx.companyId }),
-      window.cmSupabase.from("appointments").select("id, client_id, client_name, service_id, service_name, product_id, product_name, employee_id, employee_name, payment_method, total, price, starts_at, appointment_datetime, date, start_time, created_at").eq("company_id", ctx.companyId),
+      window.cmSupabase.from("appointments").select("id, client_id, client_name, service_id, service_name, product_id, product_name, employee_id, employee_name, payment_method, payment_status, status, finished, total, price, starts_at, appointment_datetime, date, start_time, created_at").eq("company_id", ctx.companyId),
       window.cmSupabase.from("passes").select("id, company_id, customer_id, buyer_client_id, beneficiary_client_id, employee_id, service_id, service_name, pass_type, sale_id, name, number, sale_date, sale_time, valid_until, payment_method, buyer, customer_name, employee_name, value, remaining, total_units, remaining_units, description, status, active, created_at").eq("company_id", ctx.companyId).eq("active", true).gte("sale_date", fromDate).lte("sale_date", toDate).order("sale_date", { ascending: false })
     ]);
     const errors = [salesRes, itemsRes, paymentsRes, clientsRes, servicesRes, productsRes, categoriesRes, usersRes, appointmentsRes, passesRes].map((res) => res.error).filter(Boolean);
@@ -267,6 +267,21 @@
 
   function employeeDisplayName(userById, employeeId, appointment) {
     return userNameOrEmpty(userById[employeeId]) || appointment?.employee_name || "(brak)";
+  }
+
+
+  function isAppointmentCompleted(appointment) {
+    if (!appointment || !appointment.id) return true;
+    return appointment.finished === true || String(appointment.status || "").toLowerCase() === "zakończone";
+  }
+
+  function paymentLabelForSale(sale, appointment) {
+    if (!isAppointmentCompleted(appointment)) return "usługa jeszcze nie opłacona";
+    return appointment?.payment_method || sale?.payment_status || "paid";
+  }
+
+  function countedRevenue(value, sale, appointment) {
+    return isAppointmentCompleted(appointment) ? Number(value || 0) : 0;
   }
 
   function applySalesFilters() {
@@ -450,6 +465,7 @@
         const clientId = sale.client_id || appointment.client_id || "";
         const catId = service.category_id || "";
         const value = Number(item.total ?? item.total_price ?? item.unit_price ?? sale.total_gross ?? appointment.total ?? appointment.price ?? 0);
+        const revenueValue = countedRevenue(value, sale, appointment);
         return {
           date: sale.created_at || appointment.starts_at || appointment.appointment_datetime || appointment.created_at,
           employeeId,
@@ -461,7 +477,8 @@
           category: categoryById[catId]?.name || service.category || "(brak)",
           name: item.name || item.name_snapshot || service.name || appointment.service_name || "Usługa",
           value,
-          paymentMethod: appointment.payment_method || sale.payment_status || "paid"
+          revenueValue,
+          paymentMethod: paymentLabelForSale(sale, appointment)
         };
       })
       .filter((row) => passesFilter("employees", selectedEmployees, row.employeeId) && passesFilter("serviceCategories", selectedServiceCategories, row.serviceCategoryId) && passesFilter("serviceNames", selectedServiceNames, row.serviceId));
@@ -482,7 +499,9 @@
           customer: clientName(clientById[clientId]) || appointment.client_name || "(brak)",
           name: item.name || item.name_snapshot || product.name || appointment.product_name || "Produkt",
           qty: Number(item.quantity || 1),
-          value: Number(item.total ?? item.total_price ?? 0)
+          value: Number(item.total ?? item.total_price ?? 0),
+          revenueValue: countedRevenue(Number(item.total ?? item.total_price ?? 0), sale, appointment),
+          paymentMethod: paymentLabelForSale(sale, appointment)
         };
       })
       .filter((row) => passesFilter("employees", selectedEmployees, row.employeeId) && passesFilter("productCategories", selectedProductCategories, row.productCategory) && passesFilter("productNames", selectedProductNames, row.productId));
@@ -515,9 +534,10 @@
         employee: employeeDisplayName(userById, employeeId, appointment),
         customer: clientName(clientById[clientId]) || appointment.client_name || "(brak)",
         type: payment.method || appointment.payment_method || "gotówka",
-        value: Number(payment.amount || sale.total_gross || appointment.total || appointment.price || 0)
+        value: isAppointmentCompleted(appointment) ? Number(payment.amount || sale.total_gross || appointment.total || appointment.price || 0) : 0,
+        isPendingAppointment: !!appointment.id && !isAppointmentCompleted(appointment)
       };
-    }).filter((row) => passesFilter("employees", selectedEmployees, row.employeeId) && passesFilter("paymentTypes", selectedPaymentTypes, row.type));
+    }).filter((row) => !row.isPendingAppointment && passesFilter("employees", selectedEmployees, row.employeeId) && passesFilter("paymentTypes", selectedPaymentTypes, row.type));
 
     const passPaymentRowsRaw = passItemsRaw.filter((pass) => !pass.saleId).map((pass) => ({
       date: pass.date,
@@ -536,7 +556,7 @@
         const key = keyFn(row) || "(brak)";
         const current = grouped.get(key) || { count: 0, value: 0 };
         current.count += Number(row.qty || 1);
-        current.value += Number(row.value || 0);
+        current.value += Number((row.revenueValue ?? row.value) || 0);
         grouped.set(key, current);
       });
       return [...grouped.entries()].map(([key, val]) => [key, String(val.count), money(val.value)]).sort((a, b) => Number(b[2]) - Number(a[2]));
@@ -575,14 +595,14 @@
     const paymentTypeFilter = dropdown("paymentTypes", "Typ płatności", paymentTypes.map((p) => ({ value: p, label: p })), selectedPaymentTypes);
 
     const sections = {
-      services: `<h2>Sprzedaż usług</h2>${dateFilters(employeeFilter + serviceCategoryFilter + serviceNameFilter)}${summary("Liczba usług", serviceItemsRaw.length, "Wartość usług", serviceItemsRaw.reduce((s, r) => s + r.value, 0))}${listTools()}${sectionTable(["Data sprzedaży", "Pracownik", "Klient", "Kategoria usługi", "Nazwa usługi", "Wartość", "Płatność"], serviceRows)}`,
-      servicesByName: `<h2>Sprzedaż usług według nazw</h2>${dateFilters(employeeFilter + serviceCategoryFilter + serviceNameFilter)}${summary("Liczba usług", serviceItemsRaw.length, "Wartość usług", serviceItemsRaw.reduce((s, r) => s + r.value, 0))}${listTools()}${sectionTable(["Nazwa", "Liczba", "Wartość PLN"], groupRows(serviceItemsRaw, (r) => r.name))}`,
-      servicesByCategory: `<h2>Sprzedaż usług według kategorii</h2>${dateFilters(employeeFilter + serviceCategoryFilter + serviceNameFilter)}${summary("Liczba usług", serviceItemsRaw.length, "Wartość usług", serviceItemsRaw.reduce((s, r) => s + r.value, 0))}${listTools()}${sectionTable(["Kategoria", "Liczba", "Wartość PLN"], groupRows(serviceItemsRaw, (r) => r.category))}`,
-      servicesByEmployee: `<h2>Sprzedaż usług według pracowników</h2>${dateFilters(employeeFilter + serviceCategoryFilter + serviceNameFilter)}${summary("Liczba usług", serviceItemsRaw.length, "Wartość usług", serviceItemsRaw.reduce((s, r) => s + r.value, 0))}${listTools()}${sectionTable(["Pracownik", "Liczba", "Wartość PLN"], groupRows(serviceItemsRaw, (r) => r.employee))}`,
-      products: `<h2>Sprzedaż produktów</h2>${dateFilters(employeeFilter + productCategoryFilter + productNameFilter)}${summary("Liczba produktów", productItemsRaw.reduce((s, r) => s + r.qty, 0), "Wartość produktów", productItemsRaw.reduce((s, r) => s + r.value, 0))}${listTools()}${sectionTable(["Data sprzedaży", "Pracownik", "Klient", "Kategoria produktu", "Nazwa produktu", "L.szt.", "Wartość"], productRows)}`,
-      productsByName: `<h2>Sprzedaż produktów według nazw</h2>${dateFilters(employeeFilter + productCategoryFilter + productNameFilter)}${summary("Liczba produktów", productItemsRaw.reduce((s, r) => s + r.qty, 0), "Wartość produktów", productItemsRaw.reduce((s, r) => s + r.value, 0))}${listTools()}${sectionTable(["Nazwa", "Liczba", "Wartość PLN"], groupRows(productItemsRaw, (r) => r.name))}`,
-      productsByCategory: `<h2>Sprzedaż produktów według kategorii</h2>${dateFilters(employeeFilter + productCategoryFilter + productNameFilter)}${summary("Liczba produktów", productItemsRaw.reduce((s, r) => s + r.qty, 0), "Wartość produktów", productItemsRaw.reduce((s, r) => s + r.value, 0))}${listTools()}${sectionTable(["Kategoria", "Liczba", "Wartość PLN"], groupRows(productItemsRaw, (r) => r.productCategory))}`,
-      productsByEmployee: `<h2>Sprzedaż produktów według pracowników</h2>${dateFilters(employeeFilter + productCategoryFilter + productNameFilter)}${summary("Liczba produktów", productItemsRaw.reduce((s, r) => s + r.qty, 0), "Wartość produktów", productItemsRaw.reduce((s, r) => s + r.value, 0))}${listTools()}${sectionTable(["Pracownik", "Liczba", "Wartość PLN"], groupRows(productItemsRaw, (r) => r.employee))}`,
+      services: `<h2>Sprzedaż usług</h2>${dateFilters(employeeFilter + serviceCategoryFilter + serviceNameFilter)}${summary("Liczba usług", serviceItemsRaw.length, "Wartość usług", serviceItemsRaw.reduce((s, r) => s + (r.revenueValue ?? r.value), 0))}${listTools()}${sectionTable(["Data sprzedaży", "Pracownik", "Klient", "Kategoria usługi", "Nazwa usługi", "Wartość", "Płatność"], serviceRows)}`,
+      servicesByName: `<h2>Sprzedaż usług według nazw</h2>${dateFilters(employeeFilter + serviceCategoryFilter + serviceNameFilter)}${summary("Liczba usług", serviceItemsRaw.length, "Wartość usług", serviceItemsRaw.reduce((s, r) => s + (r.revenueValue ?? r.value), 0))}${listTools()}${sectionTable(["Nazwa", "Liczba", "Wartość PLN"], groupRows(serviceItemsRaw, (r) => r.name))}`,
+      servicesByCategory: `<h2>Sprzedaż usług według kategorii</h2>${dateFilters(employeeFilter + serviceCategoryFilter + serviceNameFilter)}${summary("Liczba usług", serviceItemsRaw.length, "Wartość usług", serviceItemsRaw.reduce((s, r) => s + (r.revenueValue ?? r.value), 0))}${listTools()}${sectionTable(["Kategoria", "Liczba", "Wartość PLN"], groupRows(serviceItemsRaw, (r) => r.category))}`,
+      servicesByEmployee: `<h2>Sprzedaż usług według pracowników</h2>${dateFilters(employeeFilter + serviceCategoryFilter + serviceNameFilter)}${summary("Liczba usług", serviceItemsRaw.length, "Wartość usług", serviceItemsRaw.reduce((s, r) => s + (r.revenueValue ?? r.value), 0))}${listTools()}${sectionTable(["Pracownik", "Liczba", "Wartość PLN"], groupRows(serviceItemsRaw, (r) => r.employee))}`,
+      products: `<h2>Sprzedaż produktów</h2>${dateFilters(employeeFilter + productCategoryFilter + productNameFilter)}${summary("Liczba produktów", productItemsRaw.reduce((s, r) => s + r.qty, 0), "Wartość produktów", productItemsRaw.reduce((s, r) => s + (r.revenueValue ?? r.value), 0))}${listTools()}${sectionTable(["Data sprzedaży", "Pracownik", "Klient", "Kategoria produktu", "Nazwa produktu", "L.szt.", "Wartość"], productRows)}`,
+      productsByName: `<h2>Sprzedaż produktów według nazw</h2>${dateFilters(employeeFilter + productCategoryFilter + productNameFilter)}${summary("Liczba produktów", productItemsRaw.reduce((s, r) => s + r.qty, 0), "Wartość produktów", productItemsRaw.reduce((s, r) => s + (r.revenueValue ?? r.value), 0))}${listTools()}${sectionTable(["Nazwa", "Liczba", "Wartość PLN"], groupRows(productItemsRaw, (r) => r.name))}`,
+      productsByCategory: `<h2>Sprzedaż produktów według kategorii</h2>${dateFilters(employeeFilter + productCategoryFilter + productNameFilter)}${summary("Liczba produktów", productItemsRaw.reduce((s, r) => s + r.qty, 0), "Wartość produktów", productItemsRaw.reduce((s, r) => s + (r.revenueValue ?? r.value), 0))}${listTools()}${sectionTable(["Kategoria", "Liczba", "Wartość PLN"], groupRows(productItemsRaw, (r) => r.productCategory))}`,
+      productsByEmployee: `<h2>Sprzedaż produktów według pracowników</h2>${dateFilters(employeeFilter + productCategoryFilter + productNameFilter)}${summary("Liczba produktów", productItemsRaw.reduce((s, r) => s + r.qty, 0), "Wartość produktów", productItemsRaw.reduce((s, r) => s + (r.revenueValue ?? r.value), 0))}${listTools()}${sectionTable(["Pracownik", "Liczba", "Wartość PLN"], groupRows(productItemsRaw, (r) => r.employee))}`,
       passes: `<h2>Sprzedaż - karnety</h2>${dateFilters(employeeFilter)}${summary("Liczba szt.", passItemsRaw.length, "Wartość", passItemsRaw.reduce((s, r) => s + r.value, 0))}${listTools()}${sectionTable(["Data sprzedaży", "Pracownik", "Klient", "Wartość", "Notatka"], passRows)}`,
       passesByEmployee: `<h2>Sprzedaż - karnety według pracowników</h2>${dateFilters(employeeFilter)}${summary("Liczba szt.", passItemsRaw.length, "Wartość", passItemsRaw.reduce((s, r) => s + r.value, 0))}${listTools()}${sectionTable(["Pracownik", "Liczba", "Wartość PLN"], groupRows(passItemsRaw, (r) => r.employee))}`,
       payments: `<h2>Płatności</h2>${dateFilters(employeeFilter + paymentTypeFilter)}${summary("Liczba płatności", allPaymentRowsRaw.length, "Wartość płatności", allPaymentRowsRaw.reduce((s, r) => s + r.value, 0))}${listTools()}${sectionTable(["Data sprzedaży", "Pracownik", "Klient", "Typ płatności", "Wartość (PLN)"], paymentRows)}`,
