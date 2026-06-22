@@ -982,7 +982,7 @@ document.addEventListener('DOMContentLoaded', () => {
     appointments_delete: ['wizyty (dodawanie, edycja, zakończenie, usuwanie)', 'wizyty niezakończone (dodawanie, edycja, usuwanie / odwołanie)'],
     appointments_unfinished_history: ['wizyty (niezakończone) - dostęp do historii'],
     appointments_unfinished_manage: ['wizyty niezakończone (dodawanie, edycja, usuwanie / odwołanie)'],
-    appointments_history: ['wizyty - historia (przeglądanie historii wizyt)', 'wizyty (zakończone, zaplanowane, usunięte) - dostęp do historii (tabeli poniżej)'],
+    appointments_history: ['wizyty - historia (przeglądanie historii wizyt)', 'wizyty (zakończone, zaplanowane, odwołane, usunięte) - dostęp do historii (tabeli poniżej)'],
     sales_without_visit_add: ['sprzedaż bez wizyt (dodawanie, edycja, usuwanie)'],
     sales_without_visit_edit: ['sprzedaż bez wizyt (dodawanie, edycja, usuwanie)'],
     sales_without_visit_delete: ['sprzedaż bez wizyt (dodawanie, edycja, usuwanie)'],
@@ -1091,7 +1091,7 @@ document.addEventListener('DOMContentLoaded', () => {
     'dni wolne(dodawanie,edycja,usuwanie)': ['dni wolne (dodawanie)', 'dni wolne (usuwanie, edycja)'],
     'grafik pracy (dodawanie,edycja,usuwanie)': ['grafik pracy (dodawanie)', 'grafik pracy (edycja, usuwanie)'],
     'klienci - historia (przeglądanie historii klientów)': ['klienci - historia (przeglądanie historii klientów - tabeli poniżej)'],
-    'wizyty - historia (przeglądanie historii wizyt)': ['wizyty (niezakończone) - dostęp do historii', 'wizyty (zakończone, zaplanowane, usunięte) - dostęp do historii (tabeli poniżej)'],
+    'wizyty - historia (przeglądanie historii wizyt)': ['wizyty (niezakończone) - dostęp do historii', 'wizyty (zakończone, zaplanowane, odwołane, usunięte) - dostęp do historii (tabeli poniżej)'],
     'wizyty zakończone wczorajsze i wcześniejsze (dodawanie, edycja, usuwanie)': ['wizyty (dodawanie, edycja, zakończenie, usuwanie)'],
     'sprzedaż bez wizyt wczorajsza i wcześniejsza (dodawanie, edycja, usuwanie)': ['sprzedaż bez wizyt (dodawanie, edycja, usuwanie)'],
     'marketing (wysyłka reklamy sms/email)': ['marketing (wysyłka reklamy sms/email/usuń)'],
@@ -1146,7 +1146,7 @@ document.addEventListener('DOMContentLoaded', () => {
     ['wizyty (dodawanie, edycja, zakończenie, usuwanie)', []],
     ['wizyty (niezakończone) - dostęp do historii', ['[data-visit-history="unfinished"]','#showUnfinishedVisitHistory','.visit-unfinished-history-btn']],
     ['wizyty niezakończone (dodawanie, edycja, usuwanie / odwołanie)', ['#dashEditVisitBtn','#dashCancelVisitBtn']],
-    ['wizyty (zakończone, zaplanowane, usunięte) - dostęp do historii (tabeli poniżej)', ['[data-visit-history="all"]','#showVisitHistory','.visit-history-btn','a[href*="history"]']],
+    ['wizyty (zakończone, zaplanowane, odwołane, usunięte) - dostęp do historii (tabeli poniżej)', ['[data-visit-history="all"]','#showVisitHistory','.visit-history-btn','a[href*="history"]']],
     ['sprzedaż bez wizyt (dodawanie, edycja, usuwanie)', ['#showAddWalkin','#showDeleteWalkin','#walkinForm button[type="submit"]','#walkinDeleteForm button[type="submit"]']],
     ['sprzedaż bez wizyt (dostęp do historii - tabeli poniżej)', ['[data-walkin-history]','#showWalkinHistory','.walkin-history-btn']],
     ['marketing (wysyłka reklamy sms/email/usuń)', ['#showMarketingSms','#showMarketingEmail','#showDeleteCampaign','#sendSmsTest','#sendEmailTest','#saveSmsCampaign','#sendSmsCampaign','#saveEmailCampaign','#sendEmailCampaign','#deleteMarketingCampaign']],
@@ -1562,6 +1562,7 @@ document.addEventListener('DOMContentLoaded', () => {
       'niezakończone':'unfinished',
       'zakończone':'completed',
       'zaplanowane':'planned',
+      'odwołane':'cancelled',
       'usunięte':'deleted',
       'Pokaż wizyty:':'Show appointments:',
       'Godzina':'Time',
@@ -1748,7 +1749,7 @@ document.addEventListener('DOMContentLoaded', () => {
     'wizyty (dodawanie, edycja, zakończenie, usuwanie)':'appointments (add, edit, complete, delete)',
     'wizyty (niezakończone) - dostęp do historii':'appointments (unfinished) - history access',
     'wizyty niezakończone (dodawanie, edycja, usuwanie / odwołanie)':'unfinished appointments (add, edit, delete / cancel)',
-    'wizyty (zakończone, zaplanowane, usunięte) - dostęp do historii (tabeli poniżej)':'appointments (completed, planned, deleted) - history access (table below)',
+    'wizyty (zakończone, zaplanowane, odwołane, usunięte) - dostęp do historii (tabeli poniżej)':'appointments (completed, planned, cancelled, deleted) - history access (table below)',
     'sprzedaż bez wizyt (dodawanie, edycja, usuwanie)':'sales without appointments (add, edit, delete)',
     'sprzedaż bez wizyt (dostęp do historii - tabeli poniżej)':'sales without appointments (history access - table below)',
     'marketing (wysyłka reklamy sms/email/usuń)':'marketing (send SMS/email advertising/delete)',
@@ -3090,7 +3091,7 @@ document.addEventListener('DOMContentLoaded', () => {
     'wizyty (dodawanie, edycja, zakończenie, usuwanie)',
     'wizyty (niezakończone) - dostęp do historii',
     'wizyty niezakończone (dodawanie, edycja, usuwanie / odwołanie)',
-    'wizyty (zakończone, zaplanowane, usunięte) - dostęp do historii (tabeli poniżej)',
+    'wizyty (zakończone, zaplanowane, odwołane, usunięte) - dostęp do historii (tabeli poniżej)',
     'sprzedaż bez wizyt (dodawanie, edycja, usuwanie)',
     'sprzedaż bez wizyt (dostęp do historii - tabeli poniżej)',
     'marketing (wysyłka reklamy sms/email/usuń)',
@@ -4109,7 +4110,7 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
 
-  const visitStatusOptions = ['niezakończone','zakończone','zaplanowane','usunięte'];
+  const visitStatusOptions = ['niezakończone','zakończone','zaplanowane','odwołane','usunięte'];
   const formatPolishDate = (isoDate) => {
     const [y,m,d] = String(isoDate || '').split('-');
     if (!y || !m || !d) return escapeHtml(isoDate || '');
@@ -4423,7 +4424,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const visits = (db.visits || []).filter(v => v.companyId === company.id);
     const filteredVisits = visits.filter(v => currentFilter === 'usunięte' ? v.deleted === true || v.status === 'usunięte' : v.deleted !== true && v.status === currentFilter);
     const unfinishedHistoryPermission = 'wizyty (niezakończone) - dostęp do historii';
-    const finishedHistoryPermission = 'wizyty (zakończone, zaplanowane, usunięte) - dostęp do historii (tabeli poniżej)';
+    const finishedHistoryPermission = 'wizyty (zakończone, zaplanowane, odwołane, usunięte) - dostęp do historii (tabeli poniżej)';
     const canViewUnfinishedVisitsHistory = hasSystemPermission(user, unfinishedHistoryPermission);
     const canViewFinishedVisitsHistory = hasSystemPermission(user, finishedHistoryPermission);
     const currentVisitHistoryPermission = currentFilter === 'niezakończone' ? unfinishedHistoryPermission : finishedHistoryPermission;

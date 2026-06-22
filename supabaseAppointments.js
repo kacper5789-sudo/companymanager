@@ -116,7 +116,7 @@
       "wizyty",
       "Wizyty",
       "wizyty (niezakończone) - dostęp do historii",
-      "wizyty (zakończone, zaplanowane, usunięte) - dostęp do historii (tabeli poniżej)"
+      "wizyty (zakończone, zaplanowane, odwołane, usunięte) - dostęp do historii (tabeli poniżej)"
     ]);
   }
 
@@ -394,7 +394,7 @@
     const allowEdit = canEditAppointments(ctx);
     const allowDelete = canDeleteAppointments(ctx);
     const currentFilter = new URLSearchParams(window.location.search).get("status") || "niezakończone";
-    const statuses = ["niezakończone", "zakończone", "zaplanowane", "usunięte"];
+    const statuses = ["niezakończone", "zakończone", "zaplanowane", "odwołane", "usunięte"];
 
     const lookups = {
       clientsById: Object.fromEntries(data.clients.map((item) => [item.id, item])),
