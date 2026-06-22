@@ -458,9 +458,19 @@
     const editPanel = document.querySelector("#editAdminUserPanel");
     const deletePanel = document.querySelector("#deleteAdminUserPanel");
     const panels = [addPanel, editPanel, deletePanel].filter(Boolean);
-    document.querySelector("#showAddAdminUserBtn")?.addEventListener("click", () => showOnlyPanel(addPanel, panels));
-    document.querySelector("#showEditAdminUserBtn")?.addEventListener("click", () => showOnlyPanel(editPanel, panels));
-    document.querySelector("#showDeleteAdminUserBtn")?.addEventListener("click", () => showOnlyPanel(deletePanel, panels));
+    let activeUsersFormMode = null;
+    document.querySelector("#showAddAdminUserBtn")?.addEventListener("click", () => {
+      activeUsersFormMode = "add";
+      showOnlyPanel(addPanel, panels);
+    });
+    document.querySelector("#showEditAdminUserBtn")?.addEventListener("click", () => {
+      activeUsersFormMode = "edit";
+      showOnlyPanel(editPanel, panels);
+    });
+    document.querySelector("#showDeleteAdminUserBtn")?.addEventListener("click", () => {
+      activeUsersFormMode = "delete";
+      showOnlyPanel(deletePanel, panels);
+    });
 
     const editFields = document.querySelector("#editAdminUserFields");
     const editSelect = document.querySelector("#editAdminUserSelect");
@@ -484,11 +494,13 @@
       addButton.addEventListener("click", async (event) => {
         event.preventDefault();
         event.stopPropagation();
+        if (typeof event.stopImmediatePropagation === "function") event.stopImmediatePropagation();
+        activeUsersFormMode = "add";
         try {
           if (addForm && typeof addForm.reportValidity === "function" && !addForm.reportValidity()) return;
           await handleAddUserSubmit(addForm);
         } catch (error) {
-          setMessage("#addAdminUserMessage", "Błąd przycisku Dodaj użytkownika: " + (error.message || error), false);
+          setMessage("#addAdminUserMessage", "Błąd dodawania użytkownika: " + (error.message || error), false);
           console.error("CompanyManager users add button error", error);
         }
       }, true);
@@ -513,8 +525,9 @@
       addUserSubmitting = true;
       if (addButton) addButton.disabled = true;
       try {
-        setMessage(msg, "Tworzę konto użytkownika...", true);
+        setMessage(msg, "Dodawanie użytkownika: tworzę konto Auth...", true);
         const userId = await createAuthUser(email, password, base.fullName);
+        setMessage(msg, "Dodawanie użytkownika: zapisuję profil w firmie...", true);
         const { error } = await rpcCreateCompanyUserCompat(ctx, {
           p_user_id: userId,
           p_email: email,
@@ -540,13 +553,20 @@
 
     addForm?.addEventListener("submit", async (event) => {
       event.preventDefault();
+      event.stopPropagation();
+      if (typeof event.stopImmediatePropagation === "function") event.stopImmediatePropagation();
+      activeUsersFormMode = "add";
       await handleAddUserSubmit(event.currentTarget);
-    });
+    }, true);
 
 
     document.querySelector("#editAdminUserForm")?.addEventListener("submit", async (event) => {
       event.preventDefault();
+      event.stopPropagation();
       const form = event.currentTarget;
+      if (activeUsersFormMode !== "edit" || !editPanel || editPanel.hidden) {
+        return;
+      }
       const msg = "#editAdminUserMessage";
       const userId = String(new FormData(form).get("userId") || "");
       const base = formBasePayload(form);
