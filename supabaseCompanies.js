@@ -66,10 +66,10 @@
     const access = await requireOwner(root);
     if (!access) return;
 
-    const [{ data: companies, error: companiesError }, { data: requests, error: requestsError }] = await Promise.all([
-      window.cmSupabase.rpc("owner_list_companies"),
-      window.cmSupabase..rpc("owner_list_registration_requests")
-    ]);
+  const [{ data: companies, error: companiesError }, { data: requests, error: requestsError }] = await Promise.all([
+  window.cmSupabase.rpc("owner_list_companies"),
+  window.cmSupabase.rpc("owner_list_registration_requests")
+]);
 
     if (companiesError || requestsError) {
       root.innerHTML = `<section class="bm-page-card"><h2>Błąd</h2><p>${escapeHtml(companiesError?.message || requestsError?.message)}</p></section>`;
