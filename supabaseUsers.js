@@ -434,23 +434,23 @@
   }
 
   async function rpcCreateCompanyUserCompat(ctx, payload) {
-    // 036I: kompatybilność z dwiema wersjami RPC:
-    // - starsza: admin_create_company_user(p_user_id, p_email, ...)
-    // - nowsza: admin_create_company_user(p_user_id, p_company_id, p_email, ...)
-    // ADMIN nie potrzebuje p_company_id, ale OWNER może go potrzebować.
-    const withCompany = { p_company_id: ctx?.companyId || null, ...payload };
-    let result = await window.cmSupabase.rpc("admin_create_company_user", withCompany);
+    // 036K: ADMIN tworzy użytkownika z własnego company_id po stronie SQL,
+    // więc najpierw wołamy stabilną wersję bez p_company_id.
+    // Dopiero OWNER / starszy cache / inne warianty dostają fallback z p_company_id.
+    let result = await window.cmSupabase.rpc("admin_create_company_user", payload);
     if (!result.error) return result;
 
     const msg = String(result.error.message || result.error || "");
-    const shouldRetryWithoutCompany =
+    const shouldRetryWithCompany =
       msg.includes("p_company_id") ||
       msg.includes("schema cache") ||
       msg.includes("Could not find the function") ||
-      msg.includes("function public.admin_create_company_user");
+      msg.includes("function public.admin_create_company_user") ||
+      result.error.code === "PGRST202";
 
-    if (!shouldRetryWithoutCompany) return result;
-    return window.cmSupabase.rpc("admin_create_company_user", payload);
+    if (!shouldRetryWithCompany) return result;
+    const withCompany = { ...payload, p_company_id: ctx?.companyId || null };
+    return window.cmSupabase.rpc("admin_create_company_user", withCompany);
   }
 
   function bindEvents(ctx, users, positions) {
@@ -496,6 +496,7 @@
         event.stopPropagation();
         if (typeof event.stopImmediatePropagation === "function") event.stopImmediatePropagation();
         activeUsersFormMode = "add";
+        if (addUserSubmitting) return;
         try {
           if (addForm && typeof addForm.reportValidity === "function" && !addForm.reportValidity()) return;
           await handleAddUserSubmit(addForm);
@@ -545,7 +546,11 @@
         setMessage(msg, "Użytkownik dodany do Supabase. Po potwierdzeniu emaila będzie mógł się zalogować.", true);
         setTimeout(renderUsers, 700);
       } catch (error) {
-        setMessage(msg, "Błąd dodawania użytkownika: " + (error.message || error), false);
+        const rawMessage = String(error.message || error || "");
+        const friendlyMessage = rawMessage.includes("429") || rawMessage.toLowerCase().includes("rate")
+          ? "Supabase Auth chwilowo zablokował tworzenie kont po zbyt wielu próbach. Odczekaj kilka minut i kliknij tylko raz."
+          : rawMessage;
+        setMessage(msg, "Błąd dodawania użytkownika: " + friendlyMessage, false);
         addUserSubmitting = false;
         if (addButton) addButton.disabled = false;
       }
