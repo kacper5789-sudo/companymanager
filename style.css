@@ -4118,7 +4118,7 @@ button[data-registration-reject]{
 }
 
 
-/* CompanyManager v2.5 — Clients native date picker button fix */
+/* CompanyManager 029J — Clients: restore one real native calendar icon */
 .customers-module .cm-client-date-label {
   display: flex;
   flex-direction: column;
@@ -4133,140 +4133,25 @@ button[data-registration-reject]{
 .customers-module .cm-client-date-field input[type="date"] {
   width: 100%;
   min-height: 42px;
-  padding-right: 52px !important;
+  padding-right: 46px !important;
+  cursor: pointer;
+  color-scheme: dark !important;
+  background-image: none !important;
+}
+
+/* Nadpisuje globalny fake-icon z v0.7.7: w Klientach pokazujemy prawdziwą ikonkę przeglądarki. */
+.customers-module .cm-client-date-field input[type="date"]::-webkit-calendar-picker-indicator {
+  opacity: 1 !important;
+  display: block !important;
+  visibility: visible !important;
+  cursor: pointer !important;
+  width: 32px !important;
+  height: 32px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  filter: invert(1) brightness(1.5) !important;
 }
 
 .customers-module .cm-client-date-button {
-  position: absolute;
-  right: 8px;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 36px;
-  height: 32px;
-  border: 1px solid rgba(56, 189, 248, .45);
-  border-radius: 10px;
-  background: rgba(37, 99, 235, .28);
-  color: #ffffff;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 18px;
-  line-height: 1;
-  z-index: 3;
-}
-
-.customers-module .cm-client-date-button:hover,
-.customers-module .cm-client-date-button:focus-visible {
-  background: rgba(37, 99, 235, .55);
-  outline: none;
-}
-
-/* CompanyManager 029I — Klienci: jeden stabilny kalendarz inline w Dodaj/Edytuj */
-.customers-module .cm-client-date-label {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.customers-module .cm-client-date-field {
-  position: relative;
-  display: block;
-  width: 100%;
-  overflow: visible;
-}
-
-.customers-module .cm-client-birthdate-input {
-  width: 100%;
-  min-height: 42px;
-  cursor: pointer;
-  padding-right: 44px !important;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='22' height='22' viewBox='0 0 24 24' fill='none' stroke='%23ffffff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='4' width='18' height='18' rx='2'/%3E%3Cpath d='M16 2v4M8 2v4M3 10h18'/%3E%3C/svg%3E") !important;
-  background-repeat: no-repeat !important;
-  background-position: right 12px center !important;
-  background-size: 20px 20px !important;
-}
-
-.customers-module .cm-client-date-dropdown {
-  position: absolute;
-  left: 0;
-  top: calc(100% + 8px);
-  z-index: 2147483000;
-  width: min(320px, 92vw);
-  padding: 12px;
-  border: 1px solid rgba(96, 165, 250, .55);
-  border-radius: 16px;
-  background: linear-gradient(145deg, rgba(15, 23, 42, .99), rgba(2, 6, 23, .99));
-  box-shadow: 0 24px 70px rgba(0, 0, 0, .60), inset 0 1px 0 rgba(255, 255, 255, .07);
-  color: #e5f2ff;
-}
-
-.customers-module .cm-client-date-head,
-.customers-module .cm-client-date-actions {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-}
-
-.customers-module .cm-client-date-head strong {
-  flex: 1;
-  text-align: center;
-  font-size: 14px;
-  font-weight: 950;
-}
-
-.customers-module .cm-client-date-head button,
-.customers-module .cm-client-date-actions button,
-.customers-module .cm-client-date-day {
-  border: 1px solid rgba(96, 165, 250, .35);
-  border-radius: 10px;
-  background: rgba(15, 23, 42, .82);
-  color: #e5f2ff;
-  cursor: pointer;
-}
-
-.customers-module .cm-client-date-head button {
-  width: 34px;
-  height: 32px;
-  font-size: 22px;
-  line-height: 1;
-}
-
-.customers-module .cm-client-date-grid {
-  display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  gap: 6px;
-  margin: 12px 0;
-}
-
-.customers-module .cm-client-date-weekday {
-  text-align: center;
-  font-size: 11px;
-  font-weight: 900;
-  color: #93c5fd;
-  padding-bottom: 3px;
-}
-
-.customers-module .cm-client-date-empty {
-  min-height: 32px;
-}
-
-.customers-module .cm-client-date-day {
-  min-height: 32px;
-  font-weight: 850;
-}
-
-.customers-module .cm-client-date-day:hover,
-.customers-module .cm-client-date-day.is-active,
-.customers-module .cm-client-date-head button:hover,
-.customers-module .cm-client-date-actions button:hover {
-  background: rgba(37, 99, 235, .65);
-  border-color: rgba(147, 197, 253, .82);
-}
-
-.customers-module .cm-client-date-actions button {
-  padding: 8px 10px;
-  font-size: 12px;
-  font-weight: 850;
+  display: none !important;
 }

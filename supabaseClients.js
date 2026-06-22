@@ -216,161 +216,31 @@
   }
 
 
-
-  function isoToDisplayDate(value) {
-    const raw = String(value || '').trim();
-    const match = raw.match(/^(\d{4})-(\d{2})-(\d{2})/);
-    if (!match) return raw;
-    return `${match[3]}.${match[2]}.${match[1]}`;
-  }
-
-  function displayToIsoDate(value) {
-    const raw = String(value || '').trim();
-    if (!raw) return null;
-    const iso = raw.match(/^(\d{4})-(\d{2})-(\d{2})$/);
-    if (iso) return raw;
-    const pl = raw.match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})$/);
-    if (!pl) return null;
-    const day = Number(pl[1]);
-    const month = Number(pl[2]);
-    const year = Number(pl[3]);
-    const date = new Date(year, month - 1, day);
-    if (date.getFullYear() !== year || date.getMonth() !== month - 1 || date.getDate() !== day) return null;
-    return `${year}-${pad2(month)}-${pad2(day)}`;
-  }
   function setupClientNativeDatePickers() {
-    // 029I: własny, stabilny kalendarz inline dla Klienci -> Dodaj/Edytuj.
-    // Nie używamy showPicker(), bo w tej platformie natywny picker bywa blokowany przez CSS/układ.
-    document.removeEventListener('click', handleClientDateClick, true);
-    document.addEventListener('click', handleClientDateClick, true);
-  }
+    document.querySelectorAll('.customers-module input[type="date"]').forEach((input) => {
+      if (input.dataset.cmClientPickerReady === '1') return;
+      input.dataset.cmClientPickerReady = '1';
+      input.classList.add('cm-date-input');
 
-  function handleClientDateClick(event) {
-    const field = event.target.closest?.('.customers-module .cm-client-date-field');
-    const picker = event.target.closest?.('.cm-client-date-dropdown');
+      const openPicker = () => {
+        if (input.disabled || input.readOnly) return;
+        try { input.focus({ preventScroll: true }); } catch (err) { input.focus(); }
+        try {
+          if (typeof input.showPicker === 'function') input.showPicker();
+        } catch (err) {}
+      };
 
-    if (picker) {
-      handleClientDatePickerAction(event, picker);
-      return;
-    }
-
-    if (field) {
-      event.preventDefault();
-      const input = field.querySelector('input[name="birthDate"]');
-      if (!input) return;
-      openClientInlineDatePicker(field, input);
-      return;
-    }
-
-    closeClientInlineDatePickers();
-  }
-
-  function closeClientInlineDatePickers(exceptField) {
-    document.querySelectorAll('.customers-module .cm-client-date-field').forEach((field) => {
-      if (exceptField && field === exceptField) return;
-      field.querySelectorAll('.cm-client-date-dropdown').forEach((el) => el.remove());
-      field.classList.remove('is-open');
+      input.addEventListener('click', openPicker);
+      input.addEventListener('focus', openPicker);
+      input.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          openPicker();
+        }
+      });
     });
   }
 
-  function openClientInlineDatePicker(field, input, baseDate) {
-    closeClientInlineDatePickers(field);
-
-    const old = field.querySelector('.cm-client-date-dropdown');
-    if (old && !baseDate) {
-      old.remove();
-      field.classList.remove('is-open');
-      return;
-    }
-    if (old) old.remove();
-
-    const selectedIso = displayToIsoDate(input.value) || input.dataset.iso || '';
-    const selected = selectedIso ? new Date(`${selectedIso}T12:00:00`) : null;
-    const view = baseDate || selected || new Date();
-    const year = view.getFullYear();
-    const month = view.getMonth();
-
-    const monthNames = ['Styczeń', 'Luty', 'Marzec', 'Kwiecień', 'Maj', 'Czerwiec', 'Lipiec', 'Sierpień', 'Wrzesień', 'Październik', 'Listopad', 'Grudzień'];
-    const weekDays = ['Pn', 'Wt', 'Śr', 'Cz', 'Pt', 'Sb', 'Nd'];
-    const first = new Date(year, month, 1);
-    const startOffset = (first.getDay() + 6) % 7;
-    const daysInMonth = new Date(year, month + 1, 0).getDate();
-
-    let daysHtml = weekDays.map((d) => `<span class="cm-client-date-weekday">${d}</span>`).join('');
-    for (let i = 0; i < startOffset; i += 1) daysHtml += '<span class="cm-client-date-empty"></span>';
-    for (let day = 1; day <= daysInMonth; day += 1) {
-      const iso = `${year}-${pad2(month + 1)}-${pad2(day)}`;
-      const active = selectedIso === iso ? ' is-active' : '';
-      daysHtml += `<button type="button" class="cm-client-date-day${active}" data-date="${iso}">${day}</button>`;
-    }
-
-    const dropdown = document.createElement('div');
-    dropdown.className = 'cm-client-date-dropdown';
-    dropdown.dataset.year = String(year);
-    dropdown.dataset.month = String(month);
-    dropdown.innerHTML = `
-      <div class="cm-client-date-head">
-        <button type="button" data-client-date-nav="prev" aria-label="Poprzedni miesiąc">‹</button>
-        <strong>${monthNames[month]} ${year}</strong>
-        <button type="button" data-client-date-nav="next" aria-label="Następny miesiąc">›</button>
-      </div>
-      <div class="cm-client-date-grid">${daysHtml}</div>
-      <div class="cm-client-date-actions">
-        <button type="button" data-client-date-action="today">Dzisiaj</button>
-        <button type="button" data-client-date-action="clear">Wyczyść</button>
-      </div>
-    `;
-    field.appendChild(dropdown);
-    field.classList.add('is-open');
-  }
-
-  function handleClientDatePickerAction(event, picker) {
-    const field = picker.closest('.cm-client-date-field');
-    const input = field?.querySelector('input[name="birthDate"]');
-    if (!field || !input) return;
-
-    const year = Number(picker.dataset.year);
-    const month = Number(picker.dataset.month);
-
-    const nav = event.target.closest('[data-client-date-nav]');
-    if (nav) {
-      event.preventDefault();
-      event.stopPropagation();
-      const direction = nav.dataset.clientDateNav === 'prev' ? -1 : 1;
-      openClientInlineDatePicker(field, input, new Date(year, month + direction, 1));
-      return;
-    }
-
-    const action = event.target.closest('[data-client-date-action]');
-    if (action) {
-      event.preventDefault();
-      event.stopPropagation();
-      if (action.dataset.clientDateAction === 'today') {
-        const today = new Date();
-        const iso = `${today.getFullYear()}-${pad2(today.getMonth() + 1)}-${pad2(today.getDate())}`;
-        input.value = isoToDisplayDate(iso);
-        input.dataset.iso = iso;
-        input.dispatchEvent(new Event('change', { bubbles: true }));
-      }
-      if (action.dataset.clientDateAction === 'clear') {
-        input.value = '';
-        input.dataset.iso = '';
-        input.dispatchEvent(new Event('change', { bubbles: true }));
-      }
-      closeClientInlineDatePickers();
-      return;
-    }
-
-    const day = event.target.closest('[data-date]');
-    if (day) {
-      event.preventDefault();
-      event.stopPropagation();
-      input.value = isoToDisplayDate(day.dataset.date);
-      input.dataset.iso = day.dataset.date;
-      input.dispatchEvent(new Event('change', { bubbles: true }));
-      closeClientInlineDatePickers();
-    }
-  }
 
   function customerFormFields(prefix, customer = {}) {
     const genderOptions = ["kobieta", "mężczyzna"];
@@ -390,7 +260,7 @@
       <label>Skąd klient wie o firmie<input name="source" placeholder="np. Google, Facebook, polecenie" value="${escapeHtml(customer.source || "")}"></label>
       <label>Zgoda na reklamę — SMS<select name="marketingSms">${yesNoOptions.map((v) => `<option value="${v}" ${boolToTakNie(customer.marketing_sms) === v ? "selected" : ""}>${v}</option>`).join("")}</select></label>
       <label>Zgoda na reklamę — Email<select name="marketingEmail">${yesNoOptions.map((v) => `<option value="${v}" ${boolToTakNie(customer.marketing_email) === v ? "selected" : ""}>${v}</option>`).join("")}</select></label>
-      <label class="cm-client-date-label">Dzień, miesiąc i rok urodzin<span class="cm-client-date-field"><input name="birthDate" type="text" class="cm-client-birthdate-input" value="${escapeHtml(isoToDisplayDate(customer.birth_date || ""))}" data-iso="${escapeHtml(customer.birth_date || "")}" placeholder="dd.mm.rrrr" autocomplete="off" inputmode="none" readonly aria-label="Dzień, miesiąc i rok urodzin"></span></label>
+      <label class="cm-client-date-label">Dzień, miesiąc i rok urodzin<span class="cm-client-date-field"><input name="birthDate" type="date" value="${escapeHtml(customer.birth_date || "")}" aria-label="Dzień, miesiąc i rok urodzin"></span></label>
       <label class="full">Ważna informacja<textarea name="importantInfo" placeholder="Ważna informacja">${escapeHtml(customer.notes || "")}</textarea></label>
     `;
   }
@@ -411,7 +281,7 @@
       postal_code: String(data.postalCode || "").trim() || null,
       city: String(data.city || "").trim() || null,
       source: String(data.source || "").trim() || null,
-      birth_date: displayToIsoDate(data.birthDate) || null,
+      birth_date: String(data.birthDate || "").trim() || null,
       notes: String(data.importantInfo || "").trim() || null,
       marketing_sms: takNieToBool(data.marketingSms),
       marketing_email: takNieToBool(data.marketingEmail),
@@ -542,8 +412,7 @@
     form.source.value = client.source || "";
     form.marketingSms.value = boolToTakNie(client.marketing_sms);
     form.marketingEmail.value = boolToTakNie(client.marketing_email);
-    form.birthDate.value = isoToDisplayDate(client.birth_date || "");
-    form.birthDate.dataset.iso = client.birth_date || "";
+    form.birthDate.value = client.birth_date || "";
     form.importantInfo.value = client.notes || "";
   }
 
