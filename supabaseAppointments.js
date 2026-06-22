@@ -278,7 +278,15 @@
     try {
       data = await fetchAll(ctx);
     } catch (error) {
-      area.innerHTML = `<section class="bm-page-card"><h2>Błąd wizyt</h2><p class="panel-message" style="color:#fca5a5">${escapeHtml(error.message || error)}</p></section>`;
+      console.error("CompanyManager appointments Supabase error:", error);
+      const details = error?.message || error?.details || error?.hint || error?.code || JSON.stringify(error, null, 2) || String(error);
+      area.innerHTML = `
+        <section class="bm-page-card">
+          <h2>Błąd wizyt</h2>
+          <p class="panel-message" style="color:#fca5a5;white-space:pre-wrap">${escapeHtml(details)}</p>
+          <pre style="white-space:pre-wrap;background:rgba(15,23,42,.85);border:1px solid rgba(148,163,184,.25);border-radius:12px;padding:12px;color:#fca5a5;overflow:auto;max-height:260px">${escapeHtml(JSON.stringify(error, null, 2))}</pre>
+        </section>
+      `;
       return;
     }
 
