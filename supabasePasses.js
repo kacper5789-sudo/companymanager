@@ -374,7 +374,7 @@
         <h2>Dodaj karnet</h2>
         <form id="addPassForm" class="bm-form-grid bm-wide-form">
           <div class="bm-form-row-2 full"><label>Data i godzina sprzedaży<input name="saleDate" type="date" value="${isoToday()}" required></label><label>Godzina<input name="saleTime" type="time" value="06:00" required></label></div>
-          <label>Sprzedawca<select name="employeeId" required><option value="">Wybierz pracownika</option>${employeeOptions}</select></label>
+          <label>Sprzedawca<select name="employeeId"><option value="">Automatycznie / brak</option>${employeeOptions}</select></label>
           <label>Typ karnetu<select name="passType"><option value="service">Ilościowy / usługowy</option><option value="amount">Kwotowy</option></select></label>
           <label>Kupujący<select name="buyerClientId" required><option value="">Wybierz kupującego</option>${customerOptions}</select></label>
           <label>Osoba korzystająca<select name="beneficiaryClientId" required><option value="">Wybierz osobę korzystającą</option>${customerOptions}</select></label>
@@ -477,7 +477,6 @@
       try {
         const number = await getNextPassNumber(ctx, data.passes.length);
         const payload = passPayload(ctx, new FormData(form), usersById, clientsById, servicesById, number);
-        if (!payload.employee_id) throw new Error("Wybierz sprzedawcę.");
         if (!payload.buyer_client_id) throw new Error("Wybierz kupującego.");
         if (!payload.beneficiary_client_id) throw new Error("Wybierz osobę korzystającą.");
         if (!payload.valid_until) throw new Error("Wybierz datę ważności.");
