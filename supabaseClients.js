@@ -249,7 +249,7 @@
   async function fetchCustomers(companyId) {
     return window.cmSupabase
       .from("clients")
-      .select("id, company_id, first_name, last_name, full_name, gender, phone, email, birth_date, address, city, postal_code, notes, source, marketing_sms, marketing_email, active, tags, total_visits, total_spent, last_visit_at, created_at, updated_at")
+      .select("id, company_id, first_name, last_name, gender, phone, email, birth_date, address, city, postal_code, notes, source, marketing_sms, marketing_email, active, tags, total_visits, total_spent, last_visit_at, created_at, updated_at")
       .eq("company_id", companyId)
       .order("created_at", { ascending: false });
   }
@@ -345,7 +345,6 @@
       company_id: ctx.companyId,
       first_name: firstName,
       last_name: lastName,
-      full_name: `${firstName} ${lastName}`.trim(),
       gender: String(data.gender || "").trim(),
       phone,
       email: String(data.email || "").trim() || null,
