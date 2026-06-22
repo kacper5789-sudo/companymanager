@@ -217,9 +217,12 @@
 
 
   function setupClientNativeDatePickers() {
-    document.querySelectorAll('.customers-module input[name="birthDate"][type="date"]').forEach((input) => {
+    document.querySelectorAll('.customers-module input[type="date"]').forEach((input) => {
       if (input.dataset.cmClientPickerReady === '1') return;
       input.dataset.cmClientPickerReady = '1';
+      input.classList.add('cm-date-input');
+
+      const field = input.closest('.cm-client-date-field');
 
       const openPicker = () => {
         if (input.disabled || input.readOnly) return;
@@ -228,19 +231,25 @@
         } catch (err) {
           input.focus();
         }
-        try {
-          if (typeof input.showPicker === 'function') {
+        if (typeof input.showPicker === 'function') {
+          try {
             input.showPicker();
+          } catch (err) {
+            // Firefox/Safari mogą nie obsługiwać showPicker — wtedy zostaje natywny klik w input.
           }
-        } catch (err) {
-          // Starsze Safari/Firefox otwierają natywny kalendarz tylko przez własną ikonkę input[type=date].
         }
       };
 
-      input.addEventListener('mousedown', () => {
-        // Chrome/Edge: klik w pole lub w prawą ikonkę ma otworzyć natywny picker.
+      const openFromUserAction = (event) => {
+        if (event.type === 'pointerdown' && event.button !== 0) return;
         openPicker();
-      });
+      };
+
+      if (field) {
+        field.addEventListener('pointerdown', openFromUserAction);
+        field.addEventListener('click', openFromUserAction);
+      }
+
       input.addEventListener('keydown', (event) => {
         if (event.key === 'Enter' || event.key === ' ') {
           event.preventDefault();
@@ -268,7 +277,7 @@
       <label>Skąd klient wie o firmie<input name="source" placeholder="np. Google, Facebook, polecenie" value="${escapeHtml(customer.source || "")}"></label>
       <label>Zgoda na reklamę — SMS<select name="marketingSms">${yesNoOptions.map((v) => `<option value="${v}" ${boolToTakNie(customer.marketing_sms) === v ? "selected" : ""}>${v}</option>`).join("")}</select></label>
       <label>Zgoda na reklamę — Email<select name="marketingEmail">${yesNoOptions.map((v) => `<option value="${v}" ${boolToTakNie(customer.marketing_email) === v ? "selected" : ""}>${v}</option>`).join("")}</select></label>
-      <label>Dzień, miesiąc i rok urodzin<input name="birthDate" type="date" value="${escapeHtml(customer.birth_date || "")}" aria-label="Dzień, miesiąc i rok urodzin"></label>
+      <label class="cm-client-date-label">Dzień, miesiąc i rok urodzin<span class="cm-client-date-field"><input name="birthDate" type="date" value="${escapeHtml(customer.birth_date || "")}" aria-label="Dzień, miesiąc i rok urodzin"></span></label>
       <label class="full">Ważna informacja<textarea name="importantInfo" placeholder="Ważna informacja">${escapeHtml(customer.notes || "")}</textarea></label>
     `;
   }

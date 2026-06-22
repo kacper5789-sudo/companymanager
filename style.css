@@ -4117,11 +4117,21 @@ button[data-registration-reject]{
   }
 }
 
+/* CompanyManager 029G — Clients: single native date field click fix */
+.customers-module .cm-client-date-label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
 
+.customers-module .cm-client-date-field {
+  position: relative;
+  display: block;
+}
 
-
-/* CompanyManager — clients date input clean fix: one native calendar only */
-.customers-module input[name="birthDate"][type="date"] {
-  color-scheme: dark !important;
+.customers-module .cm-client-date-field input[type="date"] {
+  width: 100%;
+  min-height: 42px;
   cursor: pointer;
+  padding-right: 44px !important;
 }
