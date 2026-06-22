@@ -224,17 +224,18 @@
   });
 
   async function fetchData(ctx, fromDate, toDate) {
-    const [salesRes, itemsRes, paymentsRes, clientsRes, servicesRes, productsRes, categoriesRes, usersRes] = await Promise.all([
+    const [salesRes, itemsRes, paymentsRes, clientsRes, servicesRes, productsRes, categoriesRes, usersRes, appointmentsRes] = await Promise.all([
       window.cmSupabase.from("sales").select("id, company_id, client_id, appointment_id, employee_id, sale_number, status, total_net, total_tax, total_gross, discount_value, payment_status, note, created_at, updated_at").eq("company_id", ctx.companyId).gte("created_at", `${fromDate}T00:00:00`).lte("created_at", `${toDate}T23:59:59`).order("created_at", { ascending: false }),
-      window.cmSupabase.from("sale_items").select("id, company_id, sale_id, item_type, service_id, product_id, name, quantity, unit_price, discount, total, created_at").eq("company_id", ctx.companyId),
+      window.cmSupabase.from("sale_items").select("id, company_id, sale_id, item_type, service_id, product_id, name, name_snapshot, quantity, unit_price, discount, total, total_price, created_at").eq("company_id", ctx.companyId),
       window.cmSupabase.from("payments").select("id, company_id, sale_id, amount, method, paid_at, created_at").eq("company_id", ctx.companyId).gte("paid_at", `${fromDate}T00:00:00`).lte("paid_at", `${toDate}T23:59:59`).order("paid_at", { ascending: false }),
       window.cmSupabase.from("clients").select("id, first_name, last_name, email, phone, status").eq("company_id", ctx.companyId),
       window.cmSupabase.from("services").select("id, name, category_id, category, price, price_from").eq("company_id", ctx.companyId),
       window.cmSupabase.from("products").select("id, name, category, price").eq("company_id", ctx.companyId),
       window.cmSupabase.from("service_categories").select("id, name").eq("company_id", ctx.companyId),
-      window.cmSupabase.rpc("company_users_for_dropdown", { target_company_id: ctx.companyId })
+      window.cmSupabase.rpc("company_users_for_dropdown", { target_company_id: ctx.companyId }),
+      window.cmSupabase.from("appointments").select("id, client_id, client_name, service_id, service_name, product_id, product_name, employee_id, employee_name, payment_method, total, price, starts_at, appointment_datetime, date, start_time, created_at").eq("company_id", ctx.companyId)
     ]);
-    const errors = [salesRes, itemsRes, paymentsRes, clientsRes, servicesRes, productsRes, categoriesRes, usersRes].map((res) => res.error).filter(Boolean);
+    const errors = [salesRes, itemsRes, paymentsRes, clientsRes, servicesRes, productsRes, categoriesRes, usersRes, appointmentsRes].map((res) => res.error).filter(Boolean);
     if (errors.length) throw errors[0];
     return {
       sales: salesRes.data || [],
@@ -244,7 +245,8 @@
       services: servicesRes.data || [],
       products: productsRes.data || [],
       serviceCategories: categoriesRes.data || [],
-      users: usersRes.data || []
+      users: usersRes.data || [],
+      appointments: appointmentsRes.data || []
     };
   }
 
@@ -390,6 +392,7 @@
     ];
 
     const salesById = Object.fromEntries(data.sales.map((sale) => [sale.id, sale]));
+    const appointmentById = Object.fromEntries((data.appointments || []).map((appointment) => [appointment.id, appointment]));
     const clientById = Object.fromEntries(data.clients.map((client) => [client.id, client]));
     const userById = Object.fromEntries(data.users.map((user) => [user.id, user]));
     const serviceById = Object.fromEntries(data.services.map((service) => [service.id, service]));
@@ -410,6 +413,12 @@
     const selectedProductNames = getSelected(params, "productNames", productOptions.map((o) => o.value));
     const selectedPaymentTypes = getSelected(params, "paymentTypes", paymentTypes);
 
+    // 038: sprzedaż z wizyt może mieć puste employee_id/service_id/category_id,
+    // bo dashboard zachowuje kompatybilność ze starym modelem po nazwach.
+    // Gdy filtr nie jest ręcznie zawężony w URL, nie odcinamy takich rekordów.
+    const filterActive = (name) => params.getAll(name).filter(Boolean).length > 0;
+    const passesFilter = (name, selected, value) => !filterActive(name) || selected.includes(String(value || ""));
+
     const searchNeedle = normalizeText(searchValue);
     const filterBySearch = (rows) => !searchNeedle ? rows : rows.filter((row) => normalizeText(row.join(" ")).includes(searchNeedle));
     const limit = Number(limitValue) || 50;
@@ -420,25 +429,53 @@
       return `${table(headers, filtered.slice(0, limit))}${pager(filtered.length ? 1 : 0, Math.min(limit, filtered.length), filtered.length, 1, Math.ceil(filtered.length / limit))}`;
     };
 
-    const serviceItemsRaw = data.items.filter((item) => String(item.item_type || "").toLowerCase() === "service").map((item) => {
-      const sale = salesById[item.sale_id] || {};
-      const service = serviceById[item.service_id] || {};
-      const catId = service.category_id || "";
-      return {
-        date: sale.created_at, employeeId: sale.employee_id || "", clientId: sale.client_id || "", serviceId: item.service_id || "", serviceCategoryId: catId,
-        employee: userName(userById[sale.employee_id]), customer: clientName(clientById[sale.client_id]), category: categoryById[catId]?.name || service.category || "(brak)",
-        name: item.name || service.name || "(brak)", value: Number(item.total ?? sale.total_gross ?? 0), paymentMethod: sale.payment_status || "paid"
-      };
-    }).filter((row) => selectedEmployees.includes(String(row.employeeId)) && selectedServiceCategories.includes(String(row.serviceCategoryId)) && selectedServiceNames.includes(String(row.serviceId)));
+    const serviceItemsRaw = data.items
+      .filter((item) => String(item.item_type || "").toLowerCase() === "service" && salesById[item.sale_id])
+      .map((item) => {
+        const sale = salesById[item.sale_id] || {};
+        const appointment = appointmentById[sale.appointment_id] || {};
+        const serviceId = item.service_id || appointment.service_id || "";
+        const service = serviceById[serviceId] || {};
+        const employeeId = sale.employee_id || appointment.employee_id || "";
+        const clientId = sale.client_id || appointment.client_id || "";
+        const catId = service.category_id || "";
+        const value = Number(item.total ?? item.total_price ?? item.unit_price ?? sale.total_gross ?? appointment.total ?? appointment.price ?? 0);
+        return {
+          date: sale.created_at || appointment.starts_at || appointment.appointment_datetime || appointment.created_at,
+          employeeId,
+          clientId,
+          serviceId,
+          serviceCategoryId: catId,
+          employee: userName(userById[employeeId]) || appointment.employee_name || "(brak)",
+          customer: clientName(clientById[clientId]) || appointment.client_name || "(brak)",
+          category: categoryById[catId]?.name || service.category || "(brak)",
+          name: item.name || item.name_snapshot || service.name || appointment.service_name || "Usługa",
+          value,
+          paymentMethod: appointment.payment_method || sale.payment_status || "paid"
+        };
+      })
+      .filter((row) => passesFilter("employees", selectedEmployees, row.employeeId) && passesFilter("serviceCategories", selectedServiceCategories, row.serviceCategoryId) && passesFilter("serviceNames", selectedServiceNames, row.serviceId));
 
-    const productItemsRaw = data.items.filter((item) => String(item.item_type || "").toLowerCase() === "product").map((item) => {
-      const sale = salesById[item.sale_id] || {};
-      const product = productById[item.product_id] || {};
-      return {
-        date: sale.created_at, employeeId: sale.employee_id || "", clientId: sale.client_id || "", productId: item.product_id || "", productCategory: product.category || "(brak)",
-        employee: userName(userById[sale.employee_id]), customer: clientName(clientById[sale.client_id]), name: item.name || product.name || "(brak)", qty: Number(item.quantity || 1), value: Number(item.total || 0)
-      };
-    }).filter((row) => selectedEmployees.includes(String(row.employeeId)) && selectedProductCategories.includes(String(row.productCategory)) && selectedProductNames.includes(String(row.productId)));
+    const productItemsRaw = data.items
+      .filter((item) => String(item.item_type || "").toLowerCase() === "product" && salesById[item.sale_id])
+      .map((item) => {
+        const sale = salesById[item.sale_id] || {};
+        const appointment = appointmentById[sale.appointment_id] || {};
+        const productId = item.product_id || appointment.product_id || "";
+        const product = productById[productId] || {};
+        const employeeId = sale.employee_id || appointment.employee_id || "";
+        const clientId = sale.client_id || appointment.client_id || "";
+        return {
+          date: sale.created_at || appointment.starts_at || appointment.appointment_datetime || appointment.created_at,
+          employeeId, clientId, productId, productCategory: product.category || "(brak)",
+          employee: userName(userById[employeeId]) || appointment.employee_name || "(brak)",
+          customer: clientName(clientById[clientId]) || appointment.client_name || "(brak)",
+          name: item.name || item.name_snapshot || product.name || appointment.product_name || "Produkt",
+          qty: Number(item.quantity || 1),
+          value: Number(item.total ?? item.total_price ?? 0)
+        };
+      })
+      .filter((row) => passesFilter("employees", selectedEmployees, row.employeeId) && passesFilter("productCategories", selectedProductCategories, row.productCategory) && passesFilter("productNames", selectedProductNames, row.productId));
 
     const paymentRowsRaw = data.payments.map((payment) => {
       const sale = salesById[payment.sale_id] || {};
@@ -450,7 +487,7 @@
         type: payment.method || "gotówka",
         value: Number(payment.amount || sale.total_gross || 0)
       };
-    }).filter((row) => selectedEmployees.includes(String(row.employeeId)) && selectedPaymentTypes.includes(String(row.type)));
+    }).filter((row) => passesFilter("employees", selectedEmployees, row.employeeId) && passesFilter("paymentTypes", selectedPaymentTypes, row.type));
 
     const groupRows = (rows, keyFn) => {
       const grouped = new Map();
