@@ -100,6 +100,41 @@
   function serviceName(service) { return service?.name || "-"; }
   function productName(product) { return product?.name || "-"; }
 
+  function uniqueUsers(users) {
+    const seen = new Set();
+    const out = [];
+    (users || []).forEach((user) => {
+      const key = String(user?.id || user?.email || "").trim().toLowerCase();
+      if (!key || seen.has(key)) return;
+      seen.add(key);
+      out.push(user);
+    });
+    return out;
+  }
+
+  function workersStateKey(ctx, dateIso) {
+    return `cm_dashboard_active_workers:${ctx.companyId}:${dateIso}`;
+  }
+
+  function loadActiveWorkerIds(ctx, dateIso, users) {
+    const allIds = uniqueUsers(users).map((user) => user.id).filter(Boolean);
+    try {
+      const raw = localStorage.getItem(workersStateKey(ctx, dateIso));
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) {
+          const valid = parsed.filter((id) => allIds.includes(id));
+          if (valid.length) return valid;
+        }
+      }
+    } catch (_) {}
+    return allIds;
+  }
+
+  function saveActiveWorkerIds(ctx, dateIso, ids) {
+    try { localStorage.setItem(workersStateKey(ctx, dateIso), JSON.stringify(ids || [])); } catch (_) {}
+  }
+
   function optionList(items, labelFn, empty = "Brak danych") {
     if (!items.length) return `<option value="">${escapeHtml(empty)}</option>`;
     return items.map((item) => `<option value="${escapeHtml(item.id)}">${escapeHtml(labelFn(item))}</option>`).join("");
@@ -171,7 +206,7 @@
       clients: (clientsRes.data || []).filter((item) => item.status !== "usunięty"),
       services: (servicesRes.data || []).filter((item) => item.active !== false),
       products: (productsRes.data || []).filter((item) => item.active !== false),
-      users: usersRes.data || []
+      users: uniqueUsers(usersRes.data || [])
     };
   }
 
@@ -204,7 +239,7 @@
     };
   }
 
-  function scheduleRows(data, lookups, dateIso) {
+  function scheduleRows(data, lookups, dateIso, activeWorkerIds = []) {
     const active = data.appointments.filter((item) => appointmentDate(item) === dateIso && item.deleted !== true && !["odwołana", "odwołane", "usunięte"].includes(String(item.status || "").toLowerCase()));
     const rows = [];
     for (let hour = 6; hour <= 20; hour += 1) {
@@ -220,7 +255,8 @@
           const end = minutesFromTime(appointmentEnd(item));
           return slotMin != null && start != null && end != null && slotMin >= start && slotMin < end;
         });
-        if (!visit) return `<td class="bm-schedule-slot free" data-employee-id="${escapeHtml(employee.id)}" data-time="${escapeHtml(time)}" data-date="${escapeHtml(dateIso)}"><span>FREE</span></td>`;
+        const inactiveClass = activeWorkerIds.includes(employee.id) ? "" : " inactive-worker";
+        if (!visit) return `<td class="bm-schedule-slot free${inactiveClass}" data-employee-id="${escapeHtml(employee.id)}" data-time="${escapeHtml(time)}" data-date="${escapeHtml(dateIso)}"><span>FREE</span></td>`;
         const client = lookups.clientsById[appointmentClientId(visit)];
         const service = lookups.servicesById[visit.service_id];
         const product = lookups.productsById[visit.product_id];
@@ -235,7 +271,7 @@
           `Pracownik: ${personName(employee)}`,
           `Opis: ${visit.note || "Brak opisu"}`
         ].join("\n");
-        return `<td class="bm-schedule-slot busy" data-visit-id="${escapeHtml(visit.id)}" data-employee-id="${escapeHtml(employee.id)}" data-time="${escapeHtml(time)}" data-date="${escapeHtml(dateIso)}" data-slot-tooltip="${escapeHtml(tooltip)}"><span>${label}</span></td>`;
+        return `<td class="bm-schedule-slot busy${inactiveClass}" data-visit-id="${escapeHtml(visit.id)}" data-employee-id="${escapeHtml(employee.id)}" data-time="${escapeHtml(time)}" data-date="${escapeHtml(dateIso)}" data-slot-tooltip="${escapeHtml(tooltip)}"><span>${label}</span></td>`;
       }).join("");
       return `<tr><th class="bm-time-col">${escapeHtml(time)}</th>${cells}</tr>`;
     }).join("");
@@ -344,9 +380,17 @@
       return [escapeHtml(plDate(appointmentDate(item))), escapeHtml(`${appointmentStart(item)} - ${appointmentEnd(item)}`), escapeHtml(customerName(client)), escapeHtml(personName(employee)), escapeHtml(serviceName(service)), escapeHtml(item.status || "zaplanowane")];
     });
 
+    const activeWorkerIds = loadActiveWorkerIds(ctx, selectedDate, data.users);
+    const activeSet = new Set(activeWorkerIds);
+    const workerChecks = data.users.map((employee) => {
+      const checked = activeSet.has(employee.id) ? "checked" : "";
+      return `<label data-worker-label="${escapeHtml(employee.id)}"><input type="checkbox" class="dash-worker-toggle" value="${escapeHtml(employee.id)}" ${checked}> ${escapeHtml(personName(employee))}</label>`;
+    }).join("") || `<span class="bm-muted">Brak pracowników</span>`;
+    const allWorkersChecked = data.users.length > 0 && activeWorkerIds.length === data.users.length;
+
     const employeeCount = Math.max(data.users.length, 1);
     const scheduleWidth = `${82 + (employeeCount * 180)}px`;
-    const scheduleHead = `<thead><tr><th class="bm-time-head">Godzina</th>${data.users.map((employee) => `<th>${escapeHtml(personName(employee))}</th>`).join("")}</tr></thead>`;
+    const scheduleHead = `<thead><tr><th class="bm-time-head">Godzina</th>${data.users.map((employee) => `<th data-employee-head="${escapeHtml(employee.id)}" class="${activeSet.has(employee.id) ? "" : "inactive-worker"}">${escapeHtml(personName(employee))}</th>`).join("")}</tr></thead>`;
     const scheduleColgroup = `<colgroup><col class="bm-time-colgroup">${data.users.map(() => `<col class="bm-worker-colgroup">`).join("")}</colgroup>`;
 
     area.innerHTML = `
@@ -360,10 +404,15 @@
             <button type="button" id="dashAddVisitBtn" ${allowAdd ? "" : "disabled"}>Dodaj</button>
             <button type="button" id="dashEditVisitBtn" class="bm-light-btn" ${allowEdit ? "" : "disabled"}>Edytuj</button>
             <button type="button" id="dashCancelVisitBtn" class="bm-danger-btn" ${allowCancel ? "" : "disabled"}>Odwołaj wizytę</button>
-            <button type="button" id="dashEmployeeCount" class="bm-worker-count">(${data.users.length})</button>
+            <button type="button" id="dashEmployeeCount" class="bm-worker-count">(${activeWorkerIds.length})</button>
           </span>
         </section>
-        <div class="bm-schedule-table-wrap"><table class="bm-schedule-table" style="width:${scheduleWidth};min-width:${scheduleWidth};">${scheduleColgroup}${scheduleHead}<tbody>${scheduleRows(data, lookups, selectedDate)}</tbody></table></div>
+        <div class="bm-schedule-table-wrap"><table class="bm-schedule-table" style="width:${scheduleWidth};min-width:${scheduleWidth};">${scheduleColgroup}${scheduleHead}<tbody>${scheduleRows(data, lookups, selectedDate, activeWorkerIds)}</tbody></table></div>
+        <div class="bm-workers-popover" id="dashWorkersPopover" hidden>
+          <h3>Pracownicy aktywni tego dnia</h3>
+          <label><input type="checkbox" id="dashToggleAllWorkers" ${allWorkersChecked ? "checked" : ""}> Wszyscy</label>
+          ${workerChecks}
+        </div>
         <div class="bm-schedule-tooltip" id="dashSlotTooltip" hidden></div>
       </section>
 
@@ -430,6 +479,48 @@
     document.querySelector("#dashAddVisitBtn")?.addEventListener("click", () => showOnly(addPanel, panels));
     document.querySelector("#dashEditVisitBtn")?.addEventListener("click", () => showOnly(editPanel, panels));
     document.querySelector("#dashCancelVisitBtn")?.addEventListener("click", () => showOnly(cancelPanel, panels));
+
+    const workersPopover = document.querySelector("#dashWorkersPopover");
+    const employeeCountBtn = document.querySelector("#dashEmployeeCount");
+    const updateWorkerVisibility = (persist = true) => {
+      const active = Array.from(document.querySelectorAll(".dash-worker-toggle"))
+        .filter((input) => input.checked && !input.disabled)
+        .map((input) => input.value);
+      document.querySelectorAll("[data-employee-id]").forEach((cell) => {
+        cell.classList.toggle("inactive-worker", !active.includes(cell.dataset.employeeId));
+      });
+      document.querySelectorAll("[data-employee-head]").forEach((head) => {
+        head.classList.toggle("inactive-worker", !active.includes(head.dataset.employeeHead));
+      });
+      if (employeeCountBtn) employeeCountBtn.textContent = `(${active.length})`;
+      const allToggle = document.querySelector("#dashToggleAllWorkers");
+      const enabled = Array.from(document.querySelectorAll(".dash-worker-toggle")).filter((input) => !input.disabled);
+      if (allToggle) {
+        allToggle.checked = enabled.length > 0 && active.length === enabled.length;
+        allToggle.indeterminate = active.length > 0 && active.length < enabled.length;
+      }
+      if (persist) saveActiveWorkerIds(ctx, selectedDate, active);
+    };
+    employeeCountBtn?.addEventListener("click", (event) => {
+      event.preventDefault();
+      if (workersPopover) workersPopover.hidden = !workersPopover.hidden;
+    });
+    document.querySelectorAll(".dash-worker-toggle").forEach((input) => {
+      input.addEventListener("change", () => updateWorkerVisibility(true));
+    });
+    document.querySelector("#dashToggleAllWorkers")?.addEventListener("change", (event) => {
+      document.querySelectorAll(".dash-worker-toggle").forEach((input) => {
+        if (!input.disabled) input.checked = event.currentTarget.checked;
+      });
+      updateWorkerVisibility(true);
+    });
+    document.addEventListener("click", (event) => {
+      const target = event.target instanceof Element ? event.target : null;
+      if (!target || !workersPopover || workersPopover.hidden) return;
+      if (target.closest("#dashWorkersPopover") || target.closest("#dashEmployeeCount")) return;
+      workersPopover.hidden = true;
+    }, { once: false });
+    updateWorkerVisibility(false);
 
     function openAddFromSlot(slot) {
       if (!allowAdd) {
