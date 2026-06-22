@@ -121,15 +121,26 @@
     return moneyNumber(service.price_from ?? service.price ?? service.price_to ?? 0);
   }
 
+  function firstPositiveMoney(...values) {
+    for (const value of values) {
+      const n = moneyNumber(value);
+      if (n > 0) return n;
+    }
+    return 0;
+  }
+
   function productPrice(product) {
     if (!product) return 0;
-    return moneyNumber(
-      product.sale_price ??
-      product.price ??
-      product.gross_price ??
-      product.net_price ??
-      product.last_purchase_price ??
-      0
+    return firstPositiveMoney(
+      product.sale_price,
+      product.price,
+      product.gross_price,
+      product.net_price,
+      product.retail_price,
+      product.selling_price,
+      product.sale_gross_price,
+      product.unit_price,
+      product.last_purchase_price
     );
   }
 
@@ -141,14 +152,13 @@
     if (!totalInput) return;
 
     const calculate = () => {
+      const serviceOption = serviceSelect?.selectedOptions?.[0] || null;
+      const productOption = productSelect?.selectedOptions?.[0] || null;
       const service = lookups.servicesById[String(serviceSelect?.value || "")];
       const product = lookups.productsById[String(productSelect?.value || "")];
-      let productValue = productPrice(product);
-      if (!productValue && productSelect?.selectedOptions?.[0]) {
-        const rawPrice = productSelect.selectedOptions[0].getAttribute("data-price");
-        productValue = moneyNumber(rawPrice);
-      }
-      const total = servicePrice(service) + productValue;
+      const serviceValue = firstPositiveMoney(serviceOption?.getAttribute("data-price"), servicePrice(service));
+      const productValue = firstPositiveMoney(productOption?.getAttribute("data-price"), productPrice(product));
+      const total = serviceValue + productValue;
       totalInput.value = total.toFixed(2);
     };
 
@@ -253,7 +263,7 @@
     const [appointmentsRes, clientsRes, servicesRes, productsRes, usersRes] = await Promise.all([
       window.cmSupabase
         .from("appointments")
-        .select("id, company_id, date, time, start_time, end_time, customer_id, client_id, employee_id, employee_name, service_id, position_id, product_id, status, deleted, note, price, total, payment_method, cancellation_reason, cancelled_at, starts_at, ends_at, appointment_datetime, created_at, updated_at")
+        .select("id, company_id, date, time, start_time, end_time, customer_id, client_id, employee_id, employee_name, service_id, service_name, position_id, product_id, product_name, product_price, product_quantity, status, deleted, note, price, total, payment_method, cancellation_reason, cancelled_at, starts_at, ends_at, appointment_datetime, created_at, updated_at")
         .eq("company_id", ctx.companyId)
         .order("date", { ascending: true })
         .order("start_time", { ascending: true }),
@@ -269,7 +279,7 @@
         .order("name", { ascending: true }),
       window.cmSupabase
         .from("products")
-        .select("id, company_id, name, price, sale_price, gross_price, net_price, last_purchase_price, active")
+        .select("id, company_id, name, price, sale_price, gross_price, net_price, retail_price, selling_price, sale_gross_price, unit_price, last_purchase_price, active")
         .eq("company_id", ctx.companyId)
         .order("name", { ascending: true }),
       window.cmSupabase.rpc("company_users_for_dropdown", { target_company_id: ctx.companyId })
@@ -299,13 +309,21 @@
     return `${String(Math.floor(end / 60)).padStart(2, "0")}:${String(end % 60).padStart(2, "0")}`;
   }
   function appointmentClientId(item) { return item.customer_id || item.client_id || ""; }
-  function appointmentTotal(item) { return Number(item.total ?? item.price ?? 0) || 0; }
+  function appointmentTotal(item, lookups = null) {
+    const saved = firstPositiveMoney(item?.total, item?.price);
+    if (saved > 0) return saved;
+    const service = lookups?.servicesById?.[item?.service_id];
+    const product = lookups?.productsById?.[item?.product_id];
+    return servicePrice(service) + firstPositiveMoney(item?.product_price, productPrice(product));
+  }
 
   function appointmentLabel(item, lookups) {
     const client = lookups.clientsById[appointmentClientId(item)];
     const employee = lookups.usersById[item.employee_id] || findUserByAppointmentEmployeeName(lookups, item);
     const service = lookups.servicesById[item.service_id];
-    return [plDate(appointmentDate(item)), appointmentStart(item), appointmentEnd(item), customerName(client), personName(employee), serviceName(service)].filter(Boolean).join(" — ");
+    const product = lookups.productsById[item.product_id];
+    const itemName = serviceName(service) !== "-" ? serviceName(service) : (item.product_name || productName(product));
+    return [plDate(appointmentDate(item)), appointmentStart(item), appointmentEnd(item), customerName(client), personName(employee), itemName].filter(Boolean).join(" — ");
   }
 
   function buildLookups(data) {
@@ -358,7 +376,7 @@
         const tooltip = [
           `Klient: ${customerName(client)}`,
           `Telefon: ${client?.phone || "Brak numeru"}`,
-          `Cena: ${appointmentTotal(visit).toFixed(2)} PLN`,
+          `Cena: ${appointmentTotal(visit, lookups).toFixed(2)} PLN`,
           `Pracownik: ${personName(employee)}`,
           `Opis: ${visit.note || "Brak opisu"}`
         ].join("\n");
@@ -406,12 +424,14 @@
     if (typeof window.cmUpdateGlobalModalState === 'function') window.cmUpdateGlobalModalState();
   }
 
-  function payloadFromForm(ctx, formData) {
+  function payloadFromForm(ctx, formData, form = null) {
     const serviceId = String(formData.get("serviceId") || "").trim();
     const productId = String(formData.get("productId") || "").trim();
-    const selectedProductOption = Array.from(document.querySelectorAll('#dashboardAppointmentAddForm select[name="productId"], #dashboardEditVisitForm select[name="productId"]')).find((select) => select.value === productId)?.selectedOptions?.[0];
-    const selectedProductName = selectedProductOption?.textContent?.replace(/\s+—\s+.*$/, "").trim() || null;
-    const selectedProductPrice = moneyNumber(selectedProductOption?.getAttribute("data-price"));
+    const currentForm = form;
+    const selectedProductOption = currentForm?.elements?.productId?.selectedOptions?.[0]
+      || Array.from(document.querySelectorAll('#dashboardAppointmentAddForm select[name="productId"], #dashboardEditVisitForm select[name="productId"]')).find((select) => select.value === productId)?.selectedOptions?.[0];
+    const selectedProductName = selectedProductOption?.getAttribute("data-name") || selectedProductOption?.textContent?.replace(/\s+—\s+.*$/, "").trim() || null;
+    const selectedProductPrice = firstPositiveMoney(selectedProductOption?.getAttribute("data-price"));
     const start = normalizeTime(formData.get("start"));
     const end = normalizeTime(formData.get("end"));
     const clientId = String(formData.get("customerId") || "").trim();
@@ -472,7 +492,7 @@
     }
     form.elements.serviceId.value = item.service_id || "";
     form.elements.productId.value = item.product_id || "";
-    const savedTotal = appointmentTotal(item);
+    const savedTotal = appointmentTotal(item, lookups);
     form.elements.total.value = savedTotal ? savedTotal.toFixed(2) : "0.00";
     if (!savedTotal) form.elements.serviceId?.dispatchEvent(new Event("change", { bubbles: true }));
     form.elements.payment.value = item.payment_method || "gotówka";
@@ -517,12 +537,17 @@
     const allowCancel = canCancelAppointments(ctx);
     const customerOptions = optionList(data.clients, customerName, "Brak klientów");
     const employeeOptions = optionList(data.users, personName, "Brak pracowników/użytkowników");
-    const serviceOptions = optionList(data.services, (s) => `${s.name || "Usługa"}${servicePrice(s) ? ` — ${servicePrice(s).toFixed(2).replace(".00", "")} PLN` : ""}`, "Brak usług");
+    const serviceOptions = optionList(
+      data.services,
+      (s) => `${s.name || "Usługa"}${servicePrice(s) ? ` — ${servicePrice(s).toFixed(2).replace(".00", "")} PLN` : ""}`,
+      "Brak usług",
+      (s) => `data-price="${escapeHtml(String(servicePrice(s)))}" data-name="${escapeHtml(s.name || "Usługa")}"`
+    );
     const productOptions = optionList(
       data.products,
       (p) => `${productName(p)}${productPrice(p) ? ` — ${productPrice(p).toFixed(2).replace(".00", "")} PLN` : ""}`,
       "Brak produktów",
-      (p) => `data-price="${escapeHtml(String(productPrice(p)))}"`
+      (p) => `data-price="${escapeHtml(String(productPrice(p)))}" data-name="${escapeHtml(productName(p))}"`
     );
     const visibleVisits = data.appointments.filter((item) => item.deleted !== true && !["odwołana", "odwołane", "usunięte"].includes(String(item.status || "").toLowerCase()));
     const visitOptions = visibleVisits.map((item) => `<option value="${escapeHtml(item.id)}">${escapeHtml(appointmentLabel(item, lookups))}</option>`).join("");
@@ -780,7 +805,7 @@
       const form = document.querySelector("#dashboardFinishVisitForm");
       if (!form) return;
       const selected = data.appointments.find((item) => item.id === visitId);
-      const total = selected ? appointmentTotal(selected) : 0;
+      const total = selected ? appointmentTotal(selected, lookups) : 0;
       if (form.elements.total) form.elements.total.value = total.toFixed(2);
       if (form.elements.paidAmount) form.elements.paidAmount.value = total.toFixed(2);
       if (form.elements.payment && selected?.payment_method) form.elements.payment.value = selected.payment_method;
@@ -794,7 +819,7 @@
     document.querySelector("#dashboardAppointmentAddForm")?.addEventListener("submit", async (event) => {
       event.preventDefault();
       if (!allowAdd) { setMessage("#dashboardAppointmentMessage", "Brak uprawnienia do dodawania wizyt.", false); return; }
-      const payload = payloadFromForm(ctx, new FormData(event.currentTarget));
+      const payload = payloadFromForm(ctx, new FormData(event.currentTarget), event.currentTarget);
       const validation = validatePayload(payload);
       if (validation) { setMessage("#dashboardAppointmentMessage", validation, false); return; }
       const { data: inserted, error } = await window.cmSupabase.from("appointments").insert(payload).select("*").single();
@@ -816,7 +841,7 @@
       if (!allowEdit) { setMessage("#dashboardEditVisitMessage", "Brak uprawnienia do edycji wizyt.", false); return; }
       const visitId = String(new FormData(event.currentTarget).get("visitId") || "").trim();
       if (!visitId) { setMessage("#dashboardEditVisitMessage", "Wybierz wizytę do edycji.", false); return; }
-      const payload = payloadFromForm(ctx, new FormData(event.currentTarget));
+      const payload = payloadFromForm(ctx, new FormData(event.currentTarget), event.currentTarget);
       const validation = validatePayload(payload);
       if (validation) { setMessage("#dashboardEditVisitMessage", validation, false); return; }
       const before = data.appointments.find((item) => item.id === visitId);
