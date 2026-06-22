@@ -475,8 +475,7 @@
       const submit = form.querySelector('button[type="submit"]');
       if (submit) submit.disabled = true;
       try {
-        const number = await getNextPassNumber(ctx, data.passes.length);
-        const payload = passPayload(ctx, new FormData(form), usersById, clientsById, servicesById, number);
+        const payload = passPayload(ctx, new FormData(form), usersById, clientsById, servicesById, null);
         if (!payload.buyer_client_id) throw new Error("Wybierz kupującego.");
         if (!payload.beneficiary_client_id) throw new Error("Wybierz osobę korzystającą.");
         if (!payload.valid_until) throw new Error("Wybierz datę ważności.");
