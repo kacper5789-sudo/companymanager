@@ -162,6 +162,7 @@
   }
 
   function showOnlyPanel(target, panels) {
+    if (window.cmShowOnlyModalPanel) return window.cmShowOnlyModalPanel(target, panels || []);
     panels.forEach((panel) => { if (panel) panel.hidden = panel !== target ? true : !panel.hidden; });
   }
 

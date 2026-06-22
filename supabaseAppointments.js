@@ -284,8 +284,9 @@
   }
 
   function showOnly(cardToShow) {
-    ["#visitFormCard", "#visitEditCard", "#visitDeleteCard"].forEach((selector) => {
-      const card = document.querySelector(selector);
+    const panels = ["#visitFormCard", "#visitEditCard", "#visitDeleteCard"].map((selector) => document.querySelector(selector));
+    if (window.cmShowOnlyModalPanel) return window.cmShowOnlyModalPanel(cardToShow, panels);
+    panels.forEach((card) => {
       if (!card) return;
       card.hidden = card !== cardToShow ? true : !card.hidden;
     });

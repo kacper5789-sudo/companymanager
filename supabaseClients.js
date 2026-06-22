@@ -463,8 +463,9 @@
   }
 
   function showOnly(cardToShow) {
-    ["#customerFormCard", "#customerEditCard", "#customerDeleteCard"].forEach((selector) => {
-      const card = document.querySelector(selector);
+    const panels = ["#customerFormCard", "#customerEditCard", "#customerDeleteCard"].map((selector) => document.querySelector(selector));
+    if (window.cmShowOnlyModalPanel) return window.cmShowOnlyModalPanel(cardToShow, panels);
+    panels.forEach((card) => {
       if (!card) return;
       card.hidden = card !== cardToShow ? true : !card.hidden;
     });

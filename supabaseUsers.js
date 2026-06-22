@@ -232,6 +232,7 @@
   }
 
   function showOnlyPanel(panel, panels) {
+    if (window.cmOpenModalPanel) return window.cmOpenModalPanel(panel, panels || []);
     panels.forEach((item) => { if (item) item.hidden = item !== panel; });
   }
 
