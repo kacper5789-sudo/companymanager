@@ -1,4 +1,6 @@
-// CompanyManager — OWNER Companies Panel Supabase
+// CompanyManager — OWNER Companies Supabase Controls
+// Ten plik NIE przebudowuje starego widoku Firmy z app.js.
+// Zostawia pełną starą tabelę i dokłada pod nią Przyciski OWNER obsługiwane przez Supabase.
 
 (function () {
   const moneyPlanLabels = {
@@ -23,243 +25,199 @@
     try { return new Date(value).toLocaleDateString("pl-PL"); } catch (_) { return "—"; }
   }
 
-  function selectedCompanyId() {
-    return document.querySelector('input[name="selectedCompany"]:checked')?.value || null;
+  function isCompaniesPage() {
+    return document.body?.dataset?.panelPage === "companies" || window.location.pathname.includes("companies.html");
   }
 
-  async function requireOwner(root) {
+  async function requireOwner() {
+    if (!window.cmSupabase) return { ok: false, message: "Nie załadowano supabaseClient.js." };
+
     const { data: access, error } = await window.cmSupabase.rpc("get_my_access");
-    if (error) {
-      root.innerHTML = `<section class="bm-page-card"><h2>Błąd dostępu</h2><p>${escapeHtml(error.message)}</p></section>`;
-      return null;
-    }
+    if (error) return { ok: false, message: error.message };
     if (!access || String(access.role).toUpperCase() !== "OWNER") {
-      root.innerHTML = `<section class="bm-page-card"><h2>Brak dostępu</h2><p>Tylko OWNER może otworzyć tę zakładkę.</p></section>`;
-      return null;
+      return { ok: false, message: "Tylko OWNER może używać przycisków właściciela." };
     }
+
     localStorage.setItem("cm_access", JSON.stringify(access));
-    return access;
+    return { ok: true, access };
+  }
+
+  async function loadSupabaseCompanies() {
+    const { data, error } = await window.cmSupabase.rpc("owner_list_companies");
+    if (error) throw error;
+    return data || [];
+  }
+
+  function selectedCompanyId() {
+    return document.getElementById("ownerCompanyActionSelect")?.value || "";
+  }
+
+  function selectedCompanyLabel() {
+    const select = document.getElementById("ownerCompanyActionSelect");
+    return select?.selectedOptions?.[0]?.textContent?.trim() || "wybraną firmę";
   }
 
   async function runRpc(actionName, rpcName, args) {
-    if (!confirm(actionName + "?")) return false;
+    if (!confirm(`${actionName}: ${selectedCompanyLabel()}?`)) return false;
 
     const { error } = await window.cmSupabase.rpc(rpcName, args || {});
     if (error) {
       alert("Błąd: " + error.message);
       return false;
     }
+
+    alert("Wykonano: " + actionName);
+    await renderOwnerButtons(true);
     return true;
   }
 
-  async function loadCompanies() {
-    const root = document.getElementById("dashboardRoot");
-    if (!root) return;
-
-    root.innerHTML = `<div class="doc-card"><h1>Firmy</h1><p>Ładowanie danych z Supabase...</p></div>`;
-
-    if (!window.cmSupabase) {
-      root.innerHTML = `<section class="bm-page-card"><h2>Brak połączenia</h2><p>Nie załadowano supabaseClient.js.</p></section>`;
-      return;
-    }
-
-    const access = await requireOwner(root);
-    if (!access) return;
-
-    const [{ data: companies, error: companiesError }, { data: requests, error: requestsError }] = await Promise.all([
-      window.cmSupabase.rpc("owner_list_companies"),
-      window.cmSupabase.from("company_registration_requests").select("*").order("created_at", { ascending: false })
-    ]);
-
-    if (companiesError || requestsError) {
-      root.innerHTML = `<section class="bm-page-card"><h2>Błąd</h2><p>${escapeHtml(companiesError?.message || requestsError?.message)}</p></section>`;
-      return;
-    }
-
-    const companyRows = (companies || []).map((c, index) => {
-      const statusLabel = c.is_in_trash ? "Kosz" : c.status;
-      const expired = c.package_expired ? "Wygasł" : "OK";
-      return `
-        <tr data-company-id="${escapeHtml(c.id)}">
-          <td>${index + 1}</td>
-          <td><button type="button" class="cm-company-switch-btn" data-switch="${escapeHtml(c.id)}">${escapeHtml(c.name || "—")}</button></td>
-          <td>${escapeHtml(c.owner_name || "—")}</td>
-          <td>${escapeHtml(c.company_email || "—")}</td>
-          <td>${escapeHtml(moneyPlanLabels[c.package] || c.package || "—")}</td>
-          <td>${escapeHtml(formatDate(c.package_expires_at))}</td>
-          <td>${escapeHtml(expired)}</td>
-          <td>${escapeHtml(statusLabel || "—")}</td>
-          <td><input type="radio" name="selectedCompany" value="${escapeHtml(c.id)}"></td>
-        </tr>`;
+  function buildOptions(companies) {
+    return (companies || []).map((c) => {
+      const status = c.is_in_trash ? "kosz" : (c.status || "—");
+      const expired = c.package_expired ? "pakiet wygasł" : "pakiet OK";
+      const plan = moneyPlanLabels[c.package] || c.package || "—";
+      const label = `${c.name || "—"} — ${c.owner_name || "—"} — ${status} — ${plan} — ${formatDate(c.package_expires_at)} — ${expired}`;
+      return `<option value="${escapeHtml(c.id)}">${escapeHtml(label)}</option>`;
     }).join("");
+  }
 
-    const requestRows = (requests || []).map((r, index) => `
-      <tr>
-        <td>${index + 1}</td>
-        <td>${escapeHtml(r.status || "—")}</td>
-        <td>${escapeHtml(formatDate(r.created_at))}</td>
-        <td>${escapeHtml(r.company_name || "—")}</td>
-        <td>${escapeHtml(r.full_name || "—")}</td>
-        <td>${escapeHtml(r.email || "—")}</td>
-        <td>${escapeHtml(moneyPlanLabels[r.package] || r.package || "—")}</td>
-        <td>
-          ${r.status === "pending" ? `
-            <button type="button" class="bm-btn" data-approve="${escapeHtml(r.id)}">Zatwierdź</button>
-            <button type="button" class="bm-btn danger" data-reject="${escapeHtml(r.id)}">Odrzuć</button>
-          ` : "—"}
-        </td>
-      </tr>`).join("");
+  function findInsertPlace() {
+    const sections = Array.from(document.querySelectorAll(".cm-companies-page"));
+    if (sections.length) return sections[0];
+    return document.getElementById("dashboardRoot") || document.body;
+  }
 
-    root.innerHTML = `
-      <section class="bm-page-card cm-companies-page">
-        <div class="bm-page-head">
-          <div>
-            <span class="bm-tag">Tylko właściciel</span>
-            <h2>Firmy</h2>
-            <p class="bm-muted">Lista firm pobierana bezpośrednio z Supabase.</p>
-          </div>
-        </div>
+  async function renderOwnerButtons(keepSelection = false) {
+    if (!isCompaniesPage()) return;
 
-        <table class="bm-table">
-          <thead>
-            <tr>
-              <th>Nr</th>
-              <th>Nazwa Firmy</th>
-              <th>Właściciel Firmy</th>
-              <th>Email</th>
-              <th>Pakiet</th>
-              <th>Data wygaśnięcia</th>
-              <th>Pakiet</th>
-              <th>Status</th>
-              <th>Wybierz</th>
-            </tr>
-          </thead>
-          <tbody>${companyRows || `<tr><td colspan="9">Brak firm w Supabase.</td></tr>`}</tbody>
-        </table>
+    const oldSelected = selectedCompanyId();
+    const existing = document.getElementById("supabaseOwnerCompanyActions");
+    if (existing) existing.remove();
 
-        <div class="bm-page-card" style="margin-top:20px;">
+    const auth = await requireOwner();
+    if (!auth.ok) {
+      console.warn("CompanyManager Supabase OWNER controls:", auth.message);
+      return;
+    }
+
+    let companies = [];
+    try {
+      companies = await loadSupabaseCompanies();
+    } catch (error) {
+      const target = findInsertPlace();
+      const errorBox = document.createElement("section");
+      errorBox.className = "bm-page-card cm-companies-page";
+      errorBox.id = "supabaseOwnerCompanyActions";
+      errorBox.style.marginTop = "20px";
+      errorBox.innerHTML = `<h3>Przyciski OWNER</h3><p class="bm-muted">Błąd Supabase: ${escapeHtml(error.message)}</p>`;
+      target.insertAdjacentElement("afterend", errorBox);
+      return;
+    }
+
+    const section = document.createElement("section");
+    section.className = "bm-page-card cm-companies-page";
+    section.id = "supabaseOwnerCompanyActions";
+    section.style.marginTop = "20px";
+    section.innerHTML = `
+      <div class="bm-page-head">
+        <div>
+          <span class="bm-tag">Supabase</span>
           <h3>Przyciski OWNER</h3>
-          <p class="bm-muted">Najpierw zaznacz firmę w tabeli, potem wybierz akcję.</p>
-          <div class="bm-actions" style="display:flex; flex-wrap:wrap; gap:10px;">
-            <button type="button" class="bm-btn" id="blockCompanyBtn">Zablokuj firmę</button>
-            <button type="button" class="bm-btn" id="unblockCompanyBtn">Odblokuj firmę</button>
-            <button type="button" class="bm-btn danger" id="trashCompanyBtn">Usuń do kosza</button>
-            <button type="button" class="bm-btn" id="restoreCompanyBtn">Przywróć</button>
-            <button type="button" class="bm-btn danger" id="permanentDeleteCompanyBtn">Usuń permanentnie</button>
-            <button type="button" class="bm-btn" id="extendPackageBtn">Przedłuż pakiet</button>
-          </div>
+          <p class="bm-muted">Najpierw wybierz firmę z listy Supabase, potem wybierz akcję. Stary widok tabeli zostaje bez zmian.</p>
         </div>
-      </section>
+      </div>
 
-      <section class="bm-page-card cm-companies-page">
-        <div class="bm-page-head">
-          <div>
-            <span class="bm-tag">Rejestracja</span>
-            <h2>Zgłoszenia firm</h2>
-            <p class="bm-muted">Tutaj trafiają formularze rejestracji. OWNER może zatwierdzić albo odrzucić firmę.</p>
-          </div>
-        </div>
-        <table class="bm-table">
-          <thead>
-            <tr>
-              <th>Nr</th>
-              <th>Status</th>
-              <th>Data</th>
-              <th>Firma</th>
-              <th>Osoba</th>
-              <th>Email</th>
-              <th>Pakiet</th>
-              <th>Akcje</th>
-            </tr>
-          </thead>
-          <tbody>${requestRows || `<tr><td colspan="8">Brak zgłoszeń rejestracji.</td></tr>`}</tbody>
-        </table>
-      </section>`;
+      <label style="display:block; margin-bottom:14px;">
+        Firma
+        <select id="ownerCompanyActionSelect" style="width:100%; margin-top:6px;">
+          <option value="">Wybierz firmę</option>
+          ${buildOptions(companies)}
+        </select>
+      </label>
+
+      <div class="bm-actions" style="display:flex; flex-wrap:wrap; gap:10px;">
+        <button type="button" class="bm-btn" id="blockCompanyBtn">Zablokuj firmę</button>
+        <button type="button" class="bm-btn" id="unblockCompanyBtn">Odblokuj firmę</button>
+        <button type="button" class="bm-btn danger" id="trashCompanyBtn">Usuń do kosza</button>
+        <button type="button" class="bm-btn" id="restoreCompanyBtn">Przywróć</button>
+        <button type="button" class="bm-btn danger" id="permanentDeleteCompanyBtn">Usuń permanentnie</button>
+        <button type="button" class="bm-btn" id="extendPackageBtn">Przedłuż pakiet</button>
+      </div>
+
+      <p class="bm-muted" style="margin-top:12px;">Blokada, kosz i przedłużenie pakietu działają na danych Supabase. Dane firmy zostają, dopóki nie użyjesz opcji „Usuń permanentnie”.</p>
+    `;
+
+    const target = findInsertPlace();
+    target.insertAdjacentElement("afterend", section);
+
+    if (keepSelection && oldSelected) {
+      const select = document.getElementById("ownerCompanyActionSelect");
+      if (select && Array.from(select.options).some((option) => option.value === oldSelected)) {
+        select.value = oldSelected;
+      }
+    }
 
     bindActions();
   }
 
+  function requireSelectedCompany() {
+    const id = selectedCompanyId();
+    if (!id) {
+      alert("Najpierw wybierz firmę z listy w sekcji Przyciski OWNER.");
+      return null;
+    }
+    return id;
+  }
+
   function bindActions() {
-    document.querySelectorAll("[data-switch]").forEach((btn) => {
-      btn.addEventListener("click", async () => {
-        const companyId = btn.dataset.switch;
-        const { error } = await window.cmSupabase.rpc("owner_switch_company", { target_company_id: companyId });
-        if (error) return alert("Błąd: " + error.message);
-        window.location.href = "dashboard.html";
-      });
-    });
-
-    document.querySelectorAll("[data-approve]").forEach((btn) => {
-      btn.addEventListener("click", async () => {
-        const ok = await runRpc("Zatwierdzić firmę", "approve_company_registration", { request_id: btn.dataset.approve });
-        if (ok) await loadCompanies();
-      });
-    });
-
-    document.querySelectorAll("[data-reject]").forEach((btn) => {
-      btn.addEventListener("click", async () => {
-        const reason = prompt("Powód odrzucenia:", "") || "";
-        const ok = await runRpc("Odrzucić zgłoszenie", "reject_company_registration", { request_id: btn.dataset.reject, reject_reason: reason });
-        if (ok) await loadCompanies();
-      });
-    });
-
     document.getElementById("blockCompanyBtn")?.addEventListener("click", async () => {
-      const id = selectedCompanyId();
-      if (!id) return alert("Najpierw wybierz firmę.");
+      const id = requireSelectedCompany();
+      if (!id) return;
       const reason = prompt("Powód blokady:", "Nieopłacony pakiet") || "";
-      const ok = await runRpc("Zablokować firmę", "owner_block_company", { target_company_id: id, reason });
-      if (ok) await loadCompanies();
+      await runRpc("Zablokować firmę", "owner_block_company", { target_company_id: id, reason });
     });
 
     document.getElementById("unblockCompanyBtn")?.addEventListener("click", async () => {
-      const id = selectedCompanyId();
-      if (!id) return alert("Najpierw wybierz firmę.");
+      const id = requireSelectedCompany();
+      if (!id) return;
       const date = prompt("Nowa data ważności pakietu YYYY-MM-DD albo puste:", "") || null;
-      const ok = await runRpc("Odblokować firmę", "owner_unblock_company", { target_company_id: id, new_package_expires_at: date });
-      if (ok) await loadCompanies();
+      await runRpc("Odblokować firmę", "owner_unblock_company", { target_company_id: id, new_package_expires_at: date });
     });
 
     document.getElementById("trashCompanyBtn")?.addEventListener("click", async () => {
-      const id = selectedCompanyId();
-      if (!id) return alert("Najpierw wybierz firmę.");
+      const id = requireSelectedCompany();
+      if (!id) return;
       const reason = prompt("Powód przeniesienia do kosza:", "") || "";
-      const ok = await runRpc("Przenieść firmę do kosza", "owner_move_company_to_trash", { target_company_id: id, reason });
-      if (ok) await loadCompanies();
+      await runRpc("Przenieść firmę do kosza", "owner_move_company_to_trash", { target_company_id: id, reason });
     });
 
     document.getElementById("restoreCompanyBtn")?.addEventListener("click", async () => {
-      const id = selectedCompanyId();
-      if (!id) return alert("Najpierw wybierz firmę.");
-      const ok = await runRpc("Przywrócić firmę", "owner_restore_company_from_trash", { target_company_id: id });
-      if (ok) await loadCompanies();
+      const id = requireSelectedCompany();
+      if (!id) return;
+      await runRpc("Przywrócić firmę", "owner_restore_company_from_trash", { target_company_id: id });
     });
 
     document.getElementById("permanentDeleteCompanyBtn")?.addEventListener("click", async () => {
-      const id = selectedCompanyId();
-      if (!id) return alert("Najpierw wybierz firmę.");
+      const id = requireSelectedCompany();
+      if (!id) return;
       const confirmation = prompt("Wpisz dokładnie: DELETE PERMANENTLY");
       if (confirmation !== "DELETE PERMANENTLY") return alert("Przerwano.");
-      const ok = await runRpc("Usunąć permanentnie firmę", "owner_permanently_delete_company", { target_company_id: id, confirmation });
-      if (ok) await loadCompanies();
+      await runRpc("Usunąć permanentnie firmę", "owner_permanently_delete_company", { target_company_id: id, confirmation });
     });
 
     document.getElementById("extendPackageBtn")?.addEventListener("click", async () => {
-      const id = selectedCompanyId();
-      if (!id) return alert("Najpierw wybierz firmę.");
+      const id = requireSelectedCompany();
+      if (!id) return;
       const plan = prompt("Pakiet: 3_months / 6_months / 12_months / 24_months", "12_months");
       const date = prompt("Data ważności YYYY-MM-DD:", "");
       if (!plan || !date) return alert("Brak pakietu albo daty.");
-      const ok = await runRpc("Przedłużyć pakiet", "owner_extend_company_package", { target_company_id: id, new_package: plan, new_expires_at: date });
-      if (ok) await loadCompanies();
+      await runRpc("Przedłużyć pakiet", "owner_extend_company_package", { target_company_id: id, new_package: plan, new_expires_at: date });
     });
   }
 
-  document.addEventListener("DOMContentLoaded", () => {
-    const isCompaniesPage = document.body?.dataset?.panelPage === "companies" || window.location.pathname.includes("companies.html");
-    if (!isCompaniesPage) return;
-
-    // app.js renderuje jeszcze stary localStorage. Czekamy chwilę i nadpisujemy widok danymi z Supabase.
-    window.setTimeout(loadCompanies, 250);
+  window.addEventListener("load", () => {
+    if (!isCompaniesPage()) return;
+    // app.js renderuje pełny stary widok. Czekamy chwilę i dokładamy tylko przyciski OWNER pod tabelą.
+    window.setTimeout(() => renderOwnerButtons(false), 400);
   });
 })();
