@@ -377,17 +377,27 @@
   async function createAuthUser(email, password, fullName) {
     const { data: currentSessionData } = await window.cmSupabase.auth.getSession();
     const currentSession = currentSessionData?.session || null;
+
     const { data, error } = await window.cmSupabase.auth.signUp({
       email,
       password,
       options: { data: { full_name: fullName } }
     });
+
+    // Supabase signUp wykonany z panelu ADMIN może chwilowo przełączyć sesję
+    // na nowo tworzonego użytkownika. Zanim odpalimy RPC admin_create_company_user,
+    // zawsze przywracamy sesję aktualnego ADMINA/OWNERA.
     if (currentSession?.access_token && currentSession?.refresh_token) {
-      const { data: afterData } = await window.cmSupabase.auth.getSession();
-      if (afterData?.session?.user?.email && String(afterData.session.user.email).toLowerCase() !== String(currentSession.user.email).toLowerCase()) {
-        await window.cmSupabase.auth.setSession({ access_token: currentSession.access_token, refresh_token: currentSession.refresh_token });
+      try {
+        await window.cmSupabase.auth.setSession({
+          access_token: currentSession.access_token,
+          refresh_token: currentSession.refresh_token
+        });
+      } catch (restoreError) {
+        console.warn("CompanyManager: nie udało się automatycznie przywrócić sesji po signUp", restoreError);
       }
     }
+
     if (error) throw error;
     if (!data?.user?.id) throw new Error("Nie udało się utworzyć użytkownika Auth.");
     return data.user.id;
@@ -423,6 +433,26 @@
     };
   }
 
+  async function rpcCreateCompanyUserCompat(ctx, payload) {
+    // 036I: kompatybilność z dwiema wersjami RPC:
+    // - starsza: admin_create_company_user(p_user_id, p_email, ...)
+    // - nowsza: admin_create_company_user(p_user_id, p_company_id, p_email, ...)
+    // ADMIN nie potrzebuje p_company_id, ale OWNER może go potrzebować.
+    const withCompany = { p_company_id: ctx?.companyId || null, ...payload };
+    let result = await window.cmSupabase.rpc("admin_create_company_user", withCompany);
+    if (!result.error) return result;
+
+    const msg = String(result.error.message || result.error || "");
+    const shouldRetryWithoutCompany =
+      msg.includes("p_company_id") ||
+      msg.includes("schema cache") ||
+      msg.includes("Could not find the function") ||
+      msg.includes("function public.admin_create_company_user");
+
+    if (!shouldRetryWithoutCompany) return result;
+    return window.cmSupabase.rpc("admin_create_company_user", payload);
+  }
+
   function bindEvents(ctx, users, positions) {
     const addPanel = document.querySelector("#addAdminUserPanel");
     const editPanel = document.querySelector("#editAdminUserPanel");
@@ -454,7 +484,13 @@
       addButton.addEventListener("click", async (event) => {
         event.preventDefault();
         event.stopPropagation();
-        await handleAddUserSubmit(addForm);
+        try {
+          if (addForm && typeof addForm.reportValidity === "function" && !addForm.reportValidity()) return;
+          await handleAddUserSubmit(addForm);
+        } catch (error) {
+          setMessage("#addAdminUserMessage", "Błąd przycisku Dodaj użytkownika: " + (error.message || error), false);
+          console.error("CompanyManager users add button error", error);
+        }
       }, true);
     }
 
@@ -479,7 +515,7 @@
       try {
         setMessage(msg, "Tworzę konto użytkownika...", true);
         const userId = await createAuthUser(email, password, base.fullName);
-        const { error } = await window.cmSupabase.rpc("admin_create_company_user", {
+        const { error } = await rpcCreateCompanyUserCompat(ctx, {
           p_user_id: userId,
           p_email: email,
           p_full_name: base.fullName,
