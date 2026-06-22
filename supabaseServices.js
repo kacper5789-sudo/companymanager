@@ -16,6 +16,74 @@
     }[char]));
   }
 
+  const CM_MODULE_PAGE_LIMIT_KEY = "companyManagerGlobalPageLimit";
+
+  function getModulePageLimit(fallback = "50") {
+    try {
+      const saved = localStorage.getItem(CM_MODULE_PAGE_LIMIT_KEY);
+      if (["50", "100", "200"].includes(String(saved))) return String(saved);
+    } catch (_) {}
+    const normalized = String(fallback || "50");
+    return ["50", "100", "200"].includes(normalized) ? normalized : "50";
+  }
+
+  function setModulePageLimit(value) {
+    const normalized = String(value || "50");
+    if (!["50", "100", "200"].includes(normalized)) return;
+    try { localStorage.setItem(CM_MODULE_PAGE_LIMIT_KEY, normalized); } catch (_) {}
+    document.querySelectorAll("[data-limit-dropdown]").forEach((root) => {
+      const input = root.querySelector('input[type="hidden"]');
+      const toggle = root.querySelector("[data-limit-toggle]");
+      if (input) input.value = normalized;
+      if (toggle) toggle.textContent = `${normalized} ▾`;
+    });
+  }
+
+  function moduleLimitDropdownHtml(id, selected = "50") {
+    const value = getModulePageLimit(selected);
+    return `
+      <div class="cm-limit-dropdown" data-limit-dropdown>
+        <input type="hidden" id="${escapeHtml(id)}" value="${escapeHtml(value)}">
+        <button type="button" class="cm-limit-toggle" data-limit-toggle>${escapeHtml(value)} ▾</button>
+        <div class="cm-limit-menu" hidden>
+          <button type="button" data-limit-value="50">50 pozycji na stronę</button>
+          <button type="button" data-limit-value="100">100 pozycji na stronę</button>
+          <button type="button" data-limit-value="200">200 pozycji na stronę</button>
+        </div>
+      </div>`;
+  }
+
+  function setupModuleLimitDropdowns(root = document) {
+    const scope = root instanceof Element ? root : document;
+    scope.querySelectorAll("[data-limit-dropdown]").forEach((dropdown) => {
+      if (dropdown.dataset.cmLimitReady === "1") return;
+      dropdown.dataset.cmLimitReady = "1";
+      const toggle = dropdown.querySelector("[data-limit-toggle]");
+      const menu = dropdown.querySelector(".cm-limit-menu");
+      toggle?.addEventListener("click", (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        document.querySelectorAll(".cm-limit-menu").forEach((item) => {
+          if (item !== menu) item.hidden = true;
+        });
+        if (menu) menu.hidden = !menu.hidden;
+      });
+      dropdown.querySelectorAll("[data-limit-value]").forEach((button) => {
+        button.addEventListener("click", (event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          setModulePageLimit(button.getAttribute("data-limit-value") || "50");
+          if (menu) menu.hidden = true;
+        });
+      });
+    });
+  }
+
+  document.addEventListener("click", () => {
+    document.querySelectorAll(".cm-limit-menu").forEach((menu) => { menu.hidden = true; });
+  });
+
+
   function normalizeRole(role) {
     return String(role || "").trim().toUpperCase();
   }
@@ -354,7 +422,7 @@
             ${allowDelete ? `<button id="showDeleteService" type="button" class="bm-danger-btn">Usuń</button>` : ""}
           </div>
         </div>
-        <div class="bm-table-toolbar cm-limit-toolbar"><button type="button" class="cm-limit-trigger">50 <span>▾</span></button></div>
+        <div class="bm-table-toolbar cm-limit-toolbar">${moduleLimitDropdownHtml("servicesLimit")}</div>
         ${table(["Kategoria", "Nazwa", "Czas trwania", "Cena", "Stanowisko pracy", "Kod usługi"], renderRows(services, categories, positions), "Brak usług w Supabase.")}
         ${pagination(services.length)}
         <p id="servicesMessage" class="panel-message"></p>

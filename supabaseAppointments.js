@@ -16,6 +16,74 @@
     }[char]));
   }
 
+  const CM_MODULE_PAGE_LIMIT_KEY = "companyManagerGlobalPageLimit";
+
+  function getModulePageLimit(fallback = "50") {
+    try {
+      const saved = localStorage.getItem(CM_MODULE_PAGE_LIMIT_KEY);
+      if (["50", "100", "200"].includes(String(saved))) return String(saved);
+    } catch (_) {}
+    const normalized = String(fallback || "50");
+    return ["50", "100", "200"].includes(normalized) ? normalized : "50";
+  }
+
+  function setModulePageLimit(value) {
+    const normalized = String(value || "50");
+    if (!["50", "100", "200"].includes(normalized)) return;
+    try { localStorage.setItem(CM_MODULE_PAGE_LIMIT_KEY, normalized); } catch (_) {}
+    document.querySelectorAll("[data-limit-dropdown]").forEach((root) => {
+      const input = root.querySelector('input[type="hidden"]');
+      const toggle = root.querySelector("[data-limit-toggle]");
+      if (input) input.value = normalized;
+      if (toggle) toggle.textContent = `${normalized} ▾`;
+    });
+  }
+
+  function moduleLimitDropdownHtml(id, selected = "50") {
+    const value = getModulePageLimit(selected);
+    return `
+      <div class="cm-limit-dropdown" data-limit-dropdown>
+        <input type="hidden" id="${escapeHtml(id)}" value="${escapeHtml(value)}">
+        <button type="button" class="cm-limit-toggle" data-limit-toggle>${escapeHtml(value)} ▾</button>
+        <div class="cm-limit-menu" hidden>
+          <button type="button" data-limit-value="50">50 pozycji na stronę</button>
+          <button type="button" data-limit-value="100">100 pozycji na stronę</button>
+          <button type="button" data-limit-value="200">200 pozycji na stronę</button>
+        </div>
+      </div>`;
+  }
+
+  function setupModuleLimitDropdowns(root = document) {
+    const scope = root instanceof Element ? root : document;
+    scope.querySelectorAll("[data-limit-dropdown]").forEach((dropdown) => {
+      if (dropdown.dataset.cmLimitReady === "1") return;
+      dropdown.dataset.cmLimitReady = "1";
+      const toggle = dropdown.querySelector("[data-limit-toggle]");
+      const menu = dropdown.querySelector(".cm-limit-menu");
+      toggle?.addEventListener("click", (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        document.querySelectorAll(".cm-limit-menu").forEach((item) => {
+          if (item !== menu) item.hidden = true;
+        });
+        if (menu) menu.hidden = !menu.hidden;
+      });
+      dropdown.querySelectorAll("[data-limit-value]").forEach((button) => {
+        button.addEventListener("click", (event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          setModulePageLimit(button.getAttribute("data-limit-value") || "50");
+          if (menu) menu.hidden = true;
+        });
+      });
+    });
+  }
+
+  document.addEventListener("click", () => {
+    document.querySelectorAll(".cm-limit-menu").forEach((menu) => { menu.hidden = true; });
+  });
+
+
   function normalizeRole(role) {
     return String(role || "").trim().toUpperCase();
   }
@@ -365,7 +433,7 @@
       <section class="bm-page-card visits-module">
         <div class="bm-page-head"><h2>Pokaż wizyty:</h2><div class="bm-action-row"><button id="showAddVisit" type="button" ${allowAdd ? "" : "disabled"}>Dodaj</button><button id="showEditVisit" type="button" class="bm-secondary-btn" ${allowEdit ? "" : "disabled"}>Edytuj</button><button id="showDeleteVisit" type="button" class="bm-danger-btn" ${allowDelete ? "" : "disabled"}>Usuń</button></div></div>
         <div class="bm-tabs">${statusTabs}</div>
-        <div class="bm-table-toolbar cm-limit-toolbar"><div class="cm-limit-dropdown"><button type="button">50 ▼</button></div></div>
+        <div class="bm-table-toolbar cm-limit-toolbar">${moduleLimitDropdownHtml("visitsLimit")}</div>
         ${table(["Data", "Godzina", "Klient", "Pracownik", "Usługa", "Status"], rows, "Brak wizyt w Supabase.")}
         ${pagination(filtered.length)}
       </section>
