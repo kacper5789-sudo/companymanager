@@ -219,6 +219,31 @@
     };
   }
 
+
+  function closeProductsModals() {
+    if (window.cmHardCloseAllModalPanels) {
+      window.cmHardCloseAllModalPanels();
+      return;
+    }
+    if (window.cmCloseAllModalPanels) {
+      window.cmCloseAllModalPanels();
+      return;
+    }
+    document.querySelectorAll(".cm-modal-active, .cm-as-modal").forEach((panel) => {
+      panel.hidden = true;
+      panel.classList.remove("cm-modal-active", "cm-as-modal");
+    });
+    document.body?.classList?.remove("cm-modal-open");
+  }
+
+  function rerenderProductsAfterSuccess(delay = 450) {
+    closeProductsModals();
+    setTimeout(() => {
+      closeProductsModals();
+      renderProducts();
+    }, delay);
+  }
+
   function downloadProducts(products) {
     const headers = ["Nazwa", "Kategoria", "Stan L.op.", "Niski stan L.op.", "L. jednostek", "L. jednostek w 1 op.", "Stan magazynowy", "Firma", "Do sprzedaży", "Cena (PLN)", "Ostatnia cena zakupu (PLN)", "Dostawca", "Opis", "Kod produktu", "Wliczaj do prowizji", "Uwzględniaj przy rabacie"];
     const lines = [headers.join("\t"), ...products.map((product) => [
@@ -358,13 +383,28 @@
 
     document.querySelector("#productForm")?.addEventListener("submit", async (event) => {
       event.preventDefault();
-      const payload = productPayload(ctx, new FormData(event.currentTarget));
-      if (!payload.name) { setMessage("#productFormMessage", "Podaj nazwę produktu.", false); return; }
+      const form = event.currentTarget;
+      if (form.dataset.saving === "1") return;
+      form.dataset.saving = "1";
+      const submitBtn = form.querySelector('button[type="submit"]');
+      if (submitBtn) submitBtn.disabled = true;
+      const payload = productPayload(ctx, new FormData(form));
+      if (!payload.name) {
+        setMessage("#productFormMessage", "Podaj nazwę produktu.", false);
+        form.dataset.saving = "0";
+        if (submitBtn) submitBtn.disabled = false;
+        return;
+      }
       const { data: insertedProduct, error } = await window.cmSupabase.from("products").insert(payload).select("*").single();
-      if (error) { setMessage("#productFormMessage", "Błąd zapisu produktu: " + error.message, false); return; }
+      if (error) {
+        setMessage("#productFormMessage", "Błąd zapisu produktu: " + error.message, false);
+        form.dataset.saving = "0";
+        if (submitBtn) submitBtn.disabled = false;
+        return;
+      }
       await window.cmUndo?.record({ module: "products", actionType: "insert", targetTable: "products", targetId: insertedProduct?.id, afterData: insertedProduct || payload, companyId: ctx.companyId });
       setMessage("#productFormMessage", "Produkt zapisany w Supabase.", true);
-      setTimeout(renderProducts, 450);
+      rerenderProductsAfterSuccess(450);
     });
 
     document.querySelector("#deleteProductBtn")?.addEventListener("click", async () => {
@@ -376,7 +416,7 @@
       if (error) { setMessage("#productDeleteMessage", "Błąd usuwania produktu: " + error.message, false); return; }
       await window.cmUndo?.record({ module: "products", actionType: "update", targetTable: "products", targetId: productId, beforeData: beforeProduct, afterData: updatedProduct || { ...(beforeProduct || {}), ...deletePayload }, companyId: ctx.companyId });
       setMessage("#productDeleteMessage", "Produkt usunięty z listy.", true);
-      setTimeout(renderProducts, 450);
+      rerenderProductsAfterSuccess(450);
     });
   }
 

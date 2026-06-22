@@ -44,6 +44,14 @@
       ensureCancelButton(panel);
     });
     document.body.classList.toggle(BODY_OPEN, openPanels.length > 0);
+    if (openPanels.length === 0) {
+      const overlay = document.getElementById(OVERLAY_ID);
+      if (overlay) {
+        overlay.setAttribute('aria-hidden', 'true');
+        overlay.style.pointerEvents = 'none';
+        overlay.style.opacity = '0';
+      }
+    }
   }
 
   function closePanel(panel) {
@@ -68,22 +76,29 @@
       panel.hidden = true;
       panel.classList.remove(MODAL_ACTIVE, MODAL_CLASS);
     });
+
+    // 038D: twarde sprzątanie po dynamicznych modułach Supabase.
+    // Przy produktach/użytkownikach formularz bywał usuwany przez rerender,
+    // ale body zostawało z klasą cm-modal-open, więc ekran nadal był zblurowany.
     document.body.classList.remove(BODY_OPEN);
     const overlay = document.getElementById(OVERLAY_ID);
     if (overlay) {
       overlay.setAttribute('aria-hidden', 'true');
       overlay.style.pointerEvents = 'none';
       overlay.style.opacity = '0';
-      window.setTimeout(function () {
-        if (!document.body.classList.contains(BODY_OPEN)) {
-          overlay.removeAttribute('style');
+    }
+
+    window.setTimeout(function () {
+      if (!document.querySelector('.' + MODAL_ACTIVE + ':not([hidden]), .' + MODAL_CLASS + ':not([hidden])')) {
+        document.body.classList.remove(BODY_OPEN);
+        const currentOverlay = document.getElementById(OVERLAY_ID);
+        if (currentOverlay) {
+          currentOverlay.setAttribute('aria-hidden', 'true');
+          currentOverlay.style.pointerEvents = 'none';
+          currentOverlay.style.opacity = '0';
         }
-      }, 80);
-    }
-    updateState();
-    if (!document.querySelector('.' + MODAL_ACTIVE + ':not([hidden]), .' + MODAL_CLASS + ':not([hidden])')) {
-      document.body.classList.remove(BODY_OPEN);
-    }
+      }
+    }, 0);
   }
 
   function showOnly(targetPanel, panels) {

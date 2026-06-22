@@ -244,6 +244,10 @@
   }
 
   function closeUsersModals() {
+    if (window.cmHardCloseAllModalPanels) {
+      window.cmHardCloseAllModalPanels();
+      return;
+    }
     if (window.cmCloseAllModalPanels) {
       window.cmCloseAllModalPanels();
       return;
@@ -256,6 +260,7 @@
   }
 
   function rerenderUsersAfterSuccess(delay = 450) {
+    closeUsersModals();
     setTimeout(() => {
       closeUsersModals();
       renderUsers();
