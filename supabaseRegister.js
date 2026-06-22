@@ -87,27 +87,27 @@
     return true;
   }
 
-  function buildRegistrationPayload(userId) {
+  function buildRegistrationRpcPayload(userId) {
     const plan = selectedPlan();
 
     return {
-      user_id: userId,
-      email: value("email").toLowerCase(),
-      full_name: value("ownerName"),
-      phone: value("phone"),
-      company_name: value("companyName"),
-      company_address: value("companyAddress"),
-      company_postal_code: value("postalCode"),
-      company_city: value("city"),
-      company_phone: value("receptionPhones"),
-      company_email: value("receptionEmail") || value("email").toLowerCase(),
-      invoice_name: value("billingName"),
-      invoice_address: value("billingAddress"),
-      invoice_postal_code: value("billingPostal"),
-      invoice_city: value("billingCity"),
-      nip_vat: value("nip"),
-      package: planMap[plan],
-      status: "pending"
+      p_user_id: userId,
+      p_email: value("email").toLowerCase(),
+      p_full_name: value("ownerName"),
+      p_phone: value("phone"),
+      p_company_name: value("companyName"),
+      p_company_address: value("companyAddress"),
+      p_company_postal_code: value("postalCode"),
+      p_company_city: value("city"),
+      p_company_phone: value("receptionPhones"),
+      p_company_email: value("receptionEmail") || value("email").toLowerCase(),
+      p_invoice_name: value("billingName"),
+      p_invoice_address: value("billingAddress"),
+      p_invoice_postal_code: value("billingPostal"),
+      p_invoice_city: value("billingCity"),
+      p_nip_vat: value("nip"),
+      p_package: planMap[plan],
+      p_sms_sender: value("smsSender")
     };
   }
 
@@ -158,10 +158,11 @@
         throw new Error("Nie udało się utworzyć użytkownika Supabase Auth.");
       }
 
-      const payload = buildRegistrationPayload(userId);
-      const { error: requestError } = await window.cmSupabase
-        .from("company_registration_requests")
-        .insert(payload);
+      const payload = buildRegistrationRpcPayload(userId);
+      const { error: requestError } = await window.cmSupabase.rpc(
+        "create_company_registration_request_public",
+        payload
+      );
 
       if (requestError) {
         throw requestError;
