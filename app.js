@@ -2424,6 +2424,61 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   };
 
+
+
+  const setupGlobalLimitDropdownDelegation = () => {
+    if (window.__cmGlobalLimitDropdownDelegationReady) return;
+    window.__cmGlobalLimitDropdownDelegationReady = true;
+
+    document.addEventListener('click', (event) => {
+      const target = event.target instanceof Element ? event.target : null;
+      if (!target) return;
+
+      const toggle = target.closest('[data-limit-toggle]');
+      const option = target.closest('[data-limit-value]');
+      const clickedInsideDropdown = target.closest('[data-limit-dropdown]');
+
+      if (toggle) {
+        event.preventDefault();
+        event.stopPropagation();
+        if (typeof event.stopImmediatePropagation === 'function') event.stopImmediatePropagation();
+
+        const root = toggle.closest('[data-limit-dropdown]');
+        const menu = root?.querySelector('.cm-limit-menu');
+        document.querySelectorAll('.cm-limit-menu').forEach((item) => {
+          if (item !== menu) item.hidden = true;
+        });
+        if (menu) menu.hidden = !menu.hidden;
+        return;
+      }
+
+      if (option) {
+        event.preventDefault();
+        event.stopPropagation();
+        if (typeof event.stopImmediatePropagation === 'function') event.stopImmediatePropagation();
+
+        const root = option.closest('[data-limit-dropdown]');
+        const input = root?.querySelector('input[type="hidden"]');
+        const value = option.getAttribute('data-limit-value') || input?.value || '50';
+        if (input) input.value = value;
+        setGlobalPageLimit(value);
+        const menu = root?.querySelector('.cm-limit-menu');
+        if (menu) menu.hidden = true;
+
+        // Moduły Supabase renderują listy dynamicznie z limitu zapisanego w localStorage.
+        // Krótki reload odświeża tabelę bez ręcznego dopisywania osobnej logiki dla każdego modułu.
+        window.setTimeout(() => window.location.reload(), 80);
+        return;
+      }
+
+      if (!clickedInsideDropdown) {
+        document.querySelectorAll('.cm-limit-menu').forEach((menu) => { menu.hidden = true; });
+      }
+    }, true);
+  };
+
+  setupGlobalLimitDropdownDelegation();
+
   const pageSizeDropdown = (id, value = '50') => limitDropdownHtml(id, value);
 
   const renderDashboard = (ctx) => {
