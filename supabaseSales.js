@@ -277,6 +277,37 @@
     window.location.href = url.toString();
   }
 
+
+  function setupSalesDatePickers() {
+    const inputs = [document.querySelector("#salesFrom"), document.querySelector("#salesTo")].filter(Boolean);
+    inputs.forEach((input) => {
+      if (input.dataset.cmSalesPickerReady === "1") return;
+      input.dataset.cmSalesPickerReady = "1";
+      const openPicker = (event) => {
+        // Działa po dynamicznym renderze Supabase. Nie zmienia wyglądu pola.
+        try {
+          if (typeof input.showPicker === "function" && !input.disabled && !input.readOnly) {
+            input.showPicker();
+            return;
+          }
+        } catch (_) {}
+        input.focus();
+      };
+      input.addEventListener("click", openPicker);
+      input.addEventListener("focus", openPicker);
+      const label = input.closest("label");
+      if (label && label.dataset.cmSalesPickerLabelReady !== "1") {
+        label.dataset.cmSalesPickerLabelReady = "1";
+        label.addEventListener("click", (event) => {
+          if (event.target === input) return;
+          event.preventDefault();
+          input.focus();
+          openPicker(event);
+        });
+      }
+    });
+  }
+
   function setupFilters() {
     const form = document.querySelector(".cm-sales-report-controls");
     form?.addEventListener("submit", (event) => {
@@ -308,7 +339,9 @@
       if (mode === "last365") { start = new Date(base.getFullYear(), base.getMonth(), base.getDate() - 364); end = new Date(base.getFullYear(), base.getMonth(), base.getDate()); }
       if (from) from.value = iso(start);
       if (to) to.value = iso(end);
+      applySalesFilters();
     });
+    setupSalesDatePickers();
     setupSalesDropdowns();
     setupModuleLimitDropdowns(document);
   }
@@ -482,7 +515,7 @@
 
     setupFilters();
     document.querySelector("#salesExportBtn")?.addEventListener("click", exportActiveTable);
-    if (window.setupNativePickers) window.setupNativePickers();
+    setupSalesDatePickers();
   }
 
   document.addEventListener("DOMContentLoaded", () => {
