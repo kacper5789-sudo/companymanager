@@ -123,7 +123,14 @@
 
   function productPrice(product) {
     if (!product) return 0;
-    return moneyNumber(product.sale_price ?? product.price ?? 0);
+    return moneyNumber(
+      product.sale_price ??
+      product.price ??
+      product.gross_price ??
+      product.net_price ??
+      product.last_purchase_price ??
+      0
+    );
   }
 
   function bindDashboardTotalCalculator(form, lookups) {
@@ -136,12 +143,23 @@
     const calculate = () => {
       const service = lookups.servicesById[String(serviceSelect?.value || "")];
       const product = lookups.productsById[String(productSelect?.value || "")];
-      const total = servicePrice(service) + productPrice(product);
+      let productValue = productPrice(product);
+      if (!productValue && productSelect?.selectedOptions?.[0]) {
+        const rawPrice = productSelect.selectedOptions[0].getAttribute("data-price");
+        productValue = moneyNumber(rawPrice);
+      }
+      const total = servicePrice(service) + productValue;
       totalInput.value = total.toFixed(2);
     };
 
     serviceSelect?.addEventListener("change", calculate);
+    serviceSelect?.addEventListener("input", calculate);
     productSelect?.addEventListener("change", calculate);
+    productSelect?.addEventListener("input", calculate);
+    form.addEventListener("change", (event) => {
+      const name = event.target?.name;
+      if (["serviceId", "productId"].includes(name)) calculate();
+    });
     calculate();
   }
 
@@ -180,9 +198,12 @@
     try { localStorage.setItem(workersStateKey(ctx, dateIso), JSON.stringify(ids || [])); } catch (_) {}
   }
 
-  function optionList(items, labelFn, empty = "Brak danych") {
+  function optionList(items, labelFn, empty = "Brak danych", attrsFn = null) {
     if (!items.length) return `<option value="">${escapeHtml(empty)}</option>`;
-    return items.map((item) => `<option value="${escapeHtml(item.id)}">${escapeHtml(labelFn(item))}</option>`).join("");
+    return items.map((item) => {
+      const attrs = typeof attrsFn === "function" ? ` ${attrsFn(item)}` : "";
+      return `<option value="${escapeHtml(item.id)}"${attrs}>${escapeHtml(labelFn(item))}</option>`;
+    }).join("");
   }
 
   function timeOptions(selected = "") {
@@ -248,7 +269,7 @@
         .order("name", { ascending: true }),
       window.cmSupabase
         .from("products")
-        .select("id, company_id, name, price, sale_price, active")
+        .select("id, company_id, name, price, sale_price, gross_price, net_price, last_purchase_price, active")
         .eq("company_id", ctx.companyId)
         .order("name", { ascending: true }),
       window.cmSupabase.rpc("company_users_for_dropdown", { target_company_id: ctx.companyId })
@@ -388,6 +409,9 @@
   function payloadFromForm(ctx, formData) {
     const serviceId = String(formData.get("serviceId") || "").trim();
     const productId = String(formData.get("productId") || "").trim();
+    const selectedProductOption = Array.from(document.querySelectorAll('#dashboardAppointmentAddForm select[name="productId"], #dashboardEditVisitForm select[name="productId"]')).find((select) => select.value === productId)?.selectedOptions?.[0];
+    const selectedProductName = selectedProductOption?.textContent?.replace(/\s+—\s+.*$/, "").trim() || null;
+    const selectedProductPrice = moneyNumber(selectedProductOption?.getAttribute("data-price"));
     const start = normalizeTime(formData.get("start"));
     const end = normalizeTime(formData.get("end"));
     const clientId = String(formData.get("customerId") || "").trim();
@@ -415,6 +439,9 @@
       employee_name: employeeName,
       service_id: serviceId || null,
       product_id: productId || null,
+      product_name: productId ? selectedProductName : null,
+      product_price: productId ? selectedProductPrice : null,
+      product_quantity: productId ? 1 : null,
       status: String(formData.get("status") || "zaplanowane").trim() || "zaplanowane",
       deleted: false,
       note: String(formData.get("note") || "").trim() || null,
@@ -491,7 +518,12 @@
     const customerOptions = optionList(data.clients, customerName, "Brak klientów");
     const employeeOptions = optionList(data.users, personName, "Brak pracowników/użytkowników");
     const serviceOptions = optionList(data.services, (s) => `${s.name || "Usługa"}${servicePrice(s) ? ` — ${servicePrice(s).toFixed(2).replace(".00", "")} PLN` : ""}`, "Brak usług");
-    const productOptions = optionList(data.products, (p) => `${productName(p)}${productPrice(p) ? ` — ${productPrice(p).toFixed(2).replace(".00", "")} PLN` : ""}`, "Brak produktów");
+    const productOptions = optionList(
+      data.products,
+      (p) => `${productName(p)}${productPrice(p) ? ` — ${productPrice(p).toFixed(2).replace(".00", "")} PLN` : ""}`,
+      "Brak produktów",
+      (p) => `data-price="${escapeHtml(String(productPrice(p)))}"`
+    );
     const visibleVisits = data.appointments.filter((item) => item.deleted !== true && !["odwołana", "odwołane", "usunięte"].includes(String(item.status || "").toLowerCase()));
     const visitOptions = visibleVisits.map((item) => `<option value="${escapeHtml(item.id)}">${escapeHtml(appointmentLabel(item, lookups))}</option>`).join("");
     const finishableVisits = visibleVisits.filter((item) => !["zakończone", "odwołane", "usunięte"].includes(String(item.status || "").toLowerCase()));
@@ -702,6 +734,7 @@
       }
       if (form.elements.employeeId) form.elements.employeeId.value = employeeId;
       if (form.elements.serviceId) form.elements.serviceId.dispatchEvent(new Event("change", { bubbles: true }));
+      if (form.elements.productId) form.elements.productId.dispatchEvent(new Event("change", { bubbles: true }));
       const firstInput = form.querySelector('select[name="customerId"], input, select, textarea');
       if (firstInput) window.setTimeout(() => firstInput.focus(), 50);
       if (typeof window.cmRefreshGlobalModalState === "function") window.cmRefreshGlobalModalState();
