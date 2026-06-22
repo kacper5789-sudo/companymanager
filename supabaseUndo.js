@@ -27,9 +27,20 @@
     }
   }
 
-  function getActorId() {
+  async function getActorId() {
     const access = getAccess();
-    return access.user_id || access.id || null;
+    if (access.user_id) return access.user_id;
+    if (access.id) return access.id;
+
+    const supabase = getClient();
+    if (!supabase?.auth?.getUser) return null;
+
+    try {
+      const { data } = await supabase.auth.getUser();
+      return data?.user?.id || null;
+    } catch (_) {
+      return null;
+    }
   }
 
   async function recordUndoAction({ module, actionType, targetTable, targetId, beforeData = null, afterData = null, companyId = null }) {
@@ -37,8 +48,11 @@
     if (!supabase) return { ok: false, error: "Brak klienta Supabase" };
 
     const resolvedCompanyId = companyId || await getCompanyId();
-    const actorId = getActorId();
-    if (!resolvedCompanyId || !actorId || !targetTable || !actionType) return { ok: false, error: "Brak danych undo" };
+    const actorId = await getActorId();
+    if (!resolvedCompanyId || !targetTable || !actionType) {
+      console.warn("CompanyManager undo skipped:", { resolvedCompanyId, actorId, targetTable, actionType });
+      return { ok: false, error: "Brak danych undo" };
+    }
 
     const payload = {
       company_id: resolvedCompanyId,
