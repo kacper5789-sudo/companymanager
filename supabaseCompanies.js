@@ -68,7 +68,7 @@
 
     const [{ data: companies, error: companiesError }, { data: requests, error: requestsError }] = await Promise.all([
       window.cmSupabase.rpc("owner_list_companies"),
-      window.cmSupabase.from("company_registration_requests").select("*").order("created_at", { ascending: false })
+      window.cmSupabase..rpc("owner_list_registration_requests")
     ]);
 
     if (companiesError || requestsError) {
