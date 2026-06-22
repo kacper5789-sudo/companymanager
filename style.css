@@ -4118,7 +4118,7 @@ button[data-registration-reject]{
 }
 
 
-/* CompanyManager 029J — Clients: restore one real native calendar icon */
+/* CompanyManager 029K — Clients: one clickable calendar icon button over native date input */
 .customers-module .cm-client-date-label {
   display: flex;
   flex-direction: column;
@@ -4133,25 +4133,39 @@ button[data-registration-reject]{
 .customers-module .cm-client-date-field input[type="date"] {
   width: 100%;
   min-height: 42px;
-  padding-right: 46px !important;
-  cursor: pointer;
+  padding-right: 52px !important;
+  cursor: text;
   color-scheme: dark !important;
   background-image: none !important;
 }
 
-/* Nadpisuje globalny fake-icon z v0.7.7: w Klientach pokazujemy prawdziwą ikonkę przeglądarki. */
 .customers-module .cm-client-date-field input[type="date"]::-webkit-calendar-picker-indicator {
-  opacity: 1 !important;
-  display: block !important;
-  visibility: visible !important;
+  opacity: 0 !important;
   cursor: pointer !important;
-  width: 32px !important;
-  height: 32px !important;
+  width: 44px !important;
+  height: 100% !important;
   margin: 0 !important;
-  padding: 0 !important;
-  filter: invert(1) brightness(1.5) !important;
 }
 
 .customers-module .cm-client-date-button {
-  display: none !important;
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 34px;
+  height: 34px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: #eaf4ff;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  display: grid !important;
+  place-items: center;
+  z-index: 5;
+}
+
+.customers-module .cm-client-date-button:hover {
+  background: rgba(96, 165, 250, .16);
 }

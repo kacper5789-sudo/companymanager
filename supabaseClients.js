@@ -217,26 +217,42 @@
 
 
   function setupClientNativeDatePickers() {
-    document.querySelectorAll('.customers-module input[type="date"]').forEach((input) => {
-      if (input.dataset.cmClientPickerReady === '1') return;
+    document.querySelectorAll('.customers-module .cm-client-date-field').forEach((field) => {
+      const input = field.querySelector('input[type="date"]');
+      if (!input || input.dataset.cmClientPickerReady === '1') return;
       input.dataset.cmClientPickerReady = '1';
       input.classList.add('cm-date-input');
 
-      const openPicker = () => {
+      let button = field.querySelector('.cm-client-date-button');
+      if (!button) {
+        button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'cm-client-date-button';
+        button.setAttribute('aria-label', 'Otwórz kalendarz');
+        button.textContent = '📅';
+        field.appendChild(button);
+      }
+
+      const openPicker = (event) => {
+        if (event) {
+          event.preventDefault();
+          event.stopPropagation();
+        }
         if (input.disabled || input.readOnly) return;
         try { input.focus({ preventScroll: true }); } catch (err) { input.focus(); }
         try {
-          if (typeof input.showPicker === 'function') input.showPicker();
+          if (typeof input.showPicker === 'function') {
+            input.showPicker();
+            return;
+          }
         } catch (err) {}
+        input.click();
       };
 
-      input.addEventListener('click', openPicker);
-      input.addEventListener('focus', openPicker);
+      button.addEventListener('pointerdown', openPicker);
+      button.addEventListener('click', openPicker);
       input.addEventListener('keydown', (event) => {
-        if (event.key === 'Enter' || event.key === ' ') {
-          event.preventDefault();
-          openPicker();
-        }
+        if (event.key === 'Enter' || event.key === ' ') openPicker(event);
       });
     });
   }
