@@ -4116,3 +4116,18 @@ button[data-registration-reject]{
     flex-direction: column;
   }
 }
+
+
+/* CompanyManager 036G — global modal cancel must not cover final submit buttons */
+.cm-as-modal > .cm-modal-cancel-btn:last-child{
+  position:static !important;
+  bottom:auto !important;
+  z-index:auto !important;
+  box-shadow:none !important;
+}
+.cm-as-modal form button[type="submit"],
+.cm-as-modal form button#submitAddAdminUserBtn{
+  position:relative;
+  z-index:5;
+  pointer-events:auto;
+}

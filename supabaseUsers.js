@@ -347,7 +347,7 @@
       <h2>Dodaj użytkownika</h2>
       <form id="addAdminUserForm" class="bm-form-grid cm-admin-user-form">
         ${userFormHtml("add", null, positions)}
-        <button id="submitAddAdminUserBtn" type="button">Dodaj użytkownika</button>
+        <button id="submitAddAdminUserBtn" type="submit">Dodaj użytkownika</button>
       </form>
       <p id="addAdminUserMessage" class="panel-message"></p>
     </section>
@@ -446,6 +446,18 @@
     const addButton = document.querySelector("#submitAddAdminUserBtn");
     let addUserSubmitting = false;
 
+    // 036G: modal overlay safety. The final button is a real submit button,
+    // but we also bind a direct handler to prevent any global modal/click bridge
+    // from swallowing the action.
+    if (addButton && !addButton.dataset.cmUsersSubmitReady) {
+      addButton.dataset.cmUsersSubmitReady = "1";
+      addButton.addEventListener("click", async (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        await handleAddUserSubmit(addForm);
+      }, true);
+    }
+
     async function handleAddUserSubmit(form) {
       if (!form || addUserSubmitting) return;
       const msg = "#addAdminUserMessage";
@@ -495,11 +507,6 @@
       await handleAddUserSubmit(event.currentTarget);
     });
 
-    addButton?.addEventListener("click", async (event) => {
-      event.preventDefault();
-      event.stopPropagation();
-      await handleAddUserSubmit(addForm);
-    });
 
     document.querySelector("#editAdminUserForm")?.addEventListener("submit", async (event) => {
       event.preventDefault();
