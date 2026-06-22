@@ -223,6 +223,37 @@
     });
   }
 
+
+
+  function setupVisitNativeDatePickers() {
+    // Formularze Wizyt są renderowane dynamicznie przez Supabase,
+    // więc globalny listener z app.js nie łapie inputów po pierwszym załadowaniu.
+    // Podpinamy dokładnie natywny input[type=date] po renderze oraz po kliknięciu Dodaj/Edytuj.
+    document.querySelectorAll('#visitFormCard input[type="date"], #visitEditCard input[type="date"]').forEach((input) => {
+      if (input.dataset.cmVisitPickerReady === '1') return;
+      input.dataset.cmVisitPickerReady = '1';
+      input.classList.add('cm-date-input');
+      input.style.pointerEvents = 'auto';
+
+      const openPicker = () => {
+        if (input.disabled || input.readOnly) return;
+        try {
+          input.focus({ preventScroll: true });
+        } catch (_) {
+          input.focus();
+        }
+        try {
+          if (typeof input.showPicker === 'function') input.showPicker();
+        } catch (_) {
+          // Fallback: jeśli przeglądarka blokuje showPicker, zostaje natywny focus/click.
+        }
+      };
+
+      input.addEventListener('click', openPicker);
+      input.addEventListener('focus', openPicker);
+    });
+  }
+
   function payloadFromForm(ctx, formData) {
     const date = String(formData.get("date") || "").trim();
     const time = String(formData.get("time") || "").trim();
@@ -377,6 +408,8 @@
       </section>
     `;
 
+    setupVisitNativeDatePickers();
+
     document.querySelectorAll("[data-visit-filter]").forEach((button) => button.addEventListener("click", () => {
       window.location.href = `visits.html?status=${encodeURIComponent(button.dataset.visitFilter || "niezakończone")}`;
     }));
@@ -384,8 +417,16 @@
     const addCard = document.querySelector("#visitFormCard");
     const editCard = document.querySelector("#visitEditCard");
     const deleteCard = document.querySelector("#visitDeleteCard");
-    document.querySelector("#showAddVisit")?.addEventListener("click", () => showOnly(addCard));
-    document.querySelector("#showEditVisit")?.addEventListener("click", () => showOnly(editCard));
+    document.querySelector("#showAddVisit")?.addEventListener("click", () => {
+      showOnly(addCard);
+      setupVisitNativeDatePickers();
+      const dateInput = addCard?.querySelector('input[type="date"]');
+      if (dateInput) setTimeout(() => dateInput.click(), 0);
+    });
+    document.querySelector("#showEditVisit")?.addEventListener("click", () => {
+      showOnly(editCard);
+      setupVisitNativeDatePickers();
+    });
     document.querySelector("#showDeleteVisit")?.addEventListener("click", () => showOnly(deleteCard));
 
     document.querySelector("#visitForm")?.addEventListener("submit", async (event) => {
@@ -406,6 +447,7 @@
       if (!form || !selected) { if (form) form.hidden = true; return; }
       fillEditForm(form, selected);
       form.hidden = false;
+      setupVisitNativeDatePickers();
     });
 
     document.querySelector("#visitEditForm")?.addEventListener("submit", async (event) => {
