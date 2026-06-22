@@ -216,45 +216,125 @@
   }
 
 
+  function isoToPolishDate(value) {
+    const raw = String(value || "").trim();
+    const match = raw.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (!match) return raw;
+    return `${match[3]}.${match[2]}.${match[1]}`;
+  }
+
+  function polishToIsoDate(value) {
+    const raw = String(value || "").trim();
+    if (!raw) return "";
+    const iso = raw.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (iso) return raw;
+    const pl = raw.match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})$/);
+    if (!pl) return "";
+    const day = pl[1].padStart(2, "0");
+    const month = pl[2].padStart(2, "0");
+    const year = pl[3];
+    return `${year}-${month}-${day}`;
+  }
+
+  function getDaysInMonth(year, monthIndex) {
+    return new Date(year, monthIndex + 1, 0).getDate();
+  }
+
   function setupClientNativeDatePickers() {
     document.querySelectorAll('.customers-module .cm-client-date-field').forEach((field) => {
-      const input = field.querySelector('input[type="date"]');
-      if (!input || input.dataset.cmClientPickerReady === '1') return;
-      input.dataset.cmClientPickerReady = '1';
-      input.classList.add('cm-date-input');
+      const input = field.querySelector('input[name="birthDate"]');
+      const button = field.querySelector('.cm-client-date-button');
+      if (!input || !button || field.dataset.cmClientCalendarReady === '1') return;
+      field.dataset.cmClientCalendarReady = '1';
 
-      let button = field.querySelector('.cm-client-date-button');
-      if (!button) {
-        button = document.createElement('button');
-        button.type = 'button';
-        button.className = 'cm-client-date-button';
-        button.setAttribute('aria-label', 'Otwórz kalendarz');
-        button.textContent = '📅';
-        field.appendChild(button);
-      }
-
-      const openPicker = (event) => {
-        if (event) {
-          event.preventDefault();
-          event.stopPropagation();
-        }
-        if (input.disabled || input.readOnly) return;
-        try { input.focus({ preventScroll: true }); } catch (err) { input.focus(); }
-        try {
-          if (typeof input.showPicker === 'function') {
-            input.showPicker();
-            return;
-          }
-        } catch (err) {}
-        input.click();
+      const openCalendar = (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        renderClientCalendarPopup(input);
       };
 
-      button.addEventListener('pointerdown', openPicker);
-      button.addEventListener('click', openPicker);
+      button.addEventListener('click', openCalendar);
+      input.addEventListener('click', openCalendar);
       input.addEventListener('keydown', (event) => {
-        if (event.key === 'Enter' || event.key === ' ') openPicker(event);
+        if (event.key === 'Enter' || event.key === ' ') openCalendar(event);
       });
     });
+  }
+
+  function renderClientCalendarPopup(input) {
+    document.querySelectorAll('.cm-client-calendar-popup').forEach((el) => el.remove());
+
+    const existing = polishToIsoDate(input.value) || new Date().toISOString().slice(0, 10);
+    const parts = existing.split('-').map(Number);
+    let year = parts[0] || new Date().getFullYear();
+    let month = (parts[1] || (new Date().getMonth() + 1)) - 1;
+
+    const popup = document.createElement('div');
+    popup.className = 'cm-client-calendar-popup';
+    document.body.appendChild(popup);
+
+    const positionPopup = () => {
+      const rect = input.getBoundingClientRect();
+      popup.style.left = `${Math.max(12, rect.left)}px`;
+      popup.style.top = `${rect.bottom + 8}px`;
+      popup.style.minWidth = `${Math.max(280, rect.width)}px`;
+    };
+
+    const render = () => {
+      const monthNames = ['Styczeń','Luty','Marzec','Kwiecień','Maj','Czerwiec','Lipiec','Sierpień','Wrzesień','Październik','Listopad','Grudzień'];
+      const firstDay = new Date(year, month, 1).getDay();
+      const mondayOffset = (firstDay + 6) % 7;
+      const days = getDaysInMonth(year, month);
+      let cells = '';
+      for (let i = 0; i < mondayOffset; i += 1) cells += '<button type="button" disabled></button>';
+      for (let day = 1; day <= days; day += 1) {
+        const iso = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+        const selected = polishToIsoDate(input.value) === iso ? ' is-selected' : '';
+        cells += `<button type="button" class="cm-client-calendar-day${selected}" data-date="${iso}">${day}</button>`;
+      }
+      popup.innerHTML = `
+        <div class="cm-client-calendar-head">
+          <button type="button" data-cal-prev aria-label="Poprzedni miesiąc">‹</button>
+          <strong>${monthNames[month]} ${year}</strong>
+          <button type="button" data-cal-next aria-label="Następny miesiąc">›</button>
+        </div>
+        <div class="cm-client-calendar-week"><span>Pn</span><span>Wt</span><span>Śr</span><span>Cz</span><span>Pt</span><span>Sb</span><span>Nd</span></div>
+        <div class="cm-client-calendar-grid">${cells}</div>
+      `;
+    };
+
+    popup.addEventListener('click', (event) => {
+      const prev = event.target.closest('[data-cal-prev]');
+      const next = event.target.closest('[data-cal-next]');
+      const day = event.target.closest('[data-date]');
+      if (prev) {
+        month -= 1;
+        if (month < 0) { month = 11; year -= 1; }
+        render();
+        return;
+      }
+      if (next) {
+        month += 1;
+        if (month > 11) { month = 0; year += 1; }
+        render();
+        return;
+      }
+      if (day) {
+        input.value = isoToPolishDate(day.dataset.date);
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+        popup.remove();
+      }
+    });
+
+    const close = (event) => {
+      if (event.target === input || popup.contains(event.target) || event.target.closest('.cm-client-date-button')) return;
+      popup.remove();
+      document.removeEventListener('mousedown', close, true);
+    };
+
+    render();
+    positionPopup();
+    setTimeout(() => document.addEventListener('mousedown', close, true), 0);
   }
 
 
@@ -276,7 +356,7 @@
       <label>Skąd klient wie o firmie<input name="source" placeholder="np. Google, Facebook, polecenie" value="${escapeHtml(customer.source || "")}"></label>
       <label>Zgoda na reklamę — SMS<select name="marketingSms">${yesNoOptions.map((v) => `<option value="${v}" ${boolToTakNie(customer.marketing_sms) === v ? "selected" : ""}>${v}</option>`).join("")}</select></label>
       <label>Zgoda na reklamę — Email<select name="marketingEmail">${yesNoOptions.map((v) => `<option value="${v}" ${boolToTakNie(customer.marketing_email) === v ? "selected" : ""}>${v}</option>`).join("")}</select></label>
-      <label class="cm-client-date-label">Dzień, miesiąc i rok urodzin<span class="cm-client-date-field"><input name="birthDate" type="date" value="${escapeHtml(customer.birth_date || "")}" aria-label="Dzień, miesiąc i rok urodzin"></span></label>
+      <label class="cm-client-date-label">Dzień, miesiąc i rok urodzin<span class="cm-client-date-field"><input name="birthDate" type="text" inputmode="numeric" placeholder="dd.mm.rrrr" value="${escapeHtml(isoToPolishDate(customer.birth_date || ""))}" aria-label="Dzień, miesiąc i rok urodzin"><button type="button" class="cm-client-date-button" aria-label="Otwórz kalendarz">📅</button></span></label>
       <label class="full">Ważna informacja<textarea name="importantInfo" placeholder="Ważna informacja">${escapeHtml(customer.notes || "")}</textarea></label>
     `;
   }
@@ -297,7 +377,7 @@
       postal_code: String(data.postalCode || "").trim() || null,
       city: String(data.city || "").trim() || null,
       source: String(data.source || "").trim() || null,
-      birth_date: String(data.birthDate || "").trim() || null,
+      birth_date: polishToIsoDate(data.birthDate) || null,
       notes: String(data.importantInfo || "").trim() || null,
       marketing_sms: takNieToBool(data.marketingSms),
       marketing_email: takNieToBool(data.marketingEmail),
@@ -428,7 +508,7 @@
     form.source.value = client.source || "";
     form.marketingSms.value = boolToTakNie(client.marketing_sms);
     form.marketingEmail.value = boolToTakNie(client.marketing_email);
-    form.birthDate.value = client.birth_date || "";
+    form.birthDate.value = isoToPolishDate(client.birth_date || "");
     form.importantInfo.value = client.notes || "";
   }
 

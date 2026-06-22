@@ -4169,3 +4169,90 @@ button[data-registration-reject]{
 .customers-module .cm-client-date-button:hover {
   background: rgba(96, 165, 250, .16);
 }
+
+
+/* CompanyManager 029L — Clients: real JS calendar for birth date, no native browser dependency */
+.customers-module .cm-client-date-label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.customers-module .cm-client-date-field {
+  position: relative;
+  display: block;
+}
+.customers-module .cm-client-date-field input[name="birthDate"] {
+  width: 100%;
+  min-height: 42px;
+  padding-right: 52px !important;
+  cursor: pointer;
+}
+.customers-module .cm-client-date-button {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 34px;
+  height: 34px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: #eaf4ff;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  display: grid !important;
+  place-items: center;
+  z-index: 4;
+}
+.cm-client-calendar-popup {
+  position: fixed;
+  z-index: 999999;
+  border: 1px solid rgba(56,189,248,.28);
+  border-radius: 16px;
+  background: #07111f;
+  box-shadow: 0 24px 70px rgba(0,0,0,.55);
+  padding: 12px;
+  color: #eaf4ff;
+}
+.cm-client-calendar-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.cm-client-calendar-head button,
+.cm-client-calendar-day {
+  border: 1px solid rgba(56,189,248,.22);
+  background: rgba(15,23,42,.86);
+  color: #eaf4ff;
+  border-radius: 10px;
+  min-height: 34px;
+  cursor: pointer;
+}
+.cm-client-calendar-head button {
+  width: 38px;
+  font-size: 22px;
+}
+.cm-client-calendar-week,
+.cm-client-calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 6px;
+  text-align: center;
+}
+.cm-client-calendar-week {
+  margin-bottom: 6px;
+  color: #93a4bd;
+  font-size: 12px;
+}
+.cm-client-calendar-grid button:disabled {
+  opacity: .25;
+  cursor: default;
+}
+.cm-client-calendar-day:hover,
+.cm-client-calendar-day.is-selected {
+  border-color: rgba(56,189,248,.75);
+  background: rgba(14,165,233,.24);
+}
