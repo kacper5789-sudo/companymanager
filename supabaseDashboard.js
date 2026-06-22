@@ -36,6 +36,7 @@
   }
   function canAddAppointments(ctx) { return hasAnyPermission(ctx, ["appointments_add", "wizyty (dodawanie, edycja, zakończenie, usuwanie)"]); }
   function canEditAppointments(ctx) { return hasAnyPermission(ctx, ["appointments_edit", "wizyty (dodawanie, edycja, zakończenie, usuwanie)"]); }
+  function canFinishAppointments(ctx) { return hasAnyPermission(ctx, ["appointments_finish", "appointments_edit", "wizyty (dodawanie, edycja, zakończenie, usuwanie)"]); }
   function canCancelAppointments(ctx) { return hasAnyPermission(ctx, ["appointments_delete", "appointments_edit", "wizyty (dodawanie, edycja, zakończenie, usuwanie)"]); }
 
   function getPanelArea() {
@@ -215,6 +216,18 @@
     return ctx;
   }
 
+  async function autoMarkUnfinishedAppointments(ctx) {
+    if (!window.cmSupabase || !ctx?.companyId) return;
+    try {
+      const { error } = await window.cmSupabase.rpc("auto_mark_unfinished_appointments", { p_company_id: ctx.companyId });
+      if (error) {
+        console.warn("CompanyManager auto unfinished appointments skipped", error);
+      }
+    } catch (error) {
+      console.warn("CompanyManager auto unfinished appointments failed", error);
+    }
+  }
+
   async function fetchDashboardData(ctx) {
     const [appointmentsRes, clientsRes, servicesRes, productsRes, usersRes] = await Promise.all([
       window.cmSupabase
@@ -355,7 +368,7 @@
     } else if (typeof window.cmCloseAllModalPanels === 'function') {
       window.cmCloseAllModalPanels(panels);
     }
-    document.querySelectorAll('#dashboardAppointmentForm, #dashboardEditVisitPanel, #dashboardCancelVisitPanel').forEach((panel) => {
+    document.querySelectorAll('#dashboardAppointmentForm, #dashboardEditVisitPanel, #dashboardFinishVisitPanel, #dashboardCancelVisitPanel').forEach((panel) => {
       panel.hidden = true;
       panel.classList.remove('cm-modal-active', 'cm-as-modal');
     });
@@ -458,6 +471,8 @@
       return;
     }
 
+    await autoMarkUnfinishedAppointments(ctx);
+
     let data;
     try {
       data = await fetchDashboardData(ctx);
@@ -471,6 +486,7 @@
     const lookups = buildLookups(data);
     const allowAdd = canAddAppointments(ctx);
     const allowEdit = canEditAppointments(ctx);
+    const allowFinish = canFinishAppointments(ctx);
     const allowCancel = canCancelAppointments(ctx);
     const customerOptions = optionList(data.clients, customerName, "Brak klientów");
     const employeeOptions = optionList(data.users, personName, "Brak pracowników/użytkowników");
@@ -478,6 +494,8 @@
     const productOptions = optionList(data.products, (p) => `${productName(p)}${productPrice(p) ? ` — ${productPrice(p).toFixed(2).replace(".00", "")} PLN` : ""}`, "Brak produktów");
     const visibleVisits = data.appointments.filter((item) => item.deleted !== true && !["odwołana", "odwołane", "usunięte"].includes(String(item.status || "").toLowerCase()));
     const visitOptions = visibleVisits.map((item) => `<option value="${escapeHtml(item.id)}">${escapeHtml(appointmentLabel(item, lookups))}</option>`).join("");
+    const finishableVisits = visibleVisits.filter((item) => !["zakończone", "odwołane", "usunięte"].includes(String(item.status || "").toLowerCase()));
+    const finishVisitOptions = finishableVisits.map((item) => `<option value="${escapeHtml(item.id)}">${escapeHtml(appointmentLabel(item, lookups))}</option>`).join("");
     const appointmentRows = visibleVisits.slice(0, 20).map((item) => {
       const client = lookups.clientsById[appointmentClientId(item)];
       const employee = lookups.usersById[item.employee_id];
@@ -508,6 +526,7 @@
           <span class="bm-dashboard-actions">
             <button type="button" id="dashAddVisitBtn" ${allowAdd ? "" : "disabled"}>Dodaj</button>
             <button type="button" id="dashEditVisitBtn" class="bm-light-btn" ${allowEdit ? "" : "disabled"}>Edytuj</button>
+            <button type="button" id="dashFinishVisitBtn" class="bm-light-btn" ${allowFinish ? "" : "disabled"}>Zakończ wizytę</button>
             <button type="button" id="dashCancelVisitBtn" class="bm-danger-btn" ${allowCancel ? "" : "disabled"}>Odwołaj wizytę</button>
             <button type="button" id="dashEmployeeCount" class="bm-worker-count">(${activeWorkerIds.length})</button>
           </span>
@@ -558,6 +577,19 @@
         <p id="dashboardEditVisitMessage" class="panel-message"></p>
       </section>
 
+      <section class="bm-page-card bm-appointment-form" id="dashboardFinishVisitPanel" hidden>
+        <div class="bm-page-head"><h2>Zakończ wizytę</h2></div>
+        <form id="dashboardFinishVisitForm" class="bm-form-grid">
+          <label class="bm-full">Wybierz wizytę<select name="visitId" required><option value="">Wybierz wizytę</option>${finishVisitOptions}</select></label>
+          <label>Kwota do zapłaty<input name="total" value="0.00" readonly></label>
+          <label>Zapłacono<input name="paidAmount" value="0.00" inputmode="decimal"></label>
+          <label>Płatność<select name="payment"><option>gotówka</option><option>karta kredytowa</option><option>karnet</option><option>pakiet</option><option>gratis</option></select></label>
+          <label class="bm-full">Opis / notatka<textarea name="note" placeholder="Notatka do sprzedaży"></textarea></label>
+          <button type="submit">Zakończ wizytę</button>
+        </form>
+        <p id="dashboardFinishVisitMessage" class="panel-message"></p>
+      </section>
+
       <section class="bm-page-card bm-appointment-form" id="dashboardCancelVisitPanel" hidden>
         <div class="bm-page-head"><h2>Odwołaj wizytę</h2></div>
         <form id="dashboardCancelVisitForm" class="bm-form-grid">
@@ -576,13 +608,15 @@
 
     const addPanel = document.querySelector("#dashboardAppointmentForm");
     const editPanel = document.querySelector("#dashboardEditVisitPanel");
+    const finishPanel = document.querySelector("#dashboardFinishVisitPanel");
     const cancelPanel = document.querySelector("#dashboardCancelVisitPanel");
-    const panels = [addPanel, editPanel, cancelPanel];
+    const panels = [addPanel, editPanel, finishPanel, cancelPanel];
 
     document.querySelector("#dashPrevDay")?.addEventListener("click", () => { window.location.href = `dashboard.html?date=${encodeURIComponent(addDays(selectedDate, -1))}`; });
     document.querySelector("#dashNextDay")?.addEventListener("click", () => { window.location.href = `dashboard.html?date=${encodeURIComponent(addDays(selectedDate, 1))}`; });
     document.querySelector("#dashAddVisitBtn")?.addEventListener("click", () => showOnly(addPanel, panels));
     document.querySelector("#dashEditVisitBtn")?.addEventListener("click", () => showOnly(editPanel, panels));
+    document.querySelector("#dashFinishVisitBtn")?.addEventListener("click", () => showOnly(finishPanel, panels));
     document.querySelector("#dashCancelVisitBtn")?.addEventListener("click", () => showOnly(cancelPanel, panels));
 
     const workersPopover = document.querySelector("#dashWorkersPopover");
@@ -708,6 +742,22 @@
       });
     });
 
+
+    function fillFinishFormById(visitId) {
+      const form = document.querySelector("#dashboardFinishVisitForm");
+      if (!form) return;
+      const selected = data.appointments.find((item) => item.id === visitId);
+      const total = selected ? appointmentTotal(selected) : 0;
+      if (form.elements.total) form.elements.total.value = total.toFixed(2);
+      if (form.elements.paidAmount) form.elements.paidAmount.value = total.toFixed(2);
+      if (form.elements.payment && selected?.payment_method) form.elements.payment.value = selected.payment_method;
+      if (form.elements.note) form.elements.note.value = selected?.note || "";
+    }
+
+    document.querySelector('#dashboardFinishVisitForm select[name="visitId"]')?.addEventListener("change", (event) => {
+      fillFinishFormById(event.currentTarget.value);
+    });
+
     document.querySelector("#dashboardAppointmentAddForm")?.addEventListener("submit", async (event) => {
       event.preventDefault();
       if (!allowAdd) { setMessage("#dashboardAppointmentMessage", "Brak uprawnienia do dodawania wizyt.", false); return; }
@@ -741,6 +791,33 @@
       if (error) { setMessage("#dashboardEditVisitMessage", `Błąd edycji: ${error.message}`, false); return; }
       await window.cmUndo?.record({ module: "dashboard", actionType: "update", targetTable: "appointments", targetId: visitId, beforeData: before, afterData: updated || payload, companyId: ctx.companyId });
       setMessage("#dashboardEditVisitMessage", "Wizyta zaktualizowana.", true);
+      closeDashboardModals(panels);
+      window.setTimeout(renderDashboard, 180);
+    });
+
+
+    document.querySelector("#dashboardFinishVisitForm")?.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      if (!allowFinish) { setMessage("#dashboardFinishVisitMessage", "Brak uprawnienia do zakończenia wizyt.", false); return; }
+      const formData = new FormData(event.currentTarget);
+      const visitId = String(formData.get("visitId") || "").trim();
+      const paidAmount = moneyNumber(formData.get("paidAmount"));
+      const paymentMethod = String(formData.get("payment") || "gotówka").trim();
+      const note = String(formData.get("note") || "").trim();
+      if (!visitId) { setMessage("#dashboardFinishVisitMessage", "Wybierz wizytę do zakończenia.", false); return; }
+      const before = data.appointments.find((item) => item.id === visitId);
+      if (!before) { setMessage("#dashboardFinishVisitMessage", "Nie znaleziono wizyty.", false); return; }
+      const payload = {
+        p_appointment_id: visitId,
+        p_company_id: ctx.companyId,
+        p_paid_amount: paidAmount,
+        p_payment_method: paymentMethod,
+        p_note: note
+      };
+      const { data: result, error } = await window.cmSupabase.rpc("finish_appointment_with_sale", payload);
+      if (error) { setMessage("#dashboardFinishVisitMessage", `Błąd zakończenia: ${error.message}`, false); return; }
+      await window.cmUndo?.record({ module: "dashboard", actionType: "finish", targetTable: "appointments", targetId: visitId, beforeData: before, afterData: result || payload, companyId: ctx.companyId });
+      setMessage("#dashboardFinishVisitMessage", "Wizyta zakończona i sprzedaż zapisana.", true);
       closeDashboardModals(panels);
       window.setTimeout(renderDashboard, 180);
     });
