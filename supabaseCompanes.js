@@ -115,36 +115,41 @@
     }
 
     const section = document.createElement("section");
-    section.className = "bm-page-card cm-companies-page";
+    section.className = "bm-page-card cm-companies-page cm-owner-actions-card";
     section.id = "supabaseOwnerCompanyActions";
-    section.style.marginTop = "20px";
     section.innerHTML = `
-      <div class="bm-page-head">
+      <div class="cm-owner-actions-head">
         <div>
-          <span class="bm-tag">Supabase</span>
+          <span class="bm-tag">Panel OWNER</span>
           <h3>Przyciski OWNER</h3>
-          <p class="bm-muted">Najpierw wybierz firmę z listy Supabase, potem wybierz akcję. Stary widok tabeli zostaje bez zmian.</p>
+          <p class="bm-muted">Najpierw wybierz firmę, potem wykonaj akcję administracyjną. Dane firmy zostają w bazie, dopóki nie użyjesz opcji „Usuń permanentnie”.</p>
+        </div>
+        <div class="cm-owner-actions-badge">Supabase</div>
+      </div>
+
+      <div class="cm-owner-actions-grid">
+        <label class="cm-owner-company-select">
+          <span>Firma</span>
+          <select id="ownerCompanyActionSelect">
+            <option value="">Wybierz firmę</option>
+            ${buildOptions(companies)}
+          </select>
+        </label>
+
+        <div class="cm-owner-actions-buttons">
+          <button type="button" class="bm-btn" id="blockCompanyBtn">Zablokuj firmę</button>
+          <button type="button" class="bm-btn" id="unblockCompanyBtn">Odblokuj firmę</button>
+          <button type="button" class="bm-btn danger" id="trashCompanyBtn">Usuń do kosza</button>
+          <button type="button" class="bm-btn" id="restoreCompanyBtn">Przywróć</button>
+          <button type="button" class="bm-btn danger" id="permanentDeleteCompanyBtn">Usuń permanentnie</button>
+          <button type="button" class="bm-btn" id="extendPackageBtn">Przedłuż pakiet</button>
         </div>
       </div>
 
-      <label style="display:block; margin-bottom:14px;">
-        Firma
-        <select id="ownerCompanyActionSelect" style="width:100%; margin-top:6px;">
-          <option value="">Wybierz firmę</option>
-          ${buildOptions(companies)}
-        </select>
-      </label>
-
-      <div class="bm-actions" style="display:flex; flex-wrap:wrap; gap:10px;">
-        <button type="button" class="bm-btn" id="blockCompanyBtn">Zablokuj firmę</button>
-        <button type="button" class="bm-btn" id="unblockCompanyBtn">Odblokuj firmę</button>
-        <button type="button" class="bm-btn danger" id="trashCompanyBtn">Usuń do kosza</button>
-        <button type="button" class="bm-btn" id="restoreCompanyBtn">Przywróć</button>
-        <button type="button" class="bm-btn danger" id="permanentDeleteCompanyBtn">Usuń permanentnie</button>
-        <button type="button" class="bm-btn" id="extendPackageBtn">Przedłuż pakiet</button>
+      <div class="cm-owner-actions-note">
+        <strong>Bezpieczne zarządzanie firmą:</strong>
+        <span>Blokada odcina dostęp, kosz ukrywa firmę, a przedłużenie pakietu przywraca dostęp po płatności. Permanentne usunięcie zostaw jako opcję awaryjną.</span>
       </div>
-
-      <p class="bm-muted" style="margin-top:12px;">Blokada, kosz i przedłużenie pakietu działają na danych Supabase. Dane firmy zostają, dopóki nie użyjesz opcji „Usuń permanentnie”.</p>
     `;
 
     const target = findInsertPlace();

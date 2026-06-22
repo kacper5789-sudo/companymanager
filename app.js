@@ -6713,7 +6713,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <span class="bm-tag">Tylko właściciel</span>
             <h2>Firmy</h2>
           </div>
-          <div class="bm-head-actions"><button type="button" class="bm-btn danger" id="openDeleteCompanyModal">Usuń firmę</button></div>
+
         </div>
         ${rows.length ? table(['Nr','Nazwa Firmy','Właściciel Firmy','Nadawca Wiadomości','Pakiet','Data wygaśnięcia pakietu'], rows) : '<div class="bm-empty-state">Brak aktywnych firm.</div>'}
         <div class="cm-modal-backdrop" id="deleteCompanyModal" hidden>
