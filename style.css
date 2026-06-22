@@ -4011,94 +4011,108 @@ button[data-registration-reject]{
   }
 }
 
+/* CompanyManager — Supabase OWNER company actions */
+.cm-owner-actions-card {
+  margin-top: 22px;
+  border: 1px solid rgba(37, 99, 235, 0.28);
+  background: linear-gradient(135deg, rgba(15, 23, 42, 0.96), rgba(2, 6, 23, 0.98));
+  box-shadow: 0 18px 45px rgba(15, 23, 42, 0.28);
+}
 
-/* Supabase OWNER company actions — premium panel */
-.cm-owner-actions-card{
-  margin-top:18px;
-  border-color:rgba(56,189,248,.22);
-  background:linear-gradient(135deg,rgba(15,23,42,.9),rgba(8,13,25,.82) 55%,rgba(37,99,235,.10));
-  box-shadow:0 22px 70px rgba(0,0,0,.28), inset 0 1px 0 rgba(255,255,255,.04);
+.cm-owner-actions-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 18px;
 }
-.cm-owner-actions-head{
-  display:flex;
-  align-items:flex-start;
-  justify-content:space-between;
-  gap:16px;
-  margin-bottom:16px;
+
+.cm-owner-actions-head h3 {
+  margin: 8px 0 6px;
+  color: #e5edf7;
+  font-size: 22px;
 }
-.cm-owner-actions-head h3{
-  margin:4px 0 7px;
-  color:#eaf2ff;
-  font-size:20px;
-  letter-spacing:-.025em;
+
+.cm-owner-actions-badge {
+  border: 1px solid rgba(59, 130, 246, 0.55);
+  color: #bfdbfe;
+  background: rgba(37, 99, 235, 0.14);
+  border-radius: 999px;
+  padding: 8px 12px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  font-size: 12px;
 }
-.cm-owner-actions-head p{
-  margin:0;
-  max-width:760px;
+
+.cm-owner-actions-grid {
+  display: grid;
+  grid-template-columns: minmax(260px, 390px) 1fr;
+  gap: 16px;
+  align-items: end;
 }
-.cm-owner-actions-badge{
-  flex:0 0 auto;
-  border:1px solid rgba(56,189,248,.28);
-  background:rgba(37,99,235,.18);
-  color:#bfdbfe;
-  border-radius:999px;
-  padding:8px 12px;
-  font-size:11px;
-  text-transform:uppercase;
-  letter-spacing:.12em;
-  font-weight:900;
+
+.cm-owner-company-select {
+  display: grid;
+  gap: 8px;
+  color: #cbd5e1;
+  font-weight: 700;
 }
-.cm-owner-actions-grid{
-  display:grid;
-  grid-template-columns:minmax(260px,.9fr) minmax(320px,1.3fr);
-  gap:14px;
-  align-items:end;
+
+.cm-owner-company-select select {
+  width: 100%;
+  min-height: 44px;
+  border-radius: 14px;
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  background: rgba(2, 6, 23, 0.72);
+  color: #e5edf7;
+  padding: 0 14px;
+  outline: none;
 }
-.cm-owner-company-select{
-  display:grid;
-  gap:8px;
-  color:#cbd5e1;
-  font-size:13px;
-  font-weight:800;
+
+.cm-owner-actions-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
 }
-.cm-owner-company-select select{
-  width:100%;
-  min-height:46px;
-  border:1px solid rgba(148,163,184,.22);
-  border-radius:14px;
-  background:rgba(2,6,23,.58);
-  color:#e5eefb;
-  padding:12px 14px;
-  outline:none;
-  font:inherit;
+
+.cm-owner-actions-note {
+  margin-top: 16px;
+  border: 1px solid rgba(14, 165, 233, 0.22);
+  background: rgba(14, 165, 233, 0.07);
+  border-radius: 16px;
+  padding: 12px 14px;
+  color: #cbd5e1;
+  display: grid;
+  gap: 4px;
 }
-.cm-owner-company-select select:focus{
-  border-color:rgba(56,189,248,.75);
-  box-shadow:0 0 0 4px rgba(56,189,248,.09);
+
+.cm-owner-actions-note strong {
+  color: #e0f2fe;
 }
-.cm-owner-actions-buttons{
-  display:flex;
-  flex-wrap:wrap;
-  gap:10px;
-  justify-content:flex-start;
+
+.cm-pagination-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  color: #94a3b8;
+  font-size: 13px;
+  padding: 12px 4px 0;
 }
-.cm-owner-actions-buttons .bm-btn{
-  min-height:42px;
-  border-radius:12px;
+
+.cm-pagination-controls {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
 }
-.cm-owner-actions-note{
-  margin-top:16px;
-  border:1px solid rgba(56,189,248,.16);
-  background:rgba(2,6,23,.38);
-  border-radius:16px;
-  padding:13px 14px;
-  color:#94a3b8;
-  line-height:1.55;
-  display:grid;
-  gap:3px;
-}
-.cm-owner-actions-note strong{color:#dbeafe;}
-@media (max-width:900px){
-  .cm-owner-actions-grid{grid-template-columns:1fr;}
-  .cm-owner-actions-head{flex-direction:column;}
+
+@media (max-width: 900px) {
+  .cm-owner-actions-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .cm-owner-actions-head {
+    flex-direction: column;
+  }
 }
