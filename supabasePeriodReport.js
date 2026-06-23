@@ -226,7 +226,7 @@
     const saleIds = sales.map(s => s.id).filter(Boolean);
     let saleItems = [];
     if (saleIds.length) {
-      const itemsRes = await sb.from("sale_items").select("id,company_id,sale_id,item_type,item_id,service_id,product_id,pass_id,name,name_snapshot,quantity,unit_price,total,total_price,created_at").in("sale_id", saleIds);
+      const itemsRes = await sb.from("sale_items").select("id,company_id,sale_id,item_type,service_id,product_id,name,name_snapshot,quantity,unit_price,total,total_price,created_at").in("sale_id", saleIds);
       if (itemsRes.error) throw new Error(itemsRes.error.message);
       saleItems = itemsRes.data || [];
     }
