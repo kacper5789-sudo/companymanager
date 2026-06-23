@@ -30,7 +30,7 @@
     const payload = lastReportPayload;
     if (!payload) return;
     const rows = Array.isArray(payload.data?.series) ? payload.data.series : [];
-    const group = payload.filters?.group || "days";
+    const group = payload.filters?.actualGroup || payload.filters?.group || "days";
     const header = ["Okres", "Przychód", "Sprzedaże", "Usługi", "Produkty", "Karnety", "Wizyty zakończone", "Wizyty zaplanowane", "Nowi klienci"];
     const csvRows = [header].concat(rows.map((row) => [
       formatPeriod(row.period_start, group),
@@ -52,7 +52,7 @@
     const payload = lastReportPayload;
     if (!payload) return;
     const rows = Array.isArray(payload.data?.series) ? payload.data.series : [];
-    const group = payload.filters?.group || "days";
+    const group = payload.filters?.actualGroup || payload.filters?.group || "days";
     const canvas = document.createElement("canvas");
     canvas.width = 1600;
     canvas.height = 900;
@@ -131,6 +131,120 @@
       from: iso(new Date(now.getFullYear(), now.getMonth(), 1)),
       to: iso(new Date(now.getFullYear(), now.getMonth() + 1, 0))
     };
+  }
+
+
+  function daysBetweenInclusive(fromValue, toValue) {
+    const from = parseIsoDate(fromValue);
+    const to = parseIsoDate(toValue);
+    if (!from || !to) return 1;
+    return Math.max(1, Math.floor((to - from) / 86400000) + 1);
+  }
+
+  function parseIsoDate(value) {
+    const raw = String(value || "").slice(0, 10);
+    const [y, m, d] = raw.split("-").map(Number);
+    if (!y || !m || !d) return null;
+    return new Date(y, m - 1, d);
+  }
+
+  function monthDiffInclusive(fromValue, toValue) {
+    const from = parseIsoDate(fromValue);
+    const to = parseIsoDate(toValue);
+    if (!from || !to) return 1;
+    return Math.max(1, (to.getFullYear() - from.getFullYear()) * 12 + (to.getMonth() - from.getMonth()) + 1);
+  }
+
+  function resolveReportGroup(filters) {
+    const selected = String(filters?.group || "auto");
+    if (selected !== "auto") return selected;
+
+    const days = daysBetweenInclusive(filters.from, filters.to);
+    const months = monthDiffInclusive(filters.from, filters.to);
+
+    // Auto dobiera możliwie dużo czytelnych słupków zamiast jednego agregatu.
+    if (days <= 35) return "days";
+    if (days <= 160) return "weeks";
+    if (months <= 24) return "months";
+    if (months <= 96) return "quarters";
+    return "years";
+  }
+
+  function groupLabel(group) {
+    return ({ days: "dni", weeks: "tygodnie", months: "miesiące", quarters: "kwartały", years: "lata" })[group] || group;
+  }
+
+  function isoFromDate(date) {
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+  }
+
+  function startOfBucket(date, group) {
+    const d = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    if (group === "weeks") {
+      const day = (d.getDay() + 6) % 7;
+      d.setDate(d.getDate() - day);
+      return d;
+    }
+    if (group === "months") return new Date(d.getFullYear(), d.getMonth(), 1);
+    if (group === "quarters") return new Date(d.getFullYear(), Math.floor(d.getMonth() / 3) * 3, 1);
+    if (group === "years") return new Date(d.getFullYear(), 0, 1);
+    return d;
+  }
+
+  function addBucket(date, group) {
+    const d = new Date(date);
+    if (group === "weeks") d.setDate(d.getDate() + 7);
+    else if (group === "months") d.setMonth(d.getMonth() + 1);
+    else if (group === "quarters") d.setMonth(d.getMonth() + 3);
+    else if (group === "years") d.setFullYear(d.getFullYear() + 1);
+    else d.setDate(d.getDate() + 1);
+    return d;
+  }
+
+  function normalizePeriodStart(value, group) {
+    const parsed = parseIsoDate(value);
+    if (!parsed) return String(value || "").slice(0, 10);
+    return isoFromDate(startOfBucket(parsed, group));
+  }
+
+  function fillReportSeries(rows, filters) {
+    const group = filters.actualGroup || filters.group || "days";
+    const from = parseIsoDate(filters.from);
+    const to = parseIsoDate(filters.to);
+    if (!from || !to) return rows;
+
+    const byPeriod = new Map();
+    (rows || []).forEach((row) => {
+      const key = normalizePeriodStart(row.period_start, group);
+      const existing = byPeriod.get(key) || { period_start: key };
+      byPeriod.set(key, {
+        period_start: key,
+        revenue: Number(existing.revenue || 0) + Number(row.revenue || 0),
+        sales_count: Number(existing.sales_count || 0) + Number(row.sales_count || 0),
+        service_items: Number(existing.service_items || 0) + Number(row.service_items || 0),
+        product_items: Number(existing.product_items || 0) + Number(row.product_items || 0),
+        pass_items: Number(existing.pass_items || 0) + Number(row.pass_items || 0),
+        finished_visits: Number(existing.finished_visits || 0) + Number(row.finished_visits || 0),
+        planned_visits: Number(existing.planned_visits || 0) + Number(row.planned_visits || 0),
+        new_clients: Number(existing.new_clients || 0) + Number(row.new_clients || 0)
+      });
+    });
+
+    const out = [];
+    let cursor = startOfBucket(from, group);
+    const end = startOfBucket(to, group);
+    let guard = 0;
+    while (cursor <= end && guard < 500) {
+      const key = isoFromDate(cursor);
+      out.push(byPeriod.get(key) || {
+        period_start: key,
+        revenue: 0, sales_count: 0, service_items: 0, product_items: 0, pass_items: 0,
+        finished_visits: 0, planned_visits: 0, new_clients: 0
+      });
+      cursor = addBucket(cursor, group);
+      guard += 1;
+    }
+    return out;
   }
 
   function formatPeriod(value, group) {
@@ -224,8 +338,11 @@
   function renderLayout(data, filters) {
     const root = getRoot();
     const summary = data?.summary || {};
-    const rows = Array.isArray(data?.series) ? data.series : [];
-    lastReportPayload = { data, filters };
+    const rawRows = Array.isArray(data?.series) ? data.series : [];
+    const rows = fillReportSeries(rawRows, filters);
+    const actualGroup = filters.actualGroup || filters.group || "days";
+    const hydratedData = { ...(data || {}), series: rows };
+    lastReportPayload = { data: hydratedData, filters: { ...filters, actualGroup } };
 
     root.innerHTML = `<section class="bm-page-card cm-report-card cm-supa-reports-module">
       <div class="bm-page-head"><h2>Wykres/Statystyka</h2><div class="bm-actions-row"><button id="cmReportExcelExportBtn" type="button" class="bm-excel-btn">Export - Excel</button><button id="cmReportJpgExportBtn" type="button" class="cm-sales-export-btn">Export - JPG</button></div></div>
@@ -248,6 +365,7 @@
           <span>Grupuj według</span>
           <div class="cm-report-select-pill">
             <select name="group" aria-label="Grupuj według">
+              <option value="auto" ${filters.group === "auto" ? "selected" : ""}>Auto — maks. czytelne słupki</option>
               <option value="days" ${filters.group === "days" ? "selected" : ""}>Dni</option>
               <option value="weeks" ${filters.group === "weeks" ? "selected" : ""}>Tygodnie</option>
               <option value="months" ${filters.group === "months" ? "selected" : ""}>Miesiące</option>
@@ -256,6 +374,7 @@
             </select>
           </div>
         </label>
+        <div class="cm-report-auto-hint">Aktualnie: ${esc(groupLabel(actualGroup))}</div>
         <button type="submit" class="btn btn-primary cm-report-show-btn">Pokaż</button>
       </form>
       <div class="cm-report-kpi-grid">
@@ -269,8 +388,8 @@
         ${kpiCard("Nowi klienci", int(summary.new_clients), "clients")}
       </div>
       <div class="cm-supa-chart-legend"><span><i class="revenue"></i>Przychód</span><span><i class="visits"></i>Wizyty zakończone</span></div>
-      ${renderBars(rows, filters.group)}
-      <div class="cm-report-table">${table(rows, filters.group)}</div>
+      ${renderBars(rows, actualGroup)}
+      <div class="cm-report-table">${table(rows, actualGroup)}</div>
     </section>`;
 
     $("#cmReportExcelExportBtn")?.addEventListener("click", exportStatsExcel);
@@ -302,8 +421,9 @@
     const filters = {
       from: overrides.from || dates.from,
       to: overrides.to || dates.to,
-      group: overrides.group || "days"
+      group: overrides.group || "auto"
     };
+    filters.actualGroup = resolveReportGroup(filters);
     try {
       getRoot().innerHTML = `<section class="bm-page-card"><div class="bm-page-head"><h2>Wykres/Statystyka</h2></div><div class="bm-empty-state">Ładowanie statystyk z Supabase...</div></section>`;
       const ctx = await getContext();
@@ -311,7 +431,7 @@
         p_company_id: ctx.companyId,
         p_from: filters.from,
         p_to: filters.to,
-        p_group: filters.group
+        p_group: filters.actualGroup
       });
       if (error) throw error;
       renderLayout(data || {}, filters);

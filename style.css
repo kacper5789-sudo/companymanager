@@ -4681,3 +4681,25 @@ html body .cm-cr-dropdown-button {
 @media(max-width:640px){
   .cm-supa-reports-module .cm-reports-polished-controls{grid-template-columns:1fr;}
 }
+
+
+/* 045C — reports chart bucket density */
+.cm-report-auto-hint {
+  align-self: end;
+  min-height: 42px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 14px;
+  border: 1px solid rgba(255,255,255,.10);
+  border-radius: 14px;
+  background: rgba(255,255,255,.045);
+  color: rgba(255,255,255,.66);
+  font-size: 12px;
+  white-space: nowrap;
+}
+.cm-supa-chart-col { min-width: 34px; flex: 1 0 34px; }
+.cm-supa-chart { gap: 6px; }
+@media (max-width: 900px) {
+  .cm-report-auto-hint { align-self: stretch; justify-content: center; }
+  .cm-supa-chart-col { min-width: 38px; }
+}
