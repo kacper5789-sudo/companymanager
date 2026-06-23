@@ -1,4 +1,4 @@
-// CompanyManager — 046A Raport dzienny Supabase
+// CompanyManager — 046C Raport dzienny Supabase clients.full_name fix
 // daily-report.html: realne dane z sales / sale_items / payments / appointments / clients.
 (function () {
   if (document.body?.dataset?.panelPage !== "dailyReport") return;
@@ -103,7 +103,7 @@
       sb.from("payments").select("id,company_id,sale_id,appointment_id,amount,method,status,paid_at,created_at").eq("company_id", ctx.companyId).gte("created_at", range.startIso).lt("created_at", range.endIso),
       sb.from("appointments").select("id,company_id,client_id,client_name,employee_id,employee_name,service_id,service_name,product_id,product_name,total,price,paid_amount,payment_status,payment_method,status,date,starts_at,appointment_datetime,created_at").eq("company_id", ctx.companyId).eq("date", range.dayIso),
       sb.from("profiles").select("id,full_name,email,role,company_id").eq("company_id", ctx.companyId),
-      sb.from("clients").select("id,first_name,last_name,full_name,created_at,company_id").eq("company_id", ctx.companyId).gte("created_at", range.startIso).lt("created_at", range.endIso)
+      sb.from("clients").select("id,first_name,last_name,created_at,company_id").eq("company_id", ctx.companyId).gte("created_at", range.startIso).lt("created_at", range.endIso)
     ]);
 
     const errors = [salesRes.error, paymentsRes.error, appointmentsRes.error, employeesRes.error, clientsRes.error].filter(Boolean);
