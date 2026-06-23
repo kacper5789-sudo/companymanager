@@ -319,5 +319,17 @@
     }
   }
 
-  setTimeout(init, 0);
+  function bootDailyReport() {
+    const root = panelArea();
+    if (root && !root.querySelector(".cm-supabase-daily-report")) {
+      root.innerHTML = `<section class="bm-page-card cm-daily-report-card"><div class="bm-page-head"><h2>Raport dzienny</h2></div><p class="panel-message">Ładuję dane z Supabase...</p></section>`;
+    }
+    init();
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", () => setTimeout(bootDailyReport, 150));
+  } else {
+    setTimeout(bootDailyReport, 150);
+  }
 })();
