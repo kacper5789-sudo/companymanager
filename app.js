@@ -8007,6 +8007,12 @@ document.addEventListener('DOMContentLoaded', () => {
     else if (page === 'calendar') renderCalendar(ctx);
     else if (page === 'customers') renderCustomers(ctx);
     else if (page === 'positions') renderPositions(ctx);
+    else if (page === 'daysOff' && window.cmSupabase) {
+      // Supabase module owns Dni wolne pracowników.
+      // Do not render the legacy localStorage version here, because it overwrites
+      // the RPC-powered form and makes "Zapisz dni wolne" appear not to work.
+      renderPanelFrame(ctx, 'daysOff', '<section class="bm-page-card"><h2>Dni wolne pracowników</h2><p class="bm-muted">Ładowanie danych z Supabase...</p></section>', '', '');
+    }
     else if (page === 'daysOff') renderDaysOff(ctx);
     else if (page === 'services') renderServices(ctx);
     else if (page === 'visits') renderVisits(ctx);

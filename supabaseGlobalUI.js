@@ -1,7 +1,7 @@
-/* CompanyManager 052A — global UI + one calendar system */
+/* CompanyManager 055 — global UI + one calendar system */
 (function(){
   'use strict';
-  const VERSION = '052B';
+  const VERSION = '055';
   const pad = (n) => String(n).padStart(2,'0');
   const parseIso = (value) => {
     const m = String(value || '').match(/^(\d{4})-(\d{2})-(\d{2})$/);
