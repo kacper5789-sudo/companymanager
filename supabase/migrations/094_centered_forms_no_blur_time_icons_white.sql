@@ -1,1 +1,0 @@
--- CompanyManager 041F: UI-only patch. No SQL changes required.
