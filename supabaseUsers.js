@@ -286,6 +286,37 @@
     return user?.full_name || user?.email || "Użytkownik";
   }
 
+  function formatDateTime(value) {
+    if (!value) return "-";
+    try {
+      return new Intl.DateTimeFormat("pl-PL", {
+        year: "numeric", month: "2-digit", day: "2-digit",
+        hour: "2-digit", minute: "2-digit"
+      }).format(new Date(value));
+    } catch (_) {
+      return String(value);
+    }
+  }
+
+  function normalizeLoginStatus(status) {
+    const s = String(status || "").toLowerCase();
+    if (s === "success" || s === "ok") return "sukces";
+    if (s === "blocked") return "zablokowane";
+    if (s === "error" || s === "failed") return "błąd";
+    return status || "-";
+  }
+
+  function browserName(log) {
+    if (log?.browser) return log.browser;
+    const ua = String(log?.user_agent || "");
+    if (/Edg\//.test(ua)) return "Microsoft Edge";
+    if (/OPR\//.test(ua) || /Opera/.test(ua)) return "Opera";
+    if (/Firefox\//.test(ua)) return "Firefox";
+    if (/Chrome\//.test(ua) && !/Edg\//.test(ua)) return "Chrome";
+    if (/Safari\//.test(ua) && !/Chrome\//.test(ua)) return "Safari";
+    return ua ? ua.slice(0, 120) : "-";
+  }
+
   function positionOptionsHtml(positions, selectedId = "") {
     if (!positions.length) return `<option value="">Brak aktywnych stanowisk pracy</option>`;
     return `<option value="">Wybierz stanowisko pracy</option>${positions.map((position) => `
@@ -293,13 +324,15 @@
   }
 
   async function fetchData(ctx) {
-    const [usersRes, positionsRes] = await Promise.all([
+    const [usersRes, positionsRes, logsRes] = await Promise.all([
       window.cmSupabase.rpc("admin_list_company_users", { p_company_id: ctx.companyId }),
-      window.cmSupabase.from("positions").select("id,name,description,active,company_id").eq("active", true).order("name", { ascending: true })
+      window.cmSupabase.from("positions").select("id,name,description,active,company_id").eq("active", true).order("name", { ascending: true }),
+      window.cmSupabase.rpc("cm_list_company_login_logs", { p_company_id: ctx.companyId, p_limit: 200 })
     ]);
     if (usersRes.error) throw usersRes.error;
     if (positionsRes.error) throw positionsRes.error;
-    return { users: usersRes.data || [], positions: positionsRes.data || [] };
+    if (logsRes.error) console.warn("CompanyManager login logs warning", logsRes.error);
+    return { users: usersRes.data || [], positions: positionsRes.data || [], loginLogs: logsRes.data || [] };
   }
 
   function userFormHtml(mode, user, positions) {
@@ -339,6 +372,7 @@
     if (!area) return;
     const users = data.users || [];
     const positions = data.positions || [];
+    const loginLogs = data.loginLogs || [];
     const positionById = Object.fromEntries(positions.map((p) => [p.id, p]));
     const rows = users.map((u) => {
       const position = positionById[u.position_id] || { name: u.position_name };
@@ -353,6 +387,15 @@
       ];
     });
     const userOptions = users.map((u) => `<option value="${escapeHtml(u.id)}">${escapeHtml(personName(u))}</option>`).join("");
+    const visibleLoginLogs = loginLogs.slice(0, Number(getModulePageLimit("50")));
+    const logRows = visibleLoginLogs.map((log) => `
+      <tr>
+        <td>${escapeHtml(formatDateTime(log.created_at))}</td>
+        <td>${escapeHtml(log.ip_address || "-")}</td>
+        <td>${escapeHtml(log.login || log.email || "-")}</td>
+        <td>${escapeHtml(normalizeLoginStatus(log.status))}</td>
+        <td>${escapeHtml(browserName(log))}</td>
+      </tr>`).join("");
 
     area.innerHTML = `<section class="bm-page-card cm-users-admin-page">
       <div class="bm-page-head cm-users-head"><h2>Użytkownicy</h2><div class="bm-actions-row"><button id="showAddAdminUserBtn" type="button">Dodaj użytkownika</button><button id="showEditAdminUserBtn" type="button">Edytuj</button><button id="showDeleteAdminUserBtn" type="button" class="bm-danger-btn">Usuń pracownika</button></div></div>
@@ -364,7 +407,8 @@
     <section class="bm-page-card cm-login-journal-card">
       <div class="bm-page-head"><h2>Dziennik logowania</h2></div>
       <div class="bm-table-toolbar cm-limit-toolbar">${moduleLimitDropdownHtml("loginJournalLimit", "50")}</div>
-      <div class="bm-table-wrap"><table class="bm-table"><thead><tr><th>Data</th><th>IP</th><th>Login</th><th>Status</th><th>Przeglądarka internetowa</th></tr></thead><tbody></tbody></table></div>
+      <div class="bm-table-wrap"><table class="bm-table"><thead><tr><th>Data</th><th>IP</th><th>Login</th><th>Status</th><th>Przeglądarka internetowa</th></tr></thead><tbody>${logRows || `<tr><td colspan="5" class="bm-muted">Brak wpisów w dzienniku logowania.</td></tr>`}</tbody></table></div>
+      <p class="bm-muted cm-table-count">Pozycje od ${loginLogs.length ? 1 : 0} do ${Math.min(visibleLoginLogs.length, loginLogs.length)} z ${loginLogs.length} łącznie</p>
     </section>
 
     <section id="addAdminUserPanel" class="bm-page-card bm-collapsible-panel cm-admin-user-modal" hidden>
