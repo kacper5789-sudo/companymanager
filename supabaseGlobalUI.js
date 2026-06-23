@@ -1,7 +1,7 @@
 /* CompanyManager 052A — global UI + one calendar system */
 (function(){
   'use strict';
-  const VERSION = '052A';
+  const VERSION = '052B';
   const pad = (n) => String(n).padStart(2,'0');
   const parseIso = (value) => {
     const m = String(value || '').match(/^(\d{4})-(\d{2})-(\d{2})$/);
@@ -83,6 +83,19 @@
     root.querySelectorAll('.bm-topbar, .panel-topbar, .bm-left-info-panel, .bm-sidebar').forEach(el => el.classList.add('cm-unified-nav-surface'));
     root.querySelectorAll('.bm-month').forEach(el => el.classList.add('cm-unified-menu-calendar'));
   }
+
+  function markSpecialActions(root=document){
+    root.querySelectorAll('button, a, .btn').forEach((el) => {
+      const text = (el.textContent || el.value || '').trim().toLowerCase();
+      if (!text) return;
+      if (/cofnij\s+czas/.test(text)) el.classList.add('cm-gold-action');
+      if (/właściciel|wlasciciel/.test(text)) el.classList.add('cm-owner-action');
+      if (/^pl$|^eng$|pl\s*\/\s*eng|eng\s*\/\s*pl/.test(text)) el.classList.add('cm-lang-action');
+      if (/^admin\b|admin\s*[▾▼]/.test(text)) el.classList.add('cm-admin-action');
+    });
+    root.querySelectorAll('.bm-admin-dropdown-toggle').forEach((el) => el.classList.add('cm-admin-action'));
+  }
+
   function normalizeAll(root=document){
     document.documentElement.dataset.cmUi = VERSION;
     enhanceDateInputs(root);
@@ -91,6 +104,7 @@
     normalizeButtons(root);
     normalizeTables(root);
     normalizeMenus(root);
+    markSpecialActions(root);
   }
   function boot(){
     normalizeAll(document);
