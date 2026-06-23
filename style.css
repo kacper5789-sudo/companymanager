@@ -6312,3 +6312,13 @@ html[data-cm-ui="052B"] .bm-panel-area{
   html[data-cm-ui="052B"] .bm-date-btn,
   html[data-cm-ui="052B"] .bm-month td:not(.muted):not(:empty){height:34px !important;border-radius:11px !important;}
 }
+
+/* 052C — Global Cofnij Czas */
+#undoTimeBtn[hidden],
+#undoTimeBtn.cm-undo-hidden {
+  display: none !important;
+}
+#undoTimeBtn.is-loading {
+  opacity: .65;
+  pointer-events: none;
+}

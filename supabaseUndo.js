@@ -1,7 +1,10 @@
-// CompanyManager — Supabase Undo Engine
-// 034A: Globalny Cofnij Czas dla modułów przepiętych na Supabase.
+// CompanyManager — Global Undo / Cofnij Czas
+// 052C: 1 ostatni ruch globalnie po stronie Supabase.
 
 (function () {
+  const BUTTON_ID = "undoTimeBtn";
+  const HIDDEN_CLASS = "cm-undo-hidden";
+
   function readJson(key) {
     try { return JSON.parse(localStorage.getItem(key) || "null"); } catch (_) { return null; }
   }
@@ -27,117 +30,143 @@
     }
   }
 
-  async function getActorId() {
-    const access = getAccess();
-    if (access.user_id) return access.user_id;
-    if (access.id) return access.id;
+  function getUndoButton() {
+    return document.querySelector(`#${BUTTON_ID}`);
+  }
 
+  function hideUndoButton() {
+    const button = getUndoButton();
+    if (!button) return;
+    button.hidden = true;
+    button.setAttribute("hidden", "hidden");
+    button.classList.add(HIDDEN_CLASS);
+    button.style.display = "none";
+  }
+
+  function showUndoButton() {
+    const button = getUndoButton();
+    if (!button) return;
+    button.hidden = false;
+    button.removeAttribute("hidden");
+    button.classList.remove(HIDDEN_CLASS);
+    button.style.display = "";
+  }
+
+  async function hasUndoAction() {
     const supabase = getClient();
-    if (!supabase?.auth?.getUser) return null;
+    if (!supabase) return false;
+    const companyId = await getCompanyId();
+    if (!companyId) return false;
 
     try {
-      const { data } = await supabase.auth.getUser();
-      return data?.user?.id || null;
-    } catch (_) {
-      return null;
+      const { data, error } = await supabase
+        .from("undo_actions")
+        .select("id")
+        .eq("company_id", companyId)
+        .is("undone_at", null)
+        .order("created_at", { ascending: false })
+        .limit(1);
+
+      if (error) {
+        console.warn("CompanyManager undo status error:", error);
+        return false;
+      }
+      return Array.isArray(data) && data.length > 0;
+    } catch (error) {
+      console.warn("CompanyManager undo status failed:", error);
+      return false;
     }
   }
 
-  async function recordUndoAction({ module, actionType, targetTable, targetId, beforeData = null, afterData = null, companyId = null }) {
-    const supabase = getClient();
-    if (!supabase) return { ok: false, error: "Brak klienta Supabase" };
+  async function refreshUndoButton() {
+    const button = getUndoButton();
+    if (!button) return;
+    const available = await hasUndoAction();
+    if (available) showUndoButton();
+    else hideUndoButton();
+  }
 
-    const resolvedCompanyId = companyId || await getCompanyId();
-    const actorId = await getActorId();
-    if (!resolvedCompanyId || !targetTable || !actionType) {
-      console.warn("CompanyManager undo skipped:", { resolvedCompanyId, actorId, targetTable, actionType });
-      return { ok: false, error: "Brak danych undo" };
-    }
-
-    const payload = {
-      company_id: resolvedCompanyId,
-      actor_id: actorId,
-      module: String(module || targetTable),
-      action_type: String(actionType),
-      target_table: String(targetTable),
-      target_id: targetId || afterData?.id || beforeData?.id || null,
-      before_data: beforeData || null,
-      after_data: afterData || null
-    };
-
-    const { error } = await supabase.from("undo_actions").insert(payload);
-    if (error) {
-      console.warn("CompanyManager undo record error:", error);
-      return { ok: false, error };
-    }
-    showUndoButton();
-    return { ok: true };
+  // Frontend modules may still call cmUndo.record(). From 052C real logging is done by DB triggers,
+  // so this function only refreshes the button and never duplicates undo rows.
+  async function recordUndoAction() {
+    setTimeout(refreshUndoButton, 250);
+    return { ok: true, source: "db-trigger" };
   }
 
   async function undoLastAction() {
     const supabase = getClient();
     if (!supabase) return { success: false, message: "Brak połączenia z Supabase" };
-    const { data, error } = await supabase.rpc("undo_last_action");
-    if (error) {
-      console.error("CompanyManager undo error:", error);
-      return { success: false, message: error.message || "Błąd cofania" };
+    try {
+      const { data, error } = await supabase.rpc("undo_last_action");
+      if (error) {
+        console.error("CompanyManager undo error:", error);
+        return { success: false, message: error.message || "Błąd cofania" };
+      }
+      return data || { success: false, message: "Brak odpowiedzi" };
+    } catch (error) {
+      console.error("CompanyManager undo failed:", error);
+      return { success: false, message: error?.message || "Błąd cofania" };
     }
-    return data || { success: false, message: "Brak odpowiedzi" };
-  }
-
-  function showUndoButton() {
-    const button = document.querySelector("#undoTimeBtn");
-    if (!button) return;
-    button.hidden = false;
-    button.removeAttribute("hidden");
-    button.style.display = "";
-  }
-
-  async function refreshUndoButton() {
-    const button = document.querySelector("#undoTimeBtn");
-    if (!button) return;
-    showUndoButton();
   }
 
   function bindUndoButton() {
     document.addEventListener("click", async (event) => {
-      const button = event.target?.closest?.("#undoTimeBtn");
+      const button = event.target?.closest?.(`#${BUTTON_ID}`);
       if (!button) return;
+
       event.preventDefault();
       event.stopPropagation();
       if (event.stopImmediatePropagation) event.stopImmediatePropagation();
+
+      if (button.disabled) return;
       button.disabled = true;
+      button.classList.add("is-loading");
       const result = await undoLastAction();
       button.disabled = false;
+      button.classList.remove("is-loading");
+
       if (result?.success) {
+        hideUndoButton();
+        window.dispatchEvent(new CustomEvent("cm:undo:done", { detail: result }));
         window.location.reload();
         return;
       }
+
+      await refreshUndoButton();
       alert(result?.message || "Nie ma czego cofnąć.");
     }, true);
   }
 
-  function startButtonWatcher() {
+  function watchDomForButton() {
+    const observer = new MutationObserver(() => refreshUndoButton());
+    observer.observe(document.documentElement, { childList: true, subtree: true });
+    return observer;
+  }
+
+  function start() {
+    hideUndoButton();
     refreshUndoButton();
     let tries = 0;
     const timer = setInterval(() => {
       refreshUndoButton();
       tries += 1;
-      if (tries > 20) clearInterval(timer);
-    }, 500);
+      if (tries > 12) clearInterval(timer);
+    }, 750);
+    watchDomForButton();
   }
 
   window.cmUndo = {
     record: recordUndoAction,
     undoLastAction,
     showUndoButton,
+    hideUndoButton,
     refreshUndoButton
   };
 
   bindUndoButton();
   if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", startButtonWatcher);
+    document.addEventListener("DOMContentLoaded", start);
   } else {
-    startButtonWatcher();
+    start();
   }
 })();
