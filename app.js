@@ -2076,6 +2076,14 @@ document.addEventListener('DOMContentLoaded', () => {
   const CM_LANGUAGE_LABELS = { pl:'PL', 'en-gb':'ENG' };
   const CM_LANGUAGE_NAMES = { pl:'Polska', 'en-gb':'Anglia' };
   const CM_LANGUAGE_ORDER = ['pl', 'en-gb'];
+  const normalizeCmLanguage = (lang) => CM_LANGUAGE_LABELS[String(lang || '').toLowerCase()] ? String(lang || '').toLowerCase() : 'pl';
+  const getCmAccessLanguage = () => {
+    try {
+      const access = JSON.parse(localStorage.getItem('cm_access') || 'null');
+      return normalizeCmLanguage(access?.language || access?.profile_language || access?.company_language || access?.settings?.language || '');
+    } catch (_) { return 'pl'; }
+  };
+  const getStoredCmLanguage = () => normalizeCmLanguage(localStorage.getItem('cmLanguage') || getCmAccessLanguage() || 'pl');
   const cmTranslationEntryCache = new WeakMap();
 
   const getCmTranslationEntries = (dict) => {
@@ -2109,7 +2117,7 @@ document.addEventListener('DOMContentLoaded', () => {
     return leading + translated + trailing;
   };
 
-  const applyPlatformLanguage = (lang = localStorage.getItem('cmLanguage') || 'pl', root = document.body) => {
+  const applyPlatformLanguage = (lang = getStoredCmLanguage(), root = document.body) => {
     if (!root) return;
     const normalizedLang = CM_LANGUAGE_LABELS[lang] ? lang : 'pl';
     document.documentElement.lang = normalizedLang === 'pl' ? 'pl' : 'en-GB';
@@ -2150,7 +2158,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   };
 
-  const schedulePlatformLanguage = (lang = localStorage.getItem('cmLanguage') || 'pl', root = document.body) => {
+  const schedulePlatformLanguage = (lang = getStoredCmLanguage(), root = document.body) => {
     if (lang === 'pl') { applyPlatformLanguage(lang, root); return; }
     const run = () => applyPlatformLanguage(lang, root);
     if ('requestIdleCallback' in window) window.requestIdleCallback(run, { timeout: 300 });
@@ -2221,8 +2229,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const langLabels = CM_LANGUAGE_LABELS;
     const langNames = CM_LANGUAGE_NAMES;
     const langOrder = CM_LANGUAGE_ORDER;
-    let savedLang = localStorage.getItem('cmLanguage') || 'pl';
-    if (!langLabels[savedLang]) savedLang = 'pl';
+    let savedLang = getStoredCmLanguage();
     const renderLanguageMenu = () => {
       if (!langToggle || !langMenu) return;
       langToggle.textContent = langLabels[savedLang] || 'PL';
@@ -2231,8 +2238,45 @@ document.addEventListener('DOMContentLoaded', () => {
         .map(lang => `<button type="button" data-lang="${lang}" aria-label="${langNames[lang]}">${langLabels[lang]}</button>`)
         .join('');
     };
+    const persistCmLanguage = async (lang) => {
+      const normalized = normalizeCmLanguage(lang);
+      localStorage.setItem('cmLanguage', normalized);
+      try {
+        if (window.cmSupabase?.rpc) {
+          await window.cmSupabase.rpc('cm_set_language', { p_language: normalized });
+          const accessRaw = localStorage.getItem('cm_access');
+          if (accessRaw) {
+            const access = JSON.parse(accessRaw);
+            access.language = normalized;
+            access.profile_language = normalized;
+            access.company_language = normalized;
+            localStorage.setItem('cm_access', JSON.stringify(access));
+          }
+        }
+      } catch (error) {
+        console.warn('Nie zapisano języka w Supabase, zostaje localStorage.', error);
+      }
+      return normalized;
+    };
+    const syncCmLanguageFromSupabase = async () => {
+      try {
+        if (!window.cmSupabase?.rpc) return;
+        const { data, error } = await window.cmSupabase.rpc('cm_get_language');
+        if (error || !data) return;
+        const remoteLang = normalizeCmLanguage(data.language || data.profile_language || data.company_language);
+        if (remoteLang && remoteLang !== savedLang) {
+          savedLang = remoteLang;
+          localStorage.setItem('cmLanguage', savedLang);
+          renderLanguageMenu();
+          schedulePlatformLanguage(savedLang);
+        }
+      } catch (error) {
+        console.warn('Nie pobrano języka z Supabase.', error);
+      }
+    };
     renderLanguageMenu();
     schedulePlatformLanguage(savedLang);
+    syncCmLanguageFromSupabase();
     if (langPicker && langToggle && langMenu) {
       langToggle.addEventListener('click', (event) => {
         event.stopPropagation();
@@ -2248,12 +2292,12 @@ document.addEventListener('DOMContentLoaded', () => {
         event.stopPropagation();
         const lang = btn.getAttribute('data-lang') || 'pl';
         if (!langLabels[lang]) return;
-        savedLang = lang;
+        savedLang = normalizeCmLanguage(lang);
         localStorage.setItem('cmLanguage', savedLang);
         renderLanguageMenu();
-        window.location.reload();
         langMenu.hidden = true;
         langToggle.setAttribute('aria-expanded', 'false');
+        persistCmLanguage(savedLang).finally(() => window.location.reload());
       });
       document.addEventListener('click', (event) => {
         if (!langMenu.hidden && !langPicker.contains(event.target)) {
