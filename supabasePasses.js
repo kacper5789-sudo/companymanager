@@ -458,7 +458,7 @@
       <p class="cm-pass-status-help"><strong>Aktualne</strong> = można używać. <strong>Zrealizowane</strong> = wykorzystane do zera. <strong>Po terminie</strong> = minęła data ważności.</p>`;
 
     area.innerHTML = `<section class="bm-page-card passes-module">
-      <div class="bm-page-head customers-head"><h2>Karnety</h2><div class="bm-actions-row">${allowAdd ? `<button id="showTemplatePass" type="button">Dodaj typ karnetu</button><button id="showAddPass" type="button">Sprzedaj karnet</button>` : ""}${allowDelete ? `<button id="showDeletePass" type="button" class="bm-danger-btn">Usuń</button>` : ""}</div></div>
+      <div class="bm-page-head customers-head"><h2>Karnety</h2><div class="bm-actions-row">${allowAdd ? `<button id="showTemplatePass" type="button" class="bm-primary-btn">+ Dodaj typ karnetu</button><button id="showAddPass" type="button">Sprzedaj karnet</button>` : ""}${allowDelete ? `<button id="showDeletePass" type="button" class="bm-danger-btn">Usuń</button>` : ""}</div></div>
       ${filterTabs}
       <section id="templatePassPanel" class="bm-page-card bm-inner-card" hidden>
         <div class="bm-page-head customers-head"><h2>Dodaj typ karnetu do puli</h2></div>
@@ -533,6 +533,19 @@
   }
 
   function bindActions(ctx, data, usersById, clientsById, servicesById, templatesById, status) {
+    const templateTypeSelect = document.querySelector('[name="templateType"]');
+    const templateUnitsBox = document.querySelector('[data-template-units]');
+    const templateAmountBox = document.querySelector('[data-template-amount]');
+    const refreshTemplateTypeFields = () => {
+      if (!templateTypeSelect) return;
+      const isAmount = templateTypeSelect.value === "amount";
+      if (templateUnitsBox) templateUnitsBox.hidden = isAmount;
+      if (templateAmountBox) templateAmountBox.hidden = !isAmount;
+    };
+    templateTypeSelect?.addEventListener("change", refreshTemplateTypeFields);
+    refreshTemplateTypeFields();
+
+
     const templatePanel = document.querySelector("#templatePassPanel");
     const addPanel = document.querySelector("#addPassPanel");
     const deletePanel = document.querySelector("#deletePassPanel");
