@@ -2117,20 +2117,12 @@ document.addEventListener('DOMContentLoaded', () => {
     return leading + translated + trailing;
   };
 
-  const applyPlatformLanguage = (lang = getStoredCmLanguage(), root = document.body) => {
-    if (!root) return;
-    const normalizedLang = CM_LANGUAGE_LABELS[lang] ? lang : 'pl';
-    document.documentElement.lang = normalizedLang === 'pl' ? 'pl' : 'en-GB';
-    if (window.cmLanguageObserver) {
-      window.cmLanguageObserver.disconnect();
-      window.cmLanguageObserver = null;
-    }
-    if (normalizedLang === 'pl') return;
-    const dict = cmTranslations[normalizedLang] || cmTranslations['en-gb'];
-    if (!dict) return;
-    if (document.title) document.title = cmTranslateText(document.title, dict);
+  const translatePlatformDom = (root, dict) => {
+    if (!root || !dict) return;
     const skipTags = new Set(['SCRIPT','STYLE','NOSCRIPT','TEXTAREA']);
-    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+    const nodeRoot = root.nodeType === Node.ELEMENT_NODE || root.nodeType === Node.DOCUMENT_NODE ? root : root.parentElement;
+    if (!nodeRoot) return;
+    const walker = document.createTreeWalker(nodeRoot, NodeFilter.SHOW_TEXT, {
       acceptNode(node) {
         const parent = node.parentElement;
         if (!parent || skipTags.has(parent.tagName) || parent.closest('[data-no-translate]')) return NodeFilter.FILTER_REJECT;
@@ -2141,22 +2133,68 @@ document.addEventListener('DOMContentLoaded', () => {
     const nodes = [];
     while (walker.nextNode()) nodes.push(walker.currentNode);
     nodes.forEach(node => { node.nodeValue = cmTranslateText(node.nodeValue, dict); });
-    root.querySelectorAll('input[placeholder], textarea[placeholder]').forEach(el => {
+    nodeRoot.querySelectorAll?.('input[placeholder], textarea[placeholder]').forEach(el => {
       el.setAttribute('placeholder', cmTranslateText(el.getAttribute('placeholder'), dict));
     });
-    root.querySelectorAll('[title]').forEach(el => {
+    nodeRoot.querySelectorAll?.('[title]').forEach(el => {
       el.setAttribute('title', cmTranslateText(el.getAttribute('title'), dict));
     });
-    root.querySelectorAll('[aria-label]').forEach(el => {
+    nodeRoot.querySelectorAll?.('[aria-label]').forEach(el => {
       el.setAttribute('aria-label', cmTranslateText(el.getAttribute('aria-label'), dict));
     });
-    root.querySelectorAll('option').forEach(option => {
+    nodeRoot.querySelectorAll?.('option').forEach(option => {
       option.textContent = cmTranslateText(option.textContent, dict).trim();
     });
-    root.querySelectorAll('input[type=button][value], input[type=submit][value], button[value]').forEach(el => {
+    nodeRoot.querySelectorAll?.('input[type=button][value], input[type=submit][value], button[value]').forEach(el => {
       el.value = cmTranslateText(el.value, dict).trim();
     });
   };
+
+  const startLanguageObserver = (lang) => {
+    if (window.cmLanguageObserver) {
+      window.cmLanguageObserver.disconnect();
+      window.cmLanguageObserver = null;
+    }
+    const normalizedLang = CM_LANGUAGE_LABELS[lang] ? lang : 'pl';
+    if (normalizedLang === 'pl') return;
+    const dict = cmTranslations[normalizedLang] || cmTranslations['en-gb'];
+    let timer = null;
+    window.cmLanguageObserver = new MutationObserver((mutations) => {
+      const roots = new Set();
+      mutations.forEach((mutation) => {
+        mutation.addedNodes.forEach((node) => {
+          if (node.nodeType === Node.ELEMENT_NODE) roots.add(node);
+          if (node.nodeType === Node.TEXT_NODE && node.parentElement) roots.add(node.parentElement);
+        });
+      });
+      if (!roots.size) return;
+      clearTimeout(timer);
+      timer = setTimeout(() => {
+        roots.forEach((node) => translatePlatformDom(node, dict));
+      }, 0);
+    });
+    window.cmLanguageObserver.observe(document.body, { childList: true, subtree: true });
+  };
+
+  const applyPlatformLanguage = (lang = getStoredCmLanguage(), root = document.body) => {
+    if (!root) return;
+    const normalizedLang = CM_LANGUAGE_LABELS[lang] ? lang : 'pl';
+    document.documentElement.lang = normalizedLang === 'pl' ? 'pl' : 'en-GB';
+    if (normalizedLang === 'pl') {
+      if (window.cmLanguageObserver) {
+        window.cmLanguageObserver.disconnect();
+        window.cmLanguageObserver = null;
+      }
+      return;
+    }
+    const dict = cmTranslations[normalizedLang] || cmTranslations['en-gb'];
+    if (!dict) return;
+    if (document.title) document.title = cmTranslateText(document.title, dict);
+    translatePlatformDom(root, dict);
+    startLanguageObserver(normalizedLang);
+  };
+
+  window.cmApplyPlatformLanguage = (root = document.body) => applyPlatformLanguage(getStoredCmLanguage(), root);
 
   const schedulePlatformLanguage = (lang = getStoredCmLanguage(), root = document.body) => {
     if (lang === 'pl') { applyPlatformLanguage(lang, root); return; }
