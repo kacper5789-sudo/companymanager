@@ -471,13 +471,15 @@
       ${pagination(filtered.length)}
     </section>`;
 
-    bindActions(ctx, data, usersById, clientsById, servicesById, status);
+    bindActions(ctx, data, usersById, clientsById, servicesById, templatesById, status);
   }
 
-  function bindActions(ctx, data, usersById, clientsById, servicesById, status) {
+  function bindActions(ctx, data, usersById, clientsById, servicesById, templatesById, status) {
+    const templatePanel = document.querySelector("#templatePassPanel");
     const addPanel = document.querySelector("#addPassPanel");
     const deletePanel = document.querySelector("#deletePassPanel");
-    const panels = [addPanel, deletePanel];
+    const panels = [templatePanel, addPanel, deletePanel];
+    document.querySelector("#showTemplatePass")?.addEventListener("click", () => showOnlyPanel(templatePanel, panels));
     document.querySelector("#showAddPass")?.addEventListener("click", () => showOnlyPanel(addPanel, panels));
     document.querySelector("#showDeletePass")?.addEventListener("click", () => showOnlyPanel(deletePanel, panels));
     setupModuleLimitDropdowns(document);
