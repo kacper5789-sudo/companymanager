@@ -469,8 +469,8 @@
           p_company_id: payload.company_id,
           p_employee_id: payload.employee_id,
           p_type: payload.type,
-          p_start_date: payload.start_date,
-          p_end_date: payload.end_date,
+          p_start_date: payload.start_date || startDate || todayIso(),
+          p_end_date: payload.end_date || endDate || payload.start_date || startDate || todayIso(),
           p_description: payload.description
         });
 
