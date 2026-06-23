@@ -4873,77 +4873,15 @@ html body .cm-cr-dropdown-button {
   .cm-report-kpi-grid.cm-report-kpi-grid-clean{grid-template-columns: 1fr;}
 }
 
-/* CompanyManager 045G — reports table layout polish */
-.cm-supa-reports-module .cm-report-table,
-.cm-supa-reports-module .bm-table-wrap:has(.cm-supa-report-table){
-  width:100%;
-  overflow-x:auto;
-  border-radius:18px;
-}
-.cm-supa-reports-module .cm-supa-report-table{
-  width:100%;
-  min-width:980px;
-  table-layout:fixed;
-  border-collapse:separate;
-  border-spacing:0;
-}
-.cm-supa-reports-module .cm-supa-report-table th,
-.cm-supa-reports-module .cm-supa-report-table td{
-  padding:10px 8px !important;
-  text-align:center !important;
-  vertical-align:middle !important;
-  white-space:normal !important;
-  line-height:1.16 !important;
-  font-variant-numeric:tabular-nums;
-}
-.cm-supa-reports-module .cm-supa-report-table th{
-  font-size:11px !important;
-  font-weight:900 !important;
-  letter-spacing:.01em;
-  color:rgba(235,245,255,.86) !important;
-  word-break:normal;
-  overflow-wrap:normal;
-  hyphens:none;
-}
-.cm-supa-reports-module .cm-supa-report-table td{
-  font-size:12px !important;
-  color:rgba(255,255,255,.86) !important;
-}
-.cm-supa-reports-module .cm-supa-report-table th:nth-child(1),
-.cm-supa-reports-module .cm-supa-report-table td:nth-child(1){
-  width:72px;
-  text-align:left !important;
-  padding-left:12px !important;
-  white-space:nowrap !important;
-}
-.cm-supa-reports-module .cm-supa-report-table th:nth-child(2),
-.cm-supa-reports-module .cm-supa-report-table th:nth-child(3){
-  width:92px;
-}
-.cm-supa-reports-module .cm-supa-report-table th:nth-child(4),
-.cm-supa-reports-module .cm-supa-report-table td:nth-child(4){
-  width:104px;
-  white-space:nowrap !important;
-}
-.cm-supa-reports-module .cm-supa-report-table th:nth-child(5),
-.cm-supa-reports-module .cm-supa-report-table td:nth-child(5),
-.cm-supa-reports-module .cm-supa-report-table th:nth-child(6),
-.cm-supa-reports-module .cm-supa-report-table td:nth-child(6),
-.cm-supa-reports-module .cm-supa-report-table th:nth-child(7),
-.cm-supa-reports-module .cm-supa-report-table td:nth-child(7),
-.cm-supa-reports-module .cm-supa-report-table th:nth-child(8),
-.cm-supa-reports-module .cm-supa-report-table td:nth-child(8){
-  width:70px;
-}
-.cm-supa-reports-module .cm-supa-report-table th:nth-child(9),
-.cm-supa-reports-module .cm-supa-report-table th:nth-child(10){
-  width:90px;
-}
-.cm-supa-reports-module .cm-supa-report-table tbody tr:hover td{
-  background:rgba(255,255,255,.045) !important;
-}
-@media (max-width: 1180px){
-  .cm-supa-reports-module .cm-supa-report-table{min-width:920px;}
-  .cm-supa-reports-module .cm-supa-report-table th,
-  .cm-supa-reports-module .cm-supa-report-table td{padding:9px 6px !important;font-size:11px !important;}
-}
+/* CompanyManager 046A — Daily report Supabase polish */
+.cm-supabase-daily-report .cm-period-head{display:flex;align-items:center;justify-content:space-between;gap:16px;}
+.cm-supabase-daily-report .cm-daily-main-kpis{grid-template-columns:repeat(3,minmax(0,1fr));}
+.cm-supabase-daily-report .cm-daily-table-wrap{overflow-x:auto;}
+.cm-supabase-daily-report .cm-daily-table{width:100%;table-layout:fixed;border-collapse:separate;border-spacing:0;}
+.cm-supabase-daily-report .cm-daily-table th,
+.cm-supabase-daily-report .cm-daily-table td{padding:10px 12px;text-align:center;vertical-align:middle;white-space:normal;line-height:1.25;}
+.cm-supabase-daily-report .cm-daily-table th{font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:rgba(255,255,255,.72);}
+.cm-supabase-daily-report .cm-daily-table td:first-child,
+.cm-supabase-daily-report .cm-daily-table th:first-child{text-align:left;}
+.cm-supabase-daily-report .cm-finance-grid > div > div{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,.08);}
+.cm-supabase-daily-report .cm-finance-grid > div > div small{color:rgba(255,255,255,.48);}

@@ -410,7 +410,7 @@
       <td>${esc(int(row.planned_visits))}</td>
     </tr>`).join("") : `<tr><td colspan="10">Nie znaleziono żadnych danych</td></tr>`;
     return `<div class="bm-table-wrap"><table class="bm-table cm-supa-report-table">
-      <thead><tr><th>Okres</th><th>Zapisało się<br>klientów</th><th>Liczba<br>klientów</th><th>Przychód</th><th>Sprzedaże</th><th>Usługi</th><th>Produkty</th><th>Karnety</th><th>Wizyty<br>zakończone</th><th>Wizyty<br>zaplanowane</th></tr></thead>
+      <thead><tr><th>Okres</th><th>Zapisało się klientów</th><th>Liczba klientów</th><th>Przychód</th><th>Sprzedaże</th><th>Usługi</th><th>Produkty</th><th>Karnety</th><th>Wizyty zakończone</th><th>Wizyty zaplanowane</th></tr></thead>
       <tbody>${body}</tbody>
     </table></div>`;
   }
