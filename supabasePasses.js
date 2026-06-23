@@ -200,6 +200,11 @@
     return `<div class="bm-table-wrap"><table class="bm-table"><thead><tr>${headers.map((h) => `<th>${escapeHtml(h)}</th>`).join("")}</tr></thead><tbody>${rows.map((row) => `<tr>${row.map((cell) => `<td>${escapeHtml(cell)}</td>`).join("")}</tr>`).join("")}</tbody></table></div>`;
   }
 
+  function tableRaw(headers, rowsHtml, emptyText = "Nie znaleziono żadnych danych") {
+    if (!rowsHtml.length) return `<div class="bm-empty-state">${escapeHtml(emptyText)}</div>`;
+    return `<div class="bm-table-wrap"><table class="bm-table"><thead><tr>${headers.map((h) => `<th>${escapeHtml(h)}</th>`).join("")}</tr></thead><tbody>${rowsHtml.join("")}</tbody></table></div>`;
+  }
+
   function pagination(count) {
     if (!count) return "";
     return `<div class="cm-pagination-row"><span>Pozycje od 1 do ${count} z ${count} łącznie</span><span class="cm-pagination-controls">&lt; <strong>1 z 1</strong> &gt;</span></div>`;
@@ -406,15 +411,22 @@
       return `<option value="${escapeHtml(tpl.id)}"${disabled}>${escapeHtml(passTemplateLabel(tpl, servicesById) + suffix)}</option>`;
     }).join("");
     const paymentOptions = (data.paymentMethods || DEFAULT_PAYMENT_METHODS).map((method) => `<option value="${escapeHtml(method.name)}"${method.default ? " selected" : ""}>${escapeHtml(method.name)}</option>`).join("");
-    const templatesRows = (data.templates || []).map((tpl) => [
-      tpl.name || "Karnet",
-      String(tpl.pass_type || "amount") === "amount" ? "Kwotowy" : "Ilość wejść",
-      tpl.service_name || servicesById[tpl.service_id]?.name || "-",
-      String(tpl.pass_type || "amount") === "amount" ? money(tpl.amount) : `${Number(tpl.total_units || 0)} wejść`,
-      money(tpl.sale_price || 0),
-      `${Number(tpl.remaining_stock ?? 0)}/${Number(tpl.stock_quantity ?? 0)}`,
-      tpl.valid_days ? `${Number(tpl.valid_days)} dni` : "-"
-    ]);
+    const templatesRowsHtml = (data.templates || []).map((tpl) => {
+      const stock = Number(tpl.stock_quantity ?? 0);
+      const sold = Number(tpl.sold_count ?? Math.max(stock - Number(tpl.remaining_stock ?? stock), 0));
+      const remaining = Number(tpl.remaining_stock ?? Math.max(stock - sold, 0));
+      const poolLabel = stock > 0 ? `${remaining}/${stock}` : "brak puli";
+      return `<tr>
+        <td>${escapeHtml(tpl.name || "Karnet")}</td>
+        <td>${escapeHtml(String(tpl.pass_type || "amount") === "amount" ? "Kwotowy" : "Ilość wejść")}</td>
+        <td>${escapeHtml(tpl.service_name || servicesById[tpl.service_id]?.name || "-")}</td>
+        <td>${escapeHtml(String(tpl.pass_type || "amount") === "amount" ? money(tpl.amount) : `${Number(tpl.total_units || 0)} wejść`)}</td>
+        <td>${escapeHtml(money(tpl.sale_price || 0))}</td>
+        <td>${escapeHtml(poolLabel)}</td>
+        <td>${escapeHtml(tpl.valid_days ? `${Number(tpl.valid_days)} dni` : "-")}</td>
+        <td><button type="button" class="bm-danger-btn cm-delete-template-btn" data-delete-template-id="${escapeHtml(tpl.id)}">Usuń typ</button></td>
+      </tr>`;
+    });
 
     const filtered = data.passes.filter((pass) => {
       const statusOk = status === "all" || normalizeText(pass.status || "") === normalizeText(status);
@@ -449,22 +461,28 @@
       <div class="bm-page-head customers-head"><h2>Karnety</h2><div class="bm-actions-row">${allowAdd ? `<button id="showTemplatePass" type="button">Dodaj typ karnetu</button><button id="showAddPass" type="button">Sprzedaj karnet</button>` : ""}${allowDelete ? `<button id="showDeletePass" type="button" class="bm-danger-btn">Usuń</button>` : ""}</div></div>
       ${filterTabs}
       <section id="templatePassPanel" class="bm-page-card bm-inner-card" hidden>
-        <h2>Dodaj typ karnetu do puli</h2>
+        <div class="bm-page-head customers-head"><h2>Dodaj typ karnetu do puli</h2></div>
         <form id="templatePassForm" class="bm-form-grid bm-wide-form">
-          <label>Nazwa typu karnetu<input name="templateName" placeholder="Np. Karnet 5 wejść / Karnet 500 PLN" required></label>
-          <label>Rodzaj<select name="templateType" required><option value="units">Ilość wejść</option><option value="amount">Kwotowy</option></select></label>
-          <label>Usługa<select name="templateServiceId"><option value="">Bez konkretnej usługi</option>${serviceOptions}</select></label>
-          <label data-template-units>Liczba wejść<input name="templateTotalUnits" type="number" min="1" step="1" value="5"></label>
-          <label data-template-amount hidden>Kwota karnetu klienta (PLN)<input name="templateAmount" type="number" min="0" step="0.01" value="0.00"></label>
-          <label>Cena sprzedaży (PLN)<input name="templateSalePrice" type="number" min="0" step="0.01" value="0.00" required></label>
-          <label>Ilość w puli<input name="templateStockQuantity" type="number" min="1" step="1" value="1" required></label>
-          <label>Ważność domyślna (dni)<input name="templateValidDays" type="number" min="1" step="1" value="30"></label>
+          <label class="full">Nazwa typu karnetu<input name="templateName" placeholder="Np. Karnet 5 wejść / Karnet 500 PLN" required></label>
+          <div class="bm-form-row-2 full">
+            <label>Rodzaj<select name="templateType" required><option value="units">Ilość wejść</option><option value="amount">Kwotowy</option></select></label>
+            <label>Usługa<select name="templateServiceId"><option value="">Bez konkretnej usługi</option>${serviceOptions}</select></label>
+          </div>
+          <div class="bm-form-row-2 full">
+            <label data-template-units>Liczba wejść<input name="templateTotalUnits" type="number" min="1" step="1" value="5"></label>
+            <label data-template-amount hidden>Kwota karnetu klienta (PLN)<input name="templateAmount" type="number" min="0" step="0.01" value="0.00"></label>
+            <label>Cena sprzedaży (PLN)<input name="templateSalePrice" type="number" min="0" step="0.01" value="0.00" required></label>
+          </div>
+          <div class="bm-form-row-2 full">
+            <label>Ilość w puli<input name="templateStockQuantity" type="number" min="1" step="1" value="1" required></label>
+            <label>Ważność domyślna (dni)<input name="templateValidDays" type="number" min="1" step="1" value="30"></label>
+          </div>
           <label class="full">Opis<textarea name="templateDescription" rows="2" placeholder="Opis typu karnetu"></textarea></label>
           <div class="bm-form-actions full"><button type="submit">Zapisz typ karnetu</button></div>
         </form>
         <p id="templatePassMessage" class="panel-message"></p>
-        <h3>Aktualna pula karnetów</h3>
-        ${table(["Nazwa", "Typ", "Usługa", "Wartość", "Cena", "Pula", "Ważność"], templatesRows, "Brak typów karnetów w puli.")}
+        <div class="bm-page-head customers-head"><h3>Aktualna pula karnetów</h3></div>
+        ${tableRaw(["Nazwa", "Typ", "Usługa", "Wartość", "Cena", "Pula", "Ważność", "Akcja"], templatesRowsHtml, "Brak typów karnetów w puli.")}
       </section>
       <section id="addPassPanel" class="bm-page-card bm-inner-card" hidden>
         <h2>Dodaj karnet</h2>
@@ -581,6 +599,31 @@
         setMessage("#templatePassMessage", "Błąd zapisu typu karnetu: " + (error.message || JSON.stringify(error)), false);
         form.dataset.saving = "0";
       }
+    });
+
+    document.querySelectorAll("[data-delete-template-id]").forEach((button) => {
+      button.addEventListener("click", async () => {
+        const id = button.getAttribute("data-delete-template-id");
+        if (!id) return;
+        const before = data.templates.find((tpl) => String(tpl.id) === String(id)) || null;
+        if (!window.confirm(`Usunąć typ karnetu: ${before?.name || "Karnet"}?`)) return;
+        button.disabled = true;
+        const { data: updated, error } = await window.cmSupabase
+          .from("pass_templates")
+          .update({ active: false, updated_at: new Date().toISOString() })
+          .eq("id", id)
+          .eq("company_id", ctx.companyId)
+          .select("*")
+          .single();
+        if (error) {
+          button.disabled = false;
+          setMessage("#templatePassMessage", "Błąd usuwania typu karnetu: " + (error.message || JSON.stringify(error)), false);
+          return;
+        }
+        await window.cmUndo?.record({ module: "passes", actionType: "update", targetTable: "pass_templates", targetId: id, beforeData: before, afterData: updated || { ...(before || {}), active: false }, companyId: ctx.companyId });
+        setMessage("#templatePassMessage", "Typ karnetu usunięty z puli.", true);
+        rerenderPassesAfterSuccess(350);
+      });
     });
 
     function applySelectedPassTemplate() {
