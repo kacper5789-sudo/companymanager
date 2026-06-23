@@ -18,53 +18,29 @@
       id: "clients",
       title: "Zapisało się klientów",
       subtitle: "Nowi klienci i łączna liczba klientów",
-      leftLabel: "Zapisało się klientów",
-      rightLabel: "Liczba klientów",
-      leftKey: "new_clients",
-      rightKey: "total_clients",
-      leftClass: "clients",
-      rightClass: "total-clients",
-      leftFormat: int,
-      rightFormat: int
-    },
-    {
-      id: "revenue",
-      title: "Przychód",
-      subtitle: "Przychód i liczba sprzedaży",
-      leftLabel: "Przychód",
-      rightLabel: "Sprzedaże",
-      leftKey: "revenue",
-      rightKey: "sales_count",
-      leftClass: "revenue",
-      rightClass: "visits",
-      leftFormat: money,
-      rightFormat: int
+      series: [
+        { key: "new_clients", label: "Zapisało się klientów", className: "clients", format: int },
+        { key: "total_clients", label: "Liczba klientów", className: "total-clients", format: int }
+      ]
     },
     {
       id: "visits",
       title: "Wizyty",
       subtitle: "Zakończone i zaplanowane wizyty",
-      leftLabel: "Wizyty zakończone",
-      rightLabel: "Wizyty zaplanowane",
-      leftKey: "finished_visits",
-      rightKey: "planned_visits",
-      leftClass: "visits",
-      rightClass: "planned",
-      leftFormat: int,
-      rightFormat: int
+      series: [
+        { key: "finished_visits", label: "Wizyty zakończone", className: "visits", format: int },
+        { key: "planned_visits", label: "Wizyty zaplanowane", className: "planned", format: int }
+      ]
     },
     {
       id: "items",
       title: "Pozycje sprzedaży",
-      subtitle: "Usługi i produkty",
-      leftLabel: "Usługi",
-      rightLabel: "Produkty",
-      leftKey: "service_items",
-      rightKey: "product_items",
-      leftClass: "service",
-      rightClass: "product",
-      leftFormat: int,
-      rightFormat: int
+      subtitle: "Usługi / Produkty / Karnety",
+      series: [
+        { key: "service_items", label: "Usługi", className: "service", format: int },
+        { key: "product_items", label: "Produkty", className: "product", format: int },
+        { key: "pass_items", label: "Karnety", className: "pass", format: int }
+      ]
     }
   ];
 
@@ -128,11 +104,19 @@
     return { top, step, ticks };
   }
 
+  function chartSeries(chart) {
+    if (Array.isArray(chart?.series) && chart.series.length) return chart.series;
+    return [
+      { key: chart.leftKey, label: chart.leftLabel, className: chart.leftClass, format: chart.leftFormat || int },
+      { key: chart.rightKey, label: chart.rightLabel, className: chart.rightClass, format: chart.rightFormat || int }
+    ].filter((item) => item.key);
+  }
+
   function chartScale(rows, chart) {
+    const series = chartSeries(chart);
     const values = [];
     rows.forEach((row) => {
-      values.push(Number(row[chart.leftKey] || 0));
-      values.push(Number(row[chart.rightKey] || 0));
+      series.forEach((item) => values.push(Number(row[item.key] || 0)));
     });
     const max = Math.max(1, ...values);
     return niceTicks(max, 5);
@@ -176,33 +160,34 @@
     });
     const count = Math.max(rows.length, 1);
     const colW = (canvas.width - pad * 2) / count;
+    const exportSeries = chartSeries(chart);
+    const exportColors = ["rgba(90, 190, 255, 0.78)", "rgba(255, 255, 255, 0.72)", "rgba(167, 139, 250, 0.78)"];
     rows.forEach((row, index) => {
-      const x = pad + index * colW + colW * 0.22;
-      const leftValue = Number(row[chart.leftKey] || 0);
-      const rightValue = Number(row[chart.rightKey] || 0);
-      const leftH = Math.max(leftValue ? 8 : 0, (leftValue / scale.top) * chartHeight);
-      const rightH = Math.max(rightValue ? 8 : 0, (rightValue / scale.top) * chartHeight);
-      ctx.fillStyle = "rgba(90, 190, 255, 0.78)";
-      ctx.fillRect(x, chartBottom - leftH, Math.max(8, colW * 0.20), leftH);
-      ctx.fillStyle = "rgba(255, 255, 255, 0.72)";
-      ctx.fillRect(x + Math.max(10, colW * 0.25), chartBottom - rightH, Math.max(8, colW * 0.20), rightH);
+      const x0 = pad + index * colW + colW * 0.14;
+      const groupWidth = Math.max(12, colW * 0.72);
+      const barW = Math.max(6, Math.min(15, (groupWidth - (exportSeries.length - 1) * 5) / exportSeries.length));
+      exportSeries.forEach((item, sIndex) => {
+        const value = Number(row[item.key] || 0);
+        const h = Math.max(value ? 8 : 0, (value / scale.top) * chartHeight);
+        ctx.fillStyle = exportColors[sIndex % exportColors.length];
+        ctx.fillRect(x0 + sIndex * (barW + 5), chartBottom - h, barW, h);
+      });
       ctx.save();
-      ctx.translate(x + colW * 0.15, chartBottom + 28);
+      ctx.translate(x0 + colW * 0.12, chartBottom + 28);
       ctx.rotate(-Math.PI / 6);
       ctx.fillStyle = "rgba(255,255,255,0.68)";
       ctx.font = "18px Arial";
       ctx.fillText(formatPeriod(row.period_start, group), 0, 0);
       ctx.restore();
     });
-    ctx.fillStyle = "rgba(90, 190, 255, 0.78)";
-    ctx.fillRect(pad, 785, 24, 14);
-    ctx.fillStyle = "rgba(255,255,255,0.80)";
     ctx.font = "22px Arial";
-    ctx.fillText(chart.leftLabel, pad + 36, 800);
-    ctx.fillStyle = "rgba(255,255,255,0.72)";
-    ctx.fillRect(pad + 360, 785, 24, 14);
-    ctx.fillStyle = "rgba(255,255,255,0.80)";
-    ctx.fillText(chart.rightLabel, pad + 396, 800);
+    exportSeries.forEach((item, index) => {
+      const x = pad + index * 360;
+      ctx.fillStyle = exportColors[index % exportColors.length];
+      ctx.fillRect(x, 785, 24, 14);
+      ctx.fillStyle = "rgba(255,255,255,0.80)";
+      ctx.fillText(item.label, x + 36, 800);
+    });
     canvas.toBlob((blob) => {
       if (blob) downloadBlob(blob, `wykres-${safeFilename(chart.id)}-${safeFilename(group)}.jpg`);
     }, "image/jpeg", 0.92);
@@ -381,26 +366,28 @@
   }
 
   function renderBars(rows, group, chart) {
+    const series = chartSeries(chart);
     const scale = chartScale(rows, chart);
     const chartHeight = 270;
-    const axisWidth = chart.leftFormat === money ? 92 : 52;
+    const usesMoney = series.some((item) => item.format === money);
+    const axisWidth = usesMoney ? 92 : 52;
     return `<div class="cm-supa-chart-frame">
       <div class="cm-supa-y-axis" style="height:${chartHeight}px; min-width:${axisWidth}px;">
-        ${scale.ticks.slice().reverse().map((tick) => `<span style="bottom:${Math.round((tick / scale.top) * chartHeight)}px">${esc(chart.leftFormat === money ? chart.leftFormat(tick) : int(tick))}</span>`).join("")}
+        ${scale.ticks.slice().reverse().map((tick) => `<span style="bottom:${Math.round((tick / scale.top) * chartHeight)}px">${esc(usesMoney ? money(tick) : int(tick))}</span>`).join("")}
       </div>
-      <div class="cm-supa-chart" style="--cm-chart-axis:${esc(String(axisWidth))}px;">
+      <div class="cm-supa-chart" style="--cm-chart-axis:${esc(String(axisWidth))}px; --cm-series-count:${esc(String(series.length))};">
         <div class="cm-supa-grid" style="height:${chartHeight}px">
           ${scale.ticks.map((tick) => `<i style="bottom:${Math.round((tick / scale.top) * chartHeight)}px"></i>`).join("")}
         </div>
         ${rows.map((row) => {
-          const leftValue = Number(row[chart.leftKey] || 0);
-          const rightValue = Number(row[chart.rightKey] || 0);
-          const leftHeight = Math.max(leftValue ? 8 : 0, Math.round((leftValue / scale.top) * chartHeight));
-          const rightHeight = Math.max(rightValue ? 8 : 0, Math.round((rightValue / scale.top) * chartHeight));
-          return `<div class="cm-supa-chart-col" title="${esc(formatPeriod(row.period_start, group))} — ${esc(chart.leftLabel)}: ${esc(chart.leftFormat(leftValue))}, ${esc(chart.rightLabel)}: ${esc(chart.rightFormat(rightValue))}">
+          const titleParts = series.map((item) => `${item.label}: ${item.format(Number(row[item.key] || 0))}`);
+          return `<div class="cm-supa-chart-col" title="${esc(formatPeriod(row.period_start, group))} — ${esc(titleParts.join(', '))}">
             <div class="cm-supa-chart-bars" style="height:${chartHeight}px">
-              <span class="cm-supa-bar ${esc(chart.leftClass)}" style="height:${leftHeight}px"></span>
-              <span class="cm-supa-bar ${esc(chart.rightClass)}" style="height:${rightHeight}px"></span>
+              ${series.map((item) => {
+                const value = Number(row[item.key] || 0);
+                const height = Math.max(value ? 8 : 0, Math.round((value / scale.top) * chartHeight));
+                return `<span class="cm-supa-bar ${esc(item.className)}" style="height:${height}px"></span>`;
+              }).join("")}
             </div>
             <small>${esc(formatPeriod(row.period_start, group))}</small>
           </div>`;
@@ -469,22 +456,19 @@
         <div class="cm-report-auto-hint">Zakres: ostatnie 20 × ${esc(groupLabel(group))}, razem z dzisiaj</div>
         <button type="submit" class="btn btn-primary cm-report-show-btn">Pokaż</button>
       </form>
-      <div class="cm-report-kpi-grid">
-        ${kpiCard("Zapisało się klientów", int(summary.new_clients), "nowi klienci w zakresie")}
-        ${kpiCard("Liczba klientów", int(summary.total_clients), "wszyscy klienci firmy")}
-        ${kpiCard("Przychód", money(summary.revenue), "paid/partial, bez void")}
-        ${kpiCard("Sprzedaże", int(summary.sales_count), "sales")}
-        ${kpiCard("Usługi", `${int(summary.service_items)} / ${money(summary.service_revenue)}`, "sale_items service")}
-        ${kpiCard("Produkty", `${int(summary.product_items)} / ${money(summary.product_revenue)}`, "sale_items product")}
-        ${kpiCard("Karnety", `${int(summary.pass_items)} / ${money(summary.pass_revenue)}`, "sprzedaż karnetów")}
-        ${kpiCard("Wizyty", int(summary.finished_visits), "zakończone")}
+      <div class="cm-report-kpi-grid cm-report-kpi-grid-clean">
+        ${kpiCard("Przychód dziś", money(summary.today_revenue ?? summary.revenue_today ?? 0), "opłacone dziś")}
+        ${kpiCard("Wizyty", `${int(summary.finished_visits)} / ${int(summary.planned_visits)}`, "zakończone / zaplanowane")}
+        ${kpiCard("Usługi", `${int(summary.service_items)} / ${money(summary.service_revenue)}`, "pozycje sprzedaży")}
+        ${kpiCard("Produkty", `${int(summary.product_items)} / ${money(summary.product_revenue)}`, "pozycje sprzedaży")}
+        ${kpiCard("Karnety", `${int(summary.pass_items)} / ${money(summary.pass_revenue)}`, "pozycje sprzedaży")}
       </div>
       <div class="cm-report-chart-head">
         <button id="cmReportChartPrev" type="button" class="cm-report-chart-arrow" aria-label="Poprzedni wykres">‹</button>
         <div><strong>${esc(chart.title)}</strong><small>${esc(chart.subtitle)}</small></div>
         <button id="cmReportChartNext" type="button" class="cm-report-chart-arrow" aria-label="Następny wykres">›</button>
       </div>
-      <div class="cm-supa-chart-legend"><span><i class="${esc(chart.leftClass)}"></i>${esc(chart.leftLabel)}</span><span><i class="${esc(chart.rightClass)}"></i>${esc(chart.rightLabel)}</span></div>
+      <div class="cm-supa-chart-legend">${chartSeries(chart).map((item) => `<span><i class="${esc(item.className)}"></i>${esc(item.label)}</span>`).join("")}</div>
       ${renderBars(rows, group, chart)}
       <div class="cm-report-table">${table(rows, group)}</div>
     </section>`;

@@ -4812,3 +4812,63 @@ html body .cm-cr-dropdown-button {
   .cm-supa-chart-frame{gap:8px;padding:18px 10px 10px;}
   .cm-supa-y-axis{font-size:10px;}
 }
+
+/* CompanyManager 045F — simplified reports cards + tight proportional chart */
+.cm-report-kpi-grid.cm-report-kpi-grid-clean{
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 10px;
+  align-items: stretch;
+}
+.cm-report-kpi-grid-clean .cm-report-kpi{
+  min-height: 92px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 13px 15px;
+}
+.cm-report-kpi-grid-clean .cm-report-kpi span{
+  margin-bottom: 6px;
+  line-height: 1.2;
+}
+.cm-report-kpi-grid-clean .cm-report-kpi strong{
+  font-size: 21px;
+  letter-spacing: .01em;
+}
+.cm-report-kpi-grid-clean .cm-report-kpi small{
+  margin-top: 6px;
+  min-height: 14px;
+}
+.cm-supa-chart-legend{
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 10px 16px;
+  margin-top: -4px;
+}
+.cm-supa-chart-frame .cm-supa-chart{
+  justify-content: space-between;
+  gap: 5px;
+}
+.cm-supa-chart-frame .cm-supa-chart-col{
+  min-width: 42px;
+  flex: 1 1 42px;
+  gap: 6px;
+}
+.cm-supa-chart-frame .cm-supa-chart-bars{
+  width: 100%;
+  justify-content: center;
+  gap: 3px;
+}
+.cm-supa-chart-frame .cm-supa-bar{
+  width: clamp(7px, calc(22px / max(var(--cm-series-count, 2), 1)), 13px);
+}
+.cm-supa-chart-legend i.pass{background:rgba(244,114,182,.82);}
+.cm-supa-bar.pass{background:rgba(244,114,182,.82);}
+@media (max-width: 1180px){
+  .cm-report-kpi-grid.cm-report-kpi-grid-clean{grid-template-columns: repeat(3, minmax(0, 1fr));}
+}
+@media (max-width: 760px){
+  .cm-report-kpi-grid.cm-report-kpi-grid-clean{grid-template-columns: repeat(2, minmax(0, 1fr));}
+}
+@media (max-width: 520px){
+  .cm-report-kpi-grid.cm-report-kpi-grid-clean{grid-template-columns: 1fr;}
+}
