@@ -1,5 +1,5 @@
 // CompanyManager — Walk-ins Module powered by Supabase
-// 041A: Sprzedaż bez wizyty -> sales / sale_items / payments.
+// 041C: Sprzedaż bez wizyty + szybkie dodawanie produktu/usługi do właściwych modułów.
 
 (function () {
   function isWalkinsPage() {
@@ -214,7 +214,7 @@
   }
 
   async function fetchWalkinsData(ctx) {
-    const [salesRes, itemsRes, paymentsRes, clientsRes, usersRes, servicesRes, productsRes] = await Promise.all([
+    const [salesRes, itemsRes, paymentsRes, clientsRes, usersRes, categoriesRes, positionsRes, servicesRes, productsRes] = await Promise.all([
       window.cmSupabase
         .from("sales")
         .select("id, company_id, client_id, employee_id, employee_name, sale_number, sale_source, sale_date, sale_time, total_gross, payment_status, payment_method, note, created_at, updated_at")
@@ -236,6 +236,16 @@
         .eq("company_id", ctx.companyId),
       window.cmSupabase.rpc("company_users_for_dropdown", { target_company_id: ctx.companyId }),
       window.cmSupabase
+        .from("service_categories")
+        .select("id, name")
+        .eq("company_id", ctx.companyId)
+        .order("name", { ascending: true }),
+      window.cmSupabase
+        .from("positions")
+        .select("id, name, active")
+        .eq("company_id", ctx.companyId)
+        .order("name", { ascending: true }),
+      window.cmSupabase
         .from("services")
         .select("id, name, active, price, price_from, price_to")
         .eq("company_id", ctx.companyId)
@@ -246,7 +256,7 @@
         .eq("company_id", ctx.companyId)
         .order("name", { ascending: true })
     ]);
-    const errors = [salesRes, itemsRes, paymentsRes, clientsRes, usersRes, servicesRes, productsRes].map((res) => res.error).filter(Boolean);
+    const errors = [salesRes, itemsRes, paymentsRes, clientsRes, usersRes, categoriesRes, positionsRes, servicesRes, productsRes].map((res) => res.error).filter(Boolean);
     if (errors.length) throw errors[0];
     return {
       sales: salesRes.data || [],
@@ -254,6 +264,8 @@
       payments: paymentsRes.data || [],
       clients: clientsRes.data || [],
       users: usersRes.data || [],
+      categories: categoriesRes.data || [],
+      positions: (positionsRes.data || []).filter((p) => p.active !== false),
       services: (servicesRes.data || []).filter((s) => s.active !== false),
       products: (productsRes.data || []).filter((p) => p.active !== false)
     };
@@ -310,6 +322,8 @@
     }).join("");
     const customerOptions = data.clients.map((c) => `<option value="${escapeHtml(c.id)}">${escapeHtml(clientName(c) || "-")}</option>`).join("");
     const employeeOptions = data.users.map((u) => `<option value="${escapeHtml(u.id)}">${escapeHtml(userName(u) || "-")}</option>`).join("");
+    const quickServiceCategoryOptions = (data.categories || []).map((c) => `<option value="${escapeHtml(c.id)}">${escapeHtml(c.name || "Kategoria")}</option>`).join("");
+    const quickServicePositionOptions = (data.positions || []).map((p) => `<option value="${escapeHtml(p.id)}">${escapeHtml(p.name || "Stanowisko")}</option>`).join("");
 
     const paymentBySale = Object.fromEntries(data.payments.map((p) => [p.sale_id, p]));
     const filtered = data.sales.filter((sale) => {
@@ -364,14 +378,59 @@
           <label>Data sprzedaży<input name="saleDate" type="date" value="${isoToday()}" required></label>
           <label>Godzina<input name="saleTime" type="time" value="${currentTime()}" required></label>
         </div>
-        <label>Dodaj produkt<select name="productId" id="walkinProductSelect"><option value="">Nie dodawaj produktu</option>${productOptions}</select></label>
-        <label>Dodaj usługę<select name="serviceId" id="walkinServiceSelect"><option value="">Nie dodawaj usługi</option>${serviceOptions}</select></label>
+        <div class="cm-connected-field">
+          <label>Produkt<select name="productId" id="walkinProductSelect"><option value="">Nie dodawaj produktu</option>${productOptions}</select></label>
+          <button type="button" id="walkinOpenQuickProduct" class="bm-secondary-btn">Dodaj nowy produkt</button>
+        </div>
+        <div class="cm-connected-field">
+          <label>Usługa<select name="serviceId" id="walkinServiceSelect"><option value="">Nie dodawaj usługi</option>${serviceOptions}</select></label>
+          <button type="button" id="walkinOpenQuickService" class="bm-secondary-btn">Dodaj nową usługę</button>
+        </div>
         <label>Razem do zapłaty<input name="amount" id="walkinAmount" type="number" min="0" step="0.01" value="0.00"></label>
         <label>Płatność<select name="paymentMethod" required><option value="gotówka">gotówka</option><option value="karta kredytowa">karta kredytowa</option><option value="przelew">przelew</option><option value="pakiet">pakiet</option><option value="karnet">karnet</option><option value="gratis">gratis</option></select></label>
         <label class="full">Opis<textarea name="description" placeholder="Opis sprzedaży"></textarea></label>
         <div class="full"><button type="submit">Zapisz sprzedaż</button></div>
       </form>
       <p id="walkinFormMessage" class="panel-message"></p>
+    </section>
+
+    <section class="bm-page-card" id="walkinQuickProductCard" hidden>
+      <h2>Dodaj produkt do bazy</h2>
+      <p class="bm-muted">Produkt zapisze się w module Produkty i od razu będzie dostępny w Sprzedaży bez wizyty.</p>
+      <form id="walkinQuickProductForm" class="bm-form-grid bm-wide-form">
+        <label>Nazwa produktu<input name="name" placeholder="Nazwa produktu" required></label>
+        <label>Kategoria<input name="category" placeholder="np. Kosmetyki"></label>
+        <label>Cena sprzedaży<input name="price" type="number" min="0" step="0.01" placeholder="0.00" required></label>
+        <label>Ilość / stan<input name="unitStock" type="number" min="0" step="1" value="0"></label>
+        <label>Dostawca<input name="supplier" placeholder="Dostawca"></label>
+        <label class="full">Opis<textarea name="description" placeholder="Opis produktu"></textarea></label>
+        <div class="full"><button type="submit">Zapisz produkt</button></div>
+      </form>
+      <p id="walkinQuickProductMessage" class="panel-message"></p>
+    </section>
+
+    <section class="bm-page-card" id="walkinQuickServiceCard" hidden>
+      <h2>Dodaj usługę do bazy</h2>
+      <p class="bm-muted">Usługa zapisze się w module Usługi i od razu będzie dostępna w Sprzedaży bez wizyty.</p>
+      <form id="walkinQuickServiceForm" class="bm-form-grid bm-wide-form">
+        <label>Kategoria usług
+          <select name="categoryId">
+            <option value="">Wybierz kategorię</option>
+            ${quickServiceCategoryOptions}
+          </select>
+        </label>
+        <label>Lub nowa kategoria<input name="newCategory" placeholder="np. Strzyżenie"></label>
+        <label>Nazwa usługi<input name="name" placeholder="Nazwa usługi" required></label>
+        <label>Stanowisko pracy<select name="positionId" required><option value="">Wybierz stanowisko</option>${quickServicePositionOptions}</select></label>
+        <div class="bm-form-row-2 full">
+          <label>Czas — godziny<input name="durationHours" type="number" min="0" step="1" value="0" required></label>
+          <label>Czas — minuty<input name="durationMinutes" type="number" min="0" max="59" step="1" value="30" required></label>
+        </div>
+        <label>Cena usługi<input name="price" type="number" min="0" step="0.01" placeholder="0.00" required></label>
+        <label class="full">Opis<textarea name="description" placeholder="Opis usługi"></textarea></label>
+        <div class="full"><button type="submit">Zapisz usługę</button></div>
+      </form>
+      <p id="walkinQuickServiceMessage" class="panel-message"></p>
     </section>
 
     <section class="bm-page-card" id="walkinDeleteCard" hidden>
@@ -389,9 +448,13 @@
   function bindActions(ctx, data) {
     const formCard = document.querySelector("#walkinFormCard");
     const deleteCard = document.querySelector("#walkinDeleteCard");
-    const panels = [formCard, deleteCard];
+    const quickProductCard = document.querySelector("#walkinQuickProductCard");
+    const quickServiceCard = document.querySelector("#walkinQuickServiceCard");
+    const panels = [formCard, deleteCard, quickProductCard, quickServiceCard];
     document.querySelector("#showAddWalkin")?.addEventListener("click", () => showOnlyPanel(formCard, panels));
     document.querySelector("#showDeleteWalkin")?.addEventListener("click", () => showOnlyPanel(deleteCard, panels));
+    document.querySelector("#walkinOpenQuickProduct")?.addEventListener("click", () => showOnlyPanel(quickProductCard, panels));
+    document.querySelector("#walkinOpenQuickService")?.addEventListener("click", () => showOnlyPanel(quickServiceCard, panels));
     setupModuleLimitDropdowns(document);
 
     const apply = () => {
@@ -411,6 +474,108 @@
     };
     document.querySelector("#walkinProductSelect")?.addEventListener("change", updateAmount);
     document.querySelector("#walkinServiceSelect")?.addEventListener("change", updateAmount);
+
+    document.querySelector("#walkinQuickProductForm")?.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const form = event.currentTarget;
+      if (form.dataset.saving === "1") return;
+      form.dataset.saving = "1";
+      const submit = form.querySelector('button[type="submit"]');
+      if (submit) submit.disabled = true;
+      try {
+        const fd = new FormData(form);
+        const name = String(fd.get("name") || "").trim();
+        const price = parseNumber(fd.get("price"), 0);
+        if (!name) throw new Error("Podaj nazwę produktu.");
+        if (price <= 0) throw new Error("Podaj cenę produktu większą od 0.");
+        const payload = {
+          company_id: ctx.companyId,
+          name,
+          category: String(fd.get("category") || "").trim(),
+          price,
+          unit_stock: parseNumber(fd.get("unitStock"), 0),
+          package_stock: 0,
+          low_package_stock: 0,
+          units_per_package: 0,
+          sale_only: true,
+          supplier: String(fd.get("supplier") || "").trim(),
+          description: String(fd.get("description") || "").trim(),
+          include_commission: false,
+          include_discount: false,
+          active: true,
+          updated_at: new Date().toISOString()
+        };
+        const { data: insertedProduct, error } = await window.cmSupabase.from("products").insert(payload).select("*").single();
+        if (error) throw error;
+        await window.cmUndo?.record({ module: "products", actionType: "insert", targetTable: "products", targetId: insertedProduct?.id, afterData: insertedProduct || payload, companyId: ctx.companyId });
+        setMessage("#walkinQuickProductMessage", "Produkt zapisany. Odświeżam listę sprzedaży...", true);
+        setTimeout(renderWalkins, 450);
+      } catch (error) {
+        setMessage("#walkinQuickProductMessage", "Błąd zapisu produktu: " + (error.message || JSON.stringify(error)), false);
+        form.dataset.saving = "0";
+        if (submit) submit.disabled = false;
+      }
+    });
+
+    document.querySelector("#walkinQuickServiceForm")?.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const form = event.currentTarget;
+      if (form.dataset.saving === "1") return;
+      form.dataset.saving = "1";
+      const submit = form.querySelector('button[type="submit"]');
+      if (submit) submit.disabled = true;
+      try {
+        const fd = new FormData(form);
+        const name = String(fd.get("name") || "").trim();
+        let categoryId = String(fd.get("categoryId") || "").trim();
+        const newCategory = String(fd.get("newCategory") || "").trim();
+        const positionId = String(fd.get("positionId") || "").trim();
+        const durationHours = Number(fd.get("durationHours") || 0);
+        const durationMinutes = Number(fd.get("durationMinutes") || 0);
+        const price = parseNumber(fd.get("price"), 0);
+        if (!name) throw new Error("Podaj nazwę usługi.");
+        if (!categoryId && !newCategory) throw new Error("Wybierz kategorię albo wpisz nową.");
+        if (!positionId) throw new Error("Wybierz stanowisko pracy.");
+        if (durationHours <= 0 && durationMinutes <= 0) throw new Error("Czas usługi musi być większy niż 0.");
+        if (price <= 0) throw new Error("Podaj cenę usługi większą od 0.");
+        if (!categoryId && newCategory) {
+          const { data: category, error: categoryError } = await window.cmSupabase
+            .from("service_categories")
+            .insert({ company_id: ctx.companyId, name: newCategory, updated_at: new Date().toISOString() })
+            .select("*")
+            .single();
+          if (categoryError) throw categoryError;
+          categoryId = category?.id || "";
+        }
+        const payload = {
+          company_id: ctx.companyId,
+          category_id: categoryId,
+          name,
+          duration_hours: durationHours,
+          duration_minutes: durationMinutes,
+          price_from: price,
+          price_to: price,
+          position_id: positionId,
+          description: String(fd.get("description") || "").trim() || null,
+          show_online: false,
+          prevent_overlap: false,
+          deposit: 0,
+          include_commission: false,
+          include_discount: false,
+          active: true,
+          updated_at: new Date().toISOString()
+        };
+        const { data: insertedService, error } = await window.cmSupabase.from("services").insert(payload).select("*").single();
+        if (error) throw error;
+        await window.cmUndo?.record({ module: "services", actionType: "insert", targetTable: "services", targetId: insertedService?.id, afterData: insertedService || payload, companyId: ctx.companyId });
+        setMessage("#walkinQuickServiceMessage", "Usługa zapisana. Odświeżam listę sprzedaży...", true);
+        setTimeout(renderWalkins, 450);
+      } catch (error) {
+        setMessage("#walkinQuickServiceMessage", "Błąd zapisu usługi: " + (error.message || JSON.stringify(error)), false);
+        form.dataset.saving = "0";
+        if (submit) submit.disabled = false;
+      }
+    });
 
     document.querySelector("#walkinForm")?.addEventListener("submit", async (event) => {
       event.preventDefault();
