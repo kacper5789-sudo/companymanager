@@ -4332,3 +4332,34 @@ html body .panel-card input[type="time"]::-webkit-calendar-picker-indicator {
     max-height: 90vh !important;
   }
 }
+
+/* CompanyManager 042G — force Days Off forms to center without blur */
+#daysOffFormCard.cm-days-off-centered,
+#daysOffEditPanel.cm-days-off-centered,
+#daysOffDeletePanel.cm-days-off-centered,
+#daysOffFormCard.cm-as-modal,
+#daysOffEditPanel.cm-as-modal,
+#daysOffDeletePanel.cm-as-modal {
+  position: fixed !important;
+  top: 50% !important;
+  left: 50% !important;
+  right: auto !important;
+  bottom: auto !important;
+  transform: translate(-50%, -50%) !important;
+  z-index: 9500 !important;
+  width: min(860px, calc(100vw - 32px)) !important;
+  max-height: 86vh !important;
+  overflow: auto !important;
+  margin: 0 !important;
+  box-shadow: 0 35px 90px rgba(0,0,0,.58), 0 0 0 1px rgba(56,189,248,.24) !important;
+}
+
+#daysOffFormCard.cm-days-off-centered[hidden],
+#daysOffEditPanel.cm-days-off-centered[hidden],
+#daysOffDeletePanel.cm-days-off-centered[hidden] {
+  display: none !important;
+}
+
+.cm-days-off-cancel {
+  margin-top: 12px !important;
+}

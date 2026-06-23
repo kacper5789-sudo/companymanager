@@ -229,7 +229,6 @@
         <div class="bm-page-head">
           <div>
             <h2>Dni wolne pracowników</h2>
-            <p class="bm-muted">Dni wolne są zapisywane w Supabase i powiązane z pracownikami z zakładki Użytkownicy/Zespół.</p>
           </div>
         </div>
         <div id="daysOffCalendar">${buildCalendar()}</div>
@@ -292,16 +291,42 @@
     try { window.cmGlobalModalCleanup?.(); } catch (_) {}
   }
 
+  function ensureDaysOffCancel(panel) {
+    if (!panel || panel.querySelector('[data-days-off-cancel="true"]')) return;
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "bm-inline-action cm-days-off-cancel";
+    btn.dataset.daysOffCancel = "true";
+    btn.dataset.modalCancel = "true";
+    btn.textContent = "Anuluj";
+    btn.addEventListener("click", () => {
+      panel.hidden = true;
+      panel.classList.remove("cm-modal-active", "cm-as-modal", "cm-days-off-centered");
+      try { window.cmCloseModalPanel?.(panel); } catch (_) {}
+      try { window.cmRefreshGlobalModalState?.(); } catch (_) {}
+    });
+    panel.appendChild(btn);
+  }
+
   function showPanel(targetId) {
-    const panels = ["daysOffFormCard", "daysOffEditPanel", "daysOffDeletePanel"].map((id) => document.getElementById(id));
+    const panels = ["daysOffFormCard", "daysOffEditPanel", "daysOffDeletePanel"].map((id) => document.getElementById(id)).filter(Boolean);
     const target = document.getElementById(targetId);
-    panels.forEach((panel) => { if (panel) panel.hidden = panel !== target; });
+    panels.forEach((panel) => {
+      if (panel !== target) {
+        panel.hidden = true;
+        panel.classList.remove("cm-modal-active", "cm-as-modal", "cm-days-off-centered");
+      }
+    });
     if (target) {
       target.hidden = false;
-      target.scrollIntoView({ behavior: "smooth", block: "center" });
+      target.classList.add("cm-modal-active", "cm-as-modal", "cm-days-off-centered");
+      ensureDaysOffCancel(target);
+      if (window.cmOpenModalPanel) {
+        window.cmOpenModalPanel(target, panels);
+      }
     }
-    try { window.cmReinitNativePickers?.(); } catch (_) {}
-    try { window.cmGlobalModalCleanup?.(); } catch (_) {}
+    try { window.cmReinitNativePickers?.(target || document); } catch (_) {}
+    try { window.cmRefreshGlobalModalState?.(); } catch (_) {}
   }
 
   function message(selector, text, ok = true) {
