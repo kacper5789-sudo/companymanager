@@ -6659,3 +6659,13 @@ html[data-cm-ui="057"] .bm-left-info-panel .bm-date-btn{
   html[data-cm-ui="057"] .bm-panel-workspace{grid-template-columns:1fr !important;}
   html[data-cm-ui="057"] .bm-left-info-panel{width:auto !important;max-width:none !important;min-width:0 !important;margin:0 10px !important;}
 }
+
+/* v073 pass template type toggle */
+[data-template-units][hidden],
+[data-template-amount][hidden],
+[data-pass-units][hidden],
+[data-pass-amount][hidden]{display:none!important;}
+.bm-actions-row .bm-primary-btn,
+button.bm-primary-btn{border:1px solid rgba(96,165,250,.65);background:linear-gradient(135deg,rgba(37,99,235,.95),rgba(14,165,233,.82));color:#fff;font-weight:800;box-shadow:0 0 0 1px rgba(255,255,255,.04) inset,0 12px 26px rgba(37,99,235,.22);}
+.bm-actions-row .bm-primary-btn:hover,
+button.bm-primary-btn:hover{filter:brightness(1.08);box-shadow:0 0 18px rgba(56,189,248,.35),0 14px 30px rgba(37,99,235,.28);}

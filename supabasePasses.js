@@ -536,13 +536,23 @@
     const templateTypeSelect = document.querySelector('[name="templateType"]');
     const templateUnitsBox = document.querySelector('[data-template-units]');
     const templateAmountBox = document.querySelector('[data-template-amount]');
+    const setBoxVisible = (box, visible) => {
+      if (!box) return;
+      box.hidden = !visible;
+      box.style.display = visible ? "" : "none";
+      box.setAttribute("aria-hidden", visible ? "false" : "true");
+      box.querySelectorAll("input, select, textarea").forEach((field) => {
+        field.disabled = !visible;
+      });
+    };
     const refreshTemplateTypeFields = () => {
       if (!templateTypeSelect) return;
-      const isAmount = templateTypeSelect.value === "amount";
-      if (templateUnitsBox) templateUnitsBox.hidden = isAmount;
-      if (templateAmountBox) templateAmountBox.hidden = !isAmount;
+      const type = String(templateTypeSelect.value || "units");
+      setBoxVisible(templateUnitsBox, type !== "amount");
+      setBoxVisible(templateAmountBox, type === "amount");
     };
     templateTypeSelect?.addEventListener("change", refreshTemplateTypeFields);
+    templateTypeSelect?.addEventListener("input", refreshTemplateTypeFields);
     refreshTemplateTypeFields();
 
 
@@ -563,15 +573,10 @@
     document.querySelector("#passesSearch")?.addEventListener("keydown", (event) => { if (event.key === "Enter") apply(); });
 
     function toggleTemplateType() {
-      const form = document.querySelector("#templatePassForm");
-      if (!form) return;
-      const type = String(form.templateType?.value || "units");
-      const units = form.querySelector("[data-template-units]");
-      const amount = form.querySelector("[data-template-amount]");
-      if (units) units.hidden = type === "amount";
-      if (amount) amount.hidden = type !== "amount";
+      refreshTemplateTypeFields();
     }
     document.querySelector('#templatePassForm [name="templateType"]')?.addEventListener("change", toggleTemplateType);
+    document.querySelector('#templatePassForm [name="templateType"]')?.addEventListener("input", toggleTemplateType);
     toggleTemplateType();
 
     document.querySelector("#templatePassForm")?.addEventListener("submit", async (event) => {
