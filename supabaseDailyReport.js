@@ -1,4 +1,4 @@
-// CompanyManager — 046C Raport dzienny Supabase clients.full_name fix
+// CompanyManager — 046D Raport dzienny table totals and pagination
 // daily-report.html: realne dane z sales / sale_items / payments / appointments / clients.
 (function () {
   if (document.body?.dataset?.panelPage !== "dailyReport") return;
@@ -71,8 +71,79 @@
     panelArea().innerHTML = `<section class="bm-page-card cm-daily-report-card"><div class="bm-page-head"><h2>Raport dzienny</h2></div><p class="panel-message error">Błąd raportu dziennego: ${esc(message)}</p></section>`;
   }
 
-  function table(headers, rows, cls = "") {
-    return `<div class="bm-table-wrap cm-daily-table-wrap ${esc(cls)}"><table class="bm-table cm-daily-table"><thead><tr>${headers.map(h => `<th>${esc(h)}</th>`).join("")}</tr></thead><tbody>${rows.length ? rows.map(row => `<tr>${row.map(cell => `<td>${cell}</td>`).join("")}</tr>`).join("") : `<tr><td colspan="${headers.length}">Brak danych</td></tr>`}</tbody></table></div>`;
+  function table(headers, rows, cls = "", footer = null) {
+    const tableId = `dailyTable_${Math.random().toString(36).slice(2, 9)}`;
+    const bodyRows = rows.length
+      ? rows.map(row => `<tr>${row.map(cell => `<td>${cell}</td>`).join("")}</tr>`).join("")
+      : `<tr data-empty-row="1"><td colspan="${headers.length}">Brak danych</td></tr>`;
+    const footerHtml = footer && footer.length
+      ? `<tfoot><tr>${footer.map(cell => `<td>${cell}</td>`).join("")}</tr></tfoot>`
+      : "";
+    return `
+      <div class="cm-daily-datatable ${esc(cls)}" data-daily-table="1">
+        <div class="bm-table-tools cm-daily-table-tools">
+          <label><select data-page-size aria-label="Liczba pozycji na stronę"><option value="50">50</option><option value="100">100</option><option value="200">200</option></select> ▾</label>
+          <label>Szukaj:<input type="search" data-table-search placeholder="Szukaj"></label>
+        </div>
+        <div class="bm-table-wrap cm-daily-table-wrap">
+          <table class="bm-table cm-daily-table" id="${tableId}">
+            <thead><tr>${headers.map(h => `<th>${esc(h)}</th>`).join("")}</tr></thead>
+            <tbody>${bodyRows}</tbody>
+            ${footerHtml}
+          </table>
+        </div>
+        <div class="cm-sales-pager cm-daily-table-pager">
+          <span data-table-info>Pozycje od 0 do 0 z 0 łącznie</span>
+          <button type="button" data-page-prev aria-label="Poprzednia strona">‹</button>
+          <b data-table-page>1 z 1</b>
+          <button type="button" data-page-next aria-label="Następna strona">›</button>
+        </div>
+      </div>`;
+  }
+
+  function setupDailyDataTables(root = document) {
+    $$("[data-daily-table]", root).forEach((box) => {
+      if (box.dataset.ready === "1") return;
+      box.dataset.ready = "1";
+      const rows = $$('tbody tr:not([data-empty-row])', box);
+      const search = $('[data-table-search]', box);
+      const pageSize = $('[data-page-size]', box);
+      const info = $('[data-table-info]', box);
+      const pageLabel = $('[data-table-page]', box);
+      const prev = $('[data-page-prev]', box);
+      const next = $('[data-page-next]', box);
+      let page = 1;
+
+      function filteredRows() {
+        const q = String(search?.value || '').trim().toLowerCase();
+        if (!q) return rows;
+        return rows.filter(row => row.textContent.toLowerCase().includes(q));
+      }
+
+      function renderTable() {
+        const filtered = filteredRows();
+        const size = Math.max(1, Number(pageSize?.value || 50));
+        const total = filtered.length;
+        const pages = Math.max(1, Math.ceil(total / size));
+        page = Math.min(Math.max(1, page), pages);
+        const start = total ? (page - 1) * size : 0;
+        const end = Math.min(start + size, total);
+
+        rows.forEach(row => { row.style.display = 'none'; });
+        filtered.slice(start, end).forEach(row => { row.style.display = ''; });
+
+        if (info) info.textContent = total ? `Pozycje od ${start + 1} do ${end} z ${total} łącznie` : 'Pozycje od 0 do 0 z 0 łącznie';
+        if (pageLabel) pageLabel.textContent = `${page} z ${pages}`;
+        if (prev) prev.disabled = page <= 1;
+        if (next) next.disabled = page >= pages;
+      }
+
+      search?.addEventListener('input', () => { page = 1; renderTable(); });
+      pageSize?.addEventListener('change', () => { page = 1; renderTable(); });
+      prev?.addEventListener('click', () => { page -= 1; renderTable(); });
+      next?.addEventListener('click', () => { page += 1; renderTable(); });
+      renderTable();
+    });
   }
 
   function groupBy(items, keyFn, initFn, updateFn) {
@@ -201,10 +272,44 @@
       ? report.paymentsByMethod.map(row => `<div><span>${esc(row.method)}</span><b>${money(row.value)}</b><small>${int(row.count)} płatności</small></div>`).join("")
       : paymentLabels.map(method => `<div><span>${esc(method)}</span><b>${money(0)}</b></div>`).join("");
 
-    const servicesTable = table(["L.szt.", "Wartość PLN", "Nazwa usługi"], report.serviceRows.map(r => [int(r.count), money(r.value), esc(r.name)]));
-    const productsTable = table(["L.szt.", "Wartość PLN", "Nazwa produktu"], report.productRows.map(r => [int(r.count), money(r.value), esc(r.name)]));
-    const passesTable = table(["L.szt.", "Wartość PLN", "Nazwa karnetu"], report.passRows.map(r => [int(r.count), money(r.value), esc(r.name)]));
-    const employeeTable = table(["Pracownik", "Wizyty", "Usługi", "Wartość usług", "Produkty", "Wartość produktów", "Karnety", "Wartość karnetów"], report.employeeRows.map(r => [esc(r.name), int(r.visits), int(r.serviceCount), money(r.serviceValue), int(r.productCount), money(r.productValue), int(r.passCount), money(r.passValue)]), "cm-daily-employees-table");
+    const serviceTotals = report.serviceRows.reduce((acc, r) => { acc.count += Number(r.count || 0); acc.value += Number(r.value || 0); return acc; }, { count: 0, value: 0 });
+    const productTotals = report.productRows.reduce((acc, r) => { acc.count += Number(r.count || 0); acc.value += Number(r.value || 0); return acc; }, { count: 0, value: 0 });
+    const passTotals = report.passRows.reduce((acc, r) => { acc.count += Number(r.count || 0); acc.value += Number(r.value || 0); return acc; }, { count: 0, value: 0 });
+    const employeeTotals = report.employeeRows.reduce((acc, r) => {
+      acc.visits += Number(r.visits || 0);
+      acc.serviceCount += Number(r.serviceCount || 0);
+      acc.serviceValue += Number(r.serviceValue || 0);
+      acc.productCount += Number(r.productCount || 0);
+      acc.productValue += Number(r.productValue || 0);
+      acc.passCount += Number(r.passCount || 0);
+      acc.passValue += Number(r.passValue || 0);
+      return acc;
+    }, { visits: 0, serviceCount: 0, serviceValue: 0, productCount: 0, productValue: 0, passCount: 0, passValue: 0 });
+
+    const servicesTable = table(
+      ["L.szt.", "Wartość PLN", "Nazwa usługi"],
+      report.serviceRows.map(r => [int(r.count), money(r.value), esc(r.name)]),
+      "cm-daily-services-table",
+      [int(serviceTotals.count), money(serviceTotals.value), "<b>Suma</b>"]
+    );
+    const productsTable = table(
+      ["L.szt.", "Wartość PLN", "Nazwa produktu"],
+      report.productRows.map(r => [int(r.count), money(r.value), esc(r.name)]),
+      "cm-daily-products-table",
+      [int(productTotals.count), money(productTotals.value), "<b>Suma</b>"]
+    );
+    const passesTable = table(
+      ["L.szt.", "Wartość PLN", "Nazwa karnetu"],
+      report.passRows.map(r => [int(r.count), money(r.value), esc(r.name)]),
+      "cm-daily-passes-table",
+      [int(passTotals.count), money(passTotals.value), "<b>Suma</b>"]
+    );
+    const employeeTable = table(
+      ["Pracownik", "Wizyty", "Usługi", "Wartość usług", "Produkty", "Wartość produktów", "Karnety", "Wartość karnetów"],
+      report.employeeRows.map(r => [esc(r.name), int(r.visits), int(r.serviceCount), money(r.serviceValue), int(r.productCount), money(r.productValue), int(r.passCount), money(r.passValue)]),
+      "cm-daily-employees-table",
+      ["<b>Suma</b>", int(employeeTotals.visits), int(employeeTotals.serviceCount), money(employeeTotals.serviceValue), int(employeeTotals.productCount), money(employeeTotals.productValue), int(employeeTotals.passCount), money(employeeTotals.passValue)]
+    );
 
     panelArea().innerHTML = `
       <section class="bm-page-card cm-period-report-card cm-daily-report-card cm-supabase-daily-report">
@@ -270,6 +375,7 @@
       window.location.href = url.toString();
     });
     $("#dailyExportExcel")?.addEventListener("click", () => exportExcel(day, report));
+    setupDailyDataTables(panelArea());
     window.setupNativePickers?.();
   }
 

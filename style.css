@@ -4885,3 +4885,106 @@ html body .cm-cr-dropdown-button {
 .cm-supabase-daily-report .cm-daily-table th:first-child{text-align:left;}
 .cm-supabase-daily-report .cm-finance-grid > div > div{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,.08);}
 .cm-supabase-daily-report .cm-finance-grid > div > div small{color:rgba(255,255,255,.48);}
+
+/* CompanyManager 046D — Daily report totals + readable table controls */
+.cm-supabase-daily-report .cm-daily-datatable{
+  margin-top:10px;
+}
+.cm-supabase-daily-report .cm-daily-table-tools{
+  margin:10px 0 10px;
+  padding:0;
+}
+.cm-supabase-daily-report .cm-daily-table-tools select,
+.cm-supabase-daily-report .cm-daily-table-tools input{
+  height:34px;
+  border-radius:12px;
+  background:rgba(2,6,23,.52);
+  border:1px solid rgba(148,163,184,.18);
+  color:#e5edf7;
+}
+.cm-supabase-daily-report .cm-daily-table-tools input{
+  min-width:210px;
+}
+.cm-supabase-daily-report .cm-daily-table-wrap{
+  overflow-x:auto;
+}
+.cm-supabase-daily-report .cm-daily-table{
+  width:100%;
+  table-layout:fixed;
+  border-collapse:separate;
+  border-spacing:0;
+}
+.cm-supabase-daily-report .cm-daily-table th,
+.cm-supabase-daily-report .cm-daily-table td{
+  padding:10px 12px;
+  text-align:center;
+  vertical-align:middle;
+  white-space:normal;
+  line-height:1.22;
+}
+.cm-supabase-daily-report .cm-daily-table th{
+  font-size:11px;
+  text-transform:uppercase;
+  letter-spacing:.035em;
+  color:rgba(219,234,254,.82);
+}
+.cm-supabase-daily-report .cm-daily-table td{
+  font-variant-numeric:tabular-nums;
+}
+.cm-supabase-daily-report .cm-daily-table td:last-child,
+.cm-supabase-daily-report .cm-daily-table th:last-child,
+.cm-supabase-daily-report .cm-daily-employees-table td:first-child,
+.cm-supabase-daily-report .cm-daily-employees-table th:first-child{
+  text-align:left;
+}
+.cm-supabase-daily-report .cm-daily-table tfoot td{
+  position:sticky;
+  bottom:0;
+  background:rgba(15,23,42,.96);
+  border-top:1px solid rgba(56,189,248,.22);
+  color:#f8fafc;
+  font-weight:900;
+}
+.cm-supabase-daily-report .cm-daily-table-pager{
+  display:flex;
+  justify-content:flex-end;
+  align-items:center;
+  gap:8px;
+  margin:10px 0 0;
+  color:#cbd5e1;
+  font-size:13px;
+  font-weight:800;
+}
+.cm-supabase-daily-report .cm-daily-table-pager [data-table-info]{
+  margin-right:auto;
+  color:#94a3b8;
+  font-weight:700;
+}
+.cm-supabase-daily-report .cm-daily-table-pager button{
+  width:32px;
+  height:32px;
+  border-radius:11px;
+  border:1px solid rgba(148,163,184,.18);
+  background:rgba(15,23,42,.7);
+  color:#e5edf7;
+  cursor:pointer;
+}
+.cm-supabase-daily-report .cm-daily-table-pager button:disabled{
+  opacity:.35;
+  cursor:not-allowed;
+}
+.cm-supabase-daily-report .cm-daily-services-table .cm-daily-table th:nth-child(1),
+.cm-supabase-daily-report .cm-daily-products-table .cm-daily-table th:nth-child(1),
+.cm-supabase-daily-report .cm-daily-passes-table .cm-daily-table th:nth-child(1){width:92px;}
+.cm-supabase-daily-report .cm-daily-services-table .cm-daily-table th:nth-child(2),
+.cm-supabase-daily-report .cm-daily-products-table .cm-daily-table th:nth-child(2),
+.cm-supabase-daily-report .cm-daily-passes-table .cm-daily-table th:nth-child(2){width:150px;}
+.cm-supabase-daily-report .cm-daily-employees-table .cm-daily-table{min-width:980px;}
+.cm-supabase-daily-report .cm-daily-employees-table .cm-daily-table th:first-child{width:180px;}
+@media(max-width:760px){
+  .cm-supabase-daily-report .cm-daily-table-tools{align-items:stretch;}
+  .cm-supabase-daily-report .cm-daily-table-tools label{width:100%;}
+  .cm-supabase-daily-report .cm-daily-table-tools input{width:100%;min-width:0;}
+  .cm-supabase-daily-report .cm-daily-table-pager{justify-content:center;flex-wrap:wrap;}
+  .cm-supabase-daily-report .cm-daily-table-pager [data-table-info]{width:100%;margin-right:0;text-align:center;}
+}
