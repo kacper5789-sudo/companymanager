@@ -8,6 +8,110 @@
   const int = (value) => String(Number(value || 0));
   const esc = (value) => String(value ?? "").replace(/[&<>'"]/g, (c) => ({"&":"&amp;","<":"&lt;",">":"&gt;","'":"&#39;",'"':"&quot;"}[c]));
 
+  let lastReportPayload = null;
+
+  function safeFilename(value) {
+    return String(value || "raport").toLowerCase().replace(/[^a-z0-9ąćęłńóśźż_-]+/gi, "-").replace(/^-+|-+$/g, "") || "raport";
+  }
+
+  function downloadBlob(blob, filename) {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+
+  function exportStatsExcel() {
+    const payload = lastReportPayload;
+    if (!payload) return;
+    const rows = Array.isArray(payload.data?.series) ? payload.data.series : [];
+    const group = payload.filters?.group || "days";
+    const header = ["Okres", "Przychód", "Sprzedaże", "Usługi", "Produkty", "Karnety", "Wizyty zakończone", "Wizyty zaplanowane", "Nowi klienci"];
+    const csvRows = [header].concat(rows.map((row) => [
+      formatPeriod(row.period_start, group),
+      Number(row.revenue || 0).toFixed(2),
+      Number(row.sales_count || 0),
+      Number(row.service_items || 0),
+      Number(row.product_items || 0),
+      Number(row.pass_items || 0),
+      Number(row.finished_visits || 0),
+      Number(row.planned_visits || 0),
+      Number(row.new_clients || 0)
+    ]));
+    const content = csvRows.map((row) => row.map((cell) => `"${String(cell ?? "").replace(/"/g, '""')}"`).join(";" )).join("\n");
+    const blob = new Blob(["\ufeff" + content], { type: "application/vnd.ms-excel;charset=utf-8;" });
+    downloadBlob(blob, `statystyka-${safeFilename(payload.filters?.from)}-${safeFilename(payload.filters?.to)}.xls`);
+  }
+
+  function exportChartJpg() {
+    const payload = lastReportPayload;
+    if (!payload) return;
+    const rows = Array.isArray(payload.data?.series) ? payload.data.series : [];
+    const group = payload.filters?.group || "days";
+    const canvas = document.createElement("canvas");
+    canvas.width = 1600;
+    canvas.height = 900;
+    const ctx = canvas.getContext("2d");
+    const pad = 90;
+    const chartTop = 170;
+    const chartBottom = 720;
+    const chartHeight = chartBottom - chartTop;
+    ctx.fillStyle = "#07111f";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = "rgba(255,255,255,0.92)";
+    ctx.font = "bold 42px Arial";
+    ctx.fillText("Wykres / Statystyka", pad, 80);
+    ctx.font = "24px Arial";
+    ctx.fillStyle = "rgba(255,255,255,0.66)";
+    ctx.fillText(`${payload.filters?.from || ""} — ${payload.filters?.to || ""}`, pad, 122);
+    const max = Math.max(1, ...rows.map((row) => Number(row.revenue || 0)), ...rows.map((row) => Number(row.finished_visits || 0) * 30));
+    ctx.strokeStyle = "rgba(255,255,255,0.13)";
+    ctx.lineWidth = 1;
+    for (let i = 0; i <= 5; i++) {
+      const y = chartBottom - (chartHeight / 5) * i;
+      ctx.beginPath();
+      ctx.moveTo(pad, y);
+      ctx.lineTo(canvas.width - pad, y);
+      ctx.stroke();
+    }
+    const count = Math.max(rows.length, 1);
+    const colW = (canvas.width - pad * 2) / count;
+    rows.forEach((row, index) => {
+      const x = pad + index * colW + colW * 0.2;
+      const revH = Math.max(Number(row.revenue || 0) ? 8 : 0, (Number(row.revenue || 0) / max) * chartHeight);
+      const visitH = Math.max(Number(row.finished_visits || 0) ? 8 : 0, ((Number(row.finished_visits || 0) * 30) / max) * chartHeight);
+      ctx.fillStyle = "rgba(90, 190, 255, 0.78)";
+      ctx.fillRect(x, chartBottom - revH, Math.max(8, colW * 0.22), revH);
+      ctx.fillStyle = "rgba(255, 255, 255, 0.72)";
+      ctx.fillRect(x + Math.max(10, colW * 0.26), chartBottom - visitH, Math.max(8, colW * 0.22), visitH);
+      if (count <= 18 || index % Math.ceil(count / 18) === 0) {
+        ctx.save();
+        ctx.translate(x + colW * 0.15, chartBottom + 26);
+        ctx.rotate(-Math.PI / 6);
+        ctx.fillStyle = "rgba(255,255,255,0.68)";
+        ctx.font = "18px Arial";
+        ctx.fillText(formatPeriod(row.period_start, group), 0, 0);
+        ctx.restore();
+      }
+    });
+    ctx.fillStyle = "rgba(90, 190, 255, 0.78)";
+    ctx.fillRect(pad, 785, 24, 14);
+    ctx.fillStyle = "rgba(255,255,255,0.80)";
+    ctx.font = "22px Arial";
+    ctx.fillText("Przychód", pad + 36, 800);
+    ctx.fillStyle = "rgba(255,255,255,0.72)";
+    ctx.fillRect(pad + 190, 785, 24, 14);
+    ctx.fillStyle = "rgba(255,255,255,0.80)";
+    ctx.fillText("Wizyty zakończone", pad + 226, 800);
+    canvas.toBlob((blob) => {
+      if (blob) downloadBlob(blob, `wykres-statystyka-${safeFilename(payload.filters?.from)}-${safeFilename(payload.filters?.to)}.jpg`);
+    }, "image/jpeg", 0.92);
+  }
+
   function iso(date) {
     return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
   }
@@ -112,9 +216,10 @@
     const root = getRoot();
     const summary = data?.summary || {};
     const rows = Array.isArray(data?.series) ? data.series : [];
+    lastReportPayload = { data, filters };
 
     root.innerHTML = `<section class="bm-page-card cm-report-card cm-supa-reports-module">
-      <div class="bm-page-head"><h2>Wykres/Statystyka</h2></div>
+      <div class="bm-page-head"><h2>Wykres/Statystyka</h2><div class="bm-actions-row"><button id="cmReportExcelExportBtn" type="button" class="bm-excel-btn">Export - Excel</button><button id="cmReportJpgExportBtn" type="button" class="cm-sales-export-btn">Export - JPG</button></div></div>
       <form class="cm-supa-report-controls" id="cmReportsFilters">
         <label>Od<input type="date" name="from" value="${esc(filters.from)}"></label>
         <label>Do<input type="date" name="to" value="${esc(filters.to)}"></label>
@@ -141,6 +246,9 @@
       ${renderBars(rows, filters.group)}
       <div class="cm-report-table">${table(rows, filters.group)}</div>
     </section>`;
+
+    $("#cmReportExcelExportBtn")?.addEventListener("click", exportStatsExcel);
+    $("#cmReportJpgExportBtn")?.addEventListener("click", exportChartJpg);
 
     $("#cmReportsFilters")?.addEventListener("submit", (event) => {
       event.preventDefault();
