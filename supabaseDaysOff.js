@@ -433,7 +433,14 @@
           description: String(data.description || "").trim(),
           status: "active"
         };
-        const { error } = await window.cmSupabase.from("days_off").insert(payload);
+        const { error } = await window.cmSupabase.rpc("add_day_off", {
+          p_company_id: state.ctx.companyId,
+          p_employee_id: payload.employee_id,
+          p_type: payload.type,
+          p_start_date: payload.start_date,
+          p_end_date: payload.end_date,
+          p_description: payload.description
+        });
         if (error) throw error;
         message("#daysOffMessage", "Dni wolne zapisane.");
         await reloadAndRender();
@@ -456,18 +463,15 @@
       if (!validateDates(data.start_date, data.end_date, "#daysOffEditMessage")) return;
       try {
         const employee = state.employees.find((item) => item.id === data.employee_id);
-        const { error } = await window.cmSupabase
-          .from("days_off")
-          .update({
-            employee_id: data.employee_id || null,
-            employee_name: employee?.full_name || employee?.email || "Pracownik",
-            type: data.type || "dzień wolny",
-            start_date: data.start_date,
-            end_date: data.end_date,
-            description: String(data.description || "").trim()
-          })
-          .eq("id", data.day_off_id)
-          .eq("company_id", state.ctx.companyId);
+        const { error } = await window.cmSupabase.rpc("update_day_off", {
+          p_day_off_id: data.day_off_id,
+          p_company_id: state.ctx.companyId,
+          p_employee_id: data.employee_id || null,
+          p_type: data.type || "dzień wolny",
+          p_start_date: data.start_date,
+          p_end_date: data.end_date,
+          p_description: String(data.description || "").trim()
+        });
         if (error) throw error;
         message("#daysOffEditMessage", "Dni wolne zaktualizowane.");
         await reloadAndRender();
@@ -480,11 +484,10 @@
       const id = document.getElementById("daysOffDeleteSelect")?.value;
       if (!id) return message("#daysOffDeleteMessage", "Wybierz wpis do usunięcia.", false);
       try {
-        const { error } = await window.cmSupabase
-          .from("days_off")
-          .update({ status: "deleted", deleted_at: new Date().toISOString() })
-          .eq("id", id)
-          .eq("company_id", state.ctx.companyId);
+        const { error } = await window.cmSupabase.rpc("delete_day_off", {
+          p_day_off_id: id,
+          p_company_id: state.ctx.companyId
+        });
         if (error) throw error;
         message("#daysOffDeleteMessage", "Dni wolne usunięte.");
         await reloadAndRender();
