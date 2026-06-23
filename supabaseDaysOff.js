@@ -126,13 +126,23 @@
   async function fetchDaysOff(ctx) {
     const { data, error } = await window.cmSupabase
       .from("days_off")
-      .select("id, company_id, employee_id, employee_name, type, start_date, end_date, description, status, created_at, updated_at")
+      .select("id, company_id, employee_id, employee_name, type, start_date, end_date, date_from, date_to, description, reason, status, created_at, updated_at")
       .eq("company_id", ctx.companyId)
       .is("deleted_at", null)
-      .order("start_date", { ascending: true })
+      .order("date_from", { ascending: true })
       .order("created_at", { ascending: false });
     if (error) throw error;
-    return data || [];
+    return (data || []).map(normalizeDayOffRow);
+  }
+
+  function normalizeDayOffRow(item) {
+    return {
+      ...item,
+      start_date: item.start_date || item.date_from,
+      end_date: item.end_date || item.date_to || item.start_date || item.date_from,
+      description: item.description || item.reason || "",
+      employee_name: item.employee_name || employeeNameById(item.employee_id)
+    };
   }
 
   function employeeNameById(id) {
@@ -459,7 +469,10 @@
               type: payload.type,
               start_date: payload.start_date,
               end_date: payload.end_date,
+              date_from: payload.start_date,
+              date_to: payload.end_date,
               description: payload.description || null,
+              reason: payload.description || null,
               status: "active"
             });
 
