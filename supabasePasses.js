@@ -1,5 +1,5 @@
 // CompanyManager — Passes Module powered by Supabase
-// 039B: Karnety Supabase — sprzedaż karnetu + osoba korzystająca + użycie na Dashboardzie.
+// 070: Karnety Supabase — sprzedaż karnetu + osoba korzystająca + użycie na Dashboardzie.
 
 (function () {
   function isPassesPage() {
@@ -147,6 +147,33 @@
     const n = Number(value || 0);
     return Number.isFinite(n) ? `${n.toFixed(2)} PLN` : "0.00 PLN";
   }
+  const DEFAULT_PAYMENT_METHODS = [
+    { name: "gotówka", turnover: true, commission: true, default: true }
+  ];
+
+  function normalizePaymentMethods(company) {
+    let raw = company?.payment_methods;
+    if (typeof raw === "string") {
+      try { raw = JSON.parse(raw); } catch (_) { raw = null; }
+    }
+    const source = Array.isArray(raw) && raw.length ? raw : DEFAULT_PAYMENT_METHODS;
+    const seen = new Set();
+    const methods = source.map((item) => {
+      const name = String(item?.name || item?.label || "").trim();
+      if (!name) return null;
+      const key = name.toLowerCase();
+      if (seen.has(key)) return null;
+      seen.add(key);
+      return {
+        name,
+        turnover: item?.turnover !== false,
+        commission: item?.commission !== false,
+        default: item?.default === true || key === "gotówka"
+      };
+    }).filter(Boolean);
+    return methods.length ? methods : DEFAULT_PAYMENT_METHODS;
+  }
+
 
   function formatDatePL(value) {
     if (!value) return "-";
@@ -216,7 +243,7 @@
   }
 
   async function fetchPassesData(ctx) {
-    const [passesRes, clientsRes, usersRes, servicesRes, templatesRes] = await Promise.all([
+    const [passesRes, clientsRes, usersRes, servicesRes, templatesRes, companyRes] = await Promise.all([
       window.cmSupabase
         .from("passes")
         .select("id, company_id, customer_id, buyer_client_id, beneficiary_client_id, employee_id, service_id, service_name, pass_type, total_units, remaining_units, used_value, used_units, sale_id, name, number, sale_date, sale_time, valid_until, payment_method, buyer, customer_name, employee_name, value, remaining, description, status, active, created_at, updated_at")
@@ -235,19 +262,21 @@
         .order("name", { ascending: true }),
       window.cmSupabase
         .from("pass_templates")
-        .select("id, company_id, name, pass_type, service_id, service_name, total_units, amount, sale_price, valid_days, description, active, created_at")
+        .select("id, company_id, name, pass_type, service_id, service_name, total_units, amount, sale_price, stock_quantity, remaining_stock, sold_count, valid_days, description, active, created_at")
         .eq("company_id", ctx.companyId)
         .eq("active", true)
-        .order("created_at", { ascending: false })
+        .order("created_at", { ascending: false }),
+      window.cmSupabase.rpc("company_panel_get")
     ]);
-    const errors = [passesRes, clientsRes, usersRes, servicesRes, templatesRes].map((res) => res.error).filter(Boolean);
+    const errors = [passesRes, clientsRes, usersRes, servicesRes, templatesRes, companyRes].map((res) => res.error).filter(Boolean);
     if (errors.length) throw errors[0];
     return {
       passes: passesRes.data || [],
       clients: clientsRes.data || [],
       users: usersRes.data || [],
       services: (servicesRes.data || []).filter((s) => s.active !== false),
-      templates: templatesRes.data || []
+      templates: templatesRes.data || [],
+      paymentMethods: normalizePaymentMethods(companyRes.data || {})
     };
   }
 
@@ -286,7 +315,10 @@
     const value = String(tpl.pass_type || "amount") === "amount"
       ? `${money(tpl.amount || 0)} do wykorzystania`
       : `${Number(tpl.total_units || 0)} wejść`;
-    return [tpl.name || "Karnet", type, serviceName, value, `cena ${money(tpl.sale_price || 0)}`].filter(Boolean).join(" — ");
+    const remaining = Number(tpl.remaining_stock ?? tpl.stock_quantity ?? 0);
+    const stock = Number(tpl.stock_quantity ?? 0);
+    const pool = Number.isFinite(remaining) && Number.isFinite(stock) ? `pula ${remaining}/${stock}` : "pula -";
+    return [tpl.name || "Karnet", type, serviceName, value, `cena ${money(tpl.sale_price || 0)}`, pool].filter(Boolean).join(" — ");
   }
 
   function passPayload(ctx, formData, usersById, clientsById, servicesById, number, templatesById = {}) {
@@ -367,13 +399,20 @@
     const employeeOptions = data.users.map((u) => `<option value="${escapeHtml(u.id)}">${escapeHtml(userName(u) || "-")}</option>`).join("");
     const serviceOptions = (data.services || []).map((svc) => `<option value="${escapeHtml(svc.id)}">${escapeHtml(svc.name || "Usługa")}</option>`).join("");
     const templatesById = Object.fromEntries((data.templates || []).map((tpl) => [tpl.id, tpl]));
-    const templateOptions = (data.templates || []).map((tpl) => `<option value="${escapeHtml(tpl.id)}">${escapeHtml(passTemplateLabel(tpl, servicesById))}</option>`).join("");
+    const templateOptions = (data.templates || []).map((tpl) => {
+      const remaining = Number(tpl.remaining_stock ?? 0);
+      const disabled = remaining <= 0 ? " disabled" : "";
+      const suffix = remaining <= 0 ? " — brak w puli" : "";
+      return `<option value="${escapeHtml(tpl.id)}"${disabled}>${escapeHtml(passTemplateLabel(tpl, servicesById) + suffix)}</option>`;
+    }).join("");
+    const paymentOptions = (data.paymentMethods || DEFAULT_PAYMENT_METHODS).map((method) => `<option value="${escapeHtml(method.name)}"${method.default ? " selected" : ""}>${escapeHtml(method.name)}</option>`).join("");
     const templatesRows = (data.templates || []).map((tpl) => [
       tpl.name || "Karnet",
       String(tpl.pass_type || "amount") === "amount" ? "Kwotowy" : "Ilość wejść",
       tpl.service_name || servicesById[tpl.service_id]?.name || "-",
       String(tpl.pass_type || "amount") === "amount" ? money(tpl.amount) : `${Number(tpl.total_units || 0)} wejść`,
       money(tpl.sale_price || 0),
+      `${Number(tpl.remaining_stock ?? 0)}/${Number(tpl.stock_quantity ?? 0)}`,
       tpl.valid_days ? `${Number(tpl.valid_days)} dni` : "-"
     ]);
 
@@ -418,13 +457,14 @@
           <label data-template-units>Liczba wejść<input name="templateTotalUnits" type="number" min="1" step="1" value="5"></label>
           <label data-template-amount hidden>Kwota karnetu klienta (PLN)<input name="templateAmount" type="number" min="0" step="0.01" value="0.00"></label>
           <label>Cena sprzedaży (PLN)<input name="templateSalePrice" type="number" min="0" step="0.01" value="0.00" required></label>
+          <label>Ilość w puli<input name="templateStockQuantity" type="number" min="1" step="1" value="1" required></label>
           <label>Ważność domyślna (dni)<input name="templateValidDays" type="number" min="1" step="1" value="30"></label>
           <label class="full">Opis<textarea name="templateDescription" rows="2" placeholder="Opis typu karnetu"></textarea></label>
           <div class="bm-form-actions full"><button type="submit">Zapisz typ karnetu</button></div>
         </form>
         <p id="templatePassMessage" class="panel-message"></p>
         <h3>Aktualna pula karnetów</h3>
-        ${table(["Nazwa", "Typ", "Usługa", "Wartość", "Cena", "Ważność"], templatesRows, "Brak typów karnetów w puli.")}
+        ${table(["Nazwa", "Typ", "Usługa", "Wartość", "Cena", "Pula", "Ważność"], templatesRows, "Brak typów karnetów w puli.")}
       </section>
       <section id="addPassPanel" class="bm-page-card bm-inner-card" hidden>
         <h2>Dodaj karnet</h2>
@@ -440,7 +480,7 @@
           <label data-pass-amount hidden>Kwota karnetu klienta (PLN)<input name="passAmount" type="number" min="0" step="0.01" value="0.00" readonly></label>
           <label>Data ważności karnetu<input name="validUntil" type="date" value="${isoPlusMonths(1)}" required></label>
           <label>Cena sprzedaży (PLN)<input name="value" type="number" min="0" step="0.01" value="0.00" required></label>
-          <label>Sposób płatności<select name="paymentMethod" required><option value="gotówka">gotówka</option><option value="karta kredytowa">karta kredytowa</option><option value="przelew">przelew</option><option value="gratis">gratis</option></select></label>
+          <label>Sposób płatności<select name="paymentMethod" required>${paymentOptions}</select></label>
           <div class="full"><button type="button" id="showInlinePassCustomer" class="bm-secondary-btn">Dodaj klienta</button></div>
           <div id="inlinePassCustomerPanel" class="bm-page-card bm-inner-card full bm-nested-modal" hidden>
             <h3>Dodaj nowego klienta</h3>
@@ -520,6 +560,9 @@
         total_units: type === "units" ? parseNumber(form.templateTotalUnits?.value, 0) : 0,
         amount: type === "amount" ? parseNumber(form.templateAmount?.value, 0) : 0,
         sale_price: parseNumber(form.templateSalePrice?.value, 0),
+        stock_quantity: Math.max(1, Math.round(parseNumber(form.templateStockQuantity?.value, 1))),
+        remaining_stock: Math.max(1, Math.round(parseNumber(form.templateStockQuantity?.value, 1))),
+        sold_count: 0,
         valid_days: Math.max(1, Math.round(parseNumber(form.templateValidDays?.value, 30))),
         description: String(form.templateDescription?.value || "").trim(),
         active: true
@@ -528,6 +571,7 @@
         if (!payload.name) throw new Error("Wpisz nazwę typu karnetu.");
         if (payload.pass_type === "units" && !payload.total_units) throw new Error("Wpisz liczbę wejść.");
         if (payload.pass_type === "amount" && !payload.amount) throw new Error("Wpisz kwotę karnetu klienta.");
+        if (!payload.stock_quantity) throw new Error("Wpisz ilość w puli.");
         const { data: inserted, error } = await window.cmSupabase.from("pass_templates").insert(payload).select("*").single();
         if (error) throw error;
         await window.cmUndo?.record({ module: "passes", actionType: "insert", targetTable: "pass_templates", targetId: inserted?.id, afterData: inserted || payload, companyId: ctx.companyId });
@@ -543,6 +587,7 @@
       const form = document.querySelector("#addPassForm");
       if (!form) return;
       const tpl = templatesById[String(form.passTemplateId?.value || "")];
+      const remainingStock = Number(tpl?.remaining_stock ?? 0);
       const type = String(tpl?.pass_type || "amount") === "amount" ? "amount" : "units";
       const service = tpl?.service_name || servicesById[tpl?.service_id]?.name || "-";
       const validDays = Math.max(1, Number(tpl?.valid_days || 30));
@@ -557,6 +602,8 @@
       if (form.passAmount) form.passAmount.value = Number(tpl?.amount || 0).toFixed(2);
       if (form.value) form.value.value = Number(tpl?.sale_price || 0).toFixed(2);
       if (form.validUntil) form.validUntil.value = validIso;
+      const submit = form.querySelector('button[type="submit"]');
+      if (submit) submit.disabled = !!tpl && remainingStock <= 0;
       const units = form.querySelector("[data-pass-units]");
       const amount = form.querySelector("[data-pass-amount]");
       if (units) units.hidden = type !== "units";
@@ -613,6 +660,8 @@
         if (!payload.buyer_client_id) throw new Error("Wybierz kupującego.");
         if (!payload.beneficiary_client_id) throw new Error("Wybierz osobę korzystającą.");
         if (!payload.pass_template_id) throw new Error("Wybierz typ karnetu z puli.");
+        const selectedTemplate = templatesById[payload.pass_template_id];
+        if (Number(selectedTemplate?.remaining_stock ?? 0) <= 0) throw new Error("Ten typ karnetu nie ma już dostępnych sztuk w puli.");
         if (!payload.valid_until) throw new Error("Wybierz datę ważności.");
         if (payload.pass_type === "units" && !payload.total_units) throw new Error("Wpisz liczbę wejść.");
         if (payload.pass_type === "amount" && !payload.pass_amount) throw new Error("Wpisz kwotę karnetu klienta.");
