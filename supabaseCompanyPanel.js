@@ -1,4 +1,4 @@
-// CompanyManager — 049F Panel firmy: UI polish + data retention
+// CompanyManager — 049A Panel firmy Supabase
 // company-panel.html: real company data/settings from Supabase.
 (function () {
   const PAGE = "companyPanel";
@@ -134,28 +134,6 @@
     }).join("")}</select></label>`;
   }
 
-  function renderDataRetentionSettings(company) {
-    const retentionValue = company?.data_retention_months === null || company?.data_retention_months === undefined || company?.data_retention_months === ""
-      ? "__never__"
-      : String(company.data_retention_months);
-    return `<fieldset class="cm-notification-box cm-data-retention-box"><legend>Czas przechowywania danych</legend>
-      <div class="cm-retention-warning cm-full-field">
-        <strong>⚠ UWAGA!</strong>
-        <span>Dane zostaną automatycznie usunięte po upływie wybranego czasu.</span>
-      </div>
-      ${selectField("Okres przechowywania danych", "data_retention_months", retentionValue, [
-        { value: "6", label: "6 miesięcy" },
-        { value: "12", label: "12 miesięcy" },
-        { value: "24", label: "24 miesiące" },
-        { value: "36", label: "36 miesięcy" },
-        { value: "48", label: "48 miesięcy" },
-        { value: "60", label: "60 miesięcy" },
-        { value: "__never__", label: "Nigdy" }
-      ])}
-      <p class="bm-muted cm-full-field">Domyślnie: Nigdy. Wybierz okres tylko wtedy, gdy firma świadomie chce automatycznie usuwać starsze dane.</p>
-    </fieldset>`;
-  }
-
   function textarea(label, name, value, rows = 5) {
     return `<label class="cm-full-field">${escapeHtml(label)}<textarea name="${escapeHtml(name)}" rows="${rows}">${escapeHtml(value ?? "")}</textarea></label>`;
   }
@@ -273,7 +251,7 @@
           <p class="bm-muted cm-full-field">Zgody zapisują się przy kliencie jako osobne pola: SMS i Email. Dzięki temu w Marketingu wiadomo, komu można wysłać reklamę.</p>
         </fieldset>
         ${renderPaymentMethodsSettings(company)}
-        <fieldset class="cm-notification-box cm-work-hours-box"><legend>Godziny pracy firmy</legend>
+        <fieldset class="cm-notification-box"><legend>Godziny pracy firmy</legend>
           ${field("Godziny pracy od", "working_day_start", val(company, "working_day_start") || "08:00", "time")}
           ${field("Godziny pracy do", "working_day_end", val(company, "working_day_end") || "20:00", "time")}
           ${field("Domyślny czas wizyty (min)", "default_visit_duration_minutes", val(company, "default_visit_duration_minutes") || 30, "number", "min=5 step=5")}
@@ -287,7 +265,6 @@
           ])}
           <p class="bm-muted cm-full-field">Te ustawienia sterują siatką godzin na Dashboardzie. Przykład: 08:00-20:00, wizyta 30 min, przerwa 5 min → 08:00-08:30, 08:35-09:05, 09:10-09:40.</p>
         </fieldset>
-        ${renderDataRetentionSettings(company)}
         <div class="cm-form-actions cm-full-field"><button type="submit" class="bm-primary-btn">Zapisz ustawienia programu</button></div>
       </form>
     </section>`;
@@ -338,10 +315,7 @@
 
   function formPayload(form) {
     const data = {};
-    Array.from(new FormData(form).entries()).forEach(([key, value]) => {
-      const clean = String(value).trim();
-      data[key] = clean === "__never__" ? null : clean;
-    });
+    Array.from(new FormData(form).entries()).forEach(([key, value]) => { data[key] = String(value).trim(); });
     $$('input[type="checkbox"]', form).forEach((input) => { if (input.name) data[input.name] = input.checked; });
     const paymentMethods = collectPaymentMethods(form);
     if (paymentMethods) data.payment_methods = paymentMethods;
