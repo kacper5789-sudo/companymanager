@@ -216,10 +216,16 @@
   }
 
   async function fetchPassesData(ctx) {
-    const [passesRes, clientsRes, usersRes, servicesRes] = await Promise.all([
+    const [passesRes, templatesRes, clientsRes, usersRes, servicesRes] = await Promise.all([
       window.cmSupabase
         .from("passes")
-        .select("id, company_id, customer_id, buyer_client_id, beneficiary_client_id, employee_id, service_id, service_name, pass_type, total_units, remaining_units, used_value, used_units, sale_id, name, number, sale_date, sale_time, valid_until, payment_method, buyer, customer_name, employee_name, value, remaining, description, status, active, created_at, updated_at")
+        .select("id, company_id, customer_id, buyer_client_id, beneficiary_client_id, employee_id, service_id, service_name, template_id, pass_type, total_units, remaining_units, used_value, used_units, sale_id, name, number, sale_date, sale_time, valid_until, payment_method, buyer, customer_name, employee_name, value, remaining, description, status, active, created_at, updated_at")
+        .eq("company_id", ctx.companyId)
+        .eq("active", true)
+        .order("created_at", { ascending: false }),
+      window.cmSupabase
+        .from("pass_templates")
+        .select("id, company_id, name, service_id, service_name, pass_type, entries_count, total_stock, remaining_stock, price, valid_days, description, active, created_at, updated_at")
         .eq("company_id", ctx.companyId)
         .eq("active", true)
         .order("created_at", { ascending: false }),
@@ -234,9 +240,9 @@
         .eq("company_id", ctx.companyId)
         .order("name", { ascending: true })
     ]);
-    const errors = [passesRes, clientsRes, usersRes, servicesRes].map((res) => res.error).filter(Boolean);
+    const errors = [passesRes, templatesRes, clientsRes, usersRes, servicesRes].map((res) => res.error).filter(Boolean);
     if (errors.length) throw errors[0];
-    return { passes: passesRes.data || [], clients: clientsRes.data || [], users: usersRes.data || [], services: (servicesRes.data || []).filter((s) => s.active !== false) };
+    return { passes: passesRes.data || [], templates: templatesRes.data || [], clients: clientsRes.data || [], users: usersRes.data || [], services: (servicesRes.data || []).filter((s) => s.active !== false) };
   }
 
   async function getNextPassNumber(ctx, fallbackCount = 0) {
@@ -267,24 +273,48 @@
     return data;
   }
 
+  function templatePayload(ctx, formData, servicesById) {
+    const serviceId = String(formData.get("templateServiceId") || "").trim() || null;
+    const service = servicesById[serviceId] || null;
+    const passType = String(formData.get("templatePassType") || "service").trim();
+    const entries = parseNumber(formData.get("templateEntriesCount"), 0);
+    const totalStock = parseNumber(formData.get("templateTotalStock"), 0);
+    const price = parseNumber(formData.get("templatePrice"), 0);
+    const name = String(formData.get("templateName") || "").trim();
+    return {
+      company_id: ctx.companyId,
+      name,
+      service_id: serviceId,
+      service_name: service?.name || null,
+      pass_type: passType,
+      entries_count: entries,
+      total_stock: totalStock,
+      remaining_stock: totalStock,
+      price,
+      valid_days: parseNumber(formData.get("templateValidDays"), 30),
+      description: String(formData.get("templateDescription") || "").trim(),
+      active: true,
+      updated_at: new Date().toISOString()
+    };
+  }
+
   function passPayload(ctx, formData, usersById, clientsById, servicesById, number) {
     const employeeId = String(formData.get("employeeId") || "").trim() || null;
     const buyerClientId = String(formData.get("buyerClientId") || "").trim() || null;
     const beneficiaryClientId = String(formData.get("beneficiaryClientId") || "").trim() || buyerClientId;
+    const templateId = String(formData.get("templateId") || "").trim() || null;
     const serviceId = String(formData.get("serviceId") || "").trim() || null;
-    const passType = String(formData.get("passType") || "amount").trim();
+    const passType = String(formData.get("passType") || "service").trim();
     const value = parseNumber(formData.get("value"), 0);
     const totalUnits = parseNumber(formData.get("totalUnits"), 0);
-    const service = servicesById[serviceId];
-    const name = passType === "service" || passType === "units"
-      ? `Karnet ${totalUnits || 1}x ${service?.name || "usługa"}`
-      : "Karnet kwotowy";
+    const name = String(formData.get("passName") || "").trim() || "Karnet";
     return {
       company_id: ctx.companyId,
       customer_id: beneficiaryClientId,
       buyer_client_id: buyerClientId,
       beneficiary_client_id: beneficiaryClientId,
       employee_id: employeeId,
+      template_id: templateId,
       service_id: serviceId,
       name,
       number,
@@ -338,6 +368,15 @@
     const customerOptions = data.clients.map((c) => `<option value="${escapeHtml(c.id)}">${escapeHtml(clientName(c) || "-")}</option>`).join("");
     const employeeOptions = data.users.map((u) => `<option value="${escapeHtml(u.id)}">${escapeHtml(userName(u) || "-")}</option>`).join("");
     const serviceOptions = (data.services || []).map((svc) => `<option value="${escapeHtml(svc.id)}">${escapeHtml(svc.name || "Usługa")}</option>`).join("");
+    const templateOptions = (data.templates || []).map((tpl) => `<option value="${escapeHtml(tpl.id)}" data-name="${escapeHtml(tpl.name || "Karnet")}" data-service-id="${escapeHtml(tpl.service_id || "")}" data-service-name="${escapeHtml(tpl.service_name || "")}" data-pass-type="${escapeHtml(tpl.pass_type || "service")}" data-entries="${escapeHtml(tpl.entries_count || 0)}" data-price="${escapeHtml(tpl.price || 0)}" data-valid-days="${escapeHtml(tpl.valid_days || 30)}">${escapeHtml([tpl.name || "Karnet", tpl.service_name || "", `${Number(tpl.remaining_stock || 0)}/${Number(tpl.total_stock || 0)} szt.`, money(tpl.price)].filter(Boolean).join(" — "))}</option>`).join("");
+    const templateRows = (data.templates || []).map((tpl) => [
+      tpl.name || "-",
+      tpl.service_name || (tpl.pass_type === "amount" ? "Kwotowy" : "-"),
+      tpl.pass_type === "amount" ? "kwotowy" : `${Number(tpl.entries_count || 0)} wejść`,
+      `${Number(tpl.remaining_stock || 0)}/${Number(tpl.total_stock || 0)}`,
+      money(tpl.price),
+      `${Number(tpl.valid_days || 0)} dni`
+    ]);
 
     const filtered = data.passes.filter((pass) => {
       const statusOk = status === "all" || normalizeText(pass.status || "") === normalizeText(status);
@@ -369,20 +408,38 @@
       <p class="cm-pass-status-help"><strong>Aktualne</strong> = można używać. <strong>Zrealizowane</strong> = wykorzystane do zera. <strong>Po terminie</strong> = minęła data ważności.</p>`;
 
     area.innerHTML = `<section class="bm-page-card passes-module">
-      <div class="bm-page-head customers-head"><h2>Karnety</h2><div class="bm-actions-row">${allowAdd ? `<button id="showAddPass" type="button">Dodaj</button>` : ""}${allowDelete ? `<button id="showDeletePass" type="button" class="bm-danger-btn">Usuń</button>` : ""}</div></div>
+      <div class="bm-page-head customers-head"><h2>Karnety</h2><div class="bm-actions-row">${allowAdd ? `<button id="showAddTemplate" type="button" class="bm-secondary-btn">Dodaj typ karnetu</button><button id="showAddPass" type="button">Sprzedaj karnet</button>` : ""}${allowDelete ? `<button id="showDeletePass" type="button" class="bm-danger-btn">Usuń</button>` : ""}</div></div>
       ${filterTabs}
+      <section id="addTemplatePanel" class="bm-page-card bm-inner-card" hidden>
+        <h2>Dodaj typ karnetu</h2>
+        <form id="addPassTemplateForm" class="bm-form-grid bm-wide-form">
+          <label>Nazwa karnetu<input name="templateName" placeholder="np. Karnet 5x strzyżenie" required></label>
+          <label>Usługa<select name="templateServiceId"><option value="">Bez konkretnej usługi</option>${serviceOptions}</select></label>
+          <label>Typ<select name="templatePassType"><option value="service">Ilościowy / usługowy</option><option value="amount">Kwotowy</option></select></label>
+          <label>Liczba wejść na 1 karnet<input name="templateEntriesCount" type="number" min="0" step="1" value="5"></label>
+          <label>Ilość karnetów w puli<input name="templateTotalStock" type="number" min="1" step="1" value="200" required></label>
+          <label>Cena jednego karnetu (PLN)<input name="templatePrice" type="number" min="0" step="0.01" value="0.00" required></label>
+          <label>Ważny przez dni<input name="templateValidDays" type="number" min="1" step="1" value="30"></label>
+          <label class="full">Opis<textarea name="templateDescription" placeholder="Opis typu karnetu"></textarea></label>
+          <div class="full"><button type="submit">Dodaj typ karnetu</button></div>
+        </form>
+        <p id="passTemplateMessage" class="panel-message"></p>
+      </section>
       <section id="addPassPanel" class="bm-page-card bm-inner-card" hidden>
-        <h2>Dodaj karnet</h2>
+        <h2>Sprzedaj karnet klientowi</h2>
         <form id="addPassForm" class="bm-form-grid bm-wide-form">
           <div class="bm-form-row-2 full"><label>Data i godzina sprzedaży<input name="saleDate" type="date" value="${isoToday()}" required></label><label>Godzina<input name="saleTime" type="time" value="06:00" required></label></div>
           <label>Sprzedawca<select name="employeeId"><option value="">Automatycznie / brak</option>${employeeOptions}</select></label>
-          <label>Typ karnetu<select name="passType"><option value="service">Ilościowy / usługowy</option><option value="amount">Kwotowy</option></select></label>
+          <label class="full">Karnet z puli<select name="templateId" id="passTemplateSelect" required><option value="">Wybierz typ karnetu</option>${templateOptions}</select></label>
+          <input type="hidden" name="passName">
+          <input type="hidden" name="passType" value="service">
+          <input type="hidden" name="serviceId">
+          <input type="hidden" name="totalUnits" value="0">
+          <input type="hidden" name="value" value="0">
           <label>Kupujący<select name="buyerClientId" required><option value="">Wybierz kupującego</option>${customerOptions}</select></label>
           <label>Osoba korzystająca<select name="beneficiaryClientId" required><option value="">Wybierz osobę korzystającą</option>${customerOptions}</select></label>
-          <label>Usługa<select name="serviceId"><option value="">Bez konkretnej usługi</option>${serviceOptions}</select></label>
-          <label>Liczba wejść<input name="totalUnits" type="number" min="0" step="1" value="5"></label>
           <label>Data ważności karnetu<input name="validUntil" type="date" value="${isoPlusMonths(1)}" required></label>
-          <label>Cena sprzedaży (PLN)<input name="value" type="number" min="0" step="0.01" value="0.00" required></label>
+          <div id="passTemplatePreview" class="full cm-pass-status-help">Najpierw wybierz typ karnetu z puli.</div>
           <label>Sposób płatności<select name="paymentMethod" required><option value="gotówka">gotówka</option><option value="karta kredytowa">karta kredytowa</option><option value="przelew">przelew</option><option value="gratis">gratis</option></select></label>
           <div class="full"><button type="button" id="showInlinePassCustomer" class="bm-secondary-btn">Dodaj klienta</button></div>
           <div id="inlinePassCustomerPanel" class="bm-page-card bm-inner-card full bm-nested-modal" hidden>
@@ -408,6 +465,9 @@
         </div>
         <p id="passDeleteMessage" class="panel-message"></p>
       </section>
+      <h3>Pula / typy karnetów</h3>
+      ${table(["Nazwa", "Usługa", "Zawartość", "Pula", "Cena", "Ważność"], templateRows)}
+      <h3>Sprzedane karnety klientów</h3>
       <div class="bm-table-toolbar cm-limit-toolbar">${moduleLimitDropdownHtml("passesLimit")}<label>Szukaj: <input id="passesSearch" type="search" placeholder="Szukaj karnetów" value="${escapeHtml(params.get("q") || "")}"></label></div>
       <div class="bm-latest-pass"><strong>Najnowszy karnet:</strong> <input id="latestPassNumber" type="text" value="${escapeHtml(newestPass)}" aria-label="Najnowszy karnet"></div>
       ${table(["Nazwa / nr. karnetu", "Ważny do", "Opis", "Sprzedawca", "Kupujący", "Korzysta", "Usługa", "Pozostało", "Cena sprzedaży"], rows)}
@@ -418,9 +478,11 @@
   }
 
   function bindActions(ctx, data, usersById, clientsById, servicesById, status) {
+    const templatePanel = document.querySelector("#addTemplatePanel");
     const addPanel = document.querySelector("#addPassPanel");
     const deletePanel = document.querySelector("#deletePassPanel");
-    const panels = [addPanel, deletePanel];
+    const panels = [templatePanel, addPanel, deletePanel];
+    document.querySelector("#showAddTemplate")?.addEventListener("click", () => showOnlyPanel(templatePanel, panels));
     document.querySelector("#showAddPass")?.addEventListener("click", () => showOnlyPanel(addPanel, panels));
     document.querySelector("#showDeletePass")?.addEventListener("click", () => showOnlyPanel(deletePanel, panels));
     setupModuleLimitDropdowns(document);
@@ -431,6 +493,53 @@
       window.location.href = `passes.html?status=${encodeURIComponent(status)}&limit=${limit}${q ? `&q=${q}` : ""}`;
     };
     document.querySelector("#passesSearch")?.addEventListener("keydown", (event) => { if (event.key === "Enter") apply(); });
+
+    const syncTemplateSelection = () => {
+      const form = document.querySelector("#addPassForm");
+      const select = document.querySelector("#passTemplateSelect");
+      const opt = select?.selectedOptions?.[0];
+      const preview = document.querySelector("#passTemplatePreview");
+      if (!form || !opt || !opt.value) { if (preview) preview.textContent = "Najpierw wybierz typ karnetu z puli."; return; }
+      const name = opt.dataset.name || "Karnet";
+      const passType = opt.dataset.passType || "service";
+      const serviceId = opt.dataset.serviceId || "";
+      const serviceName = opt.dataset.serviceName || "-";
+      const entries = Number(opt.dataset.entries || 0);
+      const price = Number(opt.dataset.price || 0);
+      const validDays = Number(opt.dataset.validDays || 30);
+      if (form.passName) form.passName.value = name;
+      if (form.passType) form.passType.value = passType;
+      if (form.serviceId) form.serviceId.value = serviceId;
+      if (form.totalUnits) form.totalUnits.value = entries;
+      if (form.value) form.value.value = price;
+      if (form.validUntil && validDays > 0) {
+        const d = new Date();
+        d.setDate(d.getDate() + validDays);
+        form.validUntil.value = d.toISOString().slice(0, 10);
+      }
+      if (preview) preview.textContent = `${name} — ${serviceName} — ${entries ? entries + " wejść" : "kwotowy"} — ${money(price)} — ważny ${validDays} dni`;
+    };
+    document.querySelector("#passTemplateSelect")?.addEventListener("change", syncTemplateSelection);
+
+    document.querySelector("#addPassTemplateForm")?.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const form = event.currentTarget;
+      if (form.dataset.saving === "1") return;
+      form.dataset.saving = "1";
+      try {
+        const payload = templatePayload(ctx, new FormData(form), servicesById);
+        if (!payload.name) throw new Error("Wpisz nazwę karnetu.");
+        if (!payload.total_stock || payload.total_stock <= 0) throw new Error("Wpisz ilość karnetów w puli.");
+        if (payload.pass_type !== "amount" && !payload.entries_count) throw new Error("Wpisz liczbę wejść na karnet.");
+        const { error } = await window.cmSupabase.from("pass_templates").insert(payload);
+        if (error) throw error;
+        setMessage("#passTemplateMessage", "Typ karnetu dodany do puli.", true);
+        rerenderPassesAfterSuccess(450);
+      } catch (error) {
+        setMessage("#passTemplateMessage", "Błąd zapisu typu karnetu: " + (error.message || JSON.stringify(error)), false);
+        form.dataset.saving = "0";
+      }
+    });
 
     document.querySelector("#showInlinePassCustomer")?.addEventListener("click", (event) => {
       event.preventDefault();
@@ -477,6 +586,7 @@
       if (submit) submit.disabled = true;
       try {
         const payload = passPayload(ctx, new FormData(form), usersById, clientsById, servicesById, null);
+        if (!payload.template_id) throw new Error("Wybierz typ karnetu z puli.");
         if (!payload.buyer_client_id) throw new Error("Wybierz kupującego.");
         if (!payload.beneficiary_client_id) throw new Error("Wybierz osobę korzystającą.");
         if (!payload.valid_until) throw new Error("Wybierz datę ważności.");
