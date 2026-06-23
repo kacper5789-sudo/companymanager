@@ -190,6 +190,27 @@
     msg.style.display = "block";
   }
 
+  function normalizeCompanyPaymentMethods(company) {
+    let raw = company?.payment_methods;
+    if (typeof raw === "string") {
+      try { raw = JSON.parse(raw); } catch (_) { raw = null; }
+    }
+    const source = Array.isArray(raw) && raw.length ? raw : [{ name: "gotówka" }, { name: "karta kredytowa" }, { name: "przelew" }, { name: "pakiet" }, { name: "karnet" }, { name: "gratis" }];
+    const seen = new Set();
+    return source.map((item) => String(item?.name || item || "").trim()).filter((name) => {
+      const key = name.toLowerCase();
+      if (!name || seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  }
+
+  function paymentMethodOptions(company) {
+    const methods = normalizeCompanyPaymentMethods(company);
+    if (!methods.some((m) => m.toLowerCase() === "gotówka")) methods.unshift("gotówka");
+    return methods.map((name) => `<option value="${escapeHtml(name)}">${escapeHtml(name)}</option>`).join("");
+  }
+
   function showOnlyPanel(target, panels) {
     if (window.cmShowOnlyModalPanel) return window.cmShowOnlyModalPanel(target, panels || []);
     panels.forEach((panel) => { if (panel) panel.hidden = panel !== target ? true : !panel.hidden; });
@@ -214,7 +235,7 @@
   }
 
   async function fetchWalkinsData(ctx) {
-    const [salesRes, itemsRes, paymentsRes, clientsRes, usersRes, categoriesRes, positionsRes, servicesRes, productsRes] = await Promise.all([
+    const [salesRes, itemsRes, paymentsRes, clientsRes, usersRes, categoriesRes, positionsRes, servicesRes, productsRes, companyRes] = await Promise.all([
       window.cmSupabase
         .from("sales")
         .select("id, company_id, client_id, employee_id, employee_name, sale_number, sale_source, sale_date, sale_time, total_gross, payment_status, payment_method, note, created_at, updated_at")
@@ -254,9 +275,14 @@
         .from("products")
         .select("id, name, active, price, sale_price, gross_price, net_price, retail_price, selling_price, sale_gross_price, unit_price, last_purchase_price")
         .eq("company_id", ctx.companyId)
-        .order("name", { ascending: true })
+        .order("name", { ascending: true }),
+      window.cmSupabase
+        .from("companies")
+        .select("id, payment_methods")
+        .eq("id", ctx.companyId)
+        .maybeSingle()
     ]);
-    const errors = [salesRes, itemsRes, paymentsRes, clientsRes, usersRes, categoriesRes, positionsRes, servicesRes, productsRes].map((res) => res.error).filter(Boolean);
+    const errors = [salesRes, itemsRes, paymentsRes, clientsRes, usersRes, categoriesRes, positionsRes, servicesRes, productsRes, companyRes].map((res) => res.error).filter(Boolean);
     if (errors.length) throw errors[0];
     return {
       sales: salesRes.data || [],
@@ -267,7 +293,8 @@
       categories: categoriesRes.data || [],
       positions: (positionsRes.data || []).filter((p) => p.active !== false),
       services: (servicesRes.data || []).filter((s) => s.active !== false),
-      products: (productsRes.data || []).filter((p) => p.active !== false)
+      products: (productsRes.data || []).filter((p) => p.active !== false),
+      company: companyRes.data || {}
     };
   }
 
@@ -360,6 +387,8 @@
       ];
     }) : [];
 
+    const paymentOptionsHtml = paymentMethodOptions(data.company);
+
     const saleOptions = data.sales.map((sale) => `<option value="${escapeHtml(sale.id)}">${escapeHtml([formatDateTime(sale.created_at || sale.sale_date, sale.sale_time), clientName(clientsById[sale.client_id]) || "-", saleItemsLabel(sale, data.items), money(sale.total_gross), paymentBySale[sale.id]?.method || sale.payment_method || "gotówka"].join(" — "))}</option>`).join("");
 
     area.innerHTML = `<section class="bm-page-card walkins-module">
@@ -387,7 +416,7 @@
           <button type="button" id="walkinOpenQuickService" class="bm-secondary-btn">Dodaj nową usługę</button>
         </div>
         <label>Razem do zapłaty<input name="amount" id="walkinAmount" type="number" min="0" step="0.01" value="0.00"></label>
-        <label>Płatność<select name="paymentMethod" required><option value="gotówka">gotówka</option><option value="karta kredytowa">karta kredytowa</option><option value="przelew">przelew</option><option value="pakiet">pakiet</option><option value="karnet">karnet</option><option value="gratis">gratis</option></select></label>
+        <label>Płatność<select name="paymentMethod" required>${paymentOptionsHtml}</select></label>
         <label class="full">Opis<textarea name="description" placeholder="Opis sprzedaży"></textarea></label>
         <div class="full"><button type="submit">Zapisz sprzedaż</button></div>
       </form>

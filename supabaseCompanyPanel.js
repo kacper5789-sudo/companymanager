@@ -63,6 +63,65 @@
     return obj?.[key] === true || obj?.[key] === "true" || obj?.[key] === 1;
   }
 
+
+  const DEFAULT_PAYMENT_METHODS = [
+    { name: "gotówka", turnover: true, commission: true, default: true }
+  ];
+
+  function normalizePaymentMethods(company) {
+    let raw = company?.payment_methods;
+    if (typeof raw === "string") {
+      try { raw = JSON.parse(raw); } catch (_) { raw = null; }
+    }
+    const source = Array.isArray(raw) && raw.length ? raw : DEFAULT_PAYMENT_METHODS;
+    const seen = new Set();
+    const methods = source.map((item) => {
+      const name = String(item?.name || item?.label || "").trim();
+      if (!name) return null;
+      const key = name.toLowerCase();
+      if (seen.has(key)) return null;
+      seen.add(key);
+      return {
+        name,
+        turnover: item?.turnover !== false,
+        commission: item?.commission !== false,
+        default: item?.default === true || key === "gotówka"
+      };
+    }).filter(Boolean);
+    if (!methods.some((m) => m.name.toLowerCase() === "gotówka")) {
+      methods.unshift({ name: "gotówka", turnover: true, commission: true, default: true });
+    }
+    return methods;
+  }
+
+  function paymentMethodRow(method, index) {
+    const isDefaultCash = String(method?.name || "").trim().toLowerCase() === "gotówka";
+    return `<div class="cm-payment-method-row" data-payment-method-row>
+      <label class="cm-payment-method-name">Nazwa metody
+        <input type="text" data-payment-name value="${escapeHtml(method?.name || "")}" ${isDefaultCash ? "readonly" : ""} placeholder="np. karta, przelew, blik">
+      </label>
+      <label class="cm-check-line cm-payment-method-check"><input type="checkbox" data-payment-turnover ${method?.turnover !== false ? "checked" : ""}> Obrót</label>
+      <label class="cm-check-line cm-payment-method-check"><input type="checkbox" data-payment-commission ${method?.commission !== false ? "checked" : ""}> Prowizje</label>
+      <button type="button" class="bm-light-btn cm-payment-method-delete" data-payment-remove ${isDefaultCash ? "disabled title='Metoda domyślna'" : ""}>Usuń</button>
+    </div>`;
+  }
+
+  function renderPaymentMethodsSettings(company) {
+    const methods = normalizePaymentMethods(company);
+    return `<fieldset class="cm-notification-box cm-payment-methods-box"><legend>Metody płatności</legend>
+      <p class="bm-muted cm-full-field">Domyślna metoda to gotówka. Możesz dodać własne metody i oznaczyć, czy mają liczyć się do obrotu oraz prowizji.</p>
+      <div class="cm-payment-methods-head">
+        <span>Nazwa</span><span>Obrót</span><span>Prowizje</span><span>Akcja</span>
+      </div>
+      <div class="cm-payment-methods-list" data-payment-methods-list>
+        ${methods.map(paymentMethodRow).join("")}
+      </div>
+      <div class="cm-form-actions cm-full-field">
+        <button type="button" class="bm-primary-btn" data-payment-add>Dodaj metodę</button>
+      </div>
+    </fieldset>`;
+  }
+
   function field(label, name, value, type = "text", extra = "") {
     return `<label>${escapeHtml(label)}<input type="${escapeHtml(type)}" name="${escapeHtml(name)}" value="${escapeHtml(value ?? "")}" ${extra}></label>`;
   }
@@ -191,6 +250,7 @@
           ${check("Domyślnie zaznacz zgodę SMS jako NIE / wymaga świadomego wyboru", "client_marketing_consent_explicit", val(company, "client_marketing_consent_explicit") === "" ? true : checked(company, "client_marketing_consent_explicit"))}
           <p class="bm-muted cm-full-field">Zgody zapisują się przy kliencie jako osobne pola: SMS i Email. Dzięki temu w Marketingu wiadomo, komu można wysłać reklamę.</p>
         </fieldset>
+        ${renderPaymentMethodsSettings(company)}
         <fieldset class="cm-notification-box"><legend>Godziny pracy firmy</legend>
           ${field("Godziny pracy od", "working_day_start", val(company, "working_day_start") || "08:00", "time")}
           ${field("Godziny pracy do", "working_day_end", val(company, "working_day_end") || "20:00", "time")}
@@ -230,15 +290,57 @@
     </section>`;
   }
 
+  function collectPaymentMethods(form) {
+    const rows = $$('[data-payment-method-row]', form);
+    if (!rows.length) return null;
+    const seen = new Set();
+    const methods = rows.map((row) => {
+      const name = String(row.querySelector('[data-payment-name]')?.value || '').trim();
+      if (!name) return null;
+      const key = name.toLowerCase();
+      if (seen.has(key)) return null;
+      seen.add(key);
+      return {
+        name,
+        turnover: row.querySelector('[data-payment-turnover]')?.checked !== false,
+        commission: row.querySelector('[data-payment-commission]')?.checked !== false,
+        default: key === 'gotówka'
+      };
+    }).filter(Boolean);
+    if (!methods.some((m) => m.name.toLowerCase() === 'gotówka')) {
+      methods.unshift({ name: 'gotówka', turnover: true, commission: true, default: true });
+    }
+    return methods;
+  }
+
   function formPayload(form) {
     const data = {};
     Array.from(new FormData(form).entries()).forEach(([key, value]) => { data[key] = String(value).trim(); });
-    $$('input[type="checkbox"]', form).forEach((input) => { data[input.name] = input.checked; });
+    $$('input[type="checkbox"]', form).forEach((input) => { if (input.name) data[input.name] = input.checked; });
+    const paymentMethods = collectPaymentMethods(form);
+    if (paymentMethods) data.payment_methods = paymentMethods;
     return data;
   }
 
+  function bindPaymentMethodButtons(root) {
+    const list = $('[data-payment-methods-list]', root);
+    if (!list) return;
+    const addBtn = $('[data-payment-add]', root);
+    addBtn?.addEventListener('click', () => {
+      list.insertAdjacentHTML('beforeend', paymentMethodRow({ name: '', turnover: true, commission: true, default: false }, list.children.length));
+      const last = list.querySelector('[data-payment-method-row]:last-child [data-payment-name]');
+      last?.focus();
+    });
+    list.addEventListener('click', (event) => {
+      const btn = event.target.closest('[data-payment-remove]');
+      if (!btn || btn.disabled) return;
+      btn.closest('[data-payment-method-row]')?.remove();
+    });
+  }
+
   function bindForms(root, state) {
-    $$("[data-company-panel-form]", root).forEach((form) => {
+    bindPaymentMethodButtons(root);
+    $$('[data-company-panel-form]', root).forEach((form) => {
       form.addEventListener("submit", async (event) => {
         event.preventDefault();
         const button = form.querySelector('button[type="submit"]');

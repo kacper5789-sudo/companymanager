@@ -5269,3 +5269,35 @@ body[data-panel-page="companyPanel"] .bm-company-data-card .bm-info-row{
   text-align: center;
   white-space: nowrap;
 }
+
+/* COMPANYMANAGER 049E — payment methods settings */
+.cm-payment-methods-box { gap: 12px; }
+.cm-payment-methods-head,
+.cm-payment-method-row {
+  display: grid;
+  grid-template-columns: minmax(180px, 1fr) 110px 110px 92px;
+  gap: 10px;
+  align-items: center;
+}
+.cm-payment-methods-head {
+  color: rgba(226,232,240,.72);
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  padding: 0 4px;
+}
+.cm-payment-method-row {
+  padding: 10px;
+  border: 1px solid rgba(148,163,184,.18);
+  border-radius: 14px;
+  background: rgba(15,23,42,.34);
+}
+.cm-payment-method-name { margin: 0 !important; }
+.cm-payment-method-check { justify-content: center; margin: 0 !important; }
+.cm-payment-method-delete { min-height: 38px; justify-content: center; }
+@media (max-width: 760px) {
+  .cm-payment-methods-head { display: none; }
+  .cm-payment-method-row { grid-template-columns: 1fr; }
+  .cm-payment-method-check { justify-content: flex-start; }
+}

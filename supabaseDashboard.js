@@ -113,6 +113,28 @@
   }
 
 
+  function normalizeCompanyPaymentMethods(company) {
+    let raw = company?.payment_methods;
+    if (typeof raw === "string") {
+      try { raw = JSON.parse(raw); } catch (_) { raw = null; }
+    }
+    const source = Array.isArray(raw) && raw.length ? raw : [{ name: "gotówka" }, { name: "karta kredytowa" }, { name: "karnet" }, { name: "pakiet" }, { name: "gratis" }];
+    const seen = new Set();
+    return source.map((item) => String(item?.name || item || "").trim()).filter((name) => {
+      const key = name.toLowerCase();
+      if (!name || seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  }
+
+  function paymentMethodOptions(company, selected = "gotówka") {
+    const methods = normalizeCompanyPaymentMethods(company);
+    if (!methods.some((m) => m.toLowerCase() === "gotówka")) methods.unshift("gotówka");
+    return methods.map((name) => `<option value="${escapeHtml(name)}" ${String(name).toLowerCase() === String(selected || "").toLowerCase() ? "selected" : ""}>${escapeHtml(name)}</option>`).join("");
+  }
+
+
   function combineDateTimeIso(dateValue, timeValue) {
     const date = String(dateValue || "").slice(0, 10);
     const time = normalizeTime(timeValue);
@@ -318,7 +340,7 @@
         .eq("active", true),
       window.cmSupabase
         .from("companies")
-        .select("id, working_day_start, working_day_end, default_visit_duration_minutes, appointment_break_minutes")
+        .select("id, working_day_start, working_day_end, default_visit_duration_minutes, appointment_break_minutes, payment_methods")
         .eq("id", ctx.companyId)
         .maybeSingle()
     ]);
@@ -647,6 +669,7 @@
       "Brak produktów",
       (p) => `data-price="${escapeHtml(String(productPrice(p)))}" data-name="${escapeHtml(productName(p))}"`
     );
+    const paymentOptionsHtml = paymentMethodOptions(data.company);
     const allPassOptions = passOptionsFor(data);
     const visibleVisits = data.appointments.filter((item) => item.deleted !== true && !["odwołana", "odwołane", "usunięte"].includes(String(item.status || "").toLowerCase()));
     const visitOptions = visibleVisits.map((item) => `<option value="${escapeHtml(item.id)}">${escapeHtml(appointmentLabel(item, lookups))}</option>`).join("");
@@ -708,7 +731,7 @@
           <label>Zakup produktów<select name="productId"><option value="">Wybierz produkt</option>${productOptions}</select></label>
           <label class="bm-full">Karnet klienta<select name="passId"><option value="">Najpierw wybierz klienta</option></select><small class="bm-muted">Karnet pojawi się po wyborze klienta. Karnet usługowy rozlicza usługę, produkty zostają doliczone normalnie.</small></label>
           <label>Razem do zapłaty<input name="total" value="0.00" readonly></label>
-          <label>Płatność<select name="payment"><option>gotówka</option><option>karta kredytowa</option><option>karnet</option><option>pakiet</option><option>gratis</option></select></label>
+          <label>Płatność<select name="payment">${paymentOptionsHtml}</select></label>
           <label class="bm-full">Opis<textarea name="note" placeholder="Notatka"></textarea></label>
           <button type="submit">Dodaj</button>
         </form>
@@ -728,7 +751,7 @@
           <label>Zakup produktów<select name="productId"><option value="">Wybierz produkt</option>${productOptions}</select></label>
           <label class="bm-full">Karnet klienta<select name="passId"><option value="">Najpierw wybierz klienta</option></select><small class="bm-muted">Karnet pojawi się po wyborze klienta. Karnet usługowy rozlicza usługę, produkty zostają doliczone normalnie.</small></label>
           <label>Razem do zapłaty<input name="total" value="0.00" readonly></label>
-          <label>Płatność<select name="payment"><option>gotówka</option><option>karta kredytowa</option><option>karnet</option><option>pakiet</option><option>gratis</option></select></label>
+          <label>Płatność<select name="payment">${paymentOptionsHtml}</select></label>
           <label class="bm-full">Opis<textarea name="note" placeholder="Notatka"></textarea></label>
           <button type="submit">Zapisz zmiany</button>
         </form>
@@ -742,7 +765,7 @@
           <label>Kwota do zapłaty<input name="total" value="0.00" readonly></label>
           <label>Zapłacono<input name="paidAmount" value="0.00" inputmode="decimal"></label>
           <label class="bm-full">Użyj karnetu<select name="passId"><option value="">Najpierw wybierz wizytę</option></select><small class="bm-muted">Po wyborze wizyty system pokaże aktywne karnety tego klienta pasujące do usługi.</small></label>
-          <label>Płatność<select name="payment"><option>gotówka</option><option>karta kredytowa</option><option>karnet</option><option>pakiet</option><option>gratis</option></select></label>
+          <label>Płatność<select name="payment">${paymentOptionsHtml}</select></label>
           <label class="bm-full">Opis / notatka<textarea name="note" placeholder="Notatka do sprzedaży"></textarea></label>
           <button type="submit">Zakończ wizytę</button>
         </form>
