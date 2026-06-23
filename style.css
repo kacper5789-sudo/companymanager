@@ -6512,3 +6512,150 @@ html[data-cm-ui="056"] .bm-left-info-panel .bm-date-btn{
   html[data-cm-ui="056"] .bm-panel-workspace{grid-template-columns:1fr !important;}
   html[data-cm-ui="056"] .bm-left-info-panel{width:auto !important;max-width:none !important;min-width:0 !important;margin:0 10px !important;}
 }
+
+
+/* CompanyManager 057 — left date frame polish in real platform */
+html[data-cm-ui="057"] .bm-panel-workspace{
+  grid-template-columns:320px minmax(0,1fr) !important;
+  gap:18px !important;
+  width:100% !important;
+}
+html[data-cm-ui="057"] .bm-left-info-panel{
+  width:320px !important;
+  max-width:320px !important;
+  min-width:320px !important;
+  box-sizing:border-box !important;
+  padding:18px 16px 22px !important;
+  overflow:visible !important;
+}
+html[data-cm-ui="057"] .bm-left-info-panel .bm-mini-calendar,
+html[data-cm-ui="057"] .bm-left-info-panel .bm-calendar-center{
+  width:100% !important;
+  max-width:100% !important;
+  margin:0 !important;
+  padding:0 !important;
+  border:0 !important;
+  background:transparent !important;
+  box-shadow:none !important;
+  box-sizing:border-box !important;
+}
+html[data-cm-ui="057"] .bm-left-info-panel .bm-today,
+html[data-cm-ui="057"] .bm-left-info-panel .bm-today.cm-unified-action{
+  width:100% !important;
+  min-height:62px !important;
+  height:auto !important;
+  display:flex !important;
+  align-items:center !important;
+  justify-content:space-between !important;
+  gap:12px !important;
+  padding:13px 14px 13px 16px !important;
+  margin:0 !important;
+  border:1px solid rgba(56,189,248,.34) !important;
+  border-radius:18px !important;
+  background:linear-gradient(145deg,rgba(15,23,42,.98),rgba(8,18,34,.92)) !important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.07),0 0 0 1px rgba(15,23,42,.45),0 14px 32px rgba(0,0,0,.22) !important;
+  color:#f8fafc !important;
+  text-align:left !important;
+  transform:none !important;
+  filter:none !important;
+  cursor:pointer !important;
+  box-sizing:border-box !important;
+}
+html[data-cm-ui="057"] .bm-left-info-panel .bm-today:hover,
+html[data-cm-ui="057"] .bm-left-info-panel .bm-today.cm-unified-action:hover{
+  border-color:rgba(56,189,248,.66) !important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.09),0 0 24px rgba(56,189,248,.18),0 16px 36px rgba(0,0,0,.28) !important;
+}
+html[data-cm-ui="057"] .bm-left-info-panel .bm-today strong{
+  display:block !important;
+  flex:1 1 auto !important;
+  min-width:0 !important;
+  font-size:20px !important;
+  line-height:1.05 !important;
+  font-weight:950 !important;
+  letter-spacing:-.035em !important;
+  white-space:nowrap !important;
+  overflow:hidden !important;
+  text-overflow:ellipsis !important;
+  color:#f8fafc !important;
+}
+html[data-cm-ui="057"] .bm-left-info-panel .bm-today::after{
+  content:'⌄';
+  flex:0 0 36px !important;
+  width:36px !important;
+  height:36px !important;
+  display:grid !important;
+  place-items:center !important;
+  border:1px solid rgba(148,163,184,.24) !important;
+  border-radius:12px !important;
+  background:rgba(15,23,42,.72) !important;
+  color:#dbeafe !important;
+  font-size:20px !important;
+  line-height:1 !important;
+  box-sizing:border-box !important;
+}
+html[data-cm-ui="057"] .bm-left-info-panel .bm-live-clock{
+  display:block !important;
+  margin:8px 0 0 2px !important;
+  padding:0 !important;
+  color:#22d3ee !important;
+  font-size:15px !important;
+  line-height:1.25 !important;
+  font-weight:950 !important;
+  letter-spacing:.01em !important;
+}
+html[data-cm-ui="057"] .bm-left-info-panel .bm-month[hidden]{display:none !important;}
+html[data-cm-ui="057"] .bm-left-info-panel .bm-month:not([hidden]){
+  display:block !important;
+  width:100% !important;
+  max-width:100% !important;
+  box-sizing:border-box !important;
+  margin-top:14px !important;
+  padding:13px !important;
+  border-radius:20px !important;
+  overflow:hidden !important;
+}
+html[data-cm-ui="057"] .bm-left-info-panel .bm-month-head{
+  display:flex !important;
+  align-items:center !important;
+  justify-content:space-between !important;
+  gap:10px !important;
+  width:100% !important;
+  margin:0 0 12px !important;
+}
+html[data-cm-ui="057"] .bm-left-info-panel .bm-month table{
+  display:table !important;
+  table-layout:fixed !important;
+  width:100% !important;
+  border-collapse:separate !important;
+  border-spacing:4px !important;
+  margin:0 !important;
+}
+html[data-cm-ui="057"] .bm-left-info-panel .bm-month thead{display:table-header-group !important;}
+html[data-cm-ui="057"] .bm-left-info-panel .bm-month tbody{display:table-row-group !important;}
+html[data-cm-ui="057"] .bm-left-info-panel .bm-month tr{display:table-row !important;}
+html[data-cm-ui="057"] .bm-left-info-panel .bm-month th,
+html[data-cm-ui="057"] .bm-left-info-panel .bm-month td{
+  display:table-cell !important;
+  width:14.2857% !important;
+  box-sizing:border-box !important;
+  padding:0 !important;
+  text-align:center !important;
+  vertical-align:middle !important;
+}
+html[data-cm-ui="057"] .bm-left-info-panel .bm-date-btn{
+  display:flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  width:100% !important;
+  height:33px !important;
+  padding:0 !important;
+  margin:0 !important;
+  border-radius:11px !important;
+  font-size:12px !important;
+  font-weight:900 !important;
+}
+@media(max-width:980px){
+  html[data-cm-ui="057"] .bm-panel-workspace{grid-template-columns:1fr !important;}
+  html[data-cm-ui="057"] .bm-left-info-panel{width:auto !important;max-width:none !important;min-width:0 !important;margin:0 10px !important;}
+}

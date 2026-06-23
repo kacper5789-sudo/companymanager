@@ -1,7 +1,7 @@
-/* CompanyManager 056 — global UI + one calendar system */
+/* CompanyManager 057 — global UI + left date frame polish */
 (function(){
   'use strict';
-  const VERSION = '056';
+  const VERSION = '057';
   const pad = (n) => String(n).padStart(2,'0');
   const parseIso = (value) => {
     const m = String(value || '').match(/^(\d{4})-(\d{2})-(\d{2})$/);
