@@ -5301,3 +5301,127 @@ body[data-panel-page="companyPanel"] .bm-company-data-card .bm-info-row{
   .cm-payment-method-row { grid-template-columns: 1fr; }
   .cm-payment-method-check { justify-content: flex-start; }
 }
+
+/* COMPANYMANAGER 049F — company panel final UI polish + data retention */
+body[data-panel-page="companyPanel"] .cm-program-settings-page .cm-company-panel-form{
+  grid-template-columns:repeat(12,minmax(0,1fr)) !important;
+  gap:16px !important;
+}
+body[data-panel-page="companyPanel"] .cm-program-settings-page .cm-notification-box{
+  grid-column:span 6 !important;
+  min-height:auto !important;
+  align-content:start !important;
+}
+body[data-panel-page="companyPanel"] .cm-program-settings-page .cm-notification-box:nth-of-type(2){
+  grid-template-columns:repeat(2,minmax(0,1fr)) !important;
+}
+body[data-panel-page="companyPanel"] .cm-program-settings-page .cm-notification-box:nth-of-type(2) label{
+  grid-column:auto !important;
+}
+body[data-panel-page="companyPanel"] .cm-program-settings-page .cm-payment-methods-box,
+body[data-panel-page="companyPanel"] .cm-program-settings-page .cm-work-hours-box,
+body[data-panel-page="companyPanel"] .cm-program-settings-page .cm-data-retention-box{
+  grid-column:span 6 !important;
+}
+body[data-panel-page="companyPanel"] .cm-program-settings-page .cm-payment-methods-box > .bm-muted,
+body[data-panel-page="companyPanel"] .cm-program-settings-page .cm-payment-methods-head,
+body[data-panel-page="companyPanel"] .cm-program-settings-page .cm-payment-methods-list,
+body[data-panel-page="companyPanel"] .cm-program-settings-page .cm-data-retention-box .cm-retention-warning,
+body[data-panel-page="companyPanel"] .cm-program-settings-page .cm-data-retention-box > .bm-muted{
+  grid-column:1/-1 !important;
+}
+body[data-panel-page="companyPanel"] .cm-payment-methods-box{
+  overflow:hidden !important;
+}
+body[data-panel-page="companyPanel"] .cm-payment-methods-head{
+  display:grid !important;
+  grid-template-columns:minmax(180px,1fr) 92px 92px 88px !important;
+  gap:10px !important;
+  align-items:center !important;
+  margin-top:4px !important;
+  padding:0 10px !important;
+}
+body[data-panel-page="companyPanel"] .cm-payment-methods-list{
+  display:flex !important;
+  flex-direction:column !important;
+  gap:10px !important;
+}
+body[data-panel-page="companyPanel"] .cm-payment-method-row{
+  display:grid !important;
+  grid-template-columns:minmax(180px,1fr) 92px 92px 88px !important;
+  gap:10px !important;
+  align-items:center !important;
+  width:100% !important;
+  box-sizing:border-box !important;
+  padding:10px !important;
+}
+body[data-panel-page="companyPanel"] .cm-payment-method-row input[type="text"]{
+  width:100% !important;
+}
+body[data-panel-page="companyPanel"] .cm-payment-method-check{
+  display:flex !important;
+  justify-content:center !important;
+  min-height:44px !important;
+  padding:8px 10px !important;
+  white-space:nowrap !important;
+}
+body[data-panel-page="companyPanel"] .cm-payment-method-delete{
+  width:100% !important;
+  min-width:0 !important;
+  padding:10px 12px !important;
+}
+body[data-panel-page="companyPanel"] .cm-payment-methods-box .cm-form-actions{
+  justify-content:flex-end !important;
+  margin-top:0 !important;
+}
+body[data-panel-page="companyPanel"] .cm-payment-methods-box [data-payment-add]{
+  width:auto !important;
+  min-width:160px !important;
+  max-width:220px !important;
+}
+body[data-panel-page="companyPanel"] .cm-retention-warning{
+  display:flex !important;
+  align-items:flex-start !important;
+  gap:10px !important;
+  padding:12px 14px !important;
+  border:1px solid rgba(245,158,11,.25) !important;
+  border-radius:14px !important;
+  background:linear-gradient(180deg,rgba(245,158,11,.13),rgba(120,53,15,.08)) !important;
+  color:#fde68a !important;
+  line-height:1.35 !important;
+}
+body[data-panel-page="companyPanel"] .cm-retention-warning strong{
+  flex:0 0 auto !important;
+  color:#fef3c7 !important;
+  font-weight:950 !important;
+}
+body[data-panel-page="companyPanel"] .cm-retention-warning span{
+  color:#fde68a !important;
+  font-size:12.5px !important;
+  font-weight:800 !important;
+}
+body[data-panel-page="companyPanel"] .cm-data-retention-box label{
+  grid-column:1/-1 !important;
+  max-width:360px !important;
+}
+body[data-panel-page="companyPanel"] .cm-program-settings-page .cm-form-actions{
+  padding-top:0 !important;
+}
+body[data-panel-page="companyPanel"] .cm-program-settings-page .cm-form-actions .bm-primary-btn{
+  min-width:220px !important;
+  max-width:280px !important;
+}
+@media(max-width:1280px){
+  body[data-panel-page="companyPanel"] .cm-program-settings-page .cm-notification-box,
+  body[data-panel-page="companyPanel"] .cm-program-settings-page .cm-payment-methods-box,
+  body[data-panel-page="companyPanel"] .cm-program-settings-page .cm-work-hours-box,
+  body[data-panel-page="companyPanel"] .cm-program-settings-page .cm-data-retention-box{
+    grid-column:1/-1 !important;
+  }
+}
+@media(max-width:760px){
+  body[data-panel-page="companyPanel"] .cm-payment-methods-head{display:none !important;}
+  body[data-panel-page="companyPanel"] .cm-payment-method-row{grid-template-columns:1fr !important;}
+  body[data-panel-page="companyPanel"] .cm-payment-method-check{justify-content:flex-start !important;}
+  body[data-panel-page="companyPanel"] .cm-data-retention-box label{max-width:none !important;}
+}
