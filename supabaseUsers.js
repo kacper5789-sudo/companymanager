@@ -1,5 +1,5 @@
 // CompanyManager — Users Module powered by Supabase
-// 036N: Użytkownicy Supabase — safe RPC + poprawne zamykanie modala po sukcesie.
+// 051B: Użytkownicy Supabase — dodawanie/edycja + pełne uprawnienia.
 
 (function () {
   function isUsersPage() {
@@ -156,6 +156,17 @@
   ];
 
   const allPermissionKeys = [...tabPermissions, ...actionPermissions].map(([key]) => key);
+
+  const basicEmployeePermissionKeys = [
+    "open_company_manager",
+    "open_clients",
+    "open_appointments",
+    "clients_add",
+    "clients_edit",
+    "appointments_add",
+    "appointments_edit",
+    "appointments_finish"
+  ];
 
   function normalizeRole(role) {
     return String(role || "").trim().toUpperCase();
@@ -349,7 +360,7 @@
       <label>Hasło<input name="password" type="password" placeholder="Hasło" ${passwordRequired}></label>
       <label>Potwierdzenie hasła<input name="passwordConfirm" type="password" placeholder="Potwierdzenie hasła" ${passwordRequired}></label>
       <label>Stanowisko pracy<select name="positionId">${positionOptionsHtml(positions, user?.position_id || "")}</select></label>
-      <label>Rola<select name="role"><option value="EMPLOYEE" ${role === "EMPLOYEE" ? "selected" : ""}>EMPLOYEE</option><option value="ADMIN" ${role === "ADMIN" ? "selected" : ""}>ADMIN</option></select></label>
+      <label>Rola<select name="role"><option value="EMPLOYEE" ${role === "EMPLOYEE" ? "selected" : ""}>Pracownik / Recepcja</option><option value="ADMIN" ${role === "ADMIN" ? "selected" : ""}>Manager / Admin</option></select></label>
 
       <fieldset class="cm-login-rules">
         <legend>Funkcje logowania</legend>
@@ -363,6 +374,11 @@
 
       <fieldset class="cm-permissions-box">
         <legend>Uprawnienia</legend>
+        <div class="cm-permissions-tools">
+          <button type="button" data-permissions-action="all">Zaznacz wszystkie</button>
+          <button type="button" data-permissions-action="none">Odznacz wszystkie</button>
+          <button type="button" data-permissions-action="basic">Podstawowe pracownika</button>
+        </div>
         ${permissionChecksHtml(selectedPermissions)}
       </fieldset>`;
   }
@@ -563,6 +579,21 @@
     };
     editSelect?.addEventListener("change", renderEditFields);
     renderEditFields();
+
+    document.querySelectorAll(".cm-permissions-tools [data-permissions-action]").forEach((button) => {
+      if (button.dataset.cmPermissionsToolReady === "1") return;
+      button.dataset.cmPermissionsToolReady = "1";
+      button.addEventListener("click", () => {
+        const box = button.closest(".cm-permissions-box");
+        if (!box) return;
+        const action = button.getAttribute("data-permissions-action");
+        box.querySelectorAll('input[name="permissions"]').forEach((input) => {
+          if (action === "all") input.checked = true;
+          else if (action === "none") input.checked = false;
+          else if (action === "basic") input.checked = basicEmployeePermissionKeys.includes(input.value);
+        });
+      });
+    });
 
     const addForm = document.querySelector("#addAdminUserForm");
     const addButton = document.querySelector("#submitAddAdminUserBtn");
