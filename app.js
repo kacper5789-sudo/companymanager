@@ -956,19 +956,19 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   const supabaseActionPermissionMap = {
-    positions_add: ['stanowiska pracy (dodawanie, edycja, usuwanie)'],
-    positions_edit: ['stanowiska pracy (dodawanie, edycja, usuwanie)'],
-    positions_delete: ['stanowiska pracy (dodawanie, edycja, usuwanie)'],
-    users_add: ['Zespół - użytkownicy (dodawanie, edycja, usuwanie)', 'Użytkownicy (dodawanie, edycja, usuwanie)'],
-    users_edit: ['Zespół - użytkownicy (dodawanie, edycja, usuwanie)', 'Użytkownicy (dodawanie, edycja, usuwanie)'],
-    users_delete: ['Zespół - użytkownicy (dodawanie, edycja, usuwanie)', 'Użytkownicy (dodawanie, edycja, usuwanie)'],
+    positions_add: ['stanowiska pracy — dodawanie', 'stanowiska pracy (dodawanie, edycja, usuwanie)'],
+    positions_edit: ['stanowiska pracy — edycja', 'stanowiska pracy (dodawanie, edycja, usuwanie)'],
+    positions_delete: ['stanowiska pracy — usuwanie', 'stanowiska pracy (dodawanie, edycja, usuwanie)'],
+    users_add: ['użytkownicy — dodawanie', 'Zespół - użytkownicy (dodawanie, edycja, usuwanie)', 'Użytkownicy (dodawanie, edycja, usuwanie)'],
+    users_edit: ['użytkownicy — edycja', 'Zespół - użytkownicy (dodawanie, edycja, usuwanie)', 'Użytkownicy (dodawanie, edycja, usuwanie)'],
+    users_delete: ['użytkownicy — usuwanie/blokada', 'Zespół - użytkownicy (dodawanie, edycja, usuwanie)', 'Użytkownicy (dodawanie, edycja, usuwanie)'],
     days_off_add: ['dni wolne (dodawanie)'],
     days_off_edit: ['dni wolne (usuwanie, edycja)', 'dni wolne(dodawanie,edycja,usuwanie)'],
     days_off_delete: ['dni wolne (usuwanie, edycja)', 'dni wolne(dodawanie,edycja,usuwanie)'],
-    clients_add: ['klienci (dodawanie, edycja, usuwanie)'],
-    clients_edit: ['klienci (dodawanie, edycja, usuwanie)'],
-    clients_delete: ['klienci (dodawanie, edycja, usuwanie)'],
-    clients_history: ['klienci - historia (przeglądanie historii klientów)', 'klienci - historia (przeglądanie historii klientów - tabeli poniżej)'],
+    clients_add: ['klienci — dodawanie', 'klienci (dodawanie, edycja, usuwanie)'],
+    clients_edit: ['klienci — edycja', 'klienci (dodawanie, edycja, usuwanie)'],
+    clients_delete: ['klienci — usuwanie', 'klienci (dodawanie, edycja, usuwanie)'],
+    clients_history: ['klienci — historia', 'klienci - historia (przeglądanie historii klientów)', 'klienci - historia (przeglądanie historii klientów - tabeli poniżej)'],
     services_add: ['usługi (dodawanie, edycja, usuwanie)'],
     services_edit: ['usługi (dodawanie, edycja, usuwanie)'],
     services_delete: ['usługi (dodawanie, edycja, usuwanie)'],
@@ -1090,7 +1090,8 @@ document.addEventListener('DOMContentLoaded', () => {
     'Użytkownicy (dodawanie, edycja, usuwanie)': ['Zespół - użytkownicy (dodawanie, edycja, usuwanie)'],
     'dni wolne(dodawanie,edycja,usuwanie)': ['dni wolne (dodawanie)', 'dni wolne (usuwanie, edycja)'],
     'grafik pracy (dodawanie,edycja,usuwanie)': ['grafik pracy (dodawanie)', 'grafik pracy (edycja, usuwanie)'],
-    'klienci - historia (przeglądanie historii klientów)': ['klienci - historia (przeglądanie historii klientów - tabeli poniżej)'],
+    'klienci — historia': ['klienci - historia (przeglądanie historii klientów)', 'klienci - historia (przeglądanie historii klientów - tabeli poniżej)'],
+    'klienci - historia (przeglądanie historii klientów)': ['klienci - historia (przeglądanie historii klientów - tabeli poniżej)', 'klienci — historia'],
     'wizyty - historia (przeglądanie historii wizyt)': ['wizyty (niezakończone) - dostęp do historii', 'wizyty (zakończone, zaplanowane, odwołane, usunięte) - dostęp do historii (tabeli poniżej)'],
     'wizyty zakończone wczorajsze i wcześniejsze (dodawanie, edycja, usuwanie)': ['wizyty (dodawanie, edycja, zakończenie, usuwanie)'],
     'sprzedaż bez wizyt wczorajsza i wcześniejsza (dodawanie, edycja, usuwanie)': ['sprzedaż bez wizyt (dodawanie, edycja, usuwanie)'],
@@ -1138,7 +1139,10 @@ document.addEventListener('DOMContentLoaded', () => {
     ['Zespół - użytkownicy (dodawanie, edycja, usuwanie)', ['#showAddAdminUserBtn','#showEditAdminUserBtn','#showDeleteAdminUserBtn']],
     ['dni wolne (dodawanie)', ['#showAddDaysOff']],
     ['dni wolne (usuwanie, edycja)', ['#showEditDaysOff','#showDeleteDaysOff','#deleteDaysOffBtn']],
-    ['klienci (dodawanie, edycja, usuwanie)', ['#showAddCustomer','#showDeleteCustomer','#customerForm button[type="submit"]','#customerDeleteForm button[type="submit"]']],
+    ['klienci — dodawanie', ['#showAddCustomer','#customerForm button[type="submit"]']],
+    ['klienci — edycja', ['#showEditCustomer','#customerEditForm button[type="submit"]']],
+    ['klienci — usuwanie', ['#showDeleteCustomer','#customerDeleteForm button[type="submit"]']],
+    ['klienci (dodawanie, edycja, usuwanie)', ['#showAddCustomer','#showEditCustomer','#showDeleteCustomer','#customerForm button[type="submit"]','#customerEditForm button[type="submit"]','#customerDeleteForm button[type="submit"]']],
     ['klienci - historia (przeglądanie historii klientów - tabeli poniżej)', ['[data-customer-history]','#showCustomerHistory','.customer-history-btn','a[href*="customer-history"]']],
     ['usługi (dodawanie, edycja, usuwanie)', ['#showAddService','#showDeleteService','#deleteServiceBtn','#deleteServiceCategoryBtn','#showServiceCategoryManager']],
     ['produkty (dodawanie, edycja, usuwanie)', ['#showAddProduct','#showDeleteProduct','#deleteProductBtn','#productForm button[type="submit"]']],
@@ -1198,6 +1202,18 @@ document.addEventListener('DOMContentLoaded', () => {
     if (currentUser && !['owner','admin'].includes(currentUser.role) && !hasSystemPermission(currentUser, 'import danych do całej platformy')) {
       event.preventDefault(); event.stopPropagation();
       alert('Brak uprawnienia: import danych do całej platformy');
+    }
+  }, true);
+
+  document.addEventListener('click', (event) => {
+    const target = event.target?.closest?.('[data-required-permission]');
+    if (!target) return;
+    const required = target.getAttribute('data-required-permission');
+    const currentUser = getCurrentContext().user;
+    if (required && currentUser && !['owner','admin'].includes(currentUser.role) && !hasSystemPermission(currentUser, required)) {
+      event.preventDefault();
+      event.stopPropagation();
+      alert('Brak uprawnienia: ' + required);
     }
   }, true);
 

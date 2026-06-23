@@ -171,6 +171,17 @@
     ]);
   }
 
+  function canViewClientHistory(ctx) {
+    return hasAnyPermission(ctx, [
+      "clients_history",
+      "customers_history",
+      "klienci_history",
+      "klienci — historia",
+      "klienci - historia (przeglądanie historii klientów)",
+      "klienci - historia (przeglądanie historii klientów - tabeli poniżej)"
+    ]);
+  }
+
   async function getContext() {
     if (!window.cmSupabase) {
       return { ok: false, message: "Nie załadowano połączenia z Supabase." };
@@ -370,6 +381,8 @@
     const allowAdd = canAddClients(ctx);
     const allowEdit = canEditClients(ctx);
     const allowDelete = canDeleteClients(ctx);
+    const allowHistory = canViewClientHistory(ctx);
+    const customerHistoryPermission = "klienci — historia";
     const customerOptions = customers.map((client) => `<option value="${escapeHtml(client.id)}">${escapeHtml(clientOptionLabel(client))}</option>`).join("");
 
     area.innerHTML = `
@@ -386,14 +399,18 @@
           </div>
         </div>
 
-        <div class="bm-table-toolbar cm-limit-toolbar">
-          ${moduleLimitDropdownHtml("customersLimit")}
-          <label>Szukaj: <input id="customersSearch" type="search" placeholder="Szukaj klienta"></label>
-        </div>
+        ${allowHistory ? `
+          <div class="bm-table-toolbar cm-limit-toolbar">
+            ${moduleLimitDropdownHtml("customersLimit")}
+            <label>Szukaj: <input id="customersSearch" type="search" placeholder="Szukaj klienta"></label>
+          </div>
+        ` : ""}
 
         <div id="customersTableWrap">
-          ${table(["Imię Nazwisko", "Płeć", "Telefon", "Email", "Reklama SMS", "Reklama Email", "Aktualizacja", "Ostatnia wizyta", "Ważna informacja", "Status"], getCustomerRows(customers), "Brak klientów w Supabase.")}
-          ${pagination(customers.length)}
+          ${allowHistory ? `
+            ${table(["Imię Nazwisko", "Płeć", "Telefon", "Email", "Reklama SMS", "Reklama Email", "Aktualizacja", "Ostatnia wizyta", "Ważna informacja", "Status"], getCustomerRows(customers), "Brak klientów w Supabase.")}
+            ${pagination(customers.length)}
+          ` : `<div class="bm-empty-state cm-permission-notice">Brak uprawnienia: ${escapeHtml(customerHistoryPermission)}</div>`}
         </div>
         <p id="customersMessage" class="panel-message"></p>
       </section>
@@ -457,8 +474,9 @@
   }
 
   function rerenderTable(customers) {
-    const filtered = filterCustomers(customers);
     const wrap = document.querySelector("#customersTableWrap");
+    if (!wrap || wrap.querySelector(".cm-permission-notice")) return;
+    const filtered = filterCustomers(customers);
     if (!wrap) return;
     wrap.innerHTML = `
       ${table(["Imię Nazwisko", "Płeć", "Telefon", "Email", "Reklama SMS", "Reklama Email", "Aktualizacja", "Ostatnia wizyta", "Ważna informacja", "Status"], getCustomerRows(filtered), "Brak klientów w Supabase.")}

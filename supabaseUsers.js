@@ -431,7 +431,10 @@
       <h2>Dodaj użytkownika</h2>
       <form id="addAdminUserForm" class="bm-form-grid cm-admin-user-form">
         ${userFormHtml("add", null, positions)}
-        <button id="submitAddAdminUserBtn" type="submit">Dodaj użytkownika</button>
+        <div class="cm-admin-user-actions">
+          <button id="submitAddAdminUserBtn" type="submit">Dodaj użytkownika</button>
+          <button type="button" class="cm-secondary-action" data-modal-cancel="true">Anuluj</button>
+        </div>
       </form>
       <p id="addAdminUserMessage" class="panel-message"></p>
     </section>
@@ -441,13 +444,16 @@
       ${users.length ? `<form id="editAdminUserForm" class="bm-form-grid cm-admin-user-form">
         <label class="cm-full-field">Wybierz użytkownika<select name="userId" id="editAdminUserSelect" required>${userOptions}</select></label>
         <div id="editAdminUserFields" class="cm-admin-user-fields cm-form-subgrid"></div>
-        <button type="submit">Zatwierdź</button>
+        <div class="cm-admin-user-actions">
+          <button type="submit">Zatwierdź</button>
+          <button type="button" class="cm-secondary-action" data-modal-cancel="true">Anuluj</button>
+        </div>
       </form><p id="editAdminUserMessage" class="panel-message"></p>` : `<p class="bm-muted">Brak użytkowników do edycji.</p>`}
     </section>
 
     <section id="deleteAdminUserPanel" class="bm-page-card bm-collapsible-panel" hidden>
       <h2>Usuń pracownika</h2>
-      ${users.length ? `<form id="deleteAdminUserForm" class="bm-form-grid"><label class="full">Wybierz pracownika<select name="employeeId" required>${userOptions}</select></label><button type="submit" class="bm-danger-btn">Usuń pracownika</button></form><p id="deleteAdminUserMessage" class="panel-message"></p>` : `<p class="bm-muted">Brak pracowników do usunięcia.</p>`}
+      ${users.length ? `<form id="deleteAdminUserForm" class="bm-form-grid"><label class="full">Wybierz pracownika<select name="employeeId" required>${userOptions}</select></label><div class="cm-admin-user-actions"><button type="submit" class="bm-danger-btn">Usuń pracownika</button><button type="button" class="cm-secondary-action" data-modal-cancel="true">Anuluj</button></div></form><p id="deleteAdminUserMessage" class="panel-message"></p>` : `<p class="bm-muted">Brak pracowników do usunięcia.</p>`}
     </section>`;
 
     setupModuleLimitDropdowns(area);

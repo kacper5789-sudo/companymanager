@@ -5950,3 +5950,61 @@ body[data-panel-page="workSchedule"] .cm-section-title{
 }
 @media(max-width:1100px){.cm-tab-permissions-grid{grid-template-columns:repeat(2,minmax(0,1fr));}}
 @media(max-width:800px){.cm-tab-permissions-grid{grid-template-columns:1fr;}}
+
+
+/* 051C — Użytkownicy: spójny układ formularza edycji jak w dodawaniu */
+.cm-admin-user-modal{
+  width:min(980px, calc(100vw - 48px));
+}
+.cm-admin-user-form{
+  align-items:start;
+}
+.cm-admin-user-fields,
+.cm-form-subgrid{
+  grid-column:1 / -1;
+  display:grid;
+  grid-template-columns:repeat(2, minmax(0, 1fr));
+  gap:14px;
+  width:100%;
+}
+.cm-admin-user-fields > .cm-login-rules,
+.cm-admin-user-fields > .cm-permissions-box,
+.cm-admin-user-fields > .cm-full-field,
+.cm-form-subgrid > .cm-login-rules,
+.cm-form-subgrid > .cm-permissions-box,
+.cm-form-subgrid > .cm-full-field{
+  grid-column:1 / -1;
+}
+.cm-admin-user-actions{
+  grid-column:1 / -1;
+  display:flex;
+  justify-content:flex-end;
+  align-items:center;
+  gap:12px;
+  margin-top:12px;
+  padding-top:18px;
+  border-top:1px solid rgba(148,163,184,.16);
+}
+.cm-admin-user-actions button{
+  width:auto !important;
+  min-width:132px;
+  justify-self:end;
+}
+.cm-admin-user-actions .cm-secondary-action{
+  background:rgba(148,163,184,.12) !important;
+  color:#e5edf7 !important;
+  border:1px solid rgba(148,163,184,.22) !important;
+  box-shadow:none !important;
+}
+.cm-admin-user-fields + .cm-admin-user-actions{
+  margin-top:14px;
+}
+#editAdminUserForm > .cm-full-field{
+  grid-column:1 / -1;
+}
+@media(max-width:800px){
+  .cm-admin-user-fields,
+  .cm-form-subgrid{grid-template-columns:1fr;}
+  .cm-admin-user-actions{justify-content:stretch; flex-direction:column-reverse;}
+  .cm-admin-user-actions button{width:100% !important;}
+}
