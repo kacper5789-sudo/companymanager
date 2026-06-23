@@ -1,5 +1,5 @@
 // CompanyManager — Supabase global forms bridge
-// 041E: globalnie wyłączone blur/overlay. Formularze działają inline jak zwykłe sekcje.
+// 041F: brak blur/overlay, ale formularze znów otwierają się centralnie jako modal bez przyciemniania tła.
 (function () {
   'use strict';
 
@@ -9,6 +9,8 @@
   const OVERLAY_ID = 'cmGlobalFormOverlay';
 
   function cleanupBlur() {
+    // 041F: wyłączamy tylko overlay/blur, ale NIE usuwamy klasy cm-as-modal.
+    // Dzięki temu formularz zostaje wycentrowany na ekranie bez przyciemniania tła.
     document.body.classList.remove(BODY_OPEN);
     document.documentElement.classList.remove(BODY_OPEN);
     const overlay = document.getElementById(OVERLAY_ID);
@@ -19,9 +21,6 @@
       overlay.style.pointerEvents = 'none';
       overlay.style.opacity = '0';
     }
-    document.querySelectorAll('.' + MODAL_CLASS).forEach(function (panel) {
-      panel.classList.remove(MODAL_CLASS);
-    });
   }
 
   function reinitNativePickers(root) {
@@ -108,8 +107,7 @@
 
     if (targetPanel && shouldOpen) {
       targetPanel.hidden = false;
-      targetPanel.classList.add(MODAL_ACTIVE);
-      targetPanel.classList.remove(MODAL_CLASS);
+      targetPanel.classList.add(MODAL_ACTIVE, MODAL_CLASS);
     }
 
     cleanupBlur();
@@ -126,8 +124,7 @@
     });
     if (targetPanel) {
       targetPanel.hidden = false;
-      targetPanel.classList.add(MODAL_ACTIVE);
-      targetPanel.classList.remove(MODAL_CLASS);
+      targetPanel.classList.add(MODAL_ACTIVE, MODAL_CLASS);
     }
     cleanupBlur();
     schedulePickerReinit(targetPanel || document);

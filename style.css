@@ -4237,3 +4237,98 @@ input[type="time"],
   background-image: none !important;
   padding-right: 14px !important;
 }
+
+
+/* CompanyManager 041F — centered forms without blur + all time icons white */
+#cmGlobalFormOverlay,
+body.cm-modal-open #cmGlobalFormOverlay {
+  display: none !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  background: transparent !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+
+body.cm-modal-open {
+  overflow: auto !important;
+}
+
+.cm-as-modal,
+.bm-page-card.cm-as-modal,
+.bm-card.cm-as-modal,
+.panel-card.cm-as-modal,
+.form-card.cm-as-modal {
+  position: fixed !important;
+  top: 50% !important;
+  left: 50% !important;
+  right: auto !important;
+  bottom: auto !important;
+  transform: translate(-50%, -50%) !important;
+  z-index: 9010 !important;
+  width: min(980px, calc(100vw - 32px)) !important;
+  max-height: 86vh !important;
+  overflow: auto !important;
+  margin: 0 !important;
+  box-shadow: 0 35px 90px rgba(0,0,0,.58), 0 0 0 1px rgba(56,189,248,.22) !important;
+  border-color: rgba(56,189,248,.34) !important;
+}
+
+.cm-as-modal .bm-page-head {
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 2 !important;
+  background: linear-gradient(180deg, rgba(15,23,42,.98), rgba(15,23,42,.88)) !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+
+/* Jedna końcowa reguła o najwyższym priorytecie dla wszystkich natywnych zegarków. */
+html body input[type="time"],
+html body .panel-body input[type="time"],
+html body .auth-body input[type="time"],
+html body .bm-field input[type="time"],
+html body .bm-form input[type="time"],
+html body .bm-modal input[type="time"],
+html body .cm-as-modal input[type="time"],
+html body .bm-page-card input[type="time"],
+html body .bm-card input[type="time"],
+html body .panel-card input[type="time"] {
+  color-scheme: dark !important;
+  background-image: none !important;
+  padding-right: 14px !important;
+  pointer-events: auto !important;
+  touch-action: manipulation !important;
+}
+
+html body input[type="time"]::-webkit-calendar-picker-indicator,
+html body .panel-body input[type="time"]::-webkit-calendar-picker-indicator,
+html body .auth-body input[type="time"]::-webkit-calendar-picker-indicator,
+html body .bm-field input[type="time"]::-webkit-calendar-picker-indicator,
+html body .bm-form input[type="time"]::-webkit-calendar-picker-indicator,
+html body .bm-modal input[type="time"]::-webkit-calendar-picker-indicator,
+html body .cm-as-modal input[type="time"]::-webkit-calendar-picker-indicator,
+html body .bm-page-card input[type="time"]::-webkit-calendar-picker-indicator,
+html body .bm-card input[type="time"]::-webkit-calendar-picker-indicator,
+html body .panel-card input[type="time"]::-webkit-calendar-picker-indicator {
+  opacity: 1 !important;
+  filter: invert(1) brightness(1.35) contrast(1.1) !important;
+  cursor: pointer !important;
+  pointer-events: auto !important;
+  width: 22px !important;
+  height: 22px !important;
+  margin: 0 !important;
+  padding: 4px !important;
+  background: transparent !important;
+}
+
+@media (max-width: 720px) {
+  .cm-as-modal,
+  .bm-page-card.cm-as-modal,
+  .bm-card.cm-as-modal,
+  .panel-card.cm-as-modal,
+  .form-card.cm-as-modal {
+    width: calc(100vw - 18px) !important;
+    max-height: 90vh !important;
+  }
+}
