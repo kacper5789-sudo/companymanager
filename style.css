@@ -5457,3 +5457,40 @@ body[data-panel-page="companyPanel"] .cm-data-retention-box select[name="data_re
   body[data-panel-page="companyPanel"] .cm-payment-method-row .cm-payment-method-check{justify-content:flex-start !important;}
   body[data-panel-page="companyPanel"] .cm-retention-warning{grid-template-columns:1fr !important;}
 }
+
+/* 050A — Grafik pracy Supabase */
+.cm-supabase-work-schedule .cm-work-schedule-controls {
+  display: grid;
+  grid-template-columns: minmax(260px, 1fr) auto auto;
+  gap: 14px;
+  align-items: end;
+  margin: 18px 0;
+}
+.cm-supabase-work-schedule .cm-work-schedule-controls label {
+  display: grid;
+  gap: 7px;
+}
+.cm-work-schedule-editor th,
+.cm-work-schedule-editor td,
+.cm-work-schedule-summary th,
+.cm-work-schedule-summary td {
+  text-align: center;
+  vertical-align: middle;
+}
+.cm-work-schedule-editor td:first-child,
+.cm-work-schedule-summary td:first-child {
+  text-align: left;
+}
+.cm-work-schedule-editor input[type="time"] {
+  min-width: 108px;
+  text-align: center;
+}
+.cm-section-title {
+  margin: 24px 0 12px;
+  font-size: 1.05rem;
+}
+@media (max-width: 900px) {
+  .cm-supabase-work-schedule .cm-work-schedule-controls {
+    grid-template-columns: 1fr;
+  }
+}

@@ -310,7 +310,7 @@
   }
 
   async function fetchDashboardData(ctx) {
-    const [appointmentsRes, clientsRes, servicesRes, productsRes, usersRes, passesRes, companyRes] = await Promise.all([
+    const [appointmentsRes, clientsRes, servicesRes, productsRes, usersRes, passesRes, companyRes, workSchedulesRes, daysOffRes] = await Promise.all([
       window.cmSupabase
         .from("appointments")
         .select("id, company_id, date, time, start_time, end_time, customer_id, client_id, employee_id, employee_name, service_id, service_name, position_id, product_id, product_name, product_price, product_quantity, pass_id, pass_name, pass_used_value, pass_used_units, status, deleted, note, price, total, payment_method, cancellation_reason, cancelled_at, starts_at, ends_at, appointment_datetime, created_at, updated_at")
@@ -342,7 +342,16 @@
         .from("companies")
         .select("id, working_day_start, working_day_end, default_visit_duration_minutes, appointment_break_minutes, payment_methods")
         .eq("id", ctx.companyId)
-        .maybeSingle()
+        .maybeSingle(),
+      window.cmSupabase
+        .from("employee_work_schedules")
+        .select("id, company_id, employee_id, employee_name, day_of_week, is_working, start_time, end_time, break_start, break_end")
+        .eq("company_id", ctx.companyId),
+      window.cmSupabase
+        .from("days_off")
+        .select("id, company_id, employee_id, employee_name, start_date, end_date, type, status, deleted_at")
+        .eq("company_id", ctx.companyId)
+        .is("deleted_at", null)
     ]);
     if (appointmentsRes.error) throw appointmentsRes.error;
     if (clientsRes.error) throw clientsRes.error;
@@ -351,8 +360,12 @@
     if (usersRes.error) throw usersRes.error;
     if (passesRes.error) throw passesRes.error;
     if (companyRes.error) throw companyRes.error;
+    if (workSchedulesRes.error) console.warn("Dashboard work schedules skipped", workSchedulesRes.error.message || workSchedulesRes.error);
+    if (daysOffRes.error) console.warn("Dashboard days off skipped", daysOffRes.error.message || daysOffRes.error);
     return {
       company: companyRes.data || {},
+      workSchedules: workSchedulesRes.data || [],
+      daysOff: daysOffRes.data || [],
       appointments: appointmentsRes.data || [],
       clients: (clientsRes.data || []).filter((item) => item.status !== "usunięty"),
       services: (servicesRes.data || []).filter((item) => item.active !== false),
@@ -447,14 +460,56 @@
     return savedName && savedName === String(personName(employee)).trim().toLowerCase();
   }
 
+  function jsDayForIso(dateIso) {
+    const [y, m, d] = String(dateIso || "").slice(0, 10).split("-").map(Number);
+    if (!y || !m || !d) return new Date().getDay();
+    return new Date(y, m - 1, d).getDay();
+  }
+
+  function employeeScheduleForDate(data, employee, dateIso) {
+    const day = jsDayForIso(dateIso);
+    return (data.workSchedules || []).find((row) => {
+      if (Number(row.day_of_week) !== Number(day)) return false;
+      if (row.employee_id && employee?.id && String(row.employee_id) === String(employee.id)) return true;
+      const savedName = String(row.employee_name || "").trim().toLowerCase();
+      return savedName && savedName === String(personName(employee)).trim().toLowerCase();
+    }) || null;
+  }
+
+  function employeeDayOffForDate(data, employee, dateIso) {
+    const date = String(dateIso || "").slice(0, 10);
+    return (data.daysOff || []).some((row) => {
+      const status = String(row.status || "").toLowerCase();
+      if (["deleted", "usunięte", "void"].includes(status)) return false;
+      const start = String(row.start_date || row.date || row.created_at || "").slice(0, 10);
+      const end = String(row.end_date || row.start_date || row.date || "").slice(0, 10) || start;
+      if (!start || date < start || date > end) return false;
+      if (row.employee_id && employee?.id && String(row.employee_id) === String(employee.id)) return true;
+      const savedName = String(row.employee_name || "").trim().toLowerCase();
+      return savedName && savedName === String(personName(employee)).trim().toLowerCase();
+    });
+  }
+
+  function employeeWorkWindow(data, employee, dateIso, settings) {
+    const schedule = employeeScheduleForDate(data, employee, dateIso);
+    if (schedule && schedule.is_working === false) return { off: true, start: null, end: null, source: "schedule" };
+    const start = normalizeTime(schedule?.start_time || settings.start || "08:00") || "08:00";
+    const end = normalizeTime(schedule?.end_time || settings.end || "20:00") || "20:00";
+    return { off: false, start, end, source: schedule ? "schedule" : "company" };
+  }
+
   function scheduleRows(data, lookups, dateIso, activeWorkerIds = []) {
     const active = data.appointments.filter((item) => appointmentDate(item) === dateIso && item.deleted !== true && !["odwołana", "odwołane", "usunięte"].includes(String(item.status || "").toLowerCase()));
     const settings = dashboardSettings(data);
-    const workStart = minutesFromTime(settings.start) ?? minutesFromTime("08:00");
-    const workEnd = minutesFromTime(settings.end) ?? minutesFromTime("20:00");
     const visitDuration = Math.max(5, settings.duration || 30);
     const breakMinutes = Math.max(0, settings.breakMinutes || 0);
     const step = visitDuration + breakMinutes;
+    const windows = new Map();
+    data.users.forEach((employee) => windows.set(employee.id, employeeWorkWindow(data, employee, dateIso, settings)));
+    const starts = Array.from(windows.values()).filter((w) => !w.off).map((w) => minutesFromTime(w.start)).filter((v) => v != null);
+    const ends = Array.from(windows.values()).filter((w) => !w.off).map((w) => minutesFromTime(w.end)).filter((v) => v != null);
+    const workStart = starts.length ? Math.min(...starts) : (minutesFromTime(settings.start) ?? minutesFromTime("08:00"));
+    const workEnd = ends.length ? Math.max(...ends) : (minutesFromTime(settings.end) ?? minutesFromTime("20:00"));
     const rows = [];
 
     if (workStart == null || workEnd == null || workEnd <= workStart) {
@@ -471,14 +526,22 @@
     return rows.map((slot) => {
       const cells = data.users.map((employee) => {
         const slotMin = minutesFromTime(slot.start);
+        const windowForEmployee = windows.get(employee.id) || employeeWorkWindow(data, employee, dateIso, settings);
+        const windowStart = minutesFromTime(windowForEmployee.start);
+        const windowEnd = minutesFromTime(windowForEmployee.end);
+        const isDayOff = employeeDayOffForDate(data, employee, dateIso);
+        const outsideWork = windowForEmployee.off || isDayOff || slotMin == null || windowStart == null || windowEnd == null || slotMin < windowStart || (slotMin + visitDuration) > windowEnd;
         const visit = active.find((item) => {
           if (!appointmentEmployeeMatches(item, employee)) return false;
           const start = minutesFromTime(appointmentStart(item));
           const end = minutesFromTime(appointmentEnd(item));
           return slotMin != null && start != null && end != null && slotMin >= start && slotMin < end;
         });
-        const inactiveClass = activeWorkerIds.includes(employee.id) ? "" : " inactive-worker";
-        if (!visit) return `<td class="bm-schedule-slot free${inactiveClass}" data-employee-id="${escapeHtml(employee.id)}" data-time="${escapeHtml(slot.start)}" data-date="${escapeHtml(dateIso)}"><span>FREE</span></td>`;
+        const inactiveClass = outsideWork || !activeWorkerIds.includes(employee.id) ? " inactive-worker" : "";
+        if (!visit) {
+          const label = outsideWork ? (isDayOff ? "WOLNE" : "POZA GRAFIKIEM") : "FREE";
+          return `<td class="bm-schedule-slot free${inactiveClass}" data-employee-id="${escapeHtml(employee.id)}" data-time="${escapeHtml(slot.start)}" data-date="${escapeHtml(dateIso)}" data-outside-work="${outsideWork ? "1" : "0"}"><span>${label}</span></td>`;
+        }
         const client = lookups.clientsById[appointmentClientId(visit)];
         const service = lookups.servicesById[visit.service_id];
         const product = lookups.productsById[visit.product_id];
@@ -938,6 +1001,10 @@
       slot.addEventListener("click", () => {
         const tooltip = document.querySelector("#dashSlotTooltip");
         if (tooltip) tooltip.hidden = true;
+        if (slot.dataset.outsideWork === "1") {
+          alert("Ten termin jest poza grafikiem pracy pracownika albo pracownik ma dzień wolny.");
+          return;
+        }
         if (slot.classList.contains("busy") && slot.dataset.visitId) openEditFromSlot(slot);
         else openAddFromSlot(slot);
       });

@@ -220,6 +220,27 @@
     );
   }
 
+  function countWeekdayInRange(from, to, jsDay) {
+    const start = parseDate(from);
+    const end = parseDate(to);
+    if (!start || !end) return 0;
+    let count = 0;
+    const d = new Date(start.getFullYear(), start.getMonth(), start.getDate());
+    const last = new Date(end.getFullYear(), end.getMonth(), end.getDate());
+    while (d <= last) {
+      if (d.getDay() === Number(jsDay)) count += 1;
+      d.setDate(d.getDate() + 1);
+    }
+    return count;
+  }
+
+  function employeeSchedulePeriodMinutes(row, from, to) {
+    if (row?.is_working === false) return 0;
+    const oneDay = scheduleMinutes(row);
+    if (!oneDay) return 0;
+    return oneDay * countWeekdayInRange(from, to, Number(row.day_of_week));
+  }
+
   function formatMinutes(totalMinutes) {
     const minutes = Math.max(0, Math.round(Number(totalMinutes || 0)));
     const h = Math.floor(minutes / 60);
@@ -277,7 +298,7 @@
 
   async function fetchData(companyId, from, to) {
     const sb = window.cmSupabase;
-    const [profiles, positions, clients, appointments, sales, saleItems, daysOff, workSchedules, workScheduleTemplates] = await Promise.all([
+    const [profiles, positions, clients, appointments, sales, saleItems, daysOff, workSchedules, workScheduleTemplates, employeeWorkSchedules] = await Promise.all([
       safeSelect("profiles", sb.from("profiles").select("*").eq("company_id", companyId)),
       safeSelect("positions", sb.from("positions").select("*").eq("company_id", companyId)),
       safeSelect("clients", sb.from("clients").select("*").eq("company_id", companyId)),
@@ -286,7 +307,8 @@
       safeSelect("sale_items", sb.from("sale_items").select("*").eq("company_id", companyId)),
       safeSelect("days_off", sb.from("days_off").select("*").eq("company_id", companyId)),
       safeSelect("work_schedule", sb.from("work_schedule").select("*").eq("company_id", companyId)),
-      safeSelect("work_schedule_templates", sb.from("work_schedule_templates").select("*").eq("company_id", companyId))
+      safeSelect("work_schedule_templates", sb.from("work_schedule_templates").select("*").eq("company_id", companyId)),
+      safeSelect("employee_work_schedules", sb.from("employee_work_schedules").select("*").eq("company_id", companyId))
     ]);
 
     const filteredAppointments = appointments.filter((row) => inRange(appointmentDate(row), from, to));
@@ -296,7 +318,7 @@
     const filteredDaysOff = daysOff.filter((row) => inRange(row.date || row.start_date || row.date_from || row.from_date || row.created_at, from, to));
     const filteredWorkSchedules = workSchedules.filter((row) => inRange(row.date || row.work_date || row.day || row.created_at, from, to));
 
-    return { profiles, positions, clients, appointments: filteredAppointments, sales: filteredSales, saleItems: filteredItems, daysOff: filteredDaysOff, workSchedules: filteredWorkSchedules, workScheduleTemplates };
+    return { profiles, positions, clients, appointments: filteredAppointments, sales: filteredSales, saleItems: filteredItems, daysOff: filteredDaysOff, workSchedules: filteredWorkSchedules, workScheduleTemplates, employeeWorkSchedules, from, to };
   }
 
   function calcStats(data) {
@@ -449,6 +471,12 @@
       const emp = ensure(row.employee_id || row.employeeId || row.profile_id || row.user_id || "", row.employee_name || row.employeeName || row.name || "");
       if (!emp) return;
       emp.scheduledMinutes += scheduleMinutes(row);
+    });
+
+    (data.employeeWorkSchedules || []).forEach((row) => {
+      const emp = ensure(row.employee_id || row.employeeId || row.profile_id || row.user_id || "", row.employee_name || row.employeeName || row.name || "");
+      if (!emp) return;
+      emp.scheduledMinutes += employeeSchedulePeriodMinutes(row, data.from, data.to);
     });
 
     const realNameToKey = new Map();
