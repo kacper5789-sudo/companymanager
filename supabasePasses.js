@@ -361,11 +361,12 @@
     const passOptions = data.passes.map((pass) => `<option value="${escapeHtml(pass.id)}">${escapeHtml([pass.name || "Karnet", pass.number || "", pass.customer_name || clientName(clientsById[pass.customer_id]) || "-", `ważny do ${formatDatePL(pass.valid_until)}`, money(pass.value), `pozostało ${money(pass.remaining)}`, pass.status || ""].filter(Boolean).join(" — "))}</option>`).join("");
     const filterTabs = `
       <div class="bm-filter-tabs">
-        <a class="${status === "all" ? "active" : ""}" href="passes.html?status=all">pokaż wszystkie</a>
-        <a class="${status === "aktualne" ? "active" : ""}" href="passes.html?status=aktualne">aktualne</a>
-        <a class="${status === "zrealizowane" ? "active" : ""}" href="passes.html?status=zrealizowane">zrealizowane</a>
-        <a class="${status === "po terminie" ? "active" : ""}" href="passes.html?status=po%20terminie">po terminie</a>
-      </div>`;
+        <a class="${status === "all" ? "active" : ""}" href="passes.html?status=all" title="Wszystkie karnety, niezależnie od stanu.">pokaż wszystkie</a>
+        <a class="${status === "aktualne" ? "active" : ""}" href="passes.html?status=aktualne" title="Karnet jest ważny i ma jeszcze saldo albo wejścia do wykorzystania.">aktualne</a>
+        <a class="${status === "zrealizowane" ? "active" : ""}" href="passes.html?status=zrealizowane" title="Karnet został wykorzystany do zera: brak wejść albo salda.">zrealizowane</a>
+        <a class="${status === "po terminie" ? "active" : ""}" href="passes.html?status=po%20terminie" title="Karnet ma niewykorzystane saldo/wejścia, ale minęła data ważności.">po terminie</a>
+      </div>
+      <p class="cm-pass-status-help"><strong>Aktualne</strong> = można używać. <strong>Zrealizowane</strong> = wykorzystane do zera. <strong>Po terminie</strong> = minęła data ważności.</p>`;
 
     area.innerHTML = `<section class="bm-page-card passes-module">
       <div class="bm-page-head customers-head"><h2>Karnety</h2><div class="bm-actions-row">${allowAdd ? `<button id="showAddPass" type="button">Dodaj</button>` : ""}${allowDelete ? `<button id="showDeletePass" type="button" class="bm-danger-btn">Usuń</button>` : ""}</div></div>

@@ -587,7 +587,12 @@
       if (error) { setMessage("#serviceDeleteMessage", "Błąd usuwania usługi: " + error.message, false); return; }
       await window.cmUndo?.record({ module: "services", actionType: "delete", targetTable: "services", targetId: serviceId, beforeData: beforeService, companyId: ctx.companyId });
       setMessage("#serviceDeleteMessage", "Usługa usunięta z Supabase.", true);
-      setTimeout(renderServices, 450);
+      window.cmHardCloseAllModalPanels?.();
+      window.cmRefreshGlobalModalState?.();
+      setTimeout(() => {
+        window.cmHardCloseAllModalPanels?.();
+        renderServices();
+      }, 450);
     });
 
     document.querySelector("#deleteServiceCategoryBtn")?.addEventListener("click", async () => {
@@ -602,7 +607,12 @@
       await window.cmUndo?.record({ module: "service_categories", actionType: "delete", targetTable: "service_categories", targetId: categoryId, beforeData: categoryBefore, companyId: ctx.companyId });
       for (const svc of servicesInCategory) await window.cmUndo?.record({ module: "services", actionType: "delete", targetTable: "services", targetId: svc.id, beforeData: svc, companyId: ctx.companyId });
       setMessage("#serviceDeleteMessage", "Kategoria i przypisane usługi zostały usunięte z Supabase.", true);
-      setTimeout(renderServices, 450);
+      window.cmHardCloseAllModalPanels?.();
+      window.cmRefreshGlobalModalState?.();
+      setTimeout(() => {
+        window.cmHardCloseAllModalPanels?.();
+        renderServices();
+      }, 450);
     });
   }
 

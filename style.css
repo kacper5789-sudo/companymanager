@@ -4131,3 +4131,42 @@ button[data-registration-reject]{
   z-index:5;
   pointer-events:auto;
 }
+
+/* CompanyManager 041D — white native time picker clock icon */
+input[type="time"],
+.panel-body input[type="time"],
+.auth-body input[type="time"],
+.bm-field input[type="time"],
+.bm-form input[type="time"],
+.bm-modal input[type="time"] {
+  color-scheme: dark !important;
+  padding-right: 44px !important;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='22' height='22' viewBox='0 0 24 24' fill='none' stroke='%23ffffff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='9'/%3E%3Cpath d='M12 7v5l3 2'/%3E%3C/svg%3E") !important;
+  background-repeat: no-repeat !important;
+  background-position: right 12px center !important;
+  background-size: 20px 20px !important;
+}
+
+input[type="time"]::-webkit-calendar-picker-indicator,
+.panel-body input[type="time"]::-webkit-calendar-picker-indicator,
+.auth-body input[type="time"]::-webkit-calendar-picker-indicator,
+.bm-field input[type="time"]::-webkit-calendar-picker-indicator,
+.bm-form input[type="time"]::-webkit-calendar-picker-indicator,
+.bm-modal input[type="time"]::-webkit-calendar-picker-indicator {
+  opacity: 0 !important;
+  cursor: pointer !important;
+  width: 42px !important;
+  height: 100% !important;
+  margin: 0 !important;
+}
+
+/* CompanyManager 041D — passes status hints */
+.passes-module .bm-filter-tabs a[title] {
+  position: relative;
+}
+.passes-module .cm-pass-status-help {
+  color: #94a3b8;
+  font-size: 12px;
+  line-height: 1.5;
+  margin: 4px 0 14px;
+}
