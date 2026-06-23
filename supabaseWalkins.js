@@ -364,10 +364,8 @@
           <label>Data sprzedaży<input name="saleDate" type="date" value="${isoToday()}" required></label>
           <label>Godzina<input name="saleTime" type="time" value="${currentTime()}" required></label>
         </div>
-        <label>Zakup produktów<select name="productId" id="walkinProductSelect"><option value="">Wybierz z posiadanych</option>${productOptions}</select></label>
-        <label>Lub wpisz produkt<input name="productCustom" placeholder="Wpisz produkt ręcznie"></label>
-        <label>Zakup usług<select name="serviceId" id="walkinServiceSelect"><option value="">Wybierz z posiadanych</option>${serviceOptions}</select></label>
-        <label>Lub wpisz usługę<input name="serviceCustom" placeholder="Wpisz usługę ręcznie"></label>
+        <label>Dodaj produkt<select name="productId" id="walkinProductSelect"><option value="">Nie dodawaj produktu</option>${productOptions}</select></label>
+        <label>Dodaj usługę<select name="serviceId" id="walkinServiceSelect"><option value="">Nie dodawaj usługi</option>${serviceOptions}</select></label>
         <label>Razem do zapłaty<input name="amount" id="walkinAmount" type="number" min="0" step="0.01" value="0.00"></label>
         <label>Płatność<select name="paymentMethod" required><option value="gotówka">gotówka</option><option value="karta kredytowa">karta kredytowa</option><option value="przelew">przelew</option><option value="pakiet">pakiet</option><option value="karnet">karnet</option><option value="gratis">gratis</option></select></label>
         <label class="full">Opis<textarea name="description" placeholder="Opis sprzedaży"></textarea></label>
@@ -430,15 +428,15 @@
           sale_date: String(formData.get("saleDate") || isoToday()),
           sale_time: String(formData.get("saleTime") || currentTime()).slice(0, 5),
           product_id: String(formData.get("productId") || "").trim(),
-          product_custom: String(formData.get("productCustom") || "").trim(),
+          product_custom: "",
           service_id: String(formData.get("serviceId") || "").trim(),
-          service_custom: String(formData.get("serviceCustom") || "").trim(),
+          service_custom: "",
           amount: parseNumber(formData.get("amount"), 0),
           payment_method: String(formData.get("paymentMethod") || "gotówka"),
           description: String(formData.get("description") || "").trim()
         };
         if (!payload.client_id) throw new Error("Wybierz klienta.");
-        if (!payload.product_id && !payload.product_custom && !payload.service_id && !payload.service_custom) throw new Error("Wybierz albo wpisz produkt/usługę.");
+        if (!payload.product_id && !payload.service_id) throw new Error("Dodaj produkt albo usługę do sprzedaży.");
         const { data: inserted, error } = await window.cmSupabase.rpc("cm_create_walkin_sale", { p_payload: payload });
         if (error) throw error;
         await window.cmUndo?.record({ module: "walkins", actionType: "insert", targetTable: "sales", targetId: inserted?.sale_id, afterData: inserted || payload, companyId: ctx.companyId });
