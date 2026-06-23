@@ -229,6 +229,7 @@
         <div class="bm-page-head">
           <div>
             <h2>Dni wolne pracowników</h2>
+            <p class="bm-muted">Dni wolne są zapisywane w Supabase i powiązane z pracownikami z zakładki Użytkownicy/Zespół.</p>
           </div>
         </div>
         <div id="daysOffCalendar">${buildCalendar()}</div>

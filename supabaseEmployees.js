@@ -227,6 +227,7 @@
         <div class="bm-page-head cm-users-head">
           <div>
             <h2>Zespół</h2>
+            <p class="bm-muted">Podgląd pracowników firmy z Supabase. Tworzenie i edycja kont jest w zakładce Użytkownicy.</p>
           </div>
           <div class="bm-action-row">
             ${canManageUsers ? `<a class="bm-light-btn" href="users.html">Zarządzaj użytkownikami</a>` : ""}
