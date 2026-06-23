@@ -189,7 +189,13 @@
       saleItems = itemsRes.data || [];
     }
 
-    return { sales, payments: paymentsRes.data || [], appointments: appointmentsRes.data || [], employees: employeesRes.data || [], clients: clientsRes.data || [], saleItems };
+    const activeSaleIds = new Set(sales.map(s => s.id).filter(Boolean));
+    const payments = (paymentsRes.data || []).filter(p => {
+      if (String(p.status || "").toLowerCase() === "void") return false;
+      if (p.sale_id && !activeSaleIds.has(p.sale_id)) return false;
+      return true;
+    });
+    return { sales, payments, appointments: appointmentsRes.data || [], employees: employeesRes.data || [], clients: clientsRes.data || [], saleItems };
   }
 
   function buildReport(data) {

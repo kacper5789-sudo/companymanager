@@ -230,7 +230,7 @@
     const [salesRes, itemsRes, paymentsRes, clientsRes, servicesRes, productsRes, categoriesRes, usersRes, appointmentsRes, passesRes] = await Promise.all([
       window.cmSupabase.from("sales").select("id, company_id, client_id, appointment_id, employee_id, employee_name, sale_number, status, total_net, total_tax, total_gross, discount_value, payment_status, note, created_at, updated_at").eq("company_id", ctx.companyId).gte("created_at", `${fromDate}T00:00:00`).lte("created_at", `${toDate}T23:59:59`).order("created_at", { ascending: false }),
       window.cmSupabase.from("sale_items").select("id, company_id, sale_id, item_type, service_id, product_id, name, name_snapshot, quantity, unit_price, discount, total, total_price, created_at").eq("company_id", ctx.companyId),
-      window.cmSupabase.from("payments").select("id, company_id, sale_id, amount, method, paid_at, created_at").eq("company_id", ctx.companyId).gte("paid_at", `${fromDate}T00:00:00`).lte("paid_at", `${toDate}T23:59:59`).order("paid_at", { ascending: false }),
+      window.cmSupabase.from("payments").select("id, company_id, sale_id, appointment_id, amount, method, status, paid_at, created_at").eq("company_id", ctx.companyId).gte("paid_at", `${fromDate}T00:00:00`).lte("paid_at", `${toDate}T23:59:59`).order("paid_at", { ascending: false }),
       window.cmSupabase.from("clients").select("id, first_name, last_name, email, phone, status").eq("company_id", ctx.companyId),
       window.cmSupabase.from("services").select("id, name, category_id, category, price, price_from").eq("company_id", ctx.companyId),
       window.cmSupabase.from("products").select("id, name, category, price").eq("company_id", ctx.companyId),
@@ -556,21 +556,27 @@
       };
     }).filter((row) => passesFilter("employees", selectedEmployees, row.employeeId));
 
-    const paymentRowsRaw = data.payments.map((payment) => {
-      const sale = salesById[payment.sale_id] || {};
-      const appointment = appointmentById[sale.appointment_id] || {};
-      const employeeId = sale.employee_id || appointment.employee_id || "";
-      const clientId = sale.client_id || appointment.client_id || "";
-      return {
-        date: payment.paid_at || payment.created_at,
-        employeeId,
-        employee: employeeDisplayName(userById, employeeId, appointment, sale),
-        customer: clientName(clientById[clientId]) || appointment.client_name || "(brak)",
-        type: payment.method || appointment.payment_method || "gotówka",
-        value: isAppointmentCompleted(appointment) ? Number(payment.amount || sale.total_gross || appointment.total || appointment.price || 0) : 0,
-        isPendingAppointment: !!appointment.id && !isAppointmentCompleted(appointment)
-      };
-    }).filter((row) => !row.isPendingAppointment && passesFilter("employees", selectedEmployees, row.employeeId) && passesFilter("paymentTypes", selectedPaymentTypes, row.type));
+    const paymentRowsRaw = data.payments
+      .filter((payment) => String(payment.status || "").toLowerCase() !== "void")
+      .map((payment) => {
+        // Jeżeli płatność ma sale_id, ale sprzedaż jest usunięta/void albo poza aktywnym zbiorem,
+        // nie pokazujemy jej jako osobnej płatności z (brak). To był efekt po usuwaniu sprzedaży.
+        const sale = payment.sale_id ? salesById[payment.sale_id] : {};
+        const hasVoidedOrDeletedSale = !!payment.sale_id && !sale?.id;
+        const appointment = appointmentById[sale?.appointment_id || payment.appointment_id] || {};
+        const employeeId = sale?.employee_id || appointment.employee_id || "";
+        const clientId = sale?.client_id || appointment.client_id || "";
+        return {
+          date: payment.paid_at || payment.created_at,
+          employeeId,
+          employee: employeeDisplayName(userById, employeeId, appointment, sale || {}),
+          customer: clientName(clientById[clientId]) || appointment.client_name || "(brak)",
+          type: payment.method || appointment.payment_method || "gotówka",
+          value: isAppointmentCompleted(appointment) ? Number(payment.amount || sale?.total_gross || appointment.total || appointment.price || 0) : 0,
+          isPendingAppointment: !!appointment.id && !isAppointmentCompleted(appointment),
+          isVoidedOrDeletedSale: hasVoidedOrDeletedSale
+        };
+      }).filter((row) => !row.isVoidedOrDeletedSale && !row.isPendingAppointment && passesFilter("employees", selectedEmployees, row.employeeId) && passesFilter("paymentTypes", selectedPaymentTypes, row.type));
 
     const passPaymentRowsRaw = passItemsRaw.filter((pass) => !pass.saleId).map((pass) => ({
       date: pass.date,
