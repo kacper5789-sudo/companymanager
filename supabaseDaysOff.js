@@ -293,15 +293,24 @@
   }
 
   function showPanel(targetId) {
-    const panels = ["daysOffFormCard", "daysOffEditPanel", "daysOffDeletePanel"].map((id) => document.getElementById(id));
+    const panels = ["daysOffFormCard", "daysOffEditPanel", "daysOffDeletePanel"].map((id) => document.getElementById(id)).filter(Boolean);
     const target = document.getElementById(targetId);
-    panels.forEach((panel) => { if (panel) panel.hidden = panel !== target; });
-    if (target) {
-      target.hidden = false;
-      target.scrollIntoView({ behavior: "smooth", block: "center" });
+
+    if (window.cmOpenModalPanel && target) {
+      window.cmOpenModalPanel(target, panels);
+    } else {
+      panels.forEach((panel) => {
+        if (!panel) return;
+        panel.hidden = panel !== target;
+        panel.classList.toggle("cm-as-modal", panel === target);
+        panel.classList.toggle("cm-modal-active", panel === target);
+      });
+      if (target) target.hidden = false;
     }
-    try { window.cmReinitNativePickers?.(); } catch (_) {}
-    try { window.cmGlobalModalCleanup?.(); } catch (_) {}
+
+    try { window.cmScheduleNativePickerReinit?.(target || document); } catch (_) {}
+    try { window.cmReinitNativePickers?.(target || document); } catch (_) {}
+    try { window.cmUpdateGlobalModalState?.(); } catch (_) {}
   }
 
   function message(selector, text, ok = true) {
