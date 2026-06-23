@@ -287,6 +287,33 @@
     return isAppointmentCompleted(appointment) ? Number(value || 0) : 0;
   }
 
+  function isMissingEmployeeName(value) {
+    const text = String(value || "").trim().toLowerCase();
+    return !text || text === "(brak)" || text === "brak" || text === "null" || text === "undefined";
+  }
+
+  function saleRowDedupKey(row) {
+    const day = String(row?.date || "").slice(0, 10);
+    const client = String(row?.clientId || row?.customer || "").trim().toLowerCase();
+    const name = String(row?.name || "").trim().toLowerCase();
+    const value = Number(row?.value || 0).toFixed(2);
+    return [day, client, name, value].join("|");
+  }
+
+  function preferResolvedEmployeeRows(rows) {
+    const bestByKey = new Map();
+    rows.forEach((row) => {
+      const key = saleRowDedupKey(row);
+      const best = bestByKey.get(key);
+      const rowNamed = !isMissingEmployeeName(row.employee);
+      const bestNamed = best && !isMissingEmployeeName(best.employee);
+      if (!best || (rowNamed && !bestNamed) || (rowNamed === bestNamed && String(row.date || "") > String(best.date || ""))) {
+        bestByKey.set(key, row);
+      }
+    });
+    return [...bestByKey.values()].filter((row) => !isMissingEmployeeName(row.employee));
+  }
+
   function applySalesFilters() {
     const { currentView, fromDate, toDate } = getParams();
     const form = document.querySelector(".cm-sales-report-controls");
@@ -458,7 +485,7 @@
       return `${table(headers, filtered.slice(0, limit))}${pager(filtered.length ? 1 : 0, Math.min(limit, filtered.length), filtered.length, 1, Math.ceil(filtered.length / limit))}`;
     };
 
-    const serviceItemsRaw = data.items
+    let serviceItemsRaw = data.items
       .filter((item) => String(item.item_type || "").toLowerCase() === "service" && salesById[item.sale_id])
       .map((item) => {
         const sale = salesById[item.sale_id] || {};
@@ -486,6 +513,8 @@
         };
       })
       .filter((row) => passesFilter("employees", selectedEmployees, row.employeeId) && passesFilter("serviceCategories", selectedServiceCategories, row.serviceCategoryId) && passesFilter("serviceNames", selectedServiceNames, row.serviceId));
+
+    serviceItemsRaw = preferResolvedEmployeeRows(serviceItemsRaw);
 
     const productItemsRaw = data.items
       .filter((item) => String(item.item_type || "").toLowerCase() === "product" && salesById[item.sale_id])

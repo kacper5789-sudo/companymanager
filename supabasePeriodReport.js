@@ -459,7 +459,7 @@
       products: groupItems(products),
       passes: groupItems(passes),
       payments: Array.from(paymentMap.values()).sort((a, b) => b.value - a.value),
-      employees: Array.from(employeeRowsMap.values()).sort((a, b) => b.revenue - a.revenue)
+      employees: Array.from(employeeRowsMap.values()).filter((r) => String(r.name || "").trim() !== "(brak)").sort((a, b) => b.revenue - a.revenue)
     };
   }
 

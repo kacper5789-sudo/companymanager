@@ -1,4 +1,4 @@
-// CompanyManager — 047G Employees reports aggregate and work hours fix
+// CompanyManager — 048G Employees reports remove unassigned duplicates fix
 // employeesraports.html: realne dane z profiles / clients / appointments / sales / sale_items / days_off.
 (function () {
   if (document.body?.dataset?.panelPage !== "employeesReports") return;
@@ -305,6 +305,26 @@
       .filter((p) => normalizeRole(p.role) !== "OWNER")
       .sort((a, b) => employeeName(a).localeCompare(employeeName(b), "pl"));
     const employeeById = new Map(employees.map((e) => [e.id, e]));
+    const employeeAliasToId = new Map();
+    const addEmployeeAlias = (value, id) => {
+      const key = employeeKeyByName(value);
+      if (key && key !== "brak" && id && !employeeAliasToId.has(key)) employeeAliasToId.set(key, id);
+    };
+    employees.forEach((e) => {
+      addEmployeeAlias(e.full_name || e.fullName || e.name, e.id);
+      addEmployeeAlias(e.email, e.id);
+    });
+    const resolveEmployeeId = (id, fallback) => {
+      if (id && employeeById.has(id)) return id;
+      const key = employeeKeyByName(fallback);
+      return employeeAliasToId.get(key) || "";
+    };
+    const resolveEmployeeName = (id, fallback) => {
+      const resolvedId = resolveEmployeeId(id, fallback);
+      if (resolvedId && employeeById.has(resolvedId)) return employeeName(employeeById.get(resolvedId), fallback);
+      const cleaned = String(fallback || "").trim();
+      return cleaned && cleaned !== "(brak)" ? cleaned : "";
+    };
     const clientById = new Map((data.clients || []).map((c) => [c.id, c]));
     const saleById = new Map(data.sales.map((s) => [s.id, s]));
     const appointmentById = new Map(data.appointments.map((a) => [a.id, a]));
@@ -341,11 +361,14 @@
     });
 
     const ensure = (id, fallback) => {
-      const key = id || `unknown:${fallback || "brak"}`;
+      const resolvedId = resolveEmployeeId(id, fallback);
+      const resolvedName = resolveEmployeeName(resolvedId || id, fallback);
+      if (!resolvedId && !resolvedName) return null;
+      const key = resolvedId || `unknown:${employeeKeyByName(resolvedName)}`;
       if (!base.has(key)) {
         base.set(key, {
           id: key,
-          name: fallback || "(brak)",
+          name: resolvedName || "(brak)",
           email: "",
           position: "-",
           visits: 0,
@@ -383,6 +406,7 @@
 
     data.appointments.forEach((a) => {
       const emp = ensure(a.employee_id || a.employeeId, rowEmployeeName(a, employeeById));
+      if (!emp) return;
       emp.visits += 1;
       if (isFinishedAppointment(a)) emp.finishedVisits += 1;
       if (isCancelledAppointment(a)) emp.cancelledVisits += 1;
@@ -397,9 +421,10 @@
     data.saleItems.forEach((item) => {
       const sale = saleById.get(item.sale_id) || {};
       const appointment = appointmentById.get(sale.appointment_id) || {};
-      const employeeId = sale.employee_id || appointment.employee_id || "";
-      const empName = employeeName(employeeById.get(employeeId), sale.employee_name || appointment.employee_name || "(brak)");
+      const employeeId = sale.employee_id || appointment.employee_id || item.employee_id || item.employeeId || "";
+      const empName = sale.employee_name || appointment.employee_name || item.employee_name || item.employeeName || "";
       const emp = ensure(employeeId, empName);
+      if (!emp) return;
       const type = String(item.item_type || "service").toLowerCase();
       const qty = itemQty(item);
       const value = itemValue(item, sale);
@@ -411,7 +436,8 @@
     });
 
     data.daysOff.forEach((d) => {
-      const emp = ensure(d.employee_id || d.employeeId, d.employee_name || "(brak)");
+      const emp = ensure(d.employee_id || d.employeeId, d.employee_name || "");
+      if (!emp) return;
       const type = normalize(d.type || d.reason || d.status || "");
       emp.daysOff += 1;
       if (type.includes("urlop")) emp.vacation += 1;
@@ -420,7 +446,8 @@
     });
 
     (data.workSchedules || []).forEach((row) => {
-      const emp = ensure(row.employee_id || row.employeeId || row.profile_id || row.user_id || "", row.employee_name || row.employeeName || row.name || "(brak)");
+      const emp = ensure(row.employee_id || row.employeeId || row.profile_id || row.user_id || "", row.employee_name || row.employeeName || row.name || "");
+      if (!emp) return;
       emp.scheduledMinutes += scheduleMinutes(row);
     });
 
@@ -486,7 +513,7 @@
       r.returningClientsPct = percent(r.returningClients, r.clients);
       r.workPct = percent(r.workMinutes, r.scheduledMinutes);
       return r;
-    }).filter((r) => r.name !== "(brak)" || r.visits || r.services || r.products || r.passes || r.daysOff)
+    }).filter((r) => r.name !== "(brak)")
       .sort((a, b) => a.name.localeCompare(b.name, "pl"));
   }
 
@@ -568,7 +595,8 @@
     window.__cmErCurrentTo = filters.to;
     const selectedEmployees = parseSelectedEmployees(filters.employees || "");
     const allStats = calcStats(data);
-    const stats = selectedEmployees.size ? allStats.filter((r) => selectedEmployees.has(r.id)) : allStats;
+    const stats = (selectedEmployees.size ? allStats.filter((r) => selectedEmployees.has(r.id)) : allStats)
+      .filter((r) => String(r.name || "").trim() && String(r.name || "").trim() !== "(brak)");
     const employeeOptions = data.profiles
       .filter((p) => normalizeRole(p.role) !== "OWNER")
       .sort((a, b) => employeeName(a).localeCompare(employeeName(b), "pl"));
