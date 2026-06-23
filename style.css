@@ -5256,3 +5256,16 @@ body[data-panel-page="companyPanel"] .bm-company-data-card .bm-info-row{
   body[data-panel-page="companyPanel"] .cm-form-actions{justify-content:stretch !important;}
   body[data-panel-page="companyPanel"] .cm-form-actions .bm-primary-btn{max-width:none !important;width:100% !important;}
 }
+
+/* 049D — client marketing consent UI */
+.cm-company-panel-form .cm-check-line {
+  min-height: 44px;
+  align-items: center;
+}
+.customers-module .bm-table th:nth-child(5),
+.customers-module .bm-table th:nth-child(6),
+.customers-module .bm-table td:nth-child(5),
+.customers-module .bm-table td:nth-child(6) {
+  text-align: center;
+  white-space: nowrap;
+}

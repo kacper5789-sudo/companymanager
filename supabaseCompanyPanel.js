@@ -186,6 +186,11 @@
           <label>Waluta<select name="currency"><option value="PLN" ${val(company,"currency") === "PLN" ? "selected" : ""}>PLN</option><option value="EUR" ${val(company,"currency") === "EUR" ? "selected" : ""}>EUR</option><option value="USD" ${val(company,"currency") === "USD" ? "selected" : ""}>USD</option></select></label>
           ${field("Strefa czasowa", "timezone", val(company, "timezone") || "Europe/Warsaw")}
         </fieldset>
+        <fieldset class="cm-notification-box"><legend>Dodaj klienta — zgoda na reklamę</legend>
+          ${check("Pokaż pola zgody marketingowej przy dodawaniu/edycji klienta", "client_marketing_consent_enabled", val(company, "client_marketing_consent_enabled") === "" ? true : checked(company, "client_marketing_consent_enabled"))}
+          ${check("Domyślnie zaznacz zgodę SMS jako NIE / wymaga świadomego wyboru", "client_marketing_consent_explicit", val(company, "client_marketing_consent_explicit") === "" ? true : checked(company, "client_marketing_consent_explicit"))}
+          <p class="bm-muted cm-full-field">Zgody zapisują się przy kliencie jako osobne pola: SMS i Email. Dzięki temu w Marketingu wiadomo, komu można wysłać reklamę.</p>
+        </fieldset>
         <fieldset class="cm-notification-box"><legend>Godziny pracy firmy</legend>
           ${field("Godziny pracy od", "working_day_start", val(company, "working_day_start") || "08:00", "time")}
           ${field("Godziny pracy do", "working_day_end", val(company, "working_day_end") || "20:00", "time")}

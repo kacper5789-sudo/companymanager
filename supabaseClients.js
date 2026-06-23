@@ -239,6 +239,8 @@
       escapeHtml(client.gender || ""),
       escapeHtml(client.phone || ""),
       escapeHtml(client.email || ""),
+      `<span class="bm-status ${client.marketing_sms ? "active" : "inactive"}">${client.marketing_sms ? "tak" : "nie"}</span>`,
+      `<span class="bm-status ${client.marketing_email ? "active" : "inactive"}">${client.marketing_email ? "tak" : "nie"}</span>`,
       escapeHtml(plDate(client.updated_at)),
       escapeHtml(plDate(client.last_visit_at)),
       escapeHtml(client.notes || ""),
@@ -330,8 +332,8 @@
       <label>Miejscowość<input name="city" placeholder="Miejscowość" value="${escapeHtml(customer.city || "")}"></label>
       <label>Status<select name="status">${statusOptions.map((item) => `<option value="${item}" ${status === item ? "selected" : ""}>${item}</option>`).join("")}</select></label>
       <label>Skąd klient wie o firmie<input name="source" placeholder="np. Google, Facebook, polecenie" value="${escapeHtml(customer.source || "")}"></label>
-      <label>Zgoda na reklamę — SMS<select name="marketingSms">${yesNoOptions.map((v) => `<option value="${v}" ${boolToTakNie(customer.marketing_sms) === v ? "selected" : ""}>${v}</option>`).join("")}</select></label>
-      <label>Zgoda na reklamę — Email<select name="marketingEmail">${yesNoOptions.map((v) => `<option value="${v}" ${boolToTakNie(customer.marketing_email) === v ? "selected" : ""}>${v}</option>`).join("")}</select></label>
+      <label>Zgoda na reklamę SMS<select name="marketingSms">${yesNoOptions.map((v) => `<option value="${v}" ${boolToTakNie(customer.marketing_sms) === v ? "selected" : ""}>${v}</option>`).join("")}</select></label>
+      <label>Zgoda na reklamę Email<select name="marketingEmail">${yesNoOptions.map((v) => `<option value="${v}" ${boolToTakNie(customer.marketing_email) === v ? "selected" : ""}>${v}</option>`).join("")}</select></label>
       <label>Dzień, miesiąc i rok urodzin<input name="birthDate" type="date" value="${escapeHtml(customer.birth_date || "")}" aria-label="Dzień, miesiąc i rok urodzin"></label>
       <label class="full">Ważna informacja<textarea name="importantInfo" placeholder="Ważna informacja">${escapeHtml(customer.notes || "")}</textarea></label>
     `;
@@ -390,7 +392,7 @@
         </div>
 
         <div id="customersTableWrap">
-          ${table(["Imię Nazwisko", "Płeć", "Telefon", "Email", "Aktualizacja", "Ostatnia wizyta", "Ważna informacja", "Status"], getCustomerRows(customers), "Brak klientów w Supabase.")}
+          ${table(["Imię Nazwisko", "Płeć", "Telefon", "Email", "Reklama SMS", "Reklama Email", "Aktualizacja", "Ostatnia wizyta", "Ważna informacja", "Status"], getCustomerRows(customers), "Brak klientów w Supabase.")}
           ${pagination(customers.length)}
         </div>
         <p id="customersMessage" class="panel-message"></p>
@@ -442,6 +444,8 @@
         client.gender,
         client.phone,
         client.email,
+        client.marketing_sms ? "zgoda sms tak" : "zgoda sms nie",
+        client.marketing_email ? "zgoda email tak" : "zgoda email nie",
         client.city,
         client.address,
         client.postal_code,
@@ -457,7 +461,7 @@
     const wrap = document.querySelector("#customersTableWrap");
     if (!wrap) return;
     wrap.innerHTML = `
-      ${table(["Imię Nazwisko", "Płeć", "Telefon", "Email", "Aktualizacja", "Ostatnia wizyta", "Ważna informacja", "Status"], getCustomerRows(filtered), "Brak klientów w Supabase.")}
+      ${table(["Imię Nazwisko", "Płeć", "Telefon", "Email", "Reklama SMS", "Reklama Email", "Aktualizacja", "Ostatnia wizyta", "Ważna informacja", "Status"], getCustomerRows(filtered), "Brak klientów w Supabase.")}
       ${pagination(filtered.length)}
     `;
   }
