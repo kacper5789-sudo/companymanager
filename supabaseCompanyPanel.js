@@ -122,6 +122,34 @@
     </fieldset>`;
   }
 
+
+
+  function dataRetentionValue(company) {
+    const raw = company?.data_retention_months;
+    if (raw === undefined || raw === null || raw === "" || String(raw).toLowerCase() === "null") return "never";
+    return String(raw);
+  }
+
+  function renderDataRetentionSettings(company) {
+    const options = [
+      { value: "6", label: "6 miesięcy" },
+      { value: "12", label: "12 miesięcy" },
+      { value: "24", label: "24 miesiące" },
+      { value: "36", label: "36 miesięcy" },
+      { value: "48", label: "48 miesięcy" },
+      { value: "60", label: "60 miesięcy" },
+      { value: "never", label: "Nigdy" }
+    ];
+    return `<fieldset class="cm-notification-box cm-data-retention-box"><legend>Czas przechowywania danych</legend>
+      <div class="cm-retention-warning cm-full-field">
+        <strong>⚠ UWAGA!</strong>
+        <span>Dane zostaną automatycznie usunięte po upływie wybranego czasu.</span>
+      </div>
+      ${selectField("Okres przechowywania danych", "data_retention_months", dataRetentionValue(company), options)}
+      <p class="bm-muted cm-full-field">Wartość „Nigdy” oznacza brak automatycznego usuwania danych. To ustawienie jest domyślne dla bezpieczeństwa nowych firm.</p>
+    </fieldset>`;
+  }
+
   function field(label, name, value, type = "text", extra = "") {
     return `<label>${escapeHtml(label)}<input type="${escapeHtml(type)}" name="${escapeHtml(name)}" value="${escapeHtml(value ?? "")}" ${extra}></label>`;
   }
@@ -240,18 +268,17 @@
     return `<section class="bm-page-card cm-program-settings-page" id="program-settings">
       <div class="bm-page-head"><h2>Ustawienia programu</h2></div>
       <form class="bm-form-grid cm-company-panel-form" data-company-panel-form="program">
-        <fieldset class="cm-notification-box"><legend>Ustawienia ogólne</legend>
+        <fieldset class="cm-notification-box cm-general-settings-box"><legend>Ustawienia ogólne</legend>
           <label>Język programu<select name="language"><option value="pl" ${val(company,"language") === "pl" ? "selected" : ""}>Polski</option><option value="en" ${val(company,"language") === "en" ? "selected" : ""}>English</option></select></label>
           <label>Waluta<select name="currency"><option value="PLN" ${val(company,"currency") === "PLN" ? "selected" : ""}>PLN</option><option value="EUR" ${val(company,"currency") === "EUR" ? "selected" : ""}>EUR</option><option value="USD" ${val(company,"currency") === "USD" ? "selected" : ""}>USD</option></select></label>
           ${field("Strefa czasowa", "timezone", val(company, "timezone") || "Europe/Warsaw")}
         </fieldset>
-        <fieldset class="cm-notification-box"><legend>Dodaj klienta — zgoda na reklamę</legend>
+        <fieldset class="cm-notification-box cm-marketing-consent-box"><legend>Dodaj klienta — zgoda na reklamę</legend>
           ${check("Pokaż pola zgody marketingowej przy dodawaniu/edycji klienta", "client_marketing_consent_enabled", val(company, "client_marketing_consent_enabled") === "" ? true : checked(company, "client_marketing_consent_enabled"))}
           ${check("Domyślnie zaznacz zgodę SMS jako NIE / wymaga świadomego wyboru", "client_marketing_consent_explicit", val(company, "client_marketing_consent_explicit") === "" ? true : checked(company, "client_marketing_consent_explicit"))}
           <p class="bm-muted cm-full-field">Zgody zapisują się przy kliencie jako osobne pola: SMS i Email. Dzięki temu w Marketingu wiadomo, komu można wysłać reklamę.</p>
         </fieldset>
-        ${renderPaymentMethodsSettings(company)}
-        <fieldset class="cm-notification-box"><legend>Godziny pracy firmy</legend>
+        <fieldset class="cm-notification-box cm-work-hours-box"><legend>Godziny pracy firmy</legend>
           ${field("Godziny pracy od", "working_day_start", val(company, "working_day_start") || "08:00", "time")}
           ${field("Godziny pracy do", "working_day_end", val(company, "working_day_end") || "20:00", "time")}
           ${field("Domyślny czas wizyty (min)", "default_visit_duration_minutes", val(company, "default_visit_duration_minutes") || 30, "number", "min=5 step=5")}
@@ -265,6 +292,8 @@
           ])}
           <p class="bm-muted cm-full-field">Te ustawienia sterują siatką godzin na Dashboardzie. Przykład: 08:00-20:00, wizyta 30 min, przerwa 5 min → 08:00-08:30, 08:35-09:05, 09:10-09:40.</p>
         </fieldset>
+        ${renderDataRetentionSettings(company)}
+        ${renderPaymentMethodsSettings(company)}
         <div class="cm-form-actions cm-full-field"><button type="submit" class="bm-primary-btn">Zapisz ustawienia programu</button></div>
       </form>
     </section>`;
@@ -319,6 +348,7 @@
     $$('input[type="checkbox"]', form).forEach((input) => { if (input.name) data[input.name] = input.checked; });
     const paymentMethods = collectPaymentMethods(form);
     if (paymentMethods) data.payment_methods = paymentMethods;
+    if (data.data_retention_months === "never") data.data_retention_months = "";
     return data;
   }
 
