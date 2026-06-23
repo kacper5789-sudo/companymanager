@@ -27,9 +27,12 @@
 
   function displayDateTime(rawDate, rawTime = "") {
     if (!rawDate) return "";
-    const date = String(rawDate).slice(0, 10);
+    const value = String(rawDate);
+    const date = value.slice(0, 10);
     const [y, m, d] = date.split("-");
-    const time = rawTime ? String(rawTime).slice(0, 5) : "";
+    let time = rawTime ? String(rawTime).slice(0, 5) : "";
+    if (!time && value.includes("T")) time = value.split("T")[1]?.slice(0, 5) || "";
+    if (!time && value.includes(" ")) time = value.split(" ")[1]?.slice(0, 5) || "";
     return `${d || ""}.${m || ""}.${y || ""}${time ? " " + time : ""}`;
   }
 
@@ -416,7 +419,8 @@
       ["passes", "Karnety"], ["passesByEmployee", "Karnety według pracowników"], ["payments", "Płatności"], ["paymentsByType", "Płatności według typów"]
     ];
 
-    const salesById = Object.fromEntries(data.sales.map((sale) => [sale.id, sale]));
+    const activeSales = (data.sales || []).filter((sale) => String(sale.payment_status || "").toLowerCase() !== "void");
+    const salesById = Object.fromEntries(activeSales.map((sale) => [sale.id, sale]));
     const appointmentById = Object.fromEntries((data.appointments || []).map((appointment) => [appointment.id, appointment]));
     const clientById = Object.fromEntries(data.clients.map((client) => [client.id, client]));
     const userById = Object.fromEntries(data.users.map((user) => [user.id, user]));
