@@ -387,6 +387,7 @@
     const saleMap = new Map(data.sales.map(s => [s.id, s]));
     const employeeResolver = createEmployeeResolver(data.employees || []);
     const employeeMap = employeeResolver.byId;
+    const appointmentById = new Map((data.appointments || []).map(a => [a.id, a]));
     const clientMap = new Map(data.clients.map(c => [c.id, c]));
     const items = data.saleItems.map(item => ({ ...item, sale: saleMap.get(item.sale_id) || {} }));
     const services = items.filter(i => normalizeItemType(i.item_type) === 'service');
