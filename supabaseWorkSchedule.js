@@ -1,5 +1,5 @@
-// CompanyManager — 050A Grafik pracy Supabase
-// work-schedule.html: employee_work_schedules + Dashboard/Raporty support.
+// CompanyManager — 050B Grafik pracy Supabase UI polish
+// work-schedule.html: flexible work hours, edit/delete, download schedule.
 (function () {
   function isPage() {
     return document.body?.dataset?.panelPage === "workSchedule" || location.pathname.includes("work-schedule.html");
@@ -7,13 +7,13 @@
   if (!isPage()) return;
 
   const DAYS = [
-    { idx: 1, key: "monday", label: "Poniedziałek" },
-    { idx: 2, key: "tuesday", label: "Wtorek" },
-    { idx: 3, key: "wednesday", label: "Środa" },
-    { idx: 4, key: "thursday", label: "Czwartek" },
-    { idx: 5, key: "friday", label: "Piątek" },
-    { idx: 6, key: "saturday", label: "Sobota" },
-    { idx: 0, key: "sunday", label: "Niedziela" }
+    { idx: 1, key: "monday", short: "Pon", label: "Poniedziałek" },
+    { idx: 2, key: "tuesday", short: "Wt", label: "Wtorek" },
+    { idx: 3, key: "wednesday", short: "Śr", label: "Środa" },
+    { idx: 4, key: "thursday", short: "Czw", label: "Czwartek" },
+    { idx: 5, key: "friday", short: "Pt", label: "Piątek" },
+    { idx: 6, key: "saturday", short: "Sob", label: "Sobota" },
+    { idx: 0, key: "sunday", short: "Nd", label: "Niedziela" }
   ];
 
   const $ = (sel, root = document) => root.querySelector(sel);
@@ -45,6 +45,10 @@
     const h = Math.floor(diff / 60); const m = diff % 60;
     if (!h) return `${m}min`;
     return `${h}h${m ? " " + m + "min" : ""}`;
+  }
+  function csvCell(value) {
+    const text = String(value ?? "");
+    return `"${text.replace(/"/g, '""')}"`;
   }
 
   let state = { ctx: null, employees: [], schedules: [], selectedEmployeeId: "" };
@@ -91,7 +95,9 @@
   async function fetchEmployees(ctx) {
     const { data, error } = await window.cmSupabase.rpc("company_team_members", { p_company_id: ctx.companyId });
     if (error) throw error;
-    return (data || []).filter((row) => normalizeRole(row.role) !== "OWNER").sort((a, b) => employeeName(a).localeCompare(employeeName(b), "pl"));
+    return (data || [])
+      .filter((row) => normalizeRole(row.role) !== "OWNER")
+      .sort((a, b) => employeeName(a).localeCompare(employeeName(b), "pl"));
   }
 
   async function fetchSchedules(ctx) {
@@ -117,21 +123,22 @@
     const row = scheduleByEmployeeAndDay(employee.id, day) || {};
     const working = row.is_working !== false;
     return `<tr data-day="${day.idx}">
-      <td><strong>${escapeHtml(day.label)}</strong></td>
-      <td><label class="cm-check-line"><input type="checkbox" data-working ${working ? "checked" : ""}> Pracuje</label></td>
+      <td><strong>${escapeHtml(day.label)}</strong><span>${escapeHtml(day.short)}</span></td>
+      <td><label class="cm-check-line cm-work-toggle"><input type="checkbox" data-working ${working ? "checked" : ""}> <span>Pracuje</span></label></td>
       <td><input type="time" data-start value="${escapeHtml(time(row.start_time, "08:00"))}"></td>
       <td><input type="time" data-end value="${escapeHtml(time(row.end_time, "16:00"))}"></td>
       <td><input type="time" data-break-start value="${escapeHtml(time(row.break_start, ""))}"></td>
       <td><input type="time" data-break-end value="${escapeHtml(time(row.break_end, ""))}"></td>
-      <td>${working ? escapeHtml(formatDuration(row.start_time || "08:00", row.end_time || "16:00")) : "wolne"}</td>
+      <td data-day-duration>${working ? escapeHtml(formatDuration(row.start_time || "08:00", row.end_time || "16:00")) : "wolne"}</td>
     </tr>`;
   }
 
   function summaryRows() {
+    if (!state.employees.length) return `<tr><td colspan="9">Brak pracowników.</td></tr>`;
     const byEmployee = new Map();
-    state.employees.forEach((employee) => byEmployee.set(employee.id, { employee, days: [] }));
+    state.employees.forEach((employee) => byEmployee.set(String(employee.id), { employee, days: [] }));
     state.schedules.forEach((row) => {
-      const target = byEmployee.get(row.employee_id);
+      const target = byEmployee.get(String(row.employee_id));
       if (target) target.days.push(row);
     });
     return Array.from(byEmployee.values()).map(({ employee, days }) => {
@@ -141,7 +148,14 @@
         if (row.is_working === false) return "wolne";
         return `${time(row.start_time, "08:00")} - ${time(row.end_time, "16:00")}`;
       });
-      return `<tr><td><strong>${escapeHtml(employeeName(employee))}</strong></td>${cells.map((cell) => `<td>${escapeHtml(cell)}</td>`).join("")}</tr>`;
+      return `<tr data-employee-id="${escapeHtml(employee.id)}">
+        <td><strong>${escapeHtml(employeeName(employee))}</strong></td>
+        ${cells.map((cell) => `<td>${escapeHtml(cell)}</td>`).join("")}
+        <td class="cm-work-actions">
+          <button type="button" class="bm-light-btn" data-edit-employee="${escapeHtml(employee.id)}">Edytuj</button>
+          <button type="button" class="bm-danger-btn" data-delete-employee="${escapeHtml(employee.id)}">Usuń</button>
+        </td>
+      </tr>`;
     }).join("");
   }
 
@@ -155,16 +169,32 @@
     if (!state.selectedEmployeeId) state.selectedEmployeeId = state.employees[0].id;
     const employee = state.employees.find((row) => String(row.id) === String(state.selectedEmployeeId)) || state.employees[0];
     target.innerHTML = `<section class="bm-page-card cm-work-schedule-page cm-supabase-work-schedule">
-      <div class="bm-page-head customers-head">
-        <div><h2>Grafik pracy</h2><p class="bm-muted">Ustaw tygodniowe godziny pracy pracowników. Dashboard korzysta z tych godzin przy tworzeniu slotów wizyt.</p></div>
+      <div class="bm-page-head customers-head cm-work-schedule-head">
+        <div>
+          <h2>Grafik pracy</h2>
+          <p class="bm-muted">Ustaw dowolne godziny pracy pracowników. Dashboard korzysta z tych godzin przy tworzeniu slotów wizyt.</p>
+        </div>
       </div>
 
-      <div class="cm-report-filter-row cm-work-schedule-controls">
-        <label>Pracownik<select id="workScheduleEmployee">${employeeOptions()}</select></label>
-        <button type="button" id="copyCompanyHoursBtn" class="bm-light-btn">Ustaw 08:00-16:00 pn-pt</button>
-        <button type="button" id="saveWorkScheduleBtn" class="bm-primary-btn">Zapisz grafik</button>
+      <div class="cm-work-schedule-grid">
+        <section class="cm-work-panel cm-work-panel-main">
+          <div class="cm-work-panel-title">Edycja grafiku</div>
+          <div class="cm-work-schedule-controls">
+            <label>Pracownik<select id="workScheduleEmployee">${employeeOptions()}</select></label>
+            <label>Szybko od<input type="time" id="quickStartTime" value="08:00"></label>
+            <label>Szybko do<input type="time" id="quickEndTime" value="16:00"></label>
+            <label>Przerwa od<input type="time" id="quickBreakStart" value=""></label>
+            <label>Przerwa do<input type="time" id="quickBreakEnd" value=""></label>
+          </div>
+          <div class="cm-work-actions-bar">
+            <button type="button" id="copyCompanyHoursBtn" class="bm-light-btn">Zastosuj pn-pt</button>
+            <button type="button" id="applyAllDaysBtn" class="bm-light-btn">Zastosuj cały tydzień</button>
+            <button type="button" id="clearScheduleBtn" class="bm-danger-btn">Ustaw wolne</button>
+            <button type="button" id="saveWorkScheduleBtn" class="bm-primary-btn cm-save-schedule-btn">Zapisz grafik</button>
+          </div>
+          <p id="workScheduleMessage" class="panel-message"></p>
+        </section>
       </div>
-      <p id="workScheduleMessage" class="panel-message"></p>
 
       <div class="bm-table-wrap cm-work-schedule-editor-wrap">
         <table class="bm-table cm-work-schedule-editor">
@@ -173,15 +203,23 @@
         </table>
       </div>
 
-      <h3 class="cm-section-title">Podsumowanie grafików</h3>
-      <div class="bm-table-wrap">
+      <div class="cm-work-bottom-actions">
+        <button type="button" id="saveWorkScheduleBottomBtn" class="bm-primary-btn cm-save-schedule-btn">Zapisz grafik</button>
+      </div>
+
+      <div class="cm-section-title-row">
+        <h3 class="cm-section-title">Podsumowanie grafików</h3>
+        <button type="button" id="downloadWorkScheduleBtn" class="bm-light-btn">Pobierz grafik</button>
+      </div>
+      <div class="bm-table-wrap cm-work-summary-wrap">
         <table class="bm-table cm-work-schedule-summary">
-          <thead><tr><th>Pracownik</th>${DAYS.map((day) => `<th>${escapeHtml(day.label)}</th>`).join("")}</tr></thead>
+          <thead><tr><th>Pracownik</th>${DAYS.map((day) => `<th>${escapeHtml(day.short)}</th>`).join("")}<th>Akcje</th></tr></thead>
           <tbody>${summaryRows()}</tbody>
         </table>
       </div>
     </section>`;
     bindEvents();
+    refreshDurations();
     try { window.cmReinitNativePickers?.(target); } catch (_) {}
   }
 
@@ -190,6 +228,22 @@
     if (!node) return;
     node.textContent = text;
     node.style.color = ok ? "#86efac" : "#fca5a5";
+  }
+
+  function validateRows(rows) {
+    for (const row of rows) {
+      if (!row.is_working) continue;
+      const start = minutes(row.start_time);
+      const end = minutes(row.end_time);
+      if (start == null || end == null || end <= start) {
+        throw new Error("Godzina 'Do' musi być późniejsza niż 'Od'. Nie ma limitu 8h — ustaw dowolny poprawny zakres.");
+      }
+      const bs = minutes(row.break_start);
+      const be = minutes(row.break_end);
+      if ((bs != null || be != null) && (bs == null || be == null || be <= bs || bs < start || be > end)) {
+        throw new Error("Przerwa musi mieścić się w godzinach pracy i mieć poprawny zakres od/do.");
+      }
+    }
   }
 
   async function save() {
@@ -208,6 +262,7 @@
       updated_at: new Date().toISOString()
     }));
     try {
+      validateRows(rows);
       const { error } = await window.cmSupabase
         .from("employee_work_schedules")
         .upsert(rows, { onConflict: "company_id,employee_id,day_of_week" });
@@ -220,17 +275,90 @@
     }
   }
 
-  function applyDefaultWeek() {
+  function quickValues() {
+    return {
+      start: $("#quickStartTime")?.value || "08:00",
+      end: $("#quickEndTime")?.value || "16:00",
+      breakStart: $("#quickBreakStart")?.value || "",
+      breakEnd: $("#quickBreakEnd")?.value || ""
+    };
+  }
+
+  function applyToRows(mode) {
+    const q = quickValues();
     $$(".cm-work-schedule-editor tbody tr").forEach((tr) => {
       const day = Number(tr.dataset.day);
-      const isWeekend = day === 0 || day === 6;
+      const weekend = day === 0 || day === 6;
+      if (mode === "week" && weekend) return;
       const working = $("[data-working]", tr);
-      if (working) working.checked = !isWeekend;
-      const start = $("[data-start]", tr); if (start) start.value = "08:00";
-      const end = $("[data-end]", tr); if (end) end.value = isWeekend ? "08:00" : "16:00";
-      const bs = $("[data-break-start]", tr); if (bs) bs.value = "";
-      const be = $("[data-break-end]", tr); if (be) be.value = "";
+      if (working) working.checked = true;
+      const start = $("[data-start]", tr); if (start) start.value = q.start;
+      const end = $("[data-end]", tr); if (end) end.value = q.end;
+      const bs = $("[data-break-start]", tr); if (bs) bs.value = q.breakStart;
+      const be = $("[data-break-end]", tr); if (be) be.value = q.breakEnd;
     });
+    refreshDurations();
+  }
+
+  function setFree() {
+    $$(".cm-work-schedule-editor tbody tr").forEach((tr) => {
+      const working = $("[data-working]", tr);
+      if (working) working.checked = false;
+    });
+    refreshDurations();
+  }
+
+  function refreshDurations() {
+    $$(".cm-work-schedule-editor tbody tr").forEach((tr) => {
+      const working = $("[data-working]", tr)?.checked;
+      const target = $("[data-day-duration]", tr);
+      if (!target) return;
+      target.textContent = working ? formatDuration($("[data-start]", tr)?.value, $("[data-end]", tr)?.value) : "wolne";
+    });
+  }
+
+  async function deleteSchedule(employeeId) {
+    const employee = state.employees.find((row) => String(row.id) === String(employeeId));
+    if (!employee) return;
+    if (!confirm(`Usunąć grafik pracownika: ${employeeName(employee)}?`)) return;
+    try {
+      const { error } = await window.cmSupabase
+        .from("employee_work_schedules")
+        .delete()
+        .eq("company_id", state.ctx.companyId)
+        .eq("employee_id", employee.id);
+      if (error) throw error;
+      state.schedules = await fetchSchedules(state.ctx);
+      if (String(state.selectedEmployeeId) === String(employee.id)) state.selectedEmployeeId = employee.id;
+      render();
+    } catch (error) {
+      alert(`Błąd usuwania grafiku: ${error.message || error}`);
+    }
+  }
+
+  function downloadCsv() {
+    const header = ["Pracownik", ...DAYS.map((day) => day.label)];
+    const rows = [header];
+    state.employees.forEach((employee) => {
+      const row = [employeeName(employee)];
+      DAYS.forEach((day) => {
+        const schedule = scheduleByEmployeeAndDay(employee.id, day);
+        if (!schedule) row.push("—");
+        else if (schedule.is_working === false) row.push("wolne");
+        else row.push(`${time(schedule.start_time)}-${time(schedule.end_time)}${schedule.break_start && schedule.break_end ? `; przerwa ${time(schedule.break_start, "")}-${time(schedule.break_end, "")}` : ""}`);
+      });
+      rows.push(row);
+    });
+    const csv = "\ufeff" + rows.map((row) => row.map(csvCell).join(";")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `grafik-pracy-${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
   }
 
   function bindEvents() {
@@ -239,7 +367,18 @@
       render();
     });
     $("#saveWorkScheduleBtn")?.addEventListener("click", save);
-    $("#copyCompanyHoursBtn")?.addEventListener("click", applyDefaultWeek);
+    $("#saveWorkScheduleBottomBtn")?.addEventListener("click", save);
+    $("#copyCompanyHoursBtn")?.addEventListener("click", () => applyToRows("week"));
+    $("#applyAllDaysBtn")?.addEventListener("click", () => applyToRows("all"));
+    $("#clearScheduleBtn")?.addEventListener("click", setFree);
+    $("#downloadWorkScheduleBtn")?.addEventListener("click", downloadCsv);
+    $$(".cm-work-schedule-editor input").forEach((input) => input.addEventListener("change", refreshDurations));
+    $$('[data-edit-employee]').forEach((button) => button.addEventListener("click", () => {
+      state.selectedEmployeeId = button.dataset.editEmployee;
+      render();
+      document.querySelector(".cm-work-schedule-editor-wrap")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }));
+    $$('[data-delete-employee]').forEach((button) => button.addEventListener("click", () => deleteSchedule(button.dataset.deleteEmployee)));
   }
 
   async function boot() {

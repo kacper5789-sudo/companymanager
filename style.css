@@ -5494,3 +5494,178 @@ body[data-panel-page="companyPanel"] .cm-data-retention-box select[name="data_re
     grid-template-columns: 1fr;
   }
 }
+
+
+/* 050B — Grafik pracy UI polish */
+.cm-supabase-work-schedule{
+  max-width: 1180px;
+  margin: 0 auto;
+}
+.cm-work-schedule-head{
+  margin-bottom: 18px !important;
+}
+.cm-work-schedule-grid{
+  display:grid;
+  grid-template-columns: 1fr;
+  gap:18px;
+  margin:18px 0 20px;
+}
+.cm-work-panel{
+  border:1px solid rgba(255,255,255,.12);
+  background:rgba(255,255,255,.055);
+  box-shadow:0 18px 50px rgba(0,0,0,.22);
+  border-radius:22px;
+  padding:18px;
+  backdrop-filter: blur(16px);
+}
+.cm-work-panel-title{
+  font-weight:900;
+  letter-spacing:.02em;
+  margin-bottom:14px;
+  color:#f8fafc;
+}
+.cm-supabase-work-schedule .cm-work-schedule-controls{
+  display:grid !important;
+  grid-template-columns:minmax(260px,1.4fr) repeat(4,minmax(120px,.7fr)) !important;
+  gap:14px !important;
+  align-items:end !important;
+  margin:0 !important;
+}
+.cm-supabase-work-schedule .cm-work-schedule-controls label{
+  display:grid !important;
+  gap:7px !important;
+  color:rgba(226,232,240,.88);
+  font-size:.88rem;
+  font-weight:800;
+}
+.cm-supabase-work-schedule select,
+.cm-supabase-work-schedule input[type="time"]{
+  width:100%;
+  min-height:42px;
+  border-radius:14px;
+  border:1px solid rgba(255,255,255,.13);
+  background:rgba(15,23,42,.58);
+  color:#f8fafc;
+  padding:0 12px;
+  font-weight:800;
+  outline:none;
+}
+.cm-work-actions-bar,
+.cm-work-bottom-actions{
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+  gap:10px;
+  flex-wrap:wrap;
+  margin-top:16px;
+}
+.cm-work-bottom-actions{
+  margin:14px 0 22px;
+}
+.cm-save-schedule-btn{
+  min-width:150px !important;
+  justify-content:center !important;
+  font-weight:900 !important;
+}
+.cm-work-schedule-editor-wrap,
+.cm-work-summary-wrap{
+  border-radius:20px;
+  overflow:auto;
+}
+.cm-work-schedule-editor,
+.cm-work-schedule-summary{
+  table-layout:fixed;
+  width:100%;
+}
+.cm-work-schedule-editor th,
+.cm-work-schedule-editor td,
+.cm-work-schedule-summary th,
+.cm-work-schedule-summary td{
+  text-align:center !important;
+  vertical-align:middle !important;
+  padding:11px 10px !important;
+}
+.cm-work-schedule-editor th:first-child,
+.cm-work-schedule-editor td:first-child,
+.cm-work-schedule-summary th:first-child,
+.cm-work-schedule-summary td:first-child{
+  text-align:left !important;
+  width:160px;
+}
+.cm-work-schedule-editor td:first-child span{
+  display:block;
+  color:rgba(148,163,184,.9);
+  font-size:.72rem;
+  margin-top:2px;
+}
+.cm-work-schedule-editor input[type="time"]{
+  min-width:96px !important;
+  max-width:128px;
+  margin:0 auto;
+  text-align:center;
+}
+.cm-work-toggle{
+  display:inline-flex !important;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+  min-width:104px;
+  margin:0 auto;
+}
+.cm-section-title-row{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:12px;
+  margin-top:18px;
+}
+.cm-section-title-row .cm-section-title{
+  margin:0;
+}
+.cm-work-schedule-summary th:not(:first-child),
+.cm-work-schedule-summary td:not(:first-child){
+  min-width:92px;
+}
+.cm-work-schedule-summary th:last-child,
+.cm-work-schedule-summary td:last-child{
+  width:170px;
+}
+.cm-work-actions{
+  display:flex;
+  justify-content:center;
+  gap:8px;
+  flex-wrap:nowrap;
+}
+.cm-work-actions .bm-light-btn,
+.cm-work-actions .bm-danger-btn{
+  min-width:auto !important;
+  padding:7px 10px !important;
+  font-size:.82rem !important;
+}
+.cm-supabase-work-schedule .panel-message{
+  min-height:22px;
+  margin:10px 0 0;
+  font-weight:800;
+}
+@media(max-width:1180px){
+  .cm-supabase-work-schedule .cm-work-schedule-controls{
+    grid-template-columns:1fr 1fr !important;
+  }
+}
+@media(max-width:760px){
+  .cm-supabase-work-schedule .cm-work-schedule-controls{
+    grid-template-columns:1fr !important;
+  }
+  .cm-work-actions-bar,
+  .cm-work-bottom-actions,
+  .cm-section-title-row{
+    justify-content:stretch;
+    align-items:stretch;
+    flex-direction:column;
+  }
+  .cm-work-actions-bar button,
+  .cm-work-bottom-actions button,
+  .cm-section-title-row button{
+    width:100%;
+  }
+}
