@@ -346,6 +346,21 @@
     el.style.color = ok ? "#86efac" : "#fca5a5";
   }
 
+  function normalizeDateValue(value) {
+    const raw = String(value || "").trim();
+    if (!raw) return "";
+    const match = raw.match(/\d{4}-\d{2}-\d{2}/);
+    return match ? match[0] : raw.slice(0, 10);
+  }
+
+  function formDateValue(form, fieldName, inputId, fallback) {
+    const dataValue = normalizeDateValue(new FormData(form).get(fieldName));
+    if (dataValue) return dataValue;
+    const inputValue = normalizeDateValue(document.getElementById(inputId)?.value);
+    if (inputValue) return inputValue;
+    return normalizeDateValue(fallback || todayIso());
+  }
+
   function validateDates(start, end, selector) {
     if (!start || !end) {
       message(selector, "Uzupełnij daty.", false);
@@ -430,25 +445,28 @@
       event.preventDefault();
       const form = event.currentTarget;
       const data = Object.fromEntries(new FormData(form).entries());
+      const selectedCalendarDate = normalizeDateValue(document.querySelector(".day-off-cell.is-selected")?.dataset?.date);
+      const startDate = formDateValue(form, "start_date", "daysOffStart", selectedCalendarDate || todayIso());
+      const endDate = formDateValue(form, "end_date", "daysOffEnd", startDate);
+      data.start_date = startDate;
+      data.end_date = endDate;
       if (!validateDates(data.start_date, data.end_date, "#daysOffMessage")) return;
+      if (!data.employee_id) return message("#daysOffMessage", "Wybierz pracownika.", false);
       try {
-        const employee = state.employees.find((item) => item.id === data.employee_id);
+        const employee = state.employees.find((item) => String(item.id) === String(data.employee_id) || String(item.profile_id) === String(data.employee_id));
         const payload = {
           company_id: state.ctx.companyId,
           employee_id: data.employee_id || null,
           employee_name: employee?.full_name || employee?.email || "Pracownik",
           type: data.type || "dzień wolny",
-          start_date: data.start_date,
-          end_date: data.end_date,
+          start_date: startDate,
+          end_date: endDate,
           description: String(data.description || "").trim(),
           status: "active"
         };
-        let saveError = null;
 
-        // Primary path: RPC. Some Supabase instances can keep an old RPC schema cache,
-        // so we keep a safe fallback to direct insert guarded by RLS.
         const rpcResult = await window.cmSupabase.rpc("add_day_off", {
-          p_company_id: state.ctx.companyId,
+          p_company_id: payload.company_id,
           p_employee_id: payload.employee_id,
           p_type: payload.type,
           p_start_date: payload.start_date,
@@ -457,36 +475,16 @@
         });
 
         if (rpcResult.error) {
-          saveError = rpcResult.error;
-          console.warn("add_day_off RPC failed, trying direct insert fallback:", rpcResult.error);
-
-          const insertResult = await window.cmSupabase
-            .from("days_off")
-            .insert({
-              company_id: payload.company_id,
-              employee_id: payload.employee_id,
-              employee_name: payload.employee_name,
-              type: payload.type,
-              start_date: payload.start_date,
-              end_date: payload.end_date,
-              date_from: payload.start_date,
-              date_to: payload.end_date,
-              description: payload.description || null,
-              reason: payload.description || null,
-              status: "active"
-            });
-
-          if (insertResult.error) {
-            const details = [
-              insertResult.error.message,
-              insertResult.error.details,
-              insertResult.error.hint,
-              saveError?.message ? "RPC: " + saveError.message : ""
-            ].filter(Boolean).join(" | ");
-            throw new Error(details || "Nie udało się zapisać dni wolnych.");
-          }
+          console.warn("add_day_off RPC failed:", rpcResult.error);
+          const details = [rpcResult.error.message, rpcResult.error.details, rpcResult.error.hint].filter(Boolean).join(" | ");
+          throw new Error(details || "Nie udało się zapisać dni wolnych.");
         }
         message("#daysOffMessage", "Dni wolne zapisane.");
+        form.reset();
+        const startInput = document.getElementById("daysOffStart");
+        const endInput = document.getElementById("daysOffEnd");
+        if (startInput) startInput.value = todayIso();
+        if (endInput) endInput.value = todayIso();
         await reloadAndRender();
       } catch (error) {
         message("#daysOffMessage", `Błąd zapisu dni wolnych: ${error.message || error}`, false);
@@ -503,6 +501,8 @@
       event.preventDefault();
       const form = event.currentTarget;
       const data = Object.fromEntries(new FormData(form).entries());
+      data.start_date = formDateValue(form, "start_date", "editDaysOffStart", todayIso());
+      data.end_date = formDateValue(form, "end_date", "editDaysOffEnd", data.start_date);
       if (!data.day_off_id) return message("#daysOffEditMessage", "Wybierz wpis do edycji.", false);
       if (!validateDates(data.start_date, data.end_date, "#daysOffEditMessage")) return;
       try {
