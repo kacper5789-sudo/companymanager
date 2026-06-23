@@ -5009,3 +5009,19 @@ html body .cm-cr-dropdown-button {
 .cm-supa-reports-module .cm-supa-report-table tbody tr:hover td{background:rgba(56,189,248,.055);}
 .cm-employees-report-page .cm-er-filters{grid-template-columns:minmax(150px,190px) minmax(150px,190px) minmax(190px,240px) auto!important;}
 .cm-employees-report-page #erShowBtn{width:auto!important;min-width:92px!important;max-width:120px!important;}
+
+/* 049A — Company panel Supabase polish */
+.cm-company-panel-page .bm-light-btn.active,
+.cm-company-panel-switcher .bm-light-btn.active {
+  border-color: rgba(255,255,255,.32);
+  background: rgba(255,255,255,.14);
+}
+.cm-company-panel-form .cm-notification-box {
+  min-width: 0;
+}
+.cm-company-panel-form .bm-info-row {
+  margin-bottom: 10px;
+}
+.cm-company-panel-form textarea {
+  min-height: 92px;
+}
