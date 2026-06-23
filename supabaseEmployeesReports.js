@@ -26,6 +26,12 @@
       .cm-employees-report-page .cm-er-filters input[type="date"]{height:43px;min-width:0;width:100%;border:1px solid rgba(148,163,184,.22);border-radius:14px;background:rgba(2,6,23,.58);color:#e5eefb;padding:0 42px 0 13px;outline:none;font:inherit;font-weight:700;color-scheme:dark;box-shadow:inset 0 1px 0 rgba(255,255,255,.035);}
       .cm-employees-report-page .cm-er-filters input[type="date"]:focus{border-color:rgba(56,189,248,.72);box-shadow:0 0 0 3px rgba(56,189,248,.12);}
       .cm-employees-report-page .cm-er-filters input[type="date"]::-webkit-calendar-picker-indicator{filter:invert(1) brightness(1.65);opacity:.9;cursor:pointer;}
+      .cm-er-employee-filter{grid-column:1/-1;display:grid;gap:9px;padding:12px;border:1px solid rgba(148,163,184,.16);border-radius:16px;background:rgba(2,6,23,.32);}
+      .cm-er-employee-filter .cm-er-employee-title{color:rgba(255,255,255,.72);font-size:12px;font-weight:900;letter-spacing:.02em;}
+      .cm-er-employee-options{display:flex;flex-wrap:wrap;gap:8px;}
+      .cm-er-employee-chip{display:inline-flex;align-items:center;gap:7px;min-height:34px;padding:0 11px;border:1px solid rgba(148,163,184,.18);border-radius:999px;background:rgba(255,255,255,.055);color:#e5eefb;font-size:12px;font-weight:850;cursor:pointer;user-select:none;}
+      .cm-er-employee-chip input{accent-color:#60a5fa;}
+      .cm-er-employee-chip:has(input:checked){border-color:rgba(96,165,250,.55);background:rgba(37,99,235,.22);}
       .cm-employees-report-page #erShowBtn{height:43px;border:1px solid rgba(59,130,246,.36);border-radius:14px;background:linear-gradient(180deg,rgba(59,130,246,.34),rgba(37,99,235,.18));color:#eff6ff;font-weight:900;padding:0 18px;cursor:pointer;box-shadow:0 16px 42px rgba(37,99,235,.18);backdrop-filter:blur(12px);}
       .cm-employees-report-page #erShowBtn:hover{border-color:rgba(125,211,252,.55);background:linear-gradient(180deg,rgba(59,130,246,.44),rgba(37,99,235,.26));}
       .cm-er-section{margin-top:18px;}
@@ -323,7 +329,31 @@
       else emp.free += 1;
     });
 
-    return Array.from(base.values()).map((r) => {
+    const merged = new Map();
+    Array.from(base.values()).forEach((r) => {
+      const key = r.id && !String(r.id).startsWith("unknown:") ? `id:${r.id}` : `name:${employeeKeyByName(r.name)}`;
+      const nameKey = `name:${employeeKeyByName(r.name)}`;
+      const existingKey = merged.has(key) ? key : (merged.has(nameKey) ? nameKey : key);
+      if (!merged.has(existingKey)) {
+        merged.set(existingKey, {
+          ...r,
+          clientIds: new Set(r.clientIds),
+          newClientIds: new Set(r.newClientIds),
+          returningClientIds: new Set(r.returningClientIds)
+        });
+      } else {
+        const m = merged.get(existingKey);
+        ["visits","finishedVisits","cancelledVisits","services","serviceValue","products","productValue","passes","passValue","revenue","daysOff","vacation","sick","free","visitMinutes"].forEach((field) => {
+          m[field] += Number(r[field] || 0);
+        });
+        r.clientIds.forEach((id) => m.clientIds.add(id));
+        r.newClientIds.forEach((id) => m.newClientIds.add(id));
+        r.returningClientIds.forEach((id) => m.returningClientIds.add(id));
+        if ((!m.id || String(m.id).startsWith("unknown:")) && r.id && !String(r.id).startsWith("unknown:")) m.id = r.id;
+      }
+    });
+
+    return Array.from(merged.values()).map((r) => {
       r.clients = r.clientIds.size;
       r.newClients = r.newClientIds.size;
       r.returningClients = Math.max(0, r.clients - r.newClients);
@@ -331,6 +361,21 @@
       r.returningClientsPct = percent(r.returningClients, r.clients);
       return r;
     }).sort((a, b) => a.name.localeCompare(b.name, "pl"));
+  }
+
+  function employeeFilterHtml(employees, selectedSet) {
+    const allChecked = selectedSet.size === 0;
+    const chips = employees.map((emp) => {
+      const checked = allChecked || selectedSet.has(emp.id);
+      return `<label class="cm-er-employee-chip"><input type="checkbox" data-er-employee value="${esc(emp.id)}" ${checked ? "checked" : ""}>${esc(employeeName(emp))}</label>`;
+    }).join("");
+    return `<div class="cm-er-employee-filter">
+      <div class="cm-er-employee-title">Pracownicy</div>
+      <div class="cm-er-employee-options">
+        <label class="cm-er-employee-chip"><input type="checkbox" id="erEmployeesAll" ${allChecked ? "checked" : ""}>Wszyscy</label>
+        ${chips || '<span style="color:rgba(255,255,255,.55);font-size:12px;">Brak pracowników</span>'}
+      </div>
+    </div>`;
   }
 
   function tableModule(id, title, headers, rows, footer) {
@@ -387,7 +432,12 @@
   function renderPage(context, data, filters) {
     window.__cmErCurrentFrom = filters.from;
     window.__cmErCurrentTo = filters.to;
-    const stats = calcStats(data);
+    const selectedEmployees = parseSelectedEmployees(filters.employees || "");
+    const allStats = calcStats(data);
+    const stats = selectedEmployees.size ? allStats.filter((r) => selectedEmployees.has(r.id)) : allStats;
+    const employeeOptions = data.profiles
+      .filter((p) => normalizeRole(p.role) !== "OWNER")
+      .sort((a, b) => employeeName(a).localeCompare(employeeName(b), "pl"));
     const totals = stats.reduce((acc, r) => {
       Object.keys(acc).forEach((key) => { acc[key] += Number(r[key] || 0); });
       return acc;
@@ -404,6 +454,7 @@
         <label>Od<input type="date" id="erDateFrom" value="${esc(filters.from)}"></label>
         <label>Do<input type="date" id="erDateTo" value="${esc(filters.to)}"></label>
         <button type="button" id="erShowBtn">Pokaż</button>
+        ${employeeFilterHtml(employeeOptions, selectedEmployees)}
       </div>
       <div class="cm-er-grid">
         <div class="cm-er-card"><span>Pracownicy</span><strong>${stats.length}</strong></div>
@@ -416,10 +467,26 @@
       ${tableModule('absences', 'Dni wolne według pracowników', ['Pracownik','Dni wolne','Urlop','Zwolnienie','Inne'], absenceRows, ['SUMA', totals.daysOff, totals.vacation, totals.sick, totals.free])}
     </section>`;
 
+    const syncEmployeesAll = () => {
+      const all = $('#erEmployeesAll');
+      const boxes = $$('[data-er-employee]');
+      if (!all) return;
+      all.checked = boxes.length > 0 && boxes.every((box) => box.checked);
+    };
+    $('#erEmployeesAll')?.addEventListener('change', (event) => {
+      $$('[data-er-employee]').forEach((box) => { box.checked = event.currentTarget.checked; });
+    });
+    $$('[data-er-employee]').forEach((box) => box.addEventListener('change', syncEmployeesAll));
+    syncEmployeesAll();
+
     $('#erShowBtn')?.addEventListener('click', () => {
       const url = new URL(window.location.href);
       url.searchParams.set('from', $('#erDateFrom')?.value || filters.from);
       url.searchParams.set('to', $('#erDateTo')?.value || filters.to);
+      const boxes = $$('[data-er-employee]');
+      const checked = boxes.filter((box) => box.checked).map((box) => box.value);
+      if (checked.length && checked.length !== boxes.length) url.searchParams.set('employees', checked.join(','));
+      else url.searchParams.delete('employees');
       window.location.href = url.toString();
     });
     window.initCalendars?.();
@@ -436,7 +503,7 @@
     try {
       const defaults = defaultDates();
       const params = new URLSearchParams(window.location.search);
-      const filters = { from: params.get('from') || defaults.from, to: params.get('to') || defaults.to };
+      const filters = { from: params.get('from') || defaults.from, to: params.get('to') || defaults.to, employees: params.get('employees') || '' };
       const context = await getContext();
       const data = await fetchData(context.companyId, filters.from, filters.to);
       renderPage(context, data, filters);
