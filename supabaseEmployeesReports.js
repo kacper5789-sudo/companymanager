@@ -1,5 +1,5 @@
-// CompanyManager — 047B Pracownicy - raporty UI polish
-// employeesraports.html: realne dane z profiles / appointments / sales / sale_items / days_off.
+// CompanyManager — 047C Obsługa klientów employees reports
+// employeesraports.html: realne dane z profiles / clients / appointments / sales / sale_items / days_off.
 (function () {
   if (document.body?.dataset?.panelPage !== "employeesReports") return;
 
@@ -122,6 +122,37 @@
     return Number(item?.quantity || 1) || 1;
   }
 
+  function appointmentMinutes(row) {
+    const direct = Number(row?.duration_minutes || row?.duration || 0);
+    if (direct > 0) return direct;
+    const startRaw = row?.starts_at || row?.appointment_datetime;
+    const endRaw = row?.ends_at;
+    const start = startRaw ? new Date(startRaw) : null;
+    const end = endRaw ? new Date(endRaw) : null;
+    if (start && end && !Number.isNaN(start.getTime()) && !Number.isNaN(end.getTime()) && end > start) {
+      return Math.round((end - start) / 60000);
+    }
+    return 0;
+  }
+
+  function formatMinutes(totalMinutes) {
+    const minutes = Math.max(0, Math.round(Number(totalMinutes || 0)));
+    const h = Math.floor(minutes / 60);
+    const m = minutes % 60;
+    if (h && m) return `${h}h ${m}min`;
+    if (h) return `${h}h`;
+    return `${m}min`;
+  }
+
+  function percent(part, total) {
+    const value = Number(total || 0) ? (Number(part || 0) / Number(total || 0)) * 100 : 0;
+    return `${value.toFixed(1)}%`;
+  }
+
+  function clientCreatedDate(row) {
+    return row?.created_at || row?.createdAt || row?.created || row?.date_added || row?.registered_at;
+  }
+
   function normalizeRole(role) { return String(role || "").trim().toUpperCase(); }
   function normalizePermissions(raw) {
     if (!raw) return {};
@@ -161,9 +192,10 @@
 
   async function fetchData(companyId, from, to) {
     const sb = window.cmSupabase;
-    const [profiles, positions, appointments, sales, saleItems, daysOff] = await Promise.all([
+    const [profiles, positions, clients, appointments, sales, saleItems, daysOff] = await Promise.all([
       safeSelect("profiles", sb.from("profiles").select("*").eq("company_id", companyId)),
       safeSelect("positions", sb.from("positions").select("*").eq("company_id", companyId)),
+      safeSelect("clients", sb.from("clients").select("*").eq("company_id", companyId)),
       safeSelect("appointments", sb.from("appointments").select("*").eq("company_id", companyId)),
       safeSelect("sales", sb.from("sales").select("*").eq("company_id", companyId)),
       safeSelect("sale_items", sb.from("sale_items").select("*").eq("company_id", companyId)),
@@ -176,7 +208,7 @@
     const filteredItems = saleItems.filter((item) => saleIds.has(item.sale_id));
     const filteredDaysOff = daysOff.filter((row) => inRange(row.date || row.start_date || row.date_from || row.from_date || row.created_at, from, to));
 
-    return { profiles, positions, appointments: filteredAppointments, sales: filteredSales, saleItems: filteredItems, daysOff: filteredDaysOff };
+    return { profiles, positions, clients, appointments: filteredAppointments, sales: filteredSales, saleItems: filteredItems, daysOff: filteredDaysOff };
   }
 
   function calcStats(data) {
@@ -185,6 +217,7 @@
       .filter((p) => normalizeRole(p.role) !== "OWNER")
       .sort((a, b) => employeeName(a).localeCompare(employeeName(b), "pl"));
     const employeeById = new Map(employees.map((e) => [e.id, e]));
+    const clientById = new Map((data.clients || []).map((c) => [c.id, c]));
     const saleById = new Map(data.sales.map((s) => [s.id, s]));
     const appointmentById = new Map(data.appointments.map((a) => [a.id, a]));
 
@@ -209,16 +242,51 @@
         daysOff: 0,
         vacation: 0,
         sick: 0,
-        free: 0
+        free: 0,
+        visitMinutes: 0,
+        clientIds: new Set(),
+        newClientIds: new Set(),
+        returningClientIds: new Set()
       });
     });
 
     const ensure = (id, fallback) => {
       const key = id || `unknown:${fallback || "brak"}`;
       if (!base.has(key)) {
-        base.set(key, { id: key, name: fallback || "(brak)", email: "", position: "-", visits: 0, finishedVisits: 0, cancelledVisits: 0, services: 0, serviceValue: 0, products: 0, productValue: 0, passes: 0, passValue: 0, revenue: 0, daysOff: 0, vacation: 0, sick: 0, free: 0 });
+        base.set(key, {
+          id: key,
+          name: fallback || "(brak)",
+          email: "",
+          position: "-",
+          visits: 0,
+          finishedVisits: 0,
+          cancelledVisits: 0,
+          services: 0,
+          serviceValue: 0,
+          products: 0,
+          productValue: 0,
+          passes: 0,
+          passValue: 0,
+          revenue: 0,
+          daysOff: 0,
+          vacation: 0,
+          sick: 0,
+          free: 0,
+          visitMinutes: 0,
+          clientIds: new Set(),
+          newClientIds: new Set(),
+          returningClientIds: new Set()
+        });
       }
       return base.get(key);
+    };
+
+    const touchClient = (emp, clientId) => {
+      if (!clientId) return;
+      emp.clientIds.add(clientId);
+      const client = clientById.get(clientId);
+      const created = clientCreatedDate(client);
+      if (created && inRange(created, window.__cmErCurrentFrom, window.__cmErCurrentTo)) emp.newClientIds.add(clientId);
     };
 
     data.appointments.forEach((a) => {
@@ -226,6 +294,8 @@
       emp.visits += 1;
       if (isFinishedAppointment(a)) emp.finishedVisits += 1;
       if (isCancelledAppointment(a)) emp.cancelledVisits += 1;
+      if (!isCancelledAppointment(a)) emp.visitMinutes += appointmentMinutes(a);
+      touchClient(emp, a.client_id || a.customer_id || a.clientId || a.customerId || "");
     });
 
     data.saleItems.forEach((item) => {
@@ -238,6 +308,7 @@
       const qty = itemQty(item);
       const value = itemValue(item, sale);
       emp.revenue += value;
+      touchClient(emp, sale.client_id || appointment.client_id || appointment.customer_id || "");
       if (type.includes("product")) { emp.products += qty; emp.productValue += value; }
       else if (type.includes("pass") || type.includes("karnet")) { emp.passes += qty; emp.passValue += value; }
       else { emp.services += qty; emp.serviceValue += value; }
@@ -252,7 +323,14 @@
       else emp.free += 1;
     });
 
-    return Array.from(base.values()).sort((a, b) => a.name.localeCompare(b.name, "pl"));
+    return Array.from(base.values()).map((r) => {
+      r.clients = r.clientIds.size;
+      r.newClients = r.newClientIds.size;
+      r.returningClients = Math.max(0, r.clients - r.newClients);
+      r.newClientsPct = percent(r.newClients, r.clients);
+      r.returningClientsPct = percent(r.returningClients, r.clients);
+      return r;
+    }).sort((a, b) => a.name.localeCompare(b.name, "pl"));
   }
 
   function tableModule(id, title, headers, rows, footer) {
@@ -307,13 +385,15 @@
   }
 
   function renderPage(context, data, filters) {
+    window.__cmErCurrentFrom = filters.from;
+    window.__cmErCurrentTo = filters.to;
     const stats = calcStats(data);
     const totals = stats.reduce((acc, r) => {
       Object.keys(acc).forEach((key) => { acc[key] += Number(r[key] || 0); });
       return acc;
-    }, { visits:0, finishedVisits:0, cancelledVisits:0, services:0, serviceValue:0, products:0, productValue:0, passes:0, passValue:0, revenue:0, daysOff:0, vacation:0, sick:0, free:0 });
+    }, { visits:0, finishedVisits:0, cancelledVisits:0, services:0, serviceValue:0, products:0, productValue:0, passes:0, passValue:0, revenue:0, daysOff:0, vacation:0, sick:0, free:0, visitMinutes:0, clients:0, newClients:0, returningClients:0 });
 
-    const summaryRows = stats.map((r) => [esc(r.name), esc(r.position), String(r.visits), String(r.finishedVisits), String(r.cancelledVisits), money(r.revenue)]);
+    const customerServiceRows = stats.map((r) => [esc(r.name), String(r.services), String(r.clients), formatMinutes(r.visitMinutes), String(r.newClients), r.newClientsPct, String(r.returningClients), r.returningClientsPct]);
     const salesRows = stats.map((r) => [esc(r.name), String(r.services), money(r.serviceValue), String(r.products), money(r.productValue), String(r.passes), money(r.passValue), money(r.revenue)]);
     const absenceRows = stats.map((r) => [esc(r.name), String(r.daysOff), String(r.vacation), String(r.sick), String(r.free)]);
 
@@ -331,7 +411,7 @@
         <div class="cm-er-card"><span>Pozycje sprzedaży</span><strong>${totals.services + totals.products + totals.passes}</strong></div>
         <div class="cm-er-card"><span>Przychód</span><strong>${money(totals.revenue)}</strong></div>
       </div>
-      ${tableModule('summary', 'Podsumowanie pracowników', ['Pracownik','Stanowisko','Wizyty','Zakończone','Odwołane','Przychód'], summaryRows, ['SUMA','', totals.visits, totals.finishedVisits, totals.cancelledVisits, money(totals.revenue)])}
+      ${tableModule('customer-service', 'Obsługa klientów', ['Pracownik','L. usług','L. klientów','Czas wizyt','Nowi k.','Nowi k. %','K. powracający','K. powracający %'], customerServiceRows, ['SUMA', totals.services, totals.clients, formatMinutes(totals.visitMinutes), totals.newClients, percent(totals.newClients, totals.clients), totals.returningClients, percent(totals.returningClients, totals.clients)])}
       ${tableModule('sales', 'Sprzedaż według pracowników', ['Pracownik','Usługi','Wartość usług','Produkty','Wartość produktów','Karnety','Wartość karnetów','Razem'], salesRows, ['SUMA', totals.services, money(totals.serviceValue), totals.products, money(totals.productValue), totals.passes, money(totals.passValue), money(totals.revenue)])}
       ${tableModule('absences', 'Dni wolne według pracowników', ['Pracownik','Dni wolne','Urlop','Zwolnienie','Inne'], absenceRows, ['SUMA', totals.daysOff, totals.vacation, totals.sick, totals.free])}
     </section>`;
