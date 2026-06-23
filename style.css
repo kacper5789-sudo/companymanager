@@ -4363,3 +4363,178 @@ html body .panel-card input[type="time"]::-webkit-calendar-picker-indicator {
 .cm-days-off-cancel {
   margin-top: 12px !important;
 }
+
+/* CompanyManager 043A — global glass / blurred button style */
+:root {
+  --cm-btn-glass-border: rgba(255,255,255,.18);
+  --cm-btn-glass-shadow: 0 12px 28px rgba(0,0,0,.22), inset 0 1px 0 rgba(255,255,255,.08);
+  --cm-btn-glass-shadow-hover: 0 16px 34px rgba(0,0,0,.28), inset 0 1px 0 rgba(255,255,255,.12);
+}
+
+/* Bazowy styl dla przycisków akcji w panelu — mniej jasny, glass/blur jak w wizytach. */
+html body .bm-main button,
+html body .panel-body button,
+html body .bm-page-card button,
+html body .bm-card button,
+html body .panel-card button,
+html body .cm-as-modal button,
+html body .bm-modal button,
+html body .bm-action-row button,
+html body .bm-actions-row button,
+html body .bm-dashboard-actions button,
+html body .days-off-action-grid button,
+html body .cm-modal-actions button,
+html body .cm-company-actions button,
+html body .bm-btn,
+html body .btn,
+html body .bm-light-btn,
+html body .bm-secondary-btn,
+html body .bm-danger-btn,
+html body .cm-sales-export-btn,
+html body .cm-report-export-btn,
+html body .cm-chart-export-btn,
+html body .cm-report-export-green,
+html body button[data-registration-approve],
+html body button[data-registration-reject] {
+  border: 1px solid var(--cm-btn-glass-border) !important;
+  border-radius: 12px !important;
+  color: #f8fafc !important;
+  font-weight: 900 !important;
+  cursor: pointer !important;
+  box-shadow: var(--cm-btn-glass-shadow) !important;
+  -webkit-backdrop-filter: blur(14px) saturate(1.15) !important;
+  backdrop-filter: blur(14px) saturate(1.15) !important;
+  transition: transform .14s ease, filter .14s ease, background .14s ease, border-color .14s ease, box-shadow .14s ease !important;
+}
+
+html body .bm-main button:hover,
+html body .panel-body button:hover,
+html body .bm-page-card button:hover,
+html body .bm-card button:hover,
+html body .panel-card button:hover,
+html body .cm-as-modal button:hover,
+html body .bm-modal button:hover,
+html body .bm-action-row button:hover,
+html body .bm-actions-row button:hover,
+html body .bm-dashboard-actions button:hover,
+html body .days-off-action-grid button:hover,
+html body .cm-modal-actions button:hover,
+html body .cm-company-actions button:hover,
+html body .bm-btn:hover,
+html body .btn:hover,
+html body .bm-light-btn:hover,
+html body .bm-secondary-btn:hover,
+html body .bm-danger-btn:hover,
+html body .cm-sales-export-btn:hover,
+html body .cm-report-export-btn:hover,
+html body .cm-chart-export-btn:hover,
+html body .cm-report-export-green:hover,
+html body button[data-registration-approve]:hover,
+html body button[data-registration-reject]:hover {
+  transform: translateY(-1px) !important;
+  filter: brightness(1.08) !important;
+  box-shadow: var(--cm-btn-glass-shadow-hover) !important;
+}
+
+html body button:disabled,
+html body .bm-btn:disabled,
+html body .btn:disabled,
+html body .bm-light-btn:disabled,
+html body .bm-secondary-btn:disabled,
+html body .bm-danger-btn:disabled {
+  opacity: .48 !important;
+  cursor: not-allowed !important;
+  transform: none !important;
+  filter: grayscale(.2) !important;
+}
+
+/* Dodaj / Zapisz / OK — jasny, ale przygaszony glass zamiast pełnej bieli. */
+html body .bm-light-btn,
+html body .btn.secondary,
+html body button[data-action="add"],
+html body button[data-action="save"],
+html body button[data-action="create"],
+html body button[data-pass-create],
+html body button[data-template-create],
+html body button[class*="add"],
+html body button[id*="add"],
+html body button[id*="Add"],
+html body .cm-modal-actions button[type="submit"],
+html body form button[type="submit"] {
+  background: linear-gradient(135deg, rgba(248,250,252,.18), rgba(148,163,184,.10)) !important;
+  border-color: rgba(255,255,255,.28) !important;
+  color: #f8fafc !important;
+}
+
+/* Edytuj / Akcje neutralne — niebieski glass jak przycisk Edytuj w Wizytach. */
+html body .bm-secondary-btn,
+html body .btn:not(.secondary):not(.danger),
+html body .bm-btn:not(.danger):not(.success),
+html body button[data-action="edit"],
+html body button[class*="edit"],
+html body button[id*="edit"],
+html body button[id*="Edit"],
+html body .bm-dashboard-actions .bm-light-btn,
+html body .bm-worker-count {
+  background: linear-gradient(135deg, rgba(37,99,235,.24), rgba(14,165,233,.12)) !important;
+  border-color: rgba(56,189,248,.34) !important;
+  color: #e0f2fe !important;
+}
+
+/* Usuń / Sprzedaj / Odrzuć / Niebezpieczne — czerwony glass, mniej jaskrawy. */
+html body .bm-danger-btn,
+html body .bm-btn.danger,
+html body button[data-action="delete"],
+html body button[data-action="remove"],
+html body button[data-action="sell"],
+html body button[data-registration-reject],
+html body button[class*="delete"],
+html body button[class*="danger"],
+html body button[class*="remove"],
+html body button[id*="delete"],
+html body button[id*="Delete"],
+html body button[id*="remove"],
+html body button[id*="Remove"],
+html body button[id*="sell"],
+html body button[id*="Sell"] {
+  background: linear-gradient(135deg, rgba(185,28,28,.28), rgba(127,29,29,.14)) !important;
+  border-color: rgba(248,113,113,.34) !important;
+  color: #fecaca !important;
+}
+
+/* Akceptuj / Export — zielony glass, przygaszony. */
+html body .bm-btn.success,
+html body .bm-action-row .bm-excel-btn,
+html body .bm-actions-row .bm-excel-btn,
+html body .cm-sales-export-btn,
+html body .cm-report-export-green,
+html body button[data-registration-approve],
+html body button[class*="success"],
+html body button[class*="export"] {
+  background: linear-gradient(135deg, rgba(22,163,74,.25), rgba(21,128,61,.12)) !important;
+  border-color: rgba(74,222,128,.34) !important;
+  color: #dcfce7 !important;
+}
+
+/* Żółte / cofanie czasu — amber glass. */
+html body .bm-undo-btn,
+html body .bm-undo-time-btn,
+html body button[class*="undo"],
+html body button[id*="undo"],
+html body button[id*="Undo"] {
+  background: linear-gradient(135deg, rgba(202,138,4,.28), rgba(120,53,15,.14)) !important;
+  border-color: rgba(251,191,36,.34) !important;
+  color: #fef3c7 !important;
+}
+
+/* Nie ruszamy drobnych elementów kalendarza i menu, żeby nie rozwalić układu. */
+html body .bm-month-head button,
+html body .bm-date-btn,
+html body .bm-year-btn,
+html body .cm-limit-menu button,
+html body .cm-language-menu button,
+html body .cm-cr-dropdown-button {
+  box-shadow: none !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
