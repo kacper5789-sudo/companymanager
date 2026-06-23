@@ -1,4 +1,4 @@
-// CompanyManager — 047C Obsługa klientów employees reports
+// CompanyManager — 047E Employees reports selected employees parser fix
 // employeesraports.html: realne dane z profiles / clients / appointments / sales / sale_items / days_off.
 (function () {
   if (document.body?.dataset?.panelPage !== "employeesReports") return;
@@ -361,6 +361,13 @@
       r.returningClientsPct = percent(r.returningClients, r.clients);
       return r;
     }).sort((a, b) => a.name.localeCompare(b.name, "pl"));
+  }
+
+  function parseSelectedEmployees(value) {
+    return new Set(String(value || "")
+      .split(",")
+      .map((item) => item.trim())
+      .filter(Boolean));
   }
 
   function employeeFilterHtml(employees, selectedSet) {
