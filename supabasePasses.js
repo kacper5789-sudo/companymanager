@@ -320,8 +320,9 @@
     const value = String(tpl.pass_type || "amount") === "amount"
       ? `${money(tpl.amount || 0)} do wykorzystania`
       : `${Number(tpl.total_units || 0)} wejść`;
-    const remaining = Number(tpl.remaining_stock ?? tpl.stock_quantity ?? 0);
     const stock = Number(tpl.stock_quantity ?? 0);
+    const sold = Number(tpl.sold_count ?? 0);
+    const remaining = Number(tpl.remaining_stock ?? Math.max(stock - sold, 0));
     const pool = Number.isFinite(remaining) && Number.isFinite(stock) ? `pula ${remaining}/${stock}` : "pula -";
     return [tpl.name || "Karnet", type, serviceName, value, `cena ${money(tpl.sale_price || 0)}`, pool].filter(Boolean).join(" — ");
   }
@@ -405,7 +406,9 @@
     const serviceOptions = (data.services || []).map((svc) => `<option value="${escapeHtml(svc.id)}">${escapeHtml(svc.name || "Usługa")}</option>`).join("");
     const templatesById = Object.fromEntries((data.templates || []).map((tpl) => [tpl.id, tpl]));
     const templateOptions = (data.templates || []).map((tpl) => {
-      const remaining = Number(tpl.remaining_stock ?? 0);
+      const stock = Number(tpl.stock_quantity ?? 0);
+      const sold = Number(tpl.sold_count ?? 0);
+      const remaining = Number(tpl.remaining_stock ?? Math.max(stock - sold, 0));
       const disabled = remaining <= 0 ? " disabled" : "";
       const suffix = remaining <= 0 ? " — brak w puli" : "";
       return `<option value="${escapeHtml(tpl.id)}"${disabled}>${escapeHtml(passTemplateLabel(tpl, servicesById) + suffix)}</option>`;
@@ -413,7 +416,7 @@
     const paymentOptions = (data.paymentMethods || DEFAULT_PAYMENT_METHODS).map((method) => `<option value="${escapeHtml(method.name)}"${method.default ? " selected" : ""}>${escapeHtml(method.name)}</option>`).join("");
     const templatesRowsHtml = (data.templates || []).map((tpl) => {
       const stock = Number(tpl.stock_quantity ?? 0);
-      const sold = Number(tpl.sold_count ?? Math.max(stock - Number(tpl.remaining_stock ?? stock), 0));
+      const sold = Number(tpl.sold_count ?? 0);
       const remaining = Number(tpl.remaining_stock ?? Math.max(stock - sold, 0));
       const poolLabel = stock > 0 ? `${remaining}/${stock}` : "brak puli";
       return `<tr>
@@ -458,7 +461,7 @@
       <p class="cm-pass-status-help"><strong>Aktualne</strong> = można używać. <strong>Zrealizowane</strong> = wykorzystane do zera. <strong>Po terminie</strong> = minęła data ważności.</p>`;
 
     area.innerHTML = `<section class="bm-page-card passes-module">
-      <div class="bm-page-head customers-head"><h2>Karnety</h2><div class="bm-actions-row">${allowAdd ? `<button id="showTemplatePass" type="button" class="bm-primary-btn">+ Dodaj typ karnetu</button><button id="showAddPass" type="button">Sprzedaj karnet</button>` : ""}${allowDelete ? `<button id="showDeletePass" type="button" class="bm-danger-btn">Usuń</button>` : ""}</div></div>
+      <div class="bm-page-head customers-head"><h2>Karnety</h2><div class="bm-actions-row">${allowAdd ? `<button id="showTemplatePass" type="button" class="bm-primary-btn">Dodaj typ karnetu</button><button id="showAddPass" type="button" class="bm-primary-btn">Sprzedaj karnet</button>` : ""}${allowDelete ? `<button id="showDeletePass" type="button" class="bm-danger-btn">Usuń</button>` : ""}</div></div>
       ${filterTabs}
       <section id="templatePassPanel" class="bm-page-card bm-inner-card" hidden>
         <div class="bm-page-head customers-head"><h2>Dodaj typ karnetu do puli</h2></div>
@@ -648,7 +651,9 @@
       const form = document.querySelector("#addPassForm");
       if (!form) return;
       const tpl = templatesById[String(form.passTemplateId?.value || "")];
-      const remainingStock = Number(tpl?.remaining_stock ?? 0);
+      const templateStock = Number(tpl?.stock_quantity ?? 0);
+      const templateSold = Number(tpl?.sold_count ?? 0);
+      const remainingStock = Number(tpl?.remaining_stock ?? Math.max(templateStock - templateSold, 0));
       const type = String(tpl?.pass_type || "amount") === "amount" ? "amount" : "units";
       const service = tpl?.service_name || servicesById[tpl?.service_id]?.name || "-";
       const validDays = Math.max(1, Number(tpl?.valid_days || 30));
@@ -722,7 +727,10 @@
         if (!payload.beneficiary_client_id) throw new Error("Wybierz osobę korzystającą.");
         if (!payload.pass_template_id) throw new Error("Wybierz typ karnetu z puli.");
         const selectedTemplate = templatesById[payload.pass_template_id];
-        if (Number(selectedTemplate?.remaining_stock ?? 0) <= 0) throw new Error("Ten typ karnetu nie ma już dostępnych sztuk w puli.");
+        const selectedStock = Number(selectedTemplate?.stock_quantity ?? 0);
+        const selectedSold = Number(selectedTemplate?.sold_count ?? 0);
+        const selectedRemaining = Number(selectedTemplate?.remaining_stock ?? Math.max(selectedStock - selectedSold, 0));
+        if (selectedRemaining <= 0) throw new Error("Ten typ karnetu nie ma już dostępnych sztuk w puli.");
         if (!payload.valid_until) throw new Error("Wybierz datę ważności.");
         if (payload.pass_type === "units" && !payload.total_units) throw new Error("Wpisz liczbę wejść.");
         if (payload.pass_type === "amount" && !payload.pass_amount) throw new Error("Wpisz kwotę karnetu klienta.");
