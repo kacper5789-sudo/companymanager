@@ -116,6 +116,14 @@
     return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
   }
 
+  function dateLabel(value) {
+    if (!value) return "Wybierz datę";
+    const parts = String(value).split("-").map(Number);
+    if (parts.length !== 3 || parts.some(Number.isNaN)) return String(value);
+    const [y, m, d] = parts;
+    return `${String(d).padStart(2, "0")}.${String(m).padStart(2, "0")}.${y}`;
+  }
+
   function defaultDates() {
     const now = new Date();
     return {
@@ -220,17 +228,34 @@
 
     root.innerHTML = `<section class="bm-page-card cm-report-card cm-supa-reports-module">
       <div class="bm-page-head"><h2>Wykres/Statystyka</h2><div class="bm-actions-row"><button id="cmReportExcelExportBtn" type="button" class="bm-excel-btn">Export - Excel</button><button id="cmReportJpgExportBtn" type="button" class="cm-sales-export-btn">Export - JPG</button></div></div>
-      <form class="cm-supa-report-controls" id="cmReportsFilters">
-        <label>Od<input type="date" name="from" value="${esc(filters.from)}"></label>
-        <label>Do<input type="date" name="to" value="${esc(filters.to)}"></label>
-        <label>Grupuj według<select name="group">
-          <option value="days" ${filters.group === "days" ? "selected" : ""}>dni</option>
-          <option value="weeks" ${filters.group === "weeks" ? "selected" : ""}>tygodnie</option>
-          <option value="months" ${filters.group === "months" ? "selected" : ""}>miesiące</option>
-          <option value="quarters" ${filters.group === "quarters" ? "selected" : ""}>kwartały</option>
-          <option value="years" ${filters.group === "years" ? "selected" : ""}>lata</option>
-        </select></label>
-        <button type="submit" class="btn btn-primary">Pokaż</button>
+      <form class="cm-supa-report-controls cm-reports-polished-controls" id="cmReportsFilters">
+        <label class="cm-report-date-field">
+          <span>Od</span>
+          <div class="cm-report-date-pill">
+            <strong data-date-label="from">${esc(dateLabel(filters.from))}</strong>
+            <input type="date" name="from" value="${esc(filters.from)}" aria-label="Data od">
+          </div>
+        </label>
+        <label class="cm-report-date-field">
+          <span>Do</span>
+          <div class="cm-report-date-pill">
+            <strong data-date-label="to">${esc(dateLabel(filters.to))}</strong>
+            <input type="date" name="to" value="${esc(filters.to)}" aria-label="Data do">
+          </div>
+        </label>
+        <label class="cm-report-group-field">
+          <span>Grupuj według</span>
+          <div class="cm-report-select-pill">
+            <select name="group" aria-label="Grupuj według">
+              <option value="days" ${filters.group === "days" ? "selected" : ""}>Dni</option>
+              <option value="weeks" ${filters.group === "weeks" ? "selected" : ""}>Tygodnie</option>
+              <option value="months" ${filters.group === "months" ? "selected" : ""}>Miesiące</option>
+              <option value="quarters" ${filters.group === "quarters" ? "selected" : ""}>Kwartały</option>
+              <option value="years" ${filters.group === "years" ? "selected" : ""}>Lata</option>
+            </select>
+          </div>
+        </label>
+        <button type="submit" class="btn btn-primary cm-report-show-btn">Pokaż</button>
       </form>
       <div class="cm-report-kpi-grid">
         ${kpiCard("Przychód", money(summary.revenue), "tylko paid/partial, bez void")}
@@ -249,6 +274,13 @@
 
     $("#cmReportExcelExportBtn")?.addEventListener("click", exportStatsExcel);
     $("#cmReportJpgExportBtn")?.addEventListener("click", exportChartJpg);
+
+    $$("#cmReportsFilters input[type='date']").forEach((input) => {
+      input.addEventListener("change", () => {
+        const label = document.querySelector(`[data-date-label="${input.name}"]`);
+        if (label) label.textContent = dateLabel(input.value);
+      });
+    });
 
     $("#cmReportsFilters")?.addEventListener("submit", (event) => {
       event.preventDefault();
