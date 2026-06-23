@@ -4,6 +4,7 @@
   if (document.body?.dataset?.panelPage !== "reports") return;
 
   const $ = (selector, root = document) => root.querySelector(selector);
+  const $$ = (selector, root = document) => Array.from(root.querySelectorAll(selector));
   const money = (value) => `${Number(value || 0).toFixed(2)} PLN`;
   const int = (value) => String(Number(value || 0));
   const esc = (value) => String(value ?? "").replace(/[&<>'"]/g, (c) => ({"&":"&amp;","<":"&lt;",">":"&gt;","'":"&#39;",'"':"&quot;"}[c]));
