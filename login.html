@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=1280, initial-scale=0.25, minimum-scale=0.1, maximum-scale=8.0, user-scalable=yes">
+  <title>Logowanie — CompanyManager</title>
+  <link rel="icon" type="image/png" href="assets/favicon.png">
+  <link rel="apple-touch-icon" href="assets/favicon.png">
+  <link rel="stylesheet" href="style.css?v=052A">
+</head>
+<body>
+  <main class="page-shell">
+    <header class="topbar">
+      <a class="brand" href="login.html"><img class="brand-logo" src="assets/favicon-192x192.png" alt="CompanyManager"><span>CompanyManager</span></a>
+      <nav class="nav-actions">
+        <div class="cm-language-picker cm-language-picker-public" data-public-language-picker>
+          <button class="cm-language-current" type="button" aria-label="Wybierz język" aria-expanded="false">PL</button>
+          <div class="cm-language-menu" hidden></div>
+        </div>
+        <a class="nav-link active" href="login.html">Logowanie</a>
+        <a class="nav-link" href="register.html">Rejestracja</a>
+        <a class="nav-link" href="regulamin.html">Regulamin</a>
+        <a class="nav-link" href="polityka-prywatnosci.html">Polityka Prywatności</a>
+        <a class="nav-link" href="informacja-o-przetwarzaniu-danych.html">RODO</a>
+      </nav>
+    </header>
+    <section class="login-grid">
+      <aside class="login-pricing-card compact-pricing">
+        <div class="pricing-eyebrow">Cennik CompanyManager</div>
+        <div class="pricing-grid">
+          <div><strong>3 miesiące</strong><span>100 PLN netto</span></div>
+          <div><strong>6 miesięcy</strong><span>175 PLN netto</span></div>
+          <div><strong>12 miesięcy</strong><span>300 PLN netto</span></div>
+          <div><strong>24 miesiące</strong><span>500 PLN netto</span></div>
+        </div>
+        <div class="sms-prices">
+          <span>SMS Polska: <strong>0,10 PLN netto / szt.</strong></span>
+          <span>SMS zagranica: <strong>0,40 PLN netto / szt.</strong></span>
+        </div>
+        <p>Do cen należy doliczyć 23% VAT.</p>
+      </aside>
+
+      <div class="auth-card">
+        <img class="auth-logo-premium" src="assets/companymanager-logo-premium.png" alt="CompanyManager premium logo">
+        <div class="eyebrow">Panel firmy</div>
+        <h1>Zaloguj się</h1>
+        <p>Wejdź do panelu CompanyManager i zarządzaj firmą z poziomu przeglądarki.</p>
+        <form id="loginForm">
+          <div class="field"><label for="login">Adres email</label><input id="login" type="email" placeholder="Adres email" required></div>
+          <div class="field"><label for="password">Hasło</label><input id="password" type="password" placeholder="Hasło" required></div>
+          <button class="btn" type="submit">Zaloguj się</button>
+          <p id="loginSuccess" class="success" style="display:none;"></p>
+          <p class="small-note"><a href="#">Nie pamiętasz hasła?</a> · <a href="register.html">Utwórz firmę</a></p>
+        </form>
+      </div>
+    </section>
+  </main>
+
+  <script src="supabaseGlobalUI.js?v=059"></script>
+  <div class="pwc-signature"><span>Created by</span><a href="https://pwcstudio.pl" target="_blank" rel="noopener">PWC Studio</a></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabaseClient.js"></script>
+  <script src="supabaseLogin.js?v=051A"></script>
+</body>
+</html>

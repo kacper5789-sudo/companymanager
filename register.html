@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=1280, initial-scale=0.25, minimum-scale=0.1, maximum-scale=8.0, user-scalable=yes">
+  <title>Rejestracja — CompanyManager</title>
+  <meta name="description" content="Rejestracja firmy w systemie CompanyManager.">
+  <link rel="icon" type="image/png" href="assets/favicon.png">
+  <link rel="apple-touch-icon" href="assets/favicon.png">
+  <link rel="stylesheet" href="style.css?v=052A">
+</head>
+<body>
+  <main class="page-shell">
+    <header class="topbar">
+      <a class="brand" href="login.html"><img class="brand-logo" src="assets/favicon-192x192.png" alt="CompanyManager"><span>CompanyManager</span></a>
+      <nav class="nav-actions">
+        <div class="cm-language-picker cm-language-picker-public" data-public-language-picker>
+          <button class="cm-language-current" type="button" aria-label="Wybierz język" aria-expanded="false">PL</button>
+          <div class="cm-language-menu" hidden></div>
+        </div>
+        <a class="nav-link" href="login.html">Logowanie</a>
+        <a class="nav-link active" href="register.html">Rejestracja</a>
+        <a class="nav-link" href="regulamin.html">Regulamin</a>
+        <a class="nav-link" href="polityka-prywatnosci.html">Polityka Prywatności</a>
+        <a class="nav-link" href="informacja-o-przetwarzaniu-danych.html">RODO</a>
+      </nav>
+    </header>
+
+    <section class="grid">
+      <aside class="hero-card">
+        <div class="eyebrow">System dla firm</div>
+        <img class="hero-logo-premium" src="assets/companymanager-logo-premium.png" alt="CompanyManager premium logo">
+        <h1 class="register-hero-title">Zarejestruj firmę w CompanyManager.</h1>
+        <p>Jedno miejsce do zarządzania klientami, pracownikami, rezerwacjami, powiadomieniami i organizacją firmy.</p>
+        <div class="feature-list">
+          <div class="feature"><span class="check">✓</span><span>Dla firm usługowych, lokalnych, handlowych, edukacyjnych, automotive i wszystkich firm które pragną zarządzać swoją firmą szybko, przejrzyście i wygodnie.</span></div>
+          <div class="feature"><span class="check">✓</span><span>Panel właściciela firmy, administratorów i pracowników.</span></div>
+          <div class="feature"><span class="check">✓</span><span>Aplikacja przeglądarkowa dostępna online po zalogowaniu.</span></div>
+        </div>
+        <div class="stats">
+          <div class="stat"><strong>CRM</strong><span>klienci</span></div>
+          <div class="stat"><strong>SMS</strong><span>powiadomienia</span></div>
+          <div class="stat"><strong>Panel</strong><span>firmy</span></div>
+        </div>
+      </aside>
+
+      <form class="form-card" id="registerForm">
+        <div class="form-head">
+          <h2>Rejestracja</h2>
+          <p>Utwórz konto właściciela i dodaj podstawowe dane firmy.</p>
+        </div>
+
+        <section class="section">
+          <h3 class="section-title"><span class="section-number">01</span>Użytkownik / właściciel firmy</h3>
+          <div class="fields">
+            <div class="field"><label for="email">Adres email*</label><input id="email" name="email" type="email" placeholder="Adres email" required data-label="Adres email"></div>
+            <div class="field"><label for="phone">Nr telefonu*</label><input id="phone" name="phone" type="tel" inputmode="tel" placeholder="Np. +48321321321" required data-label="Nr telefonu"><span class="hint">Np. +48321321321</span></div>
+            <div class="field"><label for="password">Hasło*</label><input id="password" name="password" type="password" placeholder="Hasło" required data-label="Hasło"></div>
+            <div class="field"><label for="confirmPassword">Potwierdzenie hasła*</label><input id="confirmPassword" name="confirmPassword" type="password" placeholder="Potwierdzenie hasła" required data-label="Potwierdzenie hasła"></div>
+            <div class="field full"><label for="ownerName">Imię i nazwisko*</label><input id="ownerName" name="ownerName" type="text" placeholder="Imię i nazwisko" required data-label="Imię i nazwisko"></div>
+          </div>
+        </section>
+
+        <section class="section">
+          <h3 class="section-title"><span class="section-number">02</span>Dane adresowe firmy</h3>
+          <div class="fields">
+            <div class="field full"><label for="companyName">Nazwa firmy*</label><input id="companyName" name="companyName" type="text" placeholder="Nazwa firmy" required data-label="Nazwa firmy"></div>
+            <div class="field full"><label for="companyAddress">Adres*</label><input id="companyAddress" name="companyAddress" type="text" placeholder="Adres firmy" required data-label="Adres firmy"></div>
+            <div class="field"><label for="postalCode">Kod pocztowy*</label><input id="postalCode" name="postalCode" type="text" placeholder="Kod pocztowy" required data-label="Kod pocztowy firmy"><span class="hint">Format: XX-XXX</span></div>
+            <div class="field"><label for="city">Miejscowość*</label><input id="city" name="city" type="text" placeholder="Miejscowość" required data-label="Miejscowość firmy"></div>
+            <div class="field"><label for="receptionPhones">Telefony kontaktowe*</label><input id="receptionPhones" name="receptionPhones" type="text" placeholder="Telefony kontaktowe" required data-label="Telefony kontaktowe"><span class="hint">Np. +48321321321</span></div>
+            <div class="field"><label for="receptionEmail">Email firmowy</label><input id="receptionEmail" name="receptionEmail" type="email" placeholder="Email firmowy" data-label="Email firmowy"></div>
+          </div>
+        </section>
+
+        <section class="section">
+          <h3 class="section-title"><span class="section-number">03</span>Dane do faktury</h3>
+          <div class="fields">
+            <div class="field full"><label for="billingName">Pełna nazwa firmy*</label><input id="billingName" name="billingName" type="text" placeholder="Pełna nazwa firmy" required data-label="Pełna nazwa firmy"></div>
+            <div class="field full"><label for="billingAddress">Adres*</label><input id="billingAddress" name="billingAddress" type="text" placeholder="Adres" required data-label="Adres do faktury"></div>
+            <div class="field"><label for="billingPostal">Kod pocztowy*</label><input id="billingPostal" name="billingPostal" type="text" placeholder="Kod pocztowy" required data-label="Kod pocztowy do faktury"><span class="hint">Format: XX-XXX</span></div>
+            <div class="field"><label for="billingCity">Miejscowość*</label><input id="billingCity" name="billingCity" type="text" placeholder="Miejscowość" required data-label="Miejscowość do faktury"></div>
+            <div class="field full"><label for="nip">NIP / VAT EU</label><input id="nip" name="nip" type="text" placeholder="NIP / VAT EU" data-label="NIP / VAT EU"></div>
+          </div>
+        </section>
+
+        <section class="section">
+          <h3 class="section-title"><span class="section-number">04</span>Ustawienia powiadomień</h3>
+          <div class="fields">
+            <div class="field full"><label for="smsSender">Nadawca Wiadomości*</label><input id="smsSender" name="smsSender" type="text" maxlength="11" placeholder="np. NazwaFirmy" required data-label="Nadawca Wiadomości"></div>
+            <div class="field full"><p class="hint">Uzupełniając pole „Nadawca Wiadomości” oświadczasz, że posiadasz prawo do używania wskazanego oznaczenia jako nadawcy wiadomości SMS/email generowanych na zlecenie firmy.</p></div>
+          </div>
+        </section>
+
+        <section class="section" id="pricingSection">
+          <h3 class="section-title"><span class="section-number">05</span>Cennik CompanyManager — wybierz pakiet*</h3>
+          <div class="pricing-card compact-pricing selectable-pricing register-pricing-card" id="cennik">
+            <div class="pricing-eyebrow">Cennik CompanyManager</div>
+            <p class="pricing-intro">Wybierz jeden pakiet abonamentowy. Bez wyboru pakietu rejestracja nie przejdzie dalej.</p>
+            <div class="pricing-grid pricing-options" role="radiogroup" aria-label="Wybierz pakiet cenowy">
+              <label class="price-option">
+                <input type="radio" name="pricingPlan" value="3m" required data-label="Pakiet cenowy">
+                <span><strong>3 miesiące</strong><em>100 PLN netto</em></span>
+              </label>
+              <label class="price-option">
+                <input type="radio" name="pricingPlan" value="6m" required data-label="Pakiet cenowy">
+                <span><strong>6 miesięcy</strong><em>175 PLN netto</em></span>
+              </label>
+              <label class="price-option">
+                <input type="radio" name="pricingPlan" value="12m" required data-label="Pakiet cenowy">
+                <span><strong>12 miesięcy</strong><em>300 PLN netto</em></span>
+              </label>
+              <label class="price-option">
+                <input type="radio" name="pricingPlan" value="24m" required data-label="Pakiet cenowy">
+                <span><strong>24 miesiące</strong><em>500 PLN netto</em></span>
+              </label>
+            </div>
+            <div class="sms-prices">
+              <span>SMS Polska: <strong>0,10 PLN netto / szt.</strong></span>
+              <span>SMS zagranica: <strong>0,40 PLN netto / szt.</strong></span>
+            </div>
+            <p>Do cen należy doliczyć 23% VAT.</p>
+          </div>
+          <p class="field-error" id="pricingError"></p>
+        </section>
+
+        <section class="section">
+          <h3 class="section-title"><span class="section-number">06</span>Regulamin i dokumenty</h3>
+          <label class="consent-row"><input type="checkbox" name="acceptTerms" required data-label="Akceptacja Regulaminu"><span>Oświadczam, że zapoznałem/am się z <a href="regulamin.html" target="_blank">Regulaminem</a> i akceptuję jego treść*</span></label>
+          <label class="consent-row"><input type="checkbox" name="acceptRodo" required data-label="Informacja o przetwarzaniu danych osobowych"><span>Oświadczam, że zapoznałem/am się z <a href="informacja-o-przetwarzaniu-danych.html" target="_blank">Informacją o przetwarzaniu danych osobowych</a>*</span></label>
+          <label class="consent-row"><input type="checkbox" name="acceptPrivacy" required data-label="Polityka Prywatności"><span>Oświadczam, że zapoznałem/am się z <a href="polityka-prywatnosci.html" target="_blank">Polityką Prywatności</a>*</span></label>
+          <p id="formError" class="error"></p>
+          <p id="formSuccess" class="success"></p>
+        </section>
+
+        <div class="form-footer">
+          <button class="btn" type="submit">Utwórz konto firmy</button>
+          <span class="small-note">Masz już konto? <a href="login.html">Zaloguj się</a></span>
+        </div>
+      </form>
+    </section>
+  </main>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabaseClient.js"></script>
+  <script src="supabaseRegister.js"></script>
+
+  <script src="supabaseGlobalUI.js?v=059"></script>
+  <div class="pwc-signature">
+    <span>Created by</span>
+    <a href="https://pwcstudio.pl" target="_blank" rel="noopener">PWC Studio</a>
+  </div>
+</body>
+</html>
