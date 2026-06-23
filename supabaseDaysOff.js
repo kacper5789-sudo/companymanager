@@ -117,49 +117,10 @@
     return ctx;
   }
 
-  function mergeEmployeeSources(teamRows = [], employeeRows = []) {
-    const byId = new Map();
-    const put = (row) => {
-      if (!row) return;
-      const id = String(row.id || row.employee_id || "");
-      const profileId = String(row.profile_id || row.user_id || "");
-      const key = id || profileId;
-      if (!key) return;
-      const existing = byId.get(key) || {};
-      byId.set(key, {
-        ...existing,
-        ...row,
-        id: row.id || existing.id || row.employee_id || profileId,
-        profile_id: row.profile_id || existing.profile_id || row.user_id || null,
-        full_name: row.full_name || row.employee_name || row.name || existing.full_name || existing.employee_name || existing.name || "Pracownik",
-        email: row.email || existing.email || "",
-        role: row.role || existing.role || "EMPLOYEE"
-      });
-    };
-
-    employeeRows.forEach(put);
-    teamRows.forEach((team) => {
-      const matchingEmployee = employeeRows.find((emp) => String(emp.profile_id || "") === String(team.id || team.profile_id || ""));
-      put(matchingEmployee ? { ...team, ...matchingEmployee, full_name: matchingEmployee.full_name || team.full_name || team.email } : team);
-    });
-
-    return Array.from(byId.values()).filter((employee) => normalizeRole(employee.role) !== "OWNER" && employee.active !== false);
-  }
-
   async function fetchEmployees(ctx) {
-    const [teamRes, employeesRes] = await Promise.all([
-      window.cmSupabase.rpc("company_team_members", { p_company_id: ctx.companyId }),
-      window.cmSupabase
-        .from("employees")
-        .select("id, company_id, profile_id, full_name, phone, position, role, active")
-        .eq("company_id", ctx.companyId)
-    ]);
-
-    if (teamRes.error && employeesRes.error) throw teamRes.error || employeesRes.error;
-    if (employeesRes.error) console.warn("Days off employees table skipped", employeesRes.error.message || employeesRes.error);
-    if (teamRes.error) console.warn("Days off team members skipped", teamRes.error.message || teamRes.error);
-
-    return mergeEmployeeSources(teamRes.data || [], employeesRes.data || []);
+    const { data, error } = await window.cmSupabase.rpc("company_team_members", { p_company_id: ctx.companyId });
+    if (error) throw error;
+    return (data || []).filter((employee) => normalizeRole(employee.role) !== "OWNER");
   }
 
   async function fetchDaysOff(ctx) {
@@ -175,27 +136,24 @@
   }
 
   function normalizeDayOffRow(item) {
-    const employeeName = employeeNameById(item.employee_id);
-    const rawDescription = item.description || item.reason || "";
     return {
       ...item,
       start_date: item.start_date || item.date_from,
       end_date: item.end_date || item.date_to || item.start_date || item.date_from,
-      description: rawDescription,
-      employee_name: item.employee_name || (employeeName !== "Pracownik" ? employeeName : "Pracownik")
+      description: item.description || item.reason || "",
+      employee_name: item.employee_name || employeeNameById(item.employee_id)
     };
   }
 
   function employeeNameById(id) {
-    const wanted = String(id || "");
-    const employee = state.employees.find((item) => String(item.id || "") === wanted || String(item.profile_id || "") === wanted || String(item.employee_id || "") === wanted);
-    return employee?.full_name || employee?.employee_name || employee?.name || employee?.email || "Pracownik";
+    const employee = state.employees.find((item) => item.id === id);
+    return employee?.full_name || employee?.email || employee?.employee_name || "Pracownik";
   }
 
   function employeeOptionsHtml(selectedId = "") {
     if (!state.employees.length) return `<option value="">Brak pracowników</option>`;
     return state.employees.map((employee) => {
-      const label = employee.full_name || employee.employee_name || employee.name || employee.email || "Pracownik";
+      const label = employee.full_name || employee.email || "Pracownik";
       const selected = String(employee.id) === String(selectedId) ? " selected" : "";
       return `<option value="${escapeHtml(employee.id)}"${selected}>${escapeHtml(label)}</option>`;
     }).join("");
@@ -499,7 +457,7 @@
         const payload = {
           company_id: state.ctx.companyId,
           employee_id: data.employee_id || null,
-          employee_name: employee?.full_name || employee?.employee_name || employee?.name || employee?.email || "Pracownik",
+          employee_name: employee?.full_name || employee?.email || "Pracownik",
           type: data.type || "dzień wolny",
           start_date: startDate,
           end_date: endDate,

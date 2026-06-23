@@ -148,7 +148,7 @@
     return [customer?.first_name, customer?.last_name].filter(Boolean).join(" ") || customer?.full_name || customer?.name || customer?.email || "-";
   }
 
-  function personName(person) { return person?.full_name || person?.employee_name || person?.email || person?.name || "-"; }
+  function personName(person) { return person?.full_name || person?.email || person?.name || "-"; }
   function serviceName(service) { return service?.name || "-"; }
   function productName(product) { return product?.name || "-"; }
 
@@ -310,7 +310,7 @@
   }
 
   async function fetchDashboardData(ctx) {
-    const [appointmentsRes, clientsRes, servicesRes, productsRes, usersRes, passesRes, companyRes, workSchedulesRes, daysOffRes, employeesRes] = await Promise.all([
+    const [appointmentsRes, clientsRes, servicesRes, productsRes, usersRes, passesRes, companyRes, workSchedulesRes, daysOffRes] = await Promise.all([
       window.cmSupabase
         .from("appointments")
         .select("id, company_id, date, time, start_time, end_time, customer_id, client_id, employee_id, employee_name, service_id, service_name, position_id, product_id, product_name, product_price, product_quantity, pass_id, pass_name, pass_used_value, pass_used_units, status, deleted, note, price, total, payment_method, cancellation_reason, cancelled_at, starts_at, ends_at, appointment_datetime, created_at, updated_at")
@@ -349,13 +349,9 @@
         .eq("company_id", ctx.companyId),
       window.cmSupabase
         .from("days_off")
-        .select("id, company_id, employee_id, employee_name, start_date, end_date, date_from, date_to, type, status, deleted_at, reason, description")
+        .select("id, company_id, employee_id, employee_name, start_date, end_date, type, status, deleted_at")
         .eq("company_id", ctx.companyId)
-        .is("deleted_at", null),
-      window.cmSupabase
-        .from("employees")
-        .select("id, company_id, profile_id, full_name, phone, position, role, active")
-        .eq("company_id", ctx.companyId)
+        .is("deleted_at", null)
     ]);
     if (appointmentsRes.error) throw appointmentsRes.error;
     if (clientsRes.error) throw clientsRes.error;
@@ -366,12 +362,10 @@
     if (companyRes.error) throw companyRes.error;
     if (workSchedulesRes.error) console.warn("Dashboard work schedules skipped", workSchedulesRes.error.message || workSchedulesRes.error);
     if (daysOffRes.error) console.warn("Dashboard days off skipped", daysOffRes.error.message || daysOffRes.error);
-    if (employeesRes.error) console.warn("Dashboard employees table skipped", employeesRes.error.message || employeesRes.error);
     return {
       company: companyRes.data || {},
       workSchedules: workSchedulesRes.data || [],
       daysOff: daysOffRes.data || [],
-      employees: employeesRes.data || [],
       appointments: appointmentsRes.data || [],
       clients: (clientsRes.data || []).filter((item) => item.status !== "usunięty"),
       services: (servicesRes.data || []).filter((item) => item.active !== false),
@@ -415,8 +409,6 @@
       servicesById: Object.fromEntries(data.services.map((item) => [item.id, item])),
       productsById: Object.fromEntries(data.products.map((item) => [item.id, item])),
       usersById: Object.fromEntries(data.users.map((item) => [item.id, item])),
-      employeesById: Object.fromEntries((data.employees || []).map((item) => [item.id, item])),
-      employeesByProfileId: Object.fromEntries((data.employees || []).filter((item) => item.profile_id).map((item) => [item.profile_id, item])),
       passesById: Object.fromEntries((data.passes || []).map((item) => [item.id, item]))
     };
   }
@@ -489,24 +481,10 @@
     return (data.daysOff || []).some((row) => {
       const status = String(row.status || "").toLowerCase();
       if (["deleted", "usunięte", "void"].includes(status)) return false;
-      const start = String(row.date_from || row.start_date || row.date || row.created_at || "").slice(0, 10);
-      const end = String(row.date_to || row.end_date || row.date_from || row.start_date || row.date || "").slice(0, 10) || start;
+      const start = String(row.start_date || row.date || row.created_at || "").slice(0, 10);
+      const end = String(row.end_date || row.start_date || row.date || "").slice(0, 10) || start;
       if (!start || date < start || date > end) return false;
-
-      const rowEmployeeId = String(row.employee_id || "");
-      const dashboardEmployeeId = String(employee?.id || "");
-      const dashboardProfileId = String(employee?.profile_id || employee?.user_id || "");
-      if (rowEmployeeId && dashboardEmployeeId && rowEmployeeId === dashboardEmployeeId) return true;
-      if (rowEmployeeId && dashboardProfileId && rowEmployeeId === dashboardProfileId) return true;
-
-      const employeeRecord = (data.employees || []).find((item) => String(item.id || "") === rowEmployeeId);
-      if (employeeRecord) {
-        if (employeeRecord.profile_id && dashboardEmployeeId && String(employeeRecord.profile_id) === dashboardEmployeeId) return true;
-        if (employeeRecord.profile_id && dashboardProfileId && String(employeeRecord.profile_id) === dashboardProfileId) return true;
-        const employeeRecordName = String(employeeRecord.full_name || "").trim().toLowerCase();
-        if (employeeRecordName && employeeRecordName === String(personName(employee)).trim().toLowerCase()) return true;
-      }
-
+      if (row.employee_id && employee?.id && String(row.employee_id) === String(employee.id)) return true;
       const savedName = String(row.employee_name || "").trim().toLowerCase();
       return savedName && savedName === String(personName(employee)).trim().toLowerCase();
     });
