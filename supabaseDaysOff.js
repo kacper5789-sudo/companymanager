@@ -433,7 +433,11 @@
           description: String(data.description || "").trim(),
           status: "active"
         };
-        const { error } = await window.cmSupabase.rpc("add_day_off", {
+        let saveError = null;
+
+        // Primary path: RPC. Some Supabase instances can keep an old RPC schema cache,
+        // so we keep a safe fallback to direct insert guarded by RLS.
+        const rpcResult = await window.cmSupabase.rpc("add_day_off", {
           p_company_id: state.ctx.companyId,
           p_employee_id: payload.employee_id,
           p_type: payload.type,
@@ -441,7 +445,34 @@
           p_end_date: payload.end_date,
           p_description: payload.description
         });
-        if (error) throw error;
+
+        if (rpcResult.error) {
+          saveError = rpcResult.error;
+          console.warn("add_day_off RPC failed, trying direct insert fallback:", rpcResult.error);
+
+          const insertResult = await window.cmSupabase
+            .from("days_off")
+            .insert({
+              company_id: payload.company_id,
+              employee_id: payload.employee_id,
+              employee_name: payload.employee_name,
+              type: payload.type,
+              start_date: payload.start_date,
+              end_date: payload.end_date,
+              description: payload.description || null,
+              status: "active"
+            });
+
+          if (insertResult.error) {
+            const details = [
+              insertResult.error.message,
+              insertResult.error.details,
+              insertResult.error.hint,
+              saveError?.message ? "RPC: " + saveError.message : ""
+            ].filter(Boolean).join(" | ");
+            throw new Error(details || "Nie udało się zapisać dni wolnych.");
+          }
+        }
         message("#daysOffMessage", "Dni wolne zapisane.");
         await reloadAndRender();
       } catch (error) {
