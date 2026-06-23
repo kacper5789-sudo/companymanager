@@ -369,6 +369,7 @@
     const employeeOptions = data.users.map((u) => `<option value="${escapeHtml(u.id)}">${escapeHtml(userName(u) || "-")}</option>`).join("");
     const serviceOptions = (data.services || []).map((svc) => `<option value="${escapeHtml(svc.id)}">${escapeHtml(svc.name || "Usługa")}</option>`).join("");
     const templateOptions = (data.templates || []).map((tpl) => `<option value="${escapeHtml(tpl.id)}" data-name="${escapeHtml(tpl.name || "Karnet")}" data-service-id="${escapeHtml(tpl.service_id || "")}" data-service-name="${escapeHtml(tpl.service_name || "")}" data-pass-type="${escapeHtml(tpl.pass_type || "service")}" data-entries="${escapeHtml(tpl.entries_count || 0)}" data-price="${escapeHtml(tpl.price || 0)}" data-valid-days="${escapeHtml(tpl.valid_days || 30)}">${escapeHtml([tpl.name || "Karnet", tpl.service_name || "", `${Number(tpl.remaining_stock || 0)}/${Number(tpl.total_stock || 0)} szt.`, money(tpl.price)].filter(Boolean).join(" — "))}</option>`).join("");
+    const deleteTemplateOptions = (data.templates || []).map((tpl) => `<option value="${escapeHtml(tpl.id)}">${escapeHtml([tpl.name || "Karnet", tpl.service_name || "", `${Number(tpl.remaining_stock || 0)}/${Number(tpl.total_stock || 0)} szt.`, money(tpl.price)].filter(Boolean).join(" — "))}</option>`).join("");
     const templateRows = (data.templates || []).map((tpl) => [
       tpl.name || "-",
       tpl.service_name || (tpl.pass_type === "amount" ? "Kwotowy" : "-"),
@@ -408,7 +409,7 @@
       <p class="cm-pass-status-help"><strong>Aktualne</strong> = można używać. <strong>Zrealizowane</strong> = wykorzystane do zera. <strong>Po terminie</strong> = minęła data ważności.</p>`;
 
     area.innerHTML = `<section class="bm-page-card passes-module">
-      <div class="bm-page-head customers-head"><h2>Karnety</h2><div class="bm-actions-row">${allowAdd ? `<button id="showAddTemplate" type="button" class="bm-secondary-btn">Dodaj typ karnetu</button><button id="showAddPass" type="button">Sprzedaj karnet</button>` : ""}${allowDelete ? `<button id="showDeletePass" type="button" class="bm-danger-btn">Usuń</button>` : ""}</div></div>
+      <div class="bm-page-head customers-head"><h2>Karnety</h2><div class="bm-actions-row">${allowAdd ? `<button id="showAddTemplate" type="button" class="bm-secondary-btn">Dodaj typ karnetu</button><button id="showAddPass" type="button">Sprzedaj karnet</button>` : ""}${allowDelete ? `<button id="showDeletePass" type="button" class="bm-danger-btn">Usuń karnet klienta</button><button id="showDeleteTemplate" type="button" class="bm-danger-btn">Usuń typ karnetu</button>` : ""}</div></div>
       ${filterTabs}
       <section id="addTemplatePanel" class="bm-page-card bm-inner-card" hidden>
         <h2>Dodaj typ karnetu</h2>
@@ -458,12 +459,21 @@
         <p id="passFormMessage" class="panel-message"></p>
       </section>
       <section id="deletePassPanel" class="bm-page-card bm-inner-card" hidden>
-        <h2>Usuń karnet</h2>
+        <h2>Usuń karnet klienta</h2>
         <div class="bm-form-grid bm-wide-form">
-          <label class="full">Wybierz karnet<select id="deletePassSelect"><option value="">Wybierz karnet</option>${passOptions}</select></label>
-          <div class="full"><button id="deletePassBtn" type="button" class="bm-danger-btn">Usuń</button></div>
+          <label class="full">Wybierz sprzedany karnet klienta<select id="deletePassSelect"><option value="">Wybierz karnet klienta</option>${passOptions}</select></label>
+          <div class="full"><button id="deletePassBtn" type="button" class="bm-danger-btn">Usuń karnet klienta</button></div>
         </div>
         <p id="passDeleteMessage" class="panel-message"></p>
+      </section>
+      <section id="deleteTemplatePanel" class="bm-page-card bm-inner-card" hidden>
+        <h2>Usuń typ karnetu</h2>
+        <div class="bm-form-grid bm-wide-form">
+          <label class="full">Wybierz typ karnetu z puli<select id="deleteTemplateSelect"><option value="">Wybierz typ karnetu</option>${deleteTemplateOptions}</select></label>
+          <p class="full cm-pass-status-help">Usunięcie typu karnetu ukrywa go z puli i z listy sprzedaży nowych karnetów. Nie usuwa historii sprzedaży ani karnetów już przypisanych klientom.</p>
+          <div class="full"><button id="deleteTemplateBtn" type="button" class="bm-danger-btn">Usuń typ karnetu</button></div>
+        </div>
+        <p id="templateDeleteMessage" class="panel-message"></p>
       </section>
       <h3>Pula / typy karnetów</h3>
       ${table(["Nazwa", "Usługa", "Zawartość", "Pula", "Cena", "Ważność"], templateRows)}
@@ -481,10 +491,12 @@
     const templatePanel = document.querySelector("#addTemplatePanel");
     const addPanel = document.querySelector("#addPassPanel");
     const deletePanel = document.querySelector("#deletePassPanel");
-    const panels = [templatePanel, addPanel, deletePanel];
+    const deleteTemplatePanel = document.querySelector("#deleteTemplatePanel");
+    const panels = [templatePanel, addPanel, deletePanel, deleteTemplatePanel];
     document.querySelector("#showAddTemplate")?.addEventListener("click", () => showOnlyPanel(templatePanel, panels));
     document.querySelector("#showAddPass")?.addEventListener("click", () => showOnlyPanel(addPanel, panels));
     document.querySelector("#showDeletePass")?.addEventListener("click", () => showOnlyPanel(deletePanel, panels));
+    document.querySelector("#showDeleteTemplate")?.addEventListener("click", () => showOnlyPanel(deleteTemplatePanel, panels));
     setupModuleLimitDropdowns(document);
 
     const apply = () => {
@@ -611,7 +623,19 @@
       const { data: updated, error } = await window.cmSupabase.from("passes").update(payload).eq("id", id).eq("company_id", ctx.companyId).select("*").single();
       if (error) { setMessage("#passDeleteMessage", "Błąd usuwania karnetu: " + error.message, false); return; }
       await window.cmUndo?.record({ module: "passes", actionType: "update", targetTable: "passes", targetId: id, beforeData: before, afterData: updated || { ...(before || {}), ...payload }, companyId: ctx.companyId });
-      setMessage("#passDeleteMessage", "Karnet usunięty z listy.", true);
+      setMessage("#passDeleteMessage", "Karnet klienta usunięty z listy.", true);
+      rerenderPassesAfterSuccess(450);
+    });
+
+    document.querySelector("#deleteTemplateBtn")?.addEventListener("click", async () => {
+      const id = document.querySelector("#deleteTemplateSelect")?.value;
+      if (!id) { setMessage("#templateDeleteMessage", "Wybierz typ karnetu do usunięcia.", false); return; }
+      const before = data.templates.find((item) => String(item.id) === String(id)) || null;
+      const payload = { active: false, updated_at: new Date().toISOString() };
+      const { data: updated, error } = await window.cmSupabase.from("pass_templates").update(payload).eq("id", id).eq("company_id", ctx.companyId).select("*").single();
+      if (error) { setMessage("#templateDeleteMessage", "Błąd usuwania typu karnetu: " + error.message, false); return; }
+      await window.cmUndo?.record({ module: "pass_templates", actionType: "update", targetTable: "pass_templates", targetId: id, beforeData: before, afterData: updated || { ...(before || {}), ...payload }, companyId: ctx.companyId });
+      setMessage("#templateDeleteMessage", "Typ karnetu usunięty z puli.", true);
       rerenderPassesAfterSuccess(450);
     });
   }
