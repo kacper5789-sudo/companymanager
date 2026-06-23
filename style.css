@@ -4746,3 +4746,69 @@ html body .cm-cr-dropdown-button {
 .cm-supa-bar.product{background:rgba(167,139,250,.82);}
 .cm-report-date-pill input[readonly]{pointer-events:none;opacity:.65;}
 @media (max-width:900px){.cm-supa-chart-col{min-width:38px;flex-basis:38px}.cm-report-chart-head{grid-template-columns:42px minmax(0,1fr) 42px}.cm-report-chart-arrow{width:38px;height:38px}}
+
+/* CompanyManager 045E — proportional chart axis / grid */
+.cm-supa-chart-frame{
+  display:grid;
+  grid-template-columns:auto minmax(0,1fr);
+  gap:12px;
+  align-items:end;
+  border:1px solid rgba(255,255,255,.10);
+  border-radius:20px;
+  background:linear-gradient(180deg, rgba(255,255,255,.045), rgba(255,255,255,.025));
+  padding:22px 14px 10px;
+  overflow-x:auto;
+}
+.cm-supa-y-axis{
+  position:relative;
+  color:rgba(255,255,255,.62);
+  font-size:11px;
+  font-variant-numeric:tabular-nums;
+  padding-right:8px;
+  align-self:start;
+  margin-top:0;
+}
+.cm-supa-y-axis span{
+  position:absolute;
+  right:0;
+  transform:translateY(50%);
+  white-space:nowrap;
+}
+.cm-supa-chart-frame .cm-supa-chart{
+  position:relative;
+  min-height:330px;
+  display:flex;
+  align-items:end;
+  gap:8px;
+  padding:0 8px 10px;
+  border:0;
+  border-radius:0;
+  background:transparent;
+  overflow:visible;
+}
+.cm-supa-grid{
+  position:absolute;
+  left:0;
+  right:0;
+  top:0;
+  pointer-events:none;
+  z-index:0;
+}
+.cm-supa-grid i{
+  position:absolute;
+  left:0;
+  right:0;
+  border-top:1px solid rgba(255,255,255,.105);
+}
+.cm-supa-chart-frame .cm-supa-chart-col,
+.cm-supa-chart-frame .cm-supa-chart-bars{
+  position:relative;
+  z-index:1;
+}
+.cm-supa-chart-frame .cm-supa-bar{
+  transition:height .18s ease, opacity .18s ease;
+}
+@media (max-width: 900px){
+  .cm-supa-chart-frame{gap:8px;padding:18px 10px 10px;}
+  .cm-supa-y-axis{font-size:10px;}
+}

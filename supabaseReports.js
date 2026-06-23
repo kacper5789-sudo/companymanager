@@ -1,6 +1,6 @@
-// CompanyManager — 045D Wykresy / Statystyka Supabase
+// CompanyManager — 045E Wykresy / Statystyka Supabase
 // Główny wykres: Zapisało się klientów / Liczba klientów.
-// Grupowanie pokazuje zawsze 20 ostatnich okresów wybranego typu, razem z dzisiejszym.
+// Oś Y skaluje się automatycznie, a słupki są proporcjonalne do wartości.
 (function () {
   if (document.body?.dataset?.panelPage !== "reports") return;
 
@@ -106,6 +106,38 @@
     downloadBlob(blob, `statystyka-${safeFilename(payload.filters?.group)}-${safeFilename(payload.filters?.to)}.xls`);
   }
 
+
+  function niceCeil(value) {
+    const raw = Math.max(1, Number(value || 0));
+    const pow = Math.pow(10, Math.floor(Math.log10(raw)));
+    const fraction = raw / pow;
+    let nice = 1;
+    if (fraction <= 1) nice = 1;
+    else if (fraction <= 2) nice = 2;
+    else if (fraction <= 5) nice = 5;
+    else nice = 10;
+    return nice * pow;
+  }
+
+  function niceTicks(maxValue, count = 5) {
+    const max = niceCeil(maxValue);
+    const step = niceCeil(max / count);
+    const top = Math.max(step, Math.ceil(maxValue / step) * step);
+    const ticks = [];
+    for (let value = 0; value <= top + step / 2; value += step) ticks.push(value);
+    return { top, step, ticks };
+  }
+
+  function chartScale(rows, chart) {
+    const values = [];
+    rows.forEach((row) => {
+      values.push(Number(row[chart.leftKey] || 0));
+      values.push(Number(row[chart.rightKey] || 0));
+    });
+    const max = Math.max(1, ...values);
+    return niceTicks(max, 5);
+  }
+
   function exportChartJpg() {
     const payload = lastReportPayload;
     if (!payload) return;
@@ -120,8 +152,7 @@
     const chartTop = 170;
     const chartBottom = 720;
     const chartHeight = chartBottom - chartTop;
-    const leftMax = Math.max(1, ...rows.map((row) => Number(row[chart.leftKey] || 0)));
-    const rightMax = Math.max(1, ...rows.map((row) => Number(row[chart.rightKey] || 0)));
+    const scale = chartScale(rows, chart);
     ctx.fillStyle = "#07111f";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     ctx.fillStyle = "rgba(255,255,255,0.92)";
@@ -132,21 +163,25 @@
     ctx.fillText(`Ostatnie 20 okresów — ${groupLabel(group)}`, pad, 122);
     ctx.strokeStyle = "rgba(255,255,255,0.13)";
     ctx.lineWidth = 1;
-    for (let i = 0; i <= 5; i++) {
-      const y = chartBottom - (chartHeight / 5) * i;
+    ctx.font = "18px Arial";
+    ctx.fillStyle = "rgba(255,255,255,0.62)";
+    scale.ticks.forEach((tick) => {
+      const y = chartBottom - (tick / scale.top) * chartHeight;
       ctx.beginPath();
       ctx.moveTo(pad, y);
       ctx.lineTo(canvas.width - pad, y);
       ctx.stroke();
-    }
+      ctx.fillStyle = "rgba(255,255,255,0.62)";
+      ctx.fillText(chart.leftFormat === money ? chart.leftFormat(tick) : int(tick), 18, y + 6);
+    });
     const count = Math.max(rows.length, 1);
     const colW = (canvas.width - pad * 2) / count;
     rows.forEach((row, index) => {
       const x = pad + index * colW + colW * 0.22;
       const leftValue = Number(row[chart.leftKey] || 0);
       const rightValue = Number(row[chart.rightKey] || 0);
-      const leftH = Math.max(leftValue ? 8 : 0, (leftValue / leftMax) * chartHeight);
-      const rightH = Math.max(rightValue ? 8 : 0, (rightValue / rightMax) * chartHeight);
+      const leftH = Math.max(leftValue ? 8 : 0, (leftValue / scale.top) * chartHeight);
+      const rightH = Math.max(rightValue ? 8 : 0, (rightValue / scale.top) * chartHeight);
       ctx.fillStyle = "rgba(90, 190, 255, 0.78)";
       ctx.fillRect(x, chartBottom - leftH, Math.max(8, colW * 0.20), leftH);
       ctx.fillStyle = "rgba(255, 255, 255, 0.72)";
@@ -346,22 +381,31 @@
   }
 
   function renderBars(rows, group, chart) {
-    const leftMax = Math.max(1, ...rows.map((row) => Number(row[chart.leftKey] || 0)));
-    const rightMax = Math.max(1, ...rows.map((row) => Number(row[chart.rightKey] || 0)));
-    return `<div class="cm-supa-chart">
-      ${rows.map((row) => {
-        const leftValue = Number(row[chart.leftKey] || 0);
-        const rightValue = Number(row[chart.rightKey] || 0);
-        const leftHeight = Math.max(leftValue ? 8 : 0, Math.round((leftValue / leftMax) * 260));
-        const rightHeight = Math.max(rightValue ? 8 : 0, Math.round((rightValue / rightMax) * 260));
-        return `<div class="cm-supa-chart-col" title="${esc(formatPeriod(row.period_start, group))} — ${esc(chart.leftLabel)}: ${esc(chart.leftFormat(leftValue))}, ${esc(chart.rightLabel)}: ${esc(chart.rightFormat(rightValue))}">
-          <div class="cm-supa-chart-bars">
-            <span class="cm-supa-bar ${esc(chart.leftClass)}" style="height:${leftHeight}px"></span>
-            <span class="cm-supa-bar ${esc(chart.rightClass)}" style="height:${rightHeight}px"></span>
-          </div>
-          <small>${esc(formatPeriod(row.period_start, group))}</small>
-        </div>`;
-      }).join("")}
+    const scale = chartScale(rows, chart);
+    const chartHeight = 270;
+    const axisWidth = chart.leftFormat === money ? 92 : 52;
+    return `<div class="cm-supa-chart-frame">
+      <div class="cm-supa-y-axis" style="height:${chartHeight}px; min-width:${axisWidth}px;">
+        ${scale.ticks.slice().reverse().map((tick) => `<span style="bottom:${Math.round((tick / scale.top) * chartHeight)}px">${esc(chart.leftFormat === money ? chart.leftFormat(tick) : int(tick))}</span>`).join("")}
+      </div>
+      <div class="cm-supa-chart" style="--cm-chart-axis:${esc(String(axisWidth))}px;">
+        <div class="cm-supa-grid" style="height:${chartHeight}px">
+          ${scale.ticks.map((tick) => `<i style="bottom:${Math.round((tick / scale.top) * chartHeight)}px"></i>`).join("")}
+        </div>
+        ${rows.map((row) => {
+          const leftValue = Number(row[chart.leftKey] || 0);
+          const rightValue = Number(row[chart.rightKey] || 0);
+          const leftHeight = Math.max(leftValue ? 8 : 0, Math.round((leftValue / scale.top) * chartHeight));
+          const rightHeight = Math.max(rightValue ? 8 : 0, Math.round((rightValue / scale.top) * chartHeight));
+          return `<div class="cm-supa-chart-col" title="${esc(formatPeriod(row.period_start, group))} — ${esc(chart.leftLabel)}: ${esc(chart.leftFormat(leftValue))}, ${esc(chart.rightLabel)}: ${esc(chart.rightFormat(rightValue))}">
+            <div class="cm-supa-chart-bars" style="height:${chartHeight}px">
+              <span class="cm-supa-bar ${esc(chart.leftClass)}" style="height:${leftHeight}px"></span>
+              <span class="cm-supa-bar ${esc(chart.rightClass)}" style="height:${rightHeight}px"></span>
+            </div>
+            <small>${esc(formatPeriod(row.period_start, group))}</small>
+          </div>`;
+        }).join("")}
+      </div>
     </div>`;
   }
 
