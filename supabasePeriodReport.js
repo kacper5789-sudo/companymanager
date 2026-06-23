@@ -1,4 +1,4 @@
-// CompanyManager — 048A Raport z okresu Supabase
+// CompanyManager — 048C Raport z okresu Supabase — filtr pracowników + szybkie zakresy
 // period-report.html: realne dane z sales / sale_items / payments / appointments / clients / profiles.
 (function () {
   if (document.body?.dataset?.panelPage !== "periodReport") return;
@@ -124,6 +124,12 @@
       .cm-period-pager button{min-width:34px;height:32px;border:1px solid rgba(148,163,184,.18);border-radius:11px;background:rgba(255,255,255,.055);color:#e5eefb;font-weight:900;cursor:pointer;}
       .cm-period-pager button:disabled{opacity:.42;cursor:not-allowed;}
       .cm-period-pager b{min-width:54px;text-align:center;color:#dbeafe;}
+      .cm-period-employee-filter{margin:10px 0 14px;padding:12px;border:1px solid rgba(148,163,184,.12);border-radius:16px;background:rgba(2,6,23,.28);display:flex;flex-wrap:wrap;gap:8px 10px;align-items:center;}
+      .cm-period-employee-filter-title{width:100%;font-size:12px;font-weight:900;color:rgba(219,234,254,.78);letter-spacing:.04em;text-transform:uppercase;margin-bottom:2px;}
+      .cm-period-employee-pill{display:inline-flex;align-items:center;gap:8px;min-height:34px;padding:7px 10px;border:1px solid rgba(148,163,184,.16);border-radius:999px;background:rgba(255,255,255,.055);color:#e5eefb;font-size:12px;font-weight:900;cursor:pointer;user-select:none;}
+      .cm-period-employee-pill input{accent-color:#60a5fa;cursor:pointer;}
+      .cm-period-employee-pill:hover{background:rgba(59,130,246,.14);border-color:rgba(125,211,252,.34);}
+      .cm-period-table tr[data-period-employee-row][hidden]{display:none!important;}
       @media(max-width:1000px){.cm-period-filters{grid-template-columns:1fr 1fr}.cm-period-kpis{grid-template-columns:1fr 1fr}.cm-period-actions{grid-column:1/-1;justify-content:flex-start}.cm-period-tools{align-items:stretch}.cm-period-tools label{width:100%}.cm-period-search{width:100%;min-width:0}}
     `;
     document.head.appendChild(style);
@@ -154,6 +160,110 @@
       </div>`;
   }
 
+
+  function employeeKey(value) {
+    return String(value || '(brak)')
+      .trim()
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[̀-ͯ]/g, '')
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '') || 'brak';
+  }
+
+  function employeeReportSection(rows) {
+    const sorted = [...rows].sort((a, b) => String(a.name).localeCompare(String(b.name), 'pl'));
+    const filters = sorted.map((r) => {
+      const key = employeeKey(r.name);
+      return `<label class="cm-period-employee-pill"><input type="checkbox" data-period-employee-check value="${esc(key)}" checked> ${esc(r.name)}</label>`;
+    }).join('');
+    const bodyRows = sorted.length
+      ? sorted.map((r) => {
+          const key = employeeKey(r.name);
+          return `<tr data-period-employee-row="1" data-employee-key="${esc(key)}" data-visits="${Number(r.visits||0)}" data-sales="${Number(r.sales||0)}" data-revenue="${Number(r.revenue||0)}" data-services="${Number(r.services||0)}" data-service-value="${Number(r.serviceValue||0)}" data-products="${Number(r.products||0)}" data-product-value="${Number(r.productValue||0)}" data-passes="${Number(r.passes||0)}" data-pass-value="${Number(r.passValue||0)}"><td>${esc(r.name)}</td><td>${Number(r.visits||0)}</td><td>${Number(r.sales||0)}</td><td>${money(r.revenue)}</td><td>${Number(r.services||0)}</td><td>${money(r.serviceValue)}</td><td>${Number(r.products||0)}</td><td>${money(r.productValue)}</td><td>${Number(r.passes||0)}</td><td>${money(r.passValue)}</td></tr>`;
+        }).join('')
+      : `<tr data-empty-row="1"><td colspan="10">Brak danych</td></tr>`;
+    return `
+      <div class="cm-period-employee-filter" data-period-employee-filter>
+        <div class="cm-period-employee-filter-title">Pracownicy</div>
+        <label class="cm-period-employee-pill"><input type="checkbox" data-period-employee-all checked> Zaznacz wszystkich</label>
+        ${filters}
+      </div>
+      <div class="cm-period-dt" data-period-table="1" data-period-employee-table="1">
+        <div class="cm-period-tools">
+          <label><select class="cm-period-page-size" data-page-size><option value="50">50</option><option value="100">100</option><option value="200">200</option></select> ▾</label>
+          <label>Szukaj:<input class="cm-period-search" type="search" data-table-search placeholder="Szukaj"></label>
+        </div>
+        <div class="cm-period-table-wrap">
+          <table class="cm-period-table">
+            <thead><tr><th>Pracownik</th><th>Wizyty</th><th>Sprzedaże</th><th>Przychód</th><th>Usługi</th><th>Wartość usług</th><th>Produkty</th><th>Wartość produktów</th><th>Karnety</th><th>Wartość karnetów</th></tr></thead>
+            <tbody>${bodyRows}</tbody>
+            <tfoot><tr><td><b>SUMA</b></td><td data-emp-total="visits"><b>0</b></td><td data-emp-total="sales"><b>0</b></td><td data-emp-total="revenue"><b>0.00 PLN</b></td><td data-emp-total="services"><b>0</b></td><td data-emp-total="serviceValue"><b>0.00 PLN</b></td><td data-emp-total="products"><b>0</b></td><td data-emp-total="productValue"><b>0.00 PLN</b></td><td data-emp-total="passes"><b>0</b></td><td data-emp-total="passValue"><b>0.00 PLN</b></td></tr></tfoot>
+          </table>
+        </div>
+        <div class="cm-period-pager">
+          <span data-table-info>Pozycje od 0 do 0 z 0 łącznie</span>
+          <div class="cm-period-pager-controls"><button type="button" data-page-prev>‹</button><b data-table-page>1 z 1</b><button type="button" data-page-next>›</button></div>
+        </div>
+      </div>`;
+  }
+
+  function setupEmployeeFilter(root = document) {
+    const filter = $('[data-period-employee-filter]', root);
+    const tableBox = $('[data-period-employee-table]', root);
+    if (!filter || !tableBox || filter.dataset.ready === '1') return;
+    filter.dataset.ready = '1';
+    const all = $('[data-period-employee-all]', filter);
+    const checks = $$('[data-period-employee-check]', filter);
+    const rows = $$('[data-period-employee-row]', tableBox);
+    const totals = {
+      visits: $('[data-emp-total="visits"]', tableBox),
+      sales: $('[data-emp-total="sales"]', tableBox),
+      revenue: $('[data-emp-total="revenue"]', tableBox),
+      services: $('[data-emp-total="services"]', tableBox),
+      serviceValue: $('[data-emp-total="serviceValue"]', tableBox),
+      products: $('[data-emp-total="products"]', tableBox),
+      productValue: $('[data-emp-total="productValue"]', tableBox),
+      passes: $('[data-emp-total="passes"]', tableBox),
+      passValue: $('[data-emp-total="passValue"]', tableBox)
+    };
+    const setTotal = (key, value, isMoney = false) => { if (totals[key]) totals[key].innerHTML = `<b>${isMoney ? money(value) : String(value)}</b>`; };
+    function selectedKeys() { return new Set(checks.filter(ch => ch.checked).map(ch => ch.value)); }
+    function updateTotals() {
+      const sums = { visits:0, sales:0, revenue:0, services:0, serviceValue:0, products:0, productValue:0, passes:0, passValue:0 };
+      rows.forEach(row => {
+        if (row.hidden) return;
+        sums.visits += Number(row.dataset.visits || 0);
+        sums.sales += Number(row.dataset.sales || 0);
+        sums.revenue += Number(row.dataset.revenue || 0);
+        sums.services += Number(row.dataset.services || 0);
+        sums.serviceValue += Number(row.dataset.serviceValue || 0);
+        sums.products += Number(row.dataset.products || 0);
+        sums.productValue += Number(row.dataset.productValue || 0);
+        sums.passes += Number(row.dataset.passes || 0);
+        sums.passValue += Number(row.dataset.passValue || 0);
+      });
+      setTotal('visits', sums.visits); setTotal('sales', sums.sales); setTotal('revenue', sums.revenue, true);
+      setTotal('services', sums.services); setTotal('serviceValue', sums.serviceValue, true);
+      setTotal('products', sums.products); setTotal('productValue', sums.productValue, true);
+      setTotal('passes', sums.passes); setTotal('passValue', sums.passValue, true);
+    }
+    function applyFilter() {
+      const keys = selectedKeys();
+      rows.forEach(row => { row.dataset.employeeFilterHidden = keys.has(row.dataset.employeeKey) ? '0' : '1'; });
+      tableBox.dataset.employeeFilterVersion = String(Date.now());
+      tableBox.dispatchEvent(new CustomEvent('cm:employee-filter-changed'));
+      if (all) all.checked = checks.length > 0 && checks.every(ch => ch.checked);
+      updateTotals();
+    }
+    all?.addEventListener('change', () => {
+      checks.forEach(ch => { ch.checked = Boolean(all.checked); });
+      applyFilter();
+    });
+    checks.forEach(ch => ch.addEventListener('change', applyFilter));
+    applyFilter();
+  }
+
   function setupTables(root = document) {
     $$('[data-period-table]', root).forEach((box) => {
       if (box.dataset.ready === '1') return;
@@ -168,7 +278,10 @@
       let page = 1;
       function filteredRows() {
         const q = String(search?.value || '').trim().toLowerCase();
-        return q ? rows.filter(row => row.textContent.toLowerCase().includes(q)) : rows;
+        return rows.filter(row => {
+          if (row.dataset.employeeFilterHidden === '1') return false;
+          return !q || row.textContent.toLowerCase().includes(q);
+        });
       }
       function render() {
         const filtered = filteredRows();
@@ -189,6 +302,7 @@
       pageSize?.addEventListener('change', () => { page = 1; render(); });
       prev?.addEventListener('click', () => { page -= 1; render(); });
       next?.addEventListener('click', () => { page += 1; render(); });
+      box.addEventListener('cm:employee-filter-changed', () => { page = 1; render(); });
       render();
     });
   }
@@ -331,7 +445,7 @@
         <div class="cm-period-filters">
           <label>Od<input class="cm-period-input" id="periodFrom" type="date" value="${range.fromIso}"></label>
           <label>Do<input class="cm-period-input" id="periodTo" type="date" value="${range.toIso}"></label>
-          <label>Zakres<select class="cm-period-select" id="periodPreset"><option value="custom">Własny zakres</option><option value="today">Dzisiaj</option><option value="month">Ten miesiąc</option><option value="prevMonth">Poprzedni miesiąc</option><option value="year">Ten rok</option></select></label>
+          <label>Zakres<select class="cm-period-select" id="periodPreset"><option value="custom">Własny zakres</option><option value="today">Dzisiaj</option><option value="week">Tydzień</option><option value="twoWeeks">2 tygodnie</option><option value="month">Miesiąc</option><option value="twoMonths">2 miesiące</option><option value="quarter">Kwartał</option><option value="sixMonths">6 miesięcy</option><option value="twelveMonths">12 miesięcy</option><option value="eighteenMonths">18 miesięcy</option><option value="twentyFourMonths">24 miesiące</option><option value="thirtySixMonths">36 miesięcy</option></select></label>
           <div class="cm-period-actions"><button type="button" class="cm-period-btn" id="periodShowBtn">Pokaż</button></div>
         </div>
         <div class="cm-period-kpis">
@@ -349,10 +463,11 @@
           <section class="cm-period-section"><div class="cm-period-section-head"><div><h3>Produkty</h3><p>Sprzedane produkty w okresie: <b>${report.products.reduce((s,r)=>s+Number(r.qty||0),0)}</b></p></div></div>${table(['Nazwa produktu','L.szt.','Wartość PLN'], rowsForItems(report.products), footerForItems('SUMA', report.products))}</section>
           <section class="cm-period-section"><div class="cm-period-section-head"><div><h3>Karnety</h3><p>Sprzedane karnety w okresie: <b>${report.passes.reduce((s,r)=>s+Number(r.qty||0),0)}</b></p></div></div>${table(['Nazwa karnetu','L.szt.','Wartość PLN'], rowsForItems(report.passes), footerForItems('SUMA', report.passes))}</section>
           <section class="cm-period-section"><div class="cm-period-section-head"><div><h3>Płatności</h3><p>Metody płatności w wybranym okresie</p></div></div>${table(['Płatność','Liczba','Wartość PLN'], report.payments.map(r => [esc(r.method), String(r.qty), money(r.value)]), ['<b>SUMA</b>', `<b>${report.payments.reduce((s,r)=>s+r.qty,0)}</b>`, `<b>${money(report.payments.reduce((s,r)=>s+r.value,0))}</b>`])}</section>
-          <section class="cm-period-section"><div class="cm-period-section-head"><div><h3>Pracownicy</h3><p>Podsumowanie sprzedaży i wizyt</p></div></div>${table(['Pracownik','Wizyty','Sprzedaże','Przychód','Usługi','Wartość usług','Produkty','Wartość produktów','Karnety','Wartość karnetów'], report.employees.map(r => [esc(r.name), String(r.visits), String(r.sales), money(r.revenue), String(r.services), money(r.serviceValue), String(r.products), money(r.productValue), String(r.passes), money(r.passValue)]), ['<b>SUMA</b>', `<b>${report.employees.reduce((s,r)=>s+r.visits,0)}</b>`, `<b>${report.employees.reduce((s,r)=>s+r.sales,0)}</b>`, `<b>${money(report.employees.reduce((s,r)=>s+r.revenue,0))}</b>`, `<b>${report.employees.reduce((s,r)=>s+r.services,0)}</b>`, `<b>${money(report.employees.reduce((s,r)=>s+r.serviceValue,0))}</b>`, `<b>${report.employees.reduce((s,r)=>s+r.products,0)}</b>`, `<b>${money(report.employees.reduce((s,r)=>s+r.productValue,0))}</b>`, `<b>${report.employees.reduce((s,r)=>s+r.passes,0)}</b>`, `<b>${money(report.employees.reduce((s,r)=>s+r.passValue,0))}</b>`])}</section>
+          <section class="cm-period-section"><div class="cm-period-section-head"><div><h3>Pracownicy</h3><p>Podsumowanie sprzedaży i wizyt</p></div></div>${employeeReportSection(report.employees)}</section>
         </div>
       </section>`;
     panelArea().innerHTML = content;
+    setupEmployeeFilter(panelArea());
     setupTables(panelArea());
     bindControls(ctx);
   }
@@ -372,16 +487,45 @@
     }
   }
 
+  function addDays(date, days) {
+    const d = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    d.setDate(d.getDate() + Number(days || 0));
+    return d;
+  }
+
+  function addMonths(date, months) {
+    const d = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    const wantedDay = d.getDate();
+    d.setMonth(d.getMonth() + Number(months || 0));
+    if (d.getDate() !== wantedDay) d.setDate(0);
+    return d;
+  }
+
+  function presetRange(value) {
+    const now = today();
+    const to = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    if (value === "today") return { from: to, to };
+    if (value === "week") return { from: addDays(to, -6), to };
+    if (value === "twoWeeks") return { from: addDays(to, -13), to };
+    if (value === "month") return { from: addMonths(to, -1), to };
+    if (value === "twoMonths") return { from: addMonths(to, -2), to };
+    if (value === "quarter") return { from: addMonths(to, -3), to };
+    if (value === "sixMonths") return { from: addMonths(to, -6), to };
+    if (value === "twelveMonths") return { from: addMonths(to, -12), to };
+    if (value === "eighteenMonths") return { from: addMonths(to, -18), to };
+    if (value === "twentyFourMonths") return { from: addMonths(to, -24), to };
+    if (value === "thirtySixMonths") return { from: addMonths(to, -36), to };
+    return null;
+  }
+
   function bindControls(ctx) {
     $("#periodShowBtn")?.addEventListener("click", () => reload(ctx, currentRangeFromInputs()));
     $("#periodPreset")?.addEventListener("change", (event) => {
-      const now = today();
-      let from = null, to = null;
-      if (event.target.value === "today") from = to = now;
-      if (event.target.value === "month") { from = new Date(now.getFullYear(), now.getMonth(), 1); to = new Date(now.getFullYear(), now.getMonth() + 1, 0); }
-      if (event.target.value === "prevMonth") { from = new Date(now.getFullYear(), now.getMonth() - 1, 1); to = new Date(now.getFullYear(), now.getMonth(), 0); }
-      if (event.target.value === "year") { from = new Date(now.getFullYear(), 0, 1); to = new Date(now.getFullYear(), 11, 31); }
-      if (from && to) { $("#periodFrom").value = isoDate(from); $("#periodTo").value = isoDate(to); reload(ctx, normalizeRange(isoDate(from), isoDate(to))); }
+      const picked = presetRange(event.target.value);
+      if (!picked) return;
+      $("#periodFrom").value = isoDate(picked.from);
+      $("#periodTo").value = isoDate(picked.to);
+      reload(ctx, normalizeRange(isoDate(picked.from), isoDate(picked.to)));
     });
     $("#periodExportExcel")?.addEventListener("click", exportTables);
   }
