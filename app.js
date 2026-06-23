@@ -1078,7 +1078,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const pageLabels = {
     dashboard: 'Dashboard', calendar: 'Kalendarz', positions: 'Stanowiska pracy', employees: 'Zespół', users: 'Użytkownicy', workSchedule: 'Grafik pracy',
     daysOff: 'Dni wolne pracowników', customers: 'Klienci', services: 'Usługi', visits: 'Wizyty',
-    reports: 'Wykres/Statystyka', customersReports: 'Klienci', dailyReport: 'Raport dzienny', periodReport: 'Raport z okresu', employeesReports: 'Pracownicy', smsReports: 'SMS', emailReports: 'Email', walkins: 'Sprzedaż bez wizyty', products: 'Produkty', marketing: 'Marketing',
+    reports: 'Wykres/Statystyka', customersReports: 'Klienci - raporty', dailyReport: 'Raport dzienny', periodReport: 'Raport z okresu', employeesReports: 'Pracownicy', smsReports: 'SMS', emailReports: 'Email', walkins: 'Sprzedaż bez wizyty', products: 'Produkty', marketing: 'Marketing',
     passes: 'Karnety', sales: 'Sprzedaż', companyPanel: 'Panel Firmy', owner: 'Właściciel strony', companies: 'Firmy', settings: 'Ustawienia'
   };
 
@@ -2180,7 +2180,7 @@ document.addEventListener('DOMContentLoaded', () => {
                   <button id="undoTimeBtn" class="bm-undo-time-btn" type="button">Cofnij Czas</button>
                   <a class="bm-owner-link ${page==='owner'?'active':''}" href="owner.html">Właściciel strony</a>
                   ${canAccessPage(user, 'reports') ? `<a class="bm-owner-link bm-stats-link ${page==='reports'?'active':''}" href="reports.html">Wykres/Statystyka</a>` : ''}
-                  ${canAccessPage(user, 'customersReports') ? `<a class="bm-owner-link bm-customers-reports-link ${page==='customersReports'?'active':''}" href="customersraports.html">Klienci</a>` : ''}
+                  ${canAccessPage(user, 'customersReports') ? `<a class="bm-owner-link bm-customers-reports-link ${page==='customersReports'?'active':''}" href="customersraports.html">Klienci - raporty</a>` : ''}
                   ${canAccessPage(user, 'dailyReport') ? `<a class="bm-owner-link bm-daily-link ${page==='dailyReport'?'active':''}" href="daily-report.html">Raport dzienny</a>` : ''}
                   ${canAccessPage(user, 'periodReport') ? `<a class="bm-owner-link bm-period-link ${page==='periodReport'?'active':''}" href="period-report.html">Raport z okresu</a>` : ''}
                   ${canAccessPage(user, 'employeesReports') ? `<a class="bm-owner-link bm-employees-reports-link ${page==='employeesReports'?'active':''}" href="employeesraports.html">Pracownicy</a>` : ''}
@@ -3069,7 +3069,7 @@ document.addEventListener('DOMContentLoaded', () => {
     ['owner', 'Właściciel strony'],
     ['sales', 'Sprzedaż'],
     ['reports', 'Wykres/Statystyka'],
-    ['customersReports', 'Klienci(customersraports)'],
+    ['customersReports', 'Klienci - raporty'],
     ['dailyReport', 'Raport dzienny'],
     ['periodReport', 'Raport z okresu'],
     ['employeesReports', 'Pracownicy'],

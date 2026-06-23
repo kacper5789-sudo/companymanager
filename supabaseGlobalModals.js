@@ -1,6 +1,5 @@
-// CompanyManager — Supabase global modal bridge
-// Globalny standard: wszystkie formularze Dodaj / Edytuj / Usuń w modułach Supabase
-// otwierają się na środku ekranu z przyciemnionym / blurowanym tłem.
+// CompanyManager — Supabase global forms bridge
+// 041F: brak blur/overlay, ale formularze znów otwierają się centralnie jako modal bez przyciemniania tła.
 (function () {
   'use strict';
 
@@ -9,46 +8,49 @@
   const BODY_OPEN = 'cm-modal-open';
   const OVERLAY_ID = 'cmGlobalFormOverlay';
 
+  function cleanupBlur() {
+    // 041F: wyłączamy tylko overlay/blur, ale NIE usuwamy klasy cm-as-modal.
+    // Dzięki temu formularz zostaje wycentrowany na ekranie bez przyciemniania tła.
+    document.body.classList.remove(BODY_OPEN);
+    document.documentElement.classList.remove(BODY_OPEN);
+    const overlay = document.getElementById(OVERLAY_ID);
+    if (overlay) {
+      overlay.setAttribute('aria-hidden', 'true');
+      overlay.hidden = true;
+      overlay.style.display = 'none';
+      overlay.style.pointerEvents = 'none';
+      overlay.style.opacity = '0';
+    }
+  }
 
-  function reinitNativeDatePickers(root) {
+  function reinitNativePickers(root) {
     const scope = root && root.querySelectorAll ? root : document;
     const inputs = [];
-
-    if (scope.matches && scope.matches('input[type="date"]')) inputs.push(scope);
-    scope.querySelectorAll('input[type="date"]').forEach(function (input) { inputs.push(input); });
+    if (scope.matches && scope.matches('input[type="date"], input[type="time"]')) inputs.push(scope);
+    scope.querySelectorAll('input[type="date"], input[type="time"]').forEach(function (input) { inputs.push(input); });
 
     inputs.forEach(function (input) {
-      if (!input || input.dataset.cmGlobalDatePickerReady === '1') return;
-      input.dataset.cmGlobalDatePickerReady = '1';
-      input.classList.add('cm-date-input');
+      if (!input) return;
+      input.classList.add(input.type === 'time' ? 'cm-time-input' : 'cm-date-input');
       input.style.pointerEvents = 'auto';
+      input.style.touchAction = 'manipulation';
 
-      const openPicker = function () {
+      if (input.dataset.cmNativePickerReady === '1') return;
+      input.dataset.cmNativePickerReady = '1';
+
+      input.addEventListener('click', function () {
         if (input.disabled || input.readOnly) return;
-        try {
-          input.focus({ preventScroll: true });
-        } catch (_) {
-          try { input.focus(); } catch (__) {}
-        }
+        try { input.focus({ preventScroll: true }); } catch (_) { try { input.focus(); } catch (__) {} }
         try {
           if (typeof input.showPicker === 'function') input.showPicker();
-        } catch (_) {
-          // Przeglądarka może zablokować showPicker poza bezpośrednim kliknięciem.
-          // Wtedy zostaje natywny focus/click bez zmiany UI.
-        }
-      };
-
-      input.addEventListener('click', openPicker);
-      input.addEventListener('pointerdown', function () {
-        window.setTimeout(openPicker, 0);
+        } catch (_) {}
       });
-      input.addEventListener('focus', openPicker);
     });
   }
 
-  function scheduleDatePickerReinit(root) {
-    window.setTimeout(function () { reinitNativeDatePickers(root || document); }, 0);
-    window.setTimeout(function () { reinitNativeDatePickers(root || document); }, 60);
+  function schedulePickerReinit(root) {
+    window.setTimeout(function () { reinitNativePickers(root || document); cleanupBlur(); }, 0);
+    window.setTimeout(function () { reinitNativePickers(root || document); cleanupBlur(); }, 80);
   }
 
   function ensureOverlay() {
@@ -59,48 +61,24 @@
       overlay.setAttribute('aria-hidden', 'true');
       document.body.appendChild(overlay);
     }
+    overlay.hidden = true;
+    overlay.style.display = 'none';
+    overlay.style.pointerEvents = 'none';
+    overlay.style.opacity = '0';
     return overlay;
-  }
-
-  function ensureCancelButton(panel) {
-    if (!panel || panel.querySelector('[data-modal-cancel="true"]')) return;
-    const btn = document.createElement('button');
-    btn.type = 'button';
-    btn.className = 'bm-light-btn cm-modal-cancel-btn';
-    btn.dataset.modalCancel = 'true';
-    btn.textContent = 'Anuluj';
-    btn.addEventListener('click', function () {
-      closePanel(panel);
-    });
-    panel.appendChild(btn);
   }
 
   function updateState() {
     ensureOverlay();
-    const openPanels = Array.from(document.querySelectorAll('.' + MODAL_ACTIVE + ':not([hidden])'));
-    document.querySelectorAll('.' + MODAL_CLASS).forEach(function (panel) {
-      if (!openPanels.includes(panel)) panel.classList.remove(MODAL_CLASS);
-    });
-    openPanels.forEach(function (panel) {
-      panel.classList.add(MODAL_CLASS);
-      ensureCancelButton(panel);
-    });
-    document.body.classList.toggle(BODY_OPEN, openPanels.length > 0);
-    if (openPanels.length === 0) {
-      const overlay = document.getElementById(OVERLAY_ID);
-      if (overlay) {
-        overlay.setAttribute('aria-hidden', 'true');
-        overlay.style.pointerEvents = 'none';
-        overlay.style.opacity = '0';
-      }
-    }
+    cleanupBlur();
+    schedulePickerReinit(document);
   }
 
   function closePanel(panel) {
     if (!panel) return;
     panel.hidden = true;
     panel.classList.remove(MODAL_ACTIVE, MODAL_CLASS);
-    updateState();
+    cleanupBlur();
   }
 
   function closeAll(panels) {
@@ -109,38 +87,13 @@
       panel.hidden = true;
       panel.classList.remove(MODAL_ACTIVE, MODAL_CLASS);
     });
-    updateState();
+    cleanupBlur();
   }
 
   function hardCloseAll() {
-    document.querySelectorAll('.' + MODAL_ACTIVE + ', .' + MODAL_CLASS).forEach(function (panel) {
-      if (!panel) return;
-      panel.hidden = true;
-      panel.classList.remove(MODAL_ACTIVE, MODAL_CLASS);
-    });
-
-    // 038D: twarde sprzątanie po dynamicznych modułach Supabase.
-    // Przy produktach/użytkownikach formularz bywał usuwany przez rerender,
-    // ale body zostawało z klasą cm-modal-open, więc ekran nadal był zblurowany.
-    document.body.classList.remove(BODY_OPEN);
-    const overlay = document.getElementById(OVERLAY_ID);
-    if (overlay) {
-      overlay.setAttribute('aria-hidden', 'true');
-      overlay.style.pointerEvents = 'none';
-      overlay.style.opacity = '0';
-    }
-
-    window.setTimeout(function () {
-      if (!document.querySelector('.' + MODAL_ACTIVE + ':not([hidden]), .' + MODAL_CLASS + ':not([hidden])')) {
-        document.body.classList.remove(BODY_OPEN);
-        const currentOverlay = document.getElementById(OVERLAY_ID);
-        if (currentOverlay) {
-          currentOverlay.setAttribute('aria-hidden', 'true');
-          currentOverlay.style.pointerEvents = 'none';
-          currentOverlay.style.opacity = '0';
-        }
-      }
-    }, 0);
+    closeAll();
+    window.setTimeout(cleanupBlur, 0);
+    window.setTimeout(cleanupBlur, 80);
   }
 
   function showOnly(targetPanel, panels) {
@@ -154,12 +107,11 @@
 
     if (targetPanel && shouldOpen) {
       targetPanel.hidden = false;
-      targetPanel.classList.add(MODAL_ACTIVE);
-      ensureCancelButton(targetPanel);
+      targetPanel.classList.add(MODAL_ACTIVE, MODAL_CLASS);
     }
 
-    updateState();
-    scheduleDatePickerReinit(targetPanel || document);
+    cleanupBlur();
+    schedulePickerReinit(targetPanel || document);
   }
 
   function open(targetPanel, panels) {
@@ -172,45 +124,41 @@
     });
     if (targetPanel) {
       targetPanel.hidden = false;
-      targetPanel.classList.add(MODAL_ACTIVE);
-      ensureCancelButton(targetPanel);
+      targetPanel.classList.add(MODAL_ACTIVE, MODAL_CLASS);
     }
-    updateState();
-    scheduleDatePickerReinit(targetPanel || document);
+    cleanupBlur();
+    schedulePickerReinit(targetPanel || document);
   }
 
   if (!window.__cmSupabaseGlobalModalsReady) {
     window.__cmSupabaseGlobalModalsReady = true;
-
-    scheduleDatePickerReinit();
+    ensureOverlay();
+    schedulePickerReinit();
+    cleanupBlur();
 
     if (typeof MutationObserver !== 'undefined') {
-      let datePickerTimer = null;
+      let timer = null;
       const observer = new MutationObserver(function (mutations) {
-        let shouldReinit = false;
+        let shouldRun = false;
         mutations.forEach(function (mutation) {
           mutation.addedNodes.forEach(function (node) {
             if (!(node instanceof HTMLElement)) return;
-            if (node.matches && node.matches('input[type="date"]')) shouldReinit = true;
-            if (node.querySelector && node.querySelector('input[type="date"]')) shouldReinit = true;
+            if (node.matches && node.matches('input[type="date"], input[type="time"], .' + MODAL_CLASS + ', .' + MODAL_ACTIVE)) shouldRun = true;
+            if (node.querySelector && node.querySelector('input[type="date"], input[type="time"], .' + MODAL_CLASS + ', .' + MODAL_ACTIVE)) shouldRun = true;
           });
         });
-        if (!shouldReinit) return;
-        window.clearTimeout(datePickerTimer);
-        datePickerTimer = window.setTimeout(function () {
-          reinitNativeDatePickers(document);
+        window.clearTimeout(timer);
+        timer = window.setTimeout(function () {
+          if (shouldRun) reinitNativePickers(document);
+          cleanupBlur();
         }, 30);
       });
-      observer.observe(document.documentElement, { childList: true, subtree: true });
+      observer.observe(document.documentElement, { childList: true, subtree: true, attributes: true, attributeFilter: ['class', 'hidden', 'style'] });
     }
 
     document.addEventListener('click', function (event) {
       const target = event.target;
       if (!(target instanceof HTMLElement)) return;
-      if (target.id === OVERLAY_ID) {
-        closeAll();
-        return;
-      }
       if (target.matches('[data-modal-cancel="true"]')) {
         const panel = target.closest('.' + MODAL_ACTIVE + ', .' + MODAL_CLASS);
         if (panel) {
@@ -218,7 +166,8 @@
           closePanel(panel);
         }
       }
-    });
+      window.setTimeout(cleanupBlur, 0);
+    }, true);
 
     document.addEventListener('keydown', function (event) {
       if (event.key === 'Escape') closeAll();
@@ -232,6 +181,8 @@
   window.cmHardCloseAllModalPanels = hardCloseAll;
   window.cmUpdateGlobalModalState = updateState;
   window.cmRefreshGlobalModalState = updateState;
-  window.cmReinitNativeDatePickers = reinitNativeDatePickers;
-  window.cmScheduleDatePickerReinit = scheduleDatePickerReinit;
+  window.cmReinitNativeDatePickers = reinitNativePickers;
+  window.cmScheduleDatePickerReinit = schedulePickerReinit;
+  window.cmReinitNativePickers = reinitNativePickers;
+  window.cmScheduleNativePickerReinit = schedulePickerReinit;
 })();
