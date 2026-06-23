@@ -24,10 +24,10 @@
       .cm-employees-report-page .cm-er-card{padding:16px;border:1px solid rgba(255,255,255,.12);border-radius:18px;background:linear-gradient(180deg,rgba(255,255,255,.07),rgba(255,255,255,.035));box-shadow:0 18px 55px rgba(0,0,0,.18);backdrop-filter:blur(18px);}
       .cm-employees-report-page .cm-er-card span{display:block;color:rgba(255,255,255,.64);font-size:12px;margin-bottom:6px;font-weight:800;letter-spacing:.02em;}
       .cm-employees-report-page .cm-er-card strong{font-size:24px;line-height:1.2;color:#fff;}
-      .cm-employees-report-page .cm-er-filters{display:grid;grid-template-columns:minmax(170px,220px) minmax(170px,220px) auto;align-items:end;gap:12px;margin:12px 0 18px;padding:14px;border:1px solid var(--cm-er-line);border-radius:18px;background:linear-gradient(180deg,rgba(15,23,42,.74),rgba(2,6,23,.44));box-shadow:0 16px 45px rgba(0,0,0,.16);}
+      .cm-employees-report-page .cm-er-filters{display:grid;grid-template-columns:minmax(150px,190px) minmax(150px,190px) minmax(190px,240px) auto;align-items:end;gap:12px;margin:12px 0 18px;padding:14px;border:1px solid var(--cm-er-line);border-radius:18px;background:linear-gradient(180deg,rgba(15,23,42,.74),rgba(2,6,23,.44));box-shadow:0 16px 45px rgba(0,0,0,.16);}
       .cm-employees-report-page .cm-er-filters label{display:grid;gap:7px;color:rgba(255,255,255,.72);font-size:12px;font-weight:800;letter-spacing:.02em;}
-      .cm-employees-report-page .cm-er-filters input[type="date"]{height:43px;min-width:0;width:100%;border:1px solid rgba(148,163,184,.22);border-radius:14px;background:rgba(2,6,23,.58);color:#e5eefb;padding:0 42px 0 13px;outline:none;font:inherit;font-weight:700;color-scheme:dark;box-shadow:inset 0 1px 0 rgba(255,255,255,.035);}
-      .cm-employees-report-page .cm-er-filters input[type="date"]:focus{border-color:rgba(56,189,248,.72);box-shadow:0 0 0 3px rgba(56,189,248,.12);}
+      .cm-employees-report-page .cm-er-filters input[type="date"],.cm-employees-report-page .cm-er-filters select{height:43px;min-width:0;width:100%;border:1px solid rgba(148,163,184,.22);border-radius:14px;background:rgba(2,6,23,.58);color:#e5eefb;padding:0 42px 0 13px;outline:none;font:inherit;font-weight:700;color-scheme:dark;box-shadow:inset 0 1px 0 rgba(255,255,255,.035);} .cm-employees-report-page .cm-er-filters select{appearance:auto;padding-right:12px;cursor:pointer;}
+      .cm-employees-report-page .cm-er-filters input[type="date"]:focus,.cm-employees-report-page .cm-er-filters select:focus{border-color:rgba(56,189,248,.72);box-shadow:0 0 0 3px rgba(56,189,248,.12);}
       .cm-employees-report-page .cm-er-filters input[type="date"]::-webkit-calendar-picker-indicator{filter:invert(1) brightness(1.65);opacity:.9;cursor:pointer;}
       .cm-er-employee-filter{grid-column:1/-1;display:grid;gap:9px;padding:12px;border:1px solid rgba(148,163,184,.16);border-radius:16px;background:rgba(2,6,23,.32);}
       .cm-er-employee-filter .cm-er-employee-title{color:rgba(255,255,255,.72);font-size:12px;font-weight:900;letter-spacing:.02em;}
@@ -35,7 +35,7 @@
       .cm-er-employee-chip{display:inline-flex;align-items:center;gap:7px;min-height:34px;padding:0 11px;border:1px solid rgba(148,163,184,.18);border-radius:999px;background:rgba(255,255,255,.055);color:#e5eefb;font-size:12px;font-weight:850;cursor:pointer;user-select:none;}
       .cm-er-employee-chip input{accent-color:#60a5fa;}
       .cm-er-employee-chip:has(input:checked){border-color:rgba(96,165,250,.55);background:rgba(37,99,235,.22);}
-      .cm-employees-report-page #erShowBtn{height:43px;border:1px solid rgba(59,130,246,.36);border-radius:14px;background:linear-gradient(180deg,rgba(59,130,246,.34),rgba(37,99,235,.18));color:#eff6ff;font-weight:900;padding:0 18px;cursor:pointer;box-shadow:0 16px 42px rgba(37,99,235,.18);backdrop-filter:blur(12px);}
+      .cm-employees-report-page #erShowBtn{height:43px;min-width:92px;max-width:120px;border:1px solid rgba(59,130,246,.36);border-radius:14px;background:linear-gradient(180deg,rgba(59,130,246,.34),rgba(37,99,235,.18));color:#eff6ff;font-weight:900;padding:0 18px;cursor:pointer;box-shadow:0 16px 42px rgba(37,99,235,.18);backdrop-filter:blur(12px);}
       .cm-employees-report-page #erShowBtn:hover{border-color:rgba(125,211,252,.55);background:linear-gradient(180deg,rgba(59,130,246,.44),rgba(37,99,235,.26));}
       .cm-er-section{margin-top:18px;}
       .cm-er-section .bm-page-head{margin:0 0 10px;}
@@ -78,6 +78,52 @@
   function defaultDates() {
     const now = new Date();
     return { from: iso(new Date(now.getFullYear(), now.getMonth(), 1)), to: iso(new Date(now.getFullYear(), now.getMonth() + 1, 0)) };
+  }
+
+
+  function addMonths(date, months) {
+    const d = new Date(date);
+    const day = d.getDate();
+    d.setMonth(d.getMonth() + months);
+    if (d.getDate() !== day) d.setDate(0);
+    return d;
+  }
+
+  function rangePreset(value) {
+    const today = new Date();
+    const to = iso(today);
+    const start = new Date(today);
+    switch (String(value || "custom")) {
+      case "week": start.setDate(today.getDate() - 6); break;
+      case "2weeks": start.setDate(today.getDate() - 13); break;
+      case "month": start.setMonth(today.getMonth() - 1); start.setDate(start.getDate() + 1); break;
+      case "2months": return { from: iso(addMonths(today, -2)), to };
+      case "quarter": return { from: iso(addMonths(today, -3)), to };
+      case "6months": return { from: iso(addMonths(today, -6)), to };
+      case "12months": return { from: iso(addMonths(today, -12)), to };
+      case "18months": return { from: iso(addMonths(today, -18)), to };
+      case "24months": return { from: iso(addMonths(today, -24)), to };
+      case "36months": return { from: iso(addMonths(today, -36)), to };
+      default: return null;
+    }
+    return { from: iso(start), to };
+  }
+
+  function rangeOptions(selected) {
+    const opts = [
+      ["custom", "Własny zakres"],
+      ["week", "Tydzień"],
+      ["2weeks", "2 tygodnie"],
+      ["month", "Miesiąc"],
+      ["2months", "2 miesiące"],
+      ["quarter", "Kwartał"],
+      ["6months", "6 miesięcy"],
+      ["12months", "12 miesięcy"],
+      ["18months", "18 miesięcy"],
+      ["24months", "24 miesiące"],
+      ["36months", "36 miesięcy"]
+    ];
+    return opts.map(([value, label]) => `<option value="${value}" ${value === selected ? "selected" : ""}>${label}</option>`).join("");
   }
 
   function parseDate(value) {
@@ -519,6 +565,7 @@
       <div class="cm-er-filters">
         <label>Od<input type="date" id="erDateFrom" value="${esc(filters.from)}"></label>
         <label>Do<input type="date" id="erDateTo" value="${esc(filters.to)}"></label>
+        <label>Zakres<select id="erRangePreset">${rangeOptions(filters.range || "custom")}</select></label>
         <button type="button" id="erShowBtn">Pokaż</button>
         ${employeeFilterHtml(employeeOptions, selectedEmployees)}
       </div>
@@ -546,10 +593,25 @@
     $$('[data-er-employee]').forEach((box) => box.addEventListener('change', syncEmployeesAll));
     syncEmployeesAll();
 
+    $('#erRangePreset')?.addEventListener('change', (event) => {
+      const preset = rangePreset(event.currentTarget.value);
+      if (preset) {
+        const fromEl = $('#erDateFrom');
+        const toEl = $('#erDateTo');
+        if (fromEl) fromEl.value = preset.from;
+        if (toEl) toEl.value = preset.to;
+      }
+    });
+
     $('#erShowBtn')?.addEventListener('click', () => {
       const url = new URL(window.location.href);
-      url.searchParams.set('from', $('#erDateFrom')?.value || filters.from);
-      url.searchParams.set('to', $('#erDateTo')?.value || filters.to);
+      const range = $('#erRangePreset')?.value || 'custom';
+      const preset = rangePreset(range);
+      const fromValue = preset?.from || $('#erDateFrom')?.value || filters.from;
+      const toValue = preset?.to || $('#erDateTo')?.value || filters.to;
+      url.searchParams.set('from', fromValue);
+      url.searchParams.set('to', toValue);
+      url.searchParams.set('range', range);
       const boxes = $$('[data-er-employee]');
       const checked = boxes.filter((box) => box.checked).map((box) => box.value);
       if (checked.length && checked.length !== boxes.length) url.searchParams.set('employees', checked.join(','));
@@ -570,7 +632,7 @@
     try {
       const defaults = defaultDates();
       const params = new URLSearchParams(window.location.search);
-      const filters = { from: params.get('from') || defaults.from, to: params.get('to') || defaults.to, employees: params.get('employees') || '' };
+      const filters = { from: params.get('from') || defaults.from, to: params.get('to') || defaults.to, range: params.get('range') || 'custom', employees: params.get('employees') || '' };
       const context = await getContext();
       const data = await fetchData(context.companyId, filters.from, filters.to);
       renderPage(context, data, filters);

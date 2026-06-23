@@ -4988,3 +4988,24 @@ html body .cm-cr-dropdown-button {
   .cm-supabase-daily-report .cm-daily-table-pager{justify-content:center;flex-wrap:wrap;}
   .cm-supabase-daily-report .cm-daily-table-pager [data-table-info]{width:100%;margin-right:0;text-align:center;}
 }
+
+
+/* CompanyManager 048D — reports UI alignment pack */
+.cm-supa-reports-module .cm-report-table{width:100%;overflow-x:auto;border-radius:16px;}
+.cm-supa-reports-module .cm-report-table .bm-table-wrap{width:100%;overflow-x:auto;border:1px solid rgba(148,163,184,.14);border-radius:16px;background:rgba(2,6,23,.22);}
+.cm-supa-reports-module .cm-supa-report-table{width:100%;min-width:920px;table-layout:fixed;border-collapse:separate;border-spacing:0;}
+.cm-supa-reports-module .cm-supa-report-table th,
+.cm-supa-reports-module .cm-supa-report-table td{white-space:normal!important;text-align:center!important;vertical-align:middle!important;padding:9px 8px!important;line-height:1.16!important;border-bottom:1px solid rgba(255,255,255,.07);}
+.cm-supa-reports-module .cm-supa-report-table th{font-size:10.5px!important;letter-spacing:.035em;text-transform:uppercase;color:rgba(219,234,254,.82);background:rgba(37,99,235,.11);font-weight:900;}
+.cm-supa-reports-module .cm-supa-report-table td{font-size:12.5px;color:rgba(255,255,255,.88);font-variant-numeric:tabular-nums;}
+.cm-supa-reports-module .cm-supa-report-table th:nth-child(1),
+.cm-supa-reports-module .cm-supa-report-table td:nth-child(1){width:76px;}
+.cm-supa-reports-module .cm-supa-report-table th:nth-child(4),
+.cm-supa-reports-module .cm-supa-report-table td:nth-child(4){width:105px;}
+.cm-supa-reports-module .cm-supa-report-table th:nth-child(2),
+.cm-supa-reports-module .cm-supa-report-table th:nth-child(3),
+.cm-supa-reports-module .cm-supa-report-table th:nth-child(9),
+.cm-supa-reports-module .cm-supa-report-table th:nth-child(10){width:98px;}
+.cm-supa-reports-module .cm-supa-report-table tbody tr:hover td{background:rgba(56,189,248,.055);}
+.cm-employees-report-page .cm-er-filters{grid-template-columns:minmax(150px,190px) minmax(150px,190px) minmax(190px,240px) auto!important;}
+.cm-employees-report-page #erShowBtn{width:auto!important;min-width:92px!important;max-width:120px!important;}
