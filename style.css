@@ -4538,3 +4538,27 @@ html body .cm-cr-dropdown-button {
   -webkit-backdrop-filter: none !important;
   backdrop-filter: none !important;
 }
+
+/* 044A — Supabase reports */
+.cm-supa-reports-module { display: flex; flex-direction: column; gap: 18px; }
+.cm-supa-report-controls { display: flex; flex-wrap: wrap; gap: 12px; align-items: end; }
+.cm-supa-report-controls label { display: flex; flex-direction: column; gap: 6px; min-width: 160px; }
+.cm-report-kpi-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.cm-report-kpi { border: 1px solid rgba(255,255,255,.12); background: rgba(255,255,255,.055); border-radius: 18px; padding: 14px 16px; box-shadow: inset 0 1px 0 rgba(255,255,255,.08); }
+.cm-report-kpi span { display: block; color: rgba(255,255,255,.68); font-size: 12px; margin-bottom: 8px; }
+.cm-report-kpi strong { display: block; color: #fff; font-size: 22px; line-height: 1.1; }
+.cm-report-kpi small { display: block; color: rgba(255,255,255,.48); margin-top: 7px; font-size: 11px; }
+.cm-supa-chart-legend { display: flex; gap: 18px; align-items: center; color: rgba(255,255,255,.72); font-size: 13px; }
+.cm-supa-chart-legend span { display: inline-flex; gap: 8px; align-items: center; }
+.cm-supa-chart-legend i { width: 10px; height: 10px; border-radius: 999px; display: inline-block; }
+.cm-supa-chart-legend i.revenue { background: rgba(147,197,253,.86); }
+.cm-supa-chart-legend i.visits { background: rgba(134,239,172,.86); }
+.cm-supa-chart { min-height: 330px; display: flex; align-items: end; gap: 8px; padding: 22px 8px 10px; border: 1px solid rgba(255,255,255,.1); border-radius: 20px; background: linear-gradient(180deg, rgba(255,255,255,.045), rgba(255,255,255,.025)); overflow-x: auto; }
+.cm-supa-chart-col { min-width: 42px; flex: 1 0 42px; display: flex; flex-direction: column; justify-content: end; align-items: center; gap: 8px; }
+.cm-supa-chart-bars { height: 270px; display: flex; align-items: end; gap: 4px; }
+.cm-supa-bar { display: block; width: 12px; min-height: 0; border-radius: 999px 999px 4px 4px; box-shadow: 0 10px 24px rgba(0,0,0,.22); }
+.cm-supa-bar.revenue { background: rgba(147,197,253,.82); }
+.cm-supa-bar.visits { background: rgba(134,239,172,.82); }
+.cm-supa-chart-col small { color: rgba(255,255,255,.62); font-size: 10px; writing-mode: vertical-rl; transform: rotate(180deg); min-height: 42px; text-align: right; }
+.cm-supa-report-table th, .cm-supa-report-table td { white-space: nowrap; }
+@media (max-width: 1100px) { .cm-report-kpi-grid { grid-template-columns: repeat(2, minmax(0,1fr)); } }
