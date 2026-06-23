@@ -456,7 +456,29 @@
       }
     });
 
-    return Array.from(merged.values()).map((r) => {
+    const collapsed = new Map();
+    Array.from(merged.values()).forEach((r) => {
+      const normalizedName = employeeKeyByName(r.name);
+      const key = normalizedName && normalizedName !== "(brak)" ? normalizedName : String(r.id || "missing");
+      if (!collapsed.has(key)) {
+        collapsed.set(key, {
+          ...r,
+          clientIds: new Set(r.clientIds),
+          newClientIds: new Set(r.newClientIds),
+          returningClientIds: new Set(r.returningClientIds)
+        });
+      } else {
+        const m = collapsed.get(key);
+        ["visits","finishedVisits","cancelledVisits","services","serviceValue","products","productValue","passes","passValue","revenue","daysOff","vacation","sick","free","visitMinutes","workMinutes","scheduledMinutes"].forEach((field) => {
+          m[field] += Number(r[field] || 0);
+        });
+        r.clientIds.forEach((id) => m.clientIds.add(id));
+        r.newClientIds.forEach((id) => m.newClientIds.add(id));
+        r.returningClientIds.forEach((id) => m.returningClientIds.add(id));
+        if (m.name === "(brak)" && r.name !== "(brak)") m.name = r.name;
+      }
+    });
+    return Array.from(collapsed.values()).map((r) => {
       r.clients = r.clientIds.size;
       r.newClients = r.newClientIds.size;
       r.returningClients = Math.max(0, r.clients - r.newClients);
@@ -464,7 +486,8 @@
       r.returningClientsPct = percent(r.returningClients, r.clients);
       r.workPct = percent(r.workMinutes, r.scheduledMinutes);
       return r;
-    }).sort((a, b) => a.name.localeCompare(b.name, "pl"));
+    }).filter((r) => r.name !== "(brak)" || r.visits || r.services || r.products || r.passes || r.daysOff)
+      .sort((a, b) => a.name.localeCompare(b.name, "pl"));
   }
 
   function parseSelectedEmployees(value) {

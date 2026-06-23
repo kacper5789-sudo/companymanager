@@ -320,7 +320,36 @@
     return "service";
   }
   function clientName(row) { return [row?.first_name, row?.last_name].filter(Boolean).join(" ").trim() || "(brak)"; }
-  function employeeName(row) { return row?.full_name || row?.email || "(brak)"; }
+  function employeeName(row, fallback = "") {
+    return row?.full_name || row?.fullName || row?.name || row?.email || fallback || "(brak)";
+  }
+  function nameKey(value) {
+    return String(value || "").trim().toLowerCase().replace(/\s+/g, " ");
+  }
+  function createEmployeeResolver(employees) {
+    const byId = new Map((employees || []).filter(e => e?.id).map(e => [e.id, e]));
+    const byName = new Map();
+    (employees || []).forEach(e => {
+      const nm = nameKey(employeeName(e, ""));
+      if (nm && nm !== "(brak)" && !byName.has(nm)) byName.set(nm, e);
+    });
+    const resolve = (id, ...fallbacks) => {
+      if (id && byId.has(id)) {
+        const e = byId.get(id);
+        return { key: `id:${e.id}`, id: e.id, name: employeeName(e) };
+      }
+      for (const fallback of fallbacks) {
+        const nm = String(fallback || "").trim();
+        const nk = nameKey(nm);
+        if (!nk || nk === "(brak)") continue;
+        const e = byName.get(nk);
+        if (e) return { key: `id:${e.id}`, id: e.id, name: employeeName(e) };
+        return { key: `name:${nk}`, id: "", name: nm };
+      }
+      return { key: "missing", id: "", name: "(brak)" };
+    };
+    return { byId, resolve };
+  }
   function appointmentDate(row) { return row?.appointment_datetime || row?.starts_at || row?.date || row?.created_at; }
   function isFinished(row) { const s = String(row?.status || "").toLowerCase(); return row?.finished === true || ["zakończone", "zakończona", "completed"].includes(s); }
   function isCancelled(row) { const s = String(row?.status || "").toLowerCase(); return ["odwołane", "odwołana", "cancelled", "usunięte", "deleted"].includes(s); }
@@ -356,7 +385,8 @@
 
   function buildReport(data, range) {
     const saleMap = new Map(data.sales.map(s => [s.id, s]));
-    const employeeMap = new Map(data.employees.map(e => [e.id, e]));
+    const employeeResolver = createEmployeeResolver(data.employees || []);
+    const employeeMap = employeeResolver.byId;
     const clientMap = new Map(data.clients.map(c => [c.id, c]));
     const items = data.saleItems.map(item => ({ ...item, sale: saleMap.get(item.sale_id) || {} }));
     const services = items.filter(i => normalizeItemType(i.item_type) === 'service');
@@ -393,25 +423,27 @@
     });
 
     const employeeRowsMap = new Map();
-    function ensureEmployee(id, fallback) {
-      const key = id || fallback || '(brak)';
-      if (!employeeRowsMap.has(key)) {
-        employeeRowsMap.set(key, { name: employeeName(employeeMap.get(id)) || fallback || '(brak)', visits: 0, services: 0, serviceValue: 0, products: 0, productValue: 0, passes: 0, passValue: 0, sales: 0, revenue: 0 });
+    function ensureEmployee(id, ...fallbacks) {
+      const resolved = employeeResolver.resolve(id, ...fallbacks);
+      if (!employeeRowsMap.has(resolved.key)) {
+        employeeRowsMap.set(resolved.key, { name: resolved.name, visits: 0, services: 0, serviceValue: 0, products: 0, productValue: 0, passes: 0, passValue: 0, sales: 0, revenue: 0 });
       }
-      return employeeRowsMap.get(key);
+      return employeeRowsMap.get(resolved.key);
     }
     data.appointments.forEach(a => {
       const row = ensureEmployee(a.employee_id, a.employee_name);
       row.visits += 1;
     });
     data.sales.forEach(s => {
-      const row = ensureEmployee(s.employee_id, s.employee_name);
+      const appointment = appointmentById.get(s.appointment_id) || {};
+      const row = ensureEmployee(s.employee_id || appointment.employee_id, s.employee_name, appointment.employee_name);
       row.sales += 1;
       row.revenue += saleValue(s);
     });
     items.forEach(item => {
       const sale = item.sale || {};
-      const row = ensureEmployee(sale.employee_id, sale.employee_name);
+      const appointment = appointmentById.get(sale.appointment_id) || {};
+      const row = ensureEmployee(sale.employee_id || appointment.employee_id, sale.employee_name, appointment.employee_name);
       const type = normalizeItemType(item.item_type);
       const qty = itemQty(item);
       const value = itemValue(item, saleMap);

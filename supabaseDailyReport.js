@@ -201,6 +201,28 @@
     const clients = data.clients || [];
     const saleMap = new Map(sales.map(s => [s.id, s]));
     const employeeMap = new Map(employees.map(e => [e.id, e]));
+    const employeeNameKey = (value) => String(value || "").trim().toLowerCase().replace(/\s+/g, " ");
+    const employeeByName = new Map();
+    employees.forEach(e => {
+      const name = e.full_name || e.fullName || e.name || e.email || "";
+      const key = employeeNameKey(name);
+      if (key && !employeeByName.has(key)) employeeByName.set(key, e);
+    });
+    const resolveEmployee = (id, ...fallbacks) => {
+      if (id && employeeMap.has(id)) {
+        const e = employeeMap.get(id);
+        return { key: `id:${e.id}`, name: e.full_name || e.fullName || e.name || e.email || "Pracownik" };
+      }
+      for (const fallback of fallbacks) {
+        const name = String(fallback || "").trim();
+        const nk = employeeNameKey(name);
+        if (!nk || nk === "(brak)") continue;
+        const e = employeeByName.get(nk);
+        if (e) return { key: `id:${e.id}`, name: e.full_name || e.fullName || e.name || e.email || name };
+        return { key: `name:${nk}`, name };
+      }
+      return { key: "missing", name: "(brak)" };
+    };
 
     const statusOf = (item) => String(item.status || "").toLowerCase();
     const isCancelled = (a) => ["odwołane", "odwolane", "usunięte", "usuniete"].includes(statusOf(a)) || a.is_cancelled === true;
@@ -221,26 +243,42 @@
     const productRows = groupBy(productItems, i => i.name_snapshot || i.name || "Produkt", (_, key) => ({ name: key, count: 0, value: 0 }), (row, i) => { row.count += Number(i.quantity || 1); row.value += itemValue(i, saleMap); });
     const passRows = groupBy(passItems, i => i.name_snapshot || i.name || "Karnet", (_, key) => ({ name: key, count: 0, value: 0 }), (row, i) => { row.count += Number(i.quantity || 1); row.value += itemValue(i, saleMap); });
 
-    const employeeRows = employees.map(emp => {
-      const empSales = sales.filter(s => s.employee_id === emp.id || (!s.employee_id && String(s.employee_name || "").trim() && String(s.employee_name).trim() === String(emp.full_name || emp.email || "").trim()));
-      const empAppointments = appointments.filter(a => a.employee_id === emp.id || (!a.employee_id && String(a.employee_name || "").trim() === String(emp.full_name || emp.email || "").trim()));
-      const empSaleIds = new Set(empSales.map(s => s.id));
-      const empItems = saleItems.filter(i => empSaleIds.has(i.sale_id));
-      const empServices = empItems.filter(i => String(i.item_type || "").toLowerCase() === "service");
-      const empProducts = empItems.filter(i => String(i.item_type || "").toLowerCase() === "product");
-      const empPasses = empItems.filter(i => ["pass", "karnet"].includes(String(i.item_type || "").toLowerCase()));
-      return {
-        id: emp.id,
-        name: emp.full_name || emp.email || "Pracownik",
-        visits: empAppointments.length,
-        serviceCount: empServices.reduce((s, i) => s + Number(i.quantity || 1), 0),
-        serviceValue: empServices.reduce((s, i) => s + itemValue(i, saleMap), 0),
-        productCount: empProducts.reduce((s, i) => s + Number(i.quantity || 1), 0),
-        productValue: empProducts.reduce((s, i) => s + itemValue(i, saleMap), 0),
-        passCount: empPasses.reduce((s, i) => s + Number(i.quantity || 1), 0),
-        passValue: empPasses.reduce((s, i) => s + itemValue(i, saleMap), 0)
-      };
-    }).filter(row => row.visits || row.serviceCount || row.productCount || row.passCount);
+    const employeeRowsMap = new Map();
+    function ensureEmployee(id, ...fallbacks) {
+      const resolved = resolveEmployee(id, ...fallbacks);
+      if (!employeeRowsMap.has(resolved.key)) {
+        employeeRowsMap.set(resolved.key, {
+          id: resolved.key,
+          name: resolved.name,
+          visits: 0,
+          serviceCount: 0,
+          serviceValue: 0,
+          productCount: 0,
+          productValue: 0,
+          passCount: 0,
+          passValue: 0
+        });
+      }
+      return employeeRowsMap.get(resolved.key);
+    }
+    appointments.forEach((a) => {
+      const row = ensureEmployee(a.employee_id, a.employee_name);
+      row.visits += 1;
+    });
+    saleItems.forEach((i) => {
+      const sale = saleMap.get(i.sale_id) || {};
+      const appointment = appointments.find(a => a.id && a.id === sale.appointment_id) || {};
+      const row = ensureEmployee(sale.employee_id || appointment.employee_id, sale.employee_name, appointment.employee_name);
+      const type = String(i.item_type || "").toLowerCase();
+      const qty = Number(i.quantity || 1);
+      const val = itemValue(i, saleMap);
+      if (type === "product") { row.productCount += qty; row.productValue += val; }
+      else if (["pass", "karnet"].includes(type)) { row.passCount += qty; row.passValue += val; }
+      else { row.serviceCount += qty; row.serviceValue += val; }
+    });
+    const employeeRows = Array.from(employeeRowsMap.values())
+      .filter(row => row.visits || row.serviceCount || row.productCount || row.passCount)
+      .sort((a, b) => a.name.localeCompare(b.name, "pl"));
 
     return {
       plannedVisits: appointments.filter(isPlanned).length,
