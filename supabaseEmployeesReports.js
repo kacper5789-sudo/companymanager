@@ -1,4 +1,4 @@
-// CompanyManager — 047E Employees reports selected employees parser fix
+// CompanyManager — 047F Employees reports helper scope fix
 // employeesraports.html: realne dane z profiles / clients / appointments / sales / sale_items / days_off.
 (function () {
   if (document.body?.dataset?.panelPage !== "employeesReports") return;
@@ -8,6 +8,9 @@
   const esc = (value) => String(value ?? "").replace(/[&<>'"]/g, (c) => ({"&":"&amp;","<":"&lt;",">":"&gt;","'":"&#39;",'"':"&quot;"}[c]));
   const money = (value) => `${Number(value || 0).toFixed(2)} PLN`;
   const normalize = (value) => String(value || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  function employeeKeyByName(value) {
+    return normalize(value || "").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "brak";
+  }
 
   function injectStyles() {
     if (document.getElementById("cmEmployeesReportsStyle")) return;
