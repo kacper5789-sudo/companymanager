@@ -1,4 +1,4 @@
-// CompanyManager — 047F Employees reports helper scope fix
+// CompanyManager — 047G Employees reports aggregate and work hours fix
 // employeesraports.html: realne dane z profiles / clients / appointments / sales / sale_items / days_off.
 (function () {
   if (document.body?.dataset?.panelPage !== "employeesReports") return;
@@ -144,6 +144,36 @@
     return 0;
   }
 
+
+  function timeToMinutes(value) {
+    if (!value) return null;
+    const raw = String(value).trim();
+    const match = raw.match(/(\d{1,2}):(\d{2})/);
+    if (!match) return null;
+    const h = Number(match[1]);
+    const m = Number(match[2]);
+    if (Number.isNaN(h) || Number.isNaN(m)) return null;
+    return h * 60 + m;
+  }
+
+  function rangeMinutes(startValue, endValue) {
+    const start = timeToMinutes(startValue);
+    const end = timeToMinutes(endValue);
+    if (start === null || end === null) return 0;
+    return Math.max(0, end - start);
+  }
+
+  function scheduleMinutes(row) {
+    const directHours = Number(row?.hours || row?.work_hours || row?.planned_hours || row?.scheduled_hours || 0);
+    if (directHours > 0) return Math.round(directHours * 60);
+    const directMinutes = Number(row?.minutes || row?.work_minutes || row?.planned_minutes || row?.scheduled_minutes || 0);
+    if (directMinutes > 0) return Math.round(directMinutes);
+    return rangeMinutes(
+      row?.start_time || row?.time_from || row?.hour_from || row?.from_time || row?.starts_at,
+      row?.end_time || row?.time_to || row?.hour_to || row?.to_time || row?.ends_at
+    );
+  }
+
   function formatMinutes(totalMinutes) {
     const minutes = Math.max(0, Math.round(Number(totalMinutes || 0)));
     const h = Math.floor(minutes / 60);
@@ -201,14 +231,16 @@
 
   async function fetchData(companyId, from, to) {
     const sb = window.cmSupabase;
-    const [profiles, positions, clients, appointments, sales, saleItems, daysOff] = await Promise.all([
+    const [profiles, positions, clients, appointments, sales, saleItems, daysOff, workSchedules, workScheduleTemplates] = await Promise.all([
       safeSelect("profiles", sb.from("profiles").select("*").eq("company_id", companyId)),
       safeSelect("positions", sb.from("positions").select("*").eq("company_id", companyId)),
       safeSelect("clients", sb.from("clients").select("*").eq("company_id", companyId)),
       safeSelect("appointments", sb.from("appointments").select("*").eq("company_id", companyId)),
       safeSelect("sales", sb.from("sales").select("*").eq("company_id", companyId)),
       safeSelect("sale_items", sb.from("sale_items").select("*").eq("company_id", companyId)),
-      safeSelect("days_off", sb.from("days_off").select("*").eq("company_id", companyId))
+      safeSelect("days_off", sb.from("days_off").select("*").eq("company_id", companyId)),
+      safeSelect("work_schedule", sb.from("work_schedule").select("*").eq("company_id", companyId)),
+      safeSelect("work_schedule_templates", sb.from("work_schedule_templates").select("*").eq("company_id", companyId))
     ]);
 
     const filteredAppointments = appointments.filter((row) => inRange(appointmentDate(row), from, to));
@@ -216,8 +248,9 @@
     const saleIds = new Set(filteredSales.map((row) => row.id));
     const filteredItems = saleItems.filter((item) => saleIds.has(item.sale_id));
     const filteredDaysOff = daysOff.filter((row) => inRange(row.date || row.start_date || row.date_from || row.from_date || row.created_at, from, to));
+    const filteredWorkSchedules = workSchedules.filter((row) => inRange(row.date || row.work_date || row.day || row.created_at, from, to));
 
-    return { profiles, positions, clients, appointments: filteredAppointments, sales: filteredSales, saleItems: filteredItems, daysOff: filteredDaysOff };
+    return { profiles, positions, clients, appointments: filteredAppointments, sales: filteredSales, saleItems: filteredItems, daysOff: filteredDaysOff, workSchedules: filteredWorkSchedules, workScheduleTemplates };
   }
 
   function calcStats(data) {
@@ -255,7 +288,9 @@
         visitMinutes: 0,
         clientIds: new Set(),
         newClientIds: new Set(),
-        returningClientIds: new Set()
+        returningClientIds: new Set(),
+        workMinutes: 0,
+        scheduledMinutes: 0
       });
     });
 
@@ -284,7 +319,9 @@
           visitMinutes: 0,
           clientIds: new Set(),
           newClientIds: new Set(),
-          returningClientIds: new Set()
+          returningClientIds: new Set(),
+          workMinutes: 0,
+          scheduledMinutes: 0
         });
       }
       return base.get(key);
@@ -303,7 +340,11 @@
       emp.visits += 1;
       if (isFinishedAppointment(a)) emp.finishedVisits += 1;
       if (isCancelledAppointment(a)) emp.cancelledVisits += 1;
-      if (!isCancelledAppointment(a)) emp.visitMinutes += appointmentMinutes(a);
+      if (!isCancelledAppointment(a)) {
+        const mins = appointmentMinutes(a);
+        emp.visitMinutes += mins;
+        emp.workMinutes += mins;
+      }
       touchClient(emp, a.client_id || a.customer_id || a.clientId || a.customerId || "");
     });
 
@@ -332,10 +373,23 @@
       else emp.free += 1;
     });
 
+    (data.workSchedules || []).forEach((row) => {
+      const emp = ensure(row.employee_id || row.employeeId || row.profile_id || row.user_id || "", row.employee_name || row.employeeName || row.name || "(brak)");
+      emp.scheduledMinutes += scheduleMinutes(row);
+    });
+
+    const realNameToKey = new Map();
+    Array.from(base.values()).forEach((r) => {
+      if (r.id && !String(r.id).startsWith("unknown:")) {
+        realNameToKey.set(employeeKeyByName(r.name), `id:${r.id}`);
+      }
+    });
+
     const merged = new Map();
     Array.from(base.values()).forEach((r) => {
-      const key = r.id && !String(r.id).startsWith("unknown:") ? `id:${r.id}` : `name:${employeeKeyByName(r.name)}`;
       const nameKey = `name:${employeeKeyByName(r.name)}`;
+      const realKeyForName = realNameToKey.get(employeeKeyByName(r.name));
+      const key = r.id && !String(r.id).startsWith("unknown:") ? `id:${r.id}` : (realKeyForName || nameKey);
       const existingKey = merged.has(key) ? key : (merged.has(nameKey) ? nameKey : key);
       if (!merged.has(existingKey)) {
         merged.set(existingKey, {
@@ -346,7 +400,7 @@
         });
       } else {
         const m = merged.get(existingKey);
-        ["visits","finishedVisits","cancelledVisits","services","serviceValue","products","productValue","passes","passValue","revenue","daysOff","vacation","sick","free","visitMinutes"].forEach((field) => {
+        ["visits","finishedVisits","cancelledVisits","services","serviceValue","products","productValue","passes","passValue","revenue","daysOff","vacation","sick","free","visitMinutes","workMinutes","scheduledMinutes"].forEach((field) => {
           m[field] += Number(r[field] || 0);
         });
         r.clientIds.forEach((id) => m.clientIds.add(id));
@@ -362,6 +416,7 @@
       r.returningClients = Math.max(0, r.clients - r.newClients);
       r.newClientsPct = percent(r.newClients, r.clients);
       r.returningClientsPct = percent(r.returningClients, r.clients);
+      r.workPct = percent(r.workMinutes, r.scheduledMinutes);
       return r;
     }).sort((a, b) => a.name.localeCompare(b.name, "pl"));
   }
@@ -451,11 +506,12 @@
     const totals = stats.reduce((acc, r) => {
       Object.keys(acc).forEach((key) => { acc[key] += Number(r[key] || 0); });
       return acc;
-    }, { visits:0, finishedVisits:0, cancelledVisits:0, services:0, serviceValue:0, products:0, productValue:0, passes:0, passValue:0, revenue:0, daysOff:0, vacation:0, sick:0, free:0, visitMinutes:0, clients:0, newClients:0, returningClients:0 });
+    }, { visits:0, finishedVisits:0, cancelledVisits:0, services:0, serviceValue:0, products:0, productValue:0, passes:0, passValue:0, revenue:0, daysOff:0, vacation:0, sick:0, free:0, visitMinutes:0, clients:0, newClients:0, returningClients:0, workMinutes:0, scheduledMinutes:0 });
 
     const customerServiceRows = stats.map((r) => [esc(r.name), String(r.services), String(r.clients), formatMinutes(r.visitMinutes), String(r.newClients), r.newClientsPct, String(r.returningClients), r.returningClientsPct]);
     const salesRows = stats.map((r) => [esc(r.name), String(r.services), money(r.serviceValue), String(r.products), money(r.productValue), String(r.passes), money(r.passValue), money(r.revenue)]);
     const absenceRows = stats.map((r) => [esc(r.name), String(r.daysOff), String(r.vacation), String(r.sick), String(r.free)]);
+    const workHoursRows = stats.map((r) => [esc(r.name), String(r.visits), formatMinutes(r.workMinutes || r.visitMinutes), formatMinutes(r.scheduledMinutes), r.workPct || percent(r.workMinutes || r.visitMinutes, r.scheduledMinutes)]);
 
     const root = getRoot();
     root.innerHTML = `<section class="bm-page-card cm-employees-report-page">
@@ -475,6 +531,7 @@
       ${tableModule('customer-service', 'Obsługa klientów', ['Pracownik','L. usług','L. klientów','Czas wizyt','Nowi k.','Nowi k. %','K. powracający','K. powracający %'], customerServiceRows, ['SUMA', totals.services, totals.clients, formatMinutes(totals.visitMinutes), totals.newClients, percent(totals.newClients, totals.clients), totals.returningClients, percent(totals.returningClients, totals.clients)])}
       ${tableModule('sales', 'Sprzedaż według pracowników', ['Pracownik','Usługi','Wartość usług','Produkty','Wartość produktów','Karnety','Wartość karnetów','Razem'], salesRows, ['SUMA', totals.services, money(totals.serviceValue), totals.products, money(totals.productValue), totals.passes, money(totals.passValue), money(totals.revenue)])}
       ${tableModule('absences', 'Dni wolne według pracowników', ['Pracownik','Dni wolne','Urlop','Zwolnienie','Inne'], absenceRows, ['SUMA', totals.daysOff, totals.vacation, totals.sick, totals.free])}
+      ${tableModule('work-hours', 'Godziny pracy', ['Pracownik','Liczba wizyt','Czas pracy','Czas wyznaczony','Grafik %'], workHoursRows, ['SUMA', totals.visits, formatMinutes(totals.workMinutes || totals.visitMinutes), formatMinutes(totals.scheduledMinutes), percent(totals.workMinutes || totals.visitMinutes, totals.scheduledMinutes)])}
     </section>`;
 
     const syncEmployeesAll = () => {
