@@ -1,4 +1,4 @@
-// CompanyManager — 050B Grafik pracy Supabase UI polish
+// CompanyManager — 050C Grafik pracy UI alignment polish
 // work-schedule.html: flexible work hours, edit/delete, download schedule.
 (function () {
   function isPage() {
@@ -187,10 +187,10 @@
             <label>Przerwa do<input type="time" id="quickBreakEnd" value=""></label>
           </div>
           <div class="cm-work-actions-bar">
-            <button type="button" id="copyCompanyHoursBtn" class="bm-light-btn">Zastosuj pn-pt</button>
-            <button type="button" id="applyAllDaysBtn" class="bm-light-btn">Zastosuj cały tydzień</button>
-            <button type="button" id="clearScheduleBtn" class="bm-danger-btn">Ustaw wolne</button>
-            <button type="button" id="saveWorkScheduleBtn" class="bm-primary-btn cm-save-schedule-btn">Zapisz grafik</button>
+            <button type="button" id="copyCompanyHoursBtn" class="bm-light-btn cm-work-btn cm-work-btn-neutral">Zastosuj pn-pt</button>
+            <button type="button" id="applyAllDaysBtn" class="bm-light-btn cm-work-btn cm-work-btn-neutral">Zastosuj cały tydzień</button>
+            <button type="button" id="clearScheduleBtn" class="bm-danger-btn cm-work-btn cm-work-btn-danger">Ustaw wolne</button>
+            <button type="button" id="saveWorkScheduleBtn" class="bm-primary-btn cm-save-schedule-btn cm-work-btn cm-work-btn-save">Zapisz grafik</button>
           </div>
           <p id="workScheduleMessage" class="panel-message"></p>
         </section>
@@ -204,18 +204,20 @@
       </div>
 
       <div class="cm-work-bottom-actions">
-        <button type="button" id="saveWorkScheduleBottomBtn" class="bm-primary-btn cm-save-schedule-btn">Zapisz grafik</button>
+        <button type="button" id="saveWorkScheduleBottomBtn" class="bm-primary-btn cm-save-schedule-btn cm-work-btn cm-work-btn-save">Zapisz grafik</button>
       </div>
 
       <div class="cm-section-title-row">
         <h3 class="cm-section-title">Podsumowanie grafików</h3>
-        <button type="button" id="downloadWorkScheduleBtn" class="bm-light-btn">Pobierz grafik</button>
       </div>
       <div class="bm-table-wrap cm-work-summary-wrap">
         <table class="bm-table cm-work-schedule-summary">
           <thead><tr><th>Pracownik</th>${DAYS.map((day) => `<th>${escapeHtml(day.short)}</th>`).join("")}<th>Akcje</th></tr></thead>
           <tbody>${summaryRows()}</tbody>
         </table>
+      </div>
+      <div class="cm-work-export-actions">
+        <button type="button" id="downloadWorkScheduleBtn" class="bm-light-btn cm-work-btn cm-work-btn-download">Pobierz grafik</button>
       </div>
     </section>`;
     bindEvents();

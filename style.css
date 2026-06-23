@@ -5669,3 +5669,241 @@ body[data-panel-page="companyPanel"] .cm-data-retention-box select[name="data_re
     width:100%;
   }
 }
+
+/* 050C — Grafik pracy: full UI alignment polish */
+body[data-panel-page="workSchedule"] .dashboard-shell,
+body[data-panel-page="workSchedule"] #dashboardRoot{
+  width:100%;
+}
+body[data-panel-page="workSchedule"] .cm-supabase-work-schedule{
+  width:min(1220px, calc(100vw - 56px));
+  margin:0 auto !important;
+  padding:22px !important;
+  border-radius:26px !important;
+  background:rgba(15,23,42,.44) !important;
+  border:1px solid rgba(255,255,255,.10) !important;
+  box-shadow:0 24px 70px rgba(0,0,0,.26) !important;
+}
+body[data-panel-page="workSchedule"] .cm-work-schedule-head{
+  display:flex !important;
+  align-items:flex-start !important;
+  justify-content:space-between !important;
+  gap:18px !important;
+  margin:0 0 18px !important;
+  padding-bottom:16px !important;
+  border-bottom:1px solid rgba(255,255,255,.10) !important;
+}
+body[data-panel-page="workSchedule"] .cm-work-schedule-head h2{
+  margin:0 0 6px !important;
+  font-size:1.55rem !important;
+  letter-spacing:.01em !important;
+}
+body[data-panel-page="workSchedule"] .cm-work-schedule-head .bm-muted{
+  max-width:760px !important;
+  margin:0 !important;
+  line-height:1.5 !important;
+}
+body[data-panel-page="workSchedule"] .cm-work-panel{
+  padding:20px !important;
+  border-radius:24px !important;
+  background:linear-gradient(135deg, rgba(255,255,255,.075), rgba(255,255,255,.035)) !important;
+  border:1px solid rgba(255,255,255,.12) !important;
+}
+body[data-panel-page="workSchedule"] .cm-work-panel-title{
+  margin-bottom:16px !important;
+  text-align:left !important;
+  font-size:1.02rem !important;
+}
+body[data-panel-page="workSchedule"] .cm-supabase-work-schedule .cm-work-schedule-controls{
+  grid-template-columns:minmax(260px, 1.35fr) repeat(4, minmax(132px, .85fr)) !important;
+  gap:14px !important;
+  align-items:end !important;
+}
+body[data-panel-page="workSchedule"] .cm-supabase-work-schedule .cm-work-schedule-controls label{
+  min-width:0 !important;
+}
+body[data-panel-page="workSchedule"] .cm-supabase-work-schedule select,
+body[data-panel-page="workSchedule"] .cm-supabase-work-schedule input[type="time"]{
+  height:44px !important;
+  min-height:44px !important;
+  border-radius:14px !important;
+  background:rgba(2,6,23,.38) !important;
+  border:1px solid rgba(255,255,255,.16) !important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.05) !important;
+}
+body[data-panel-page="workSchedule"] .cm-work-actions-bar,
+body[data-panel-page="workSchedule"] .cm-work-bottom-actions,
+body[data-panel-page="workSchedule"] .cm-work-export-actions{
+  display:flex !important;
+  justify-content:flex-end !important;
+  align-items:center !important;
+  gap:10px !important;
+  flex-wrap:wrap !important;
+}
+body[data-panel-page="workSchedule"] .cm-work-actions-bar{
+  margin-top:18px !important;
+  padding-top:16px !important;
+  border-top:1px solid rgba(255,255,255,.08) !important;
+}
+body[data-panel-page="workSchedule"] .cm-work-bottom-actions{
+  margin:14px 0 24px !important;
+}
+body[data-panel-page="workSchedule"] .cm-work-export-actions{
+  margin-top:14px !important;
+}
+body[data-panel-page="workSchedule"] .cm-work-btn,
+body[data-panel-page="workSchedule"] .cm-save-schedule-btn,
+body[data-panel-page="workSchedule"] #downloadWorkScheduleBtn{
+  width:auto !important;
+  min-width:126px !important;
+  height:38px !important;
+  min-height:38px !important;
+  padding:0 16px !important;
+  border-radius:13px !important;
+  font-size:.86rem !important;
+  line-height:1 !important;
+  display:inline-flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  white-space:nowrap !important;
+}
+body[data-panel-page="workSchedule"] .cm-work-btn-save,
+body[data-panel-page="workSchedule"] .cm-save-schedule-btn{
+  background:linear-gradient(135deg, rgba(248,250,252,.18), rgba(148,163,184,.10)) !important;
+  border-color:rgba(255,255,255,.28) !important;
+  color:#f8fafc !important;
+  box-shadow:0 14px 30px rgba(2,6,23,.22) !important;
+}
+body[data-panel-page="workSchedule"] .cm-work-btn-neutral,
+body[data-panel-page="workSchedule"] #downloadWorkScheduleBtn{
+  background:linear-gradient(135deg, rgba(37,99,235,.22), rgba(14,165,233,.11)) !important;
+  border-color:rgba(56,189,248,.30) !important;
+  color:#dff6ff !important;
+}
+body[data-panel-page="workSchedule"] .cm-work-btn-danger{
+  background:linear-gradient(135deg, rgba(185,28,28,.27), rgba(127,29,29,.13)) !important;
+  border-color:rgba(248,113,113,.34) !important;
+  color:#fecaca !important;
+}
+body[data-panel-page="workSchedule"] .cm-work-schedule-editor-wrap,
+body[data-panel-page="workSchedule"] .cm-work-summary-wrap{
+  border-radius:22px !important;
+  border:1px solid rgba(255,255,255,.10) !important;
+  background:rgba(15,23,42,.30) !important;
+  box-shadow:0 18px 45px rgba(0,0,0,.18) !important;
+}
+body[data-panel-page="workSchedule"] .cm-work-schedule-editor,
+body[data-panel-page="workSchedule"] .cm-work-schedule-summary{
+  width:100% !important;
+  min-width:980px !important;
+  table-layout:fixed !important;
+  border-collapse:separate !important;
+  border-spacing:0 !important;
+}
+body[data-panel-page="workSchedule"] .cm-work-schedule-editor th,
+body[data-panel-page="workSchedule"] .cm-work-schedule-editor td,
+body[data-panel-page="workSchedule"] .cm-work-schedule-summary th,
+body[data-panel-page="workSchedule"] .cm-work-schedule-summary td{
+  height:54px !important;
+  padding:10px 9px !important;
+  text-align:center !important;
+  vertical-align:middle !important;
+  border-bottom:1px solid rgba(255,255,255,.07) !important;
+}
+body[data-panel-page="workSchedule"] .cm-work-schedule-editor th,
+body[data-panel-page="workSchedule"] .cm-work-schedule-summary th{
+  font-size:.78rem !important;
+  text-transform:none !important;
+  letter-spacing:.01em !important;
+  color:rgba(226,232,240,.88) !important;
+  background:rgba(255,255,255,.045) !important;
+}
+body[data-panel-page="workSchedule"] .cm-work-schedule-editor th:first-child,
+body[data-panel-page="workSchedule"] .cm-work-schedule-editor td:first-child{
+  width:16% !important;
+  text-align:left !important;
+  padding-left:16px !important;
+}
+body[data-panel-page="workSchedule"] .cm-work-schedule-editor th:nth-child(2),
+body[data-panel-page="workSchedule"] .cm-work-schedule-editor td:nth-child(2){width:12% !important;}
+body[data-panel-page="workSchedule"] .cm-work-schedule-editor th:nth-child(3),
+body[data-panel-page="workSchedule"] .cm-work-schedule-editor td:nth-child(3),
+body[data-panel-page="workSchedule"] .cm-work-schedule-editor th:nth-child(4),
+body[data-panel-page="workSchedule"] .cm-work-schedule-editor td:nth-child(4),
+body[data-panel-page="workSchedule"] .cm-work-schedule-editor th:nth-child(5),
+body[data-panel-page="workSchedule"] .cm-work-schedule-editor td:nth-child(5),
+body[data-panel-page="workSchedule"] .cm-work-schedule-editor th:nth-child(6),
+body[data-panel-page="workSchedule"] .cm-work-schedule-editor td:nth-child(6){width:13% !important;}
+body[data-panel-page="workSchedule"] .cm-work-schedule-editor th:nth-child(7),
+body[data-panel-page="workSchedule"] .cm-work-schedule-editor td:nth-child(7){width:10% !important;}
+body[data-panel-page="workSchedule"] .cm-work-schedule-editor input[type="time"]{
+  width:108px !important;
+  min-width:108px !important;
+  max-width:108px !important;
+  margin:0 auto !important;
+}
+body[data-panel-page="workSchedule"] .cm-work-toggle{
+  min-width:96px !important;
+  height:34px !important;
+  padding:0 10px !important;
+  border-radius:999px !important;
+  background:rgba(255,255,255,.055) !important;
+  border:1px solid rgba(255,255,255,.10) !important;
+}
+body[data-panel-page="workSchedule"] .cm-work-schedule-summary th:first-child,
+body[data-panel-page="workSchedule"] .cm-work-schedule-summary td:first-child{
+  width:190px !important;
+  text-align:left !important;
+  padding-left:16px !important;
+}
+body[data-panel-page="workSchedule"] .cm-work-schedule-summary th:last-child,
+body[data-panel-page="workSchedule"] .cm-work-schedule-summary td:last-child{
+  width:150px !important;
+}
+body[data-panel-page="workSchedule"] .cm-work-actions{
+  display:flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  gap:8px !important;
+  flex-wrap:nowrap !important;
+}
+body[data-panel-page="workSchedule"] .cm-work-actions button{
+  height:32px !important;
+  min-height:32px !important;
+  min-width:64px !important;
+  padding:0 10px !important;
+  border-radius:11px !important;
+  font-size:.78rem !important;
+}
+body[data-panel-page="workSchedule"] .cm-section-title-row{
+  margin:22px 0 12px !important;
+  padding-top:6px !important;
+}
+body[data-panel-page="workSchedule"] .cm-section-title{
+  font-size:1.08rem !important;
+  letter-spacing:.01em !important;
+}
+@media(max-width:1180px){
+  body[data-panel-page="workSchedule"] .cm-supabase-work-schedule .cm-work-schedule-controls{
+    grid-template-columns:repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+@media(max-width:760px){
+  body[data-panel-page="workSchedule"] .cm-supabase-work-schedule{
+    width:calc(100vw - 24px) !important;
+    padding:16px !important;
+  }
+  body[data-panel-page="workSchedule"] .cm-supabase-work-schedule .cm-work-schedule-controls{
+    grid-template-columns:1fr !important;
+  }
+  body[data-panel-page="workSchedule"] .cm-work-actions-bar,
+  body[data-panel-page="workSchedule"] .cm-work-bottom-actions,
+  body[data-panel-page="workSchedule"] .cm-work-export-actions{
+    justify-content:stretch !important;
+  }
+  body[data-panel-page="workSchedule"] .cm-work-btn,
+  body[data-panel-page="workSchedule"] .cm-save-schedule-btn,
+  body[data-panel-page="workSchedule"] #downloadWorkScheduleBtn{
+    width:100% !important;
+  }
+}
