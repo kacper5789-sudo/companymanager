@@ -229,7 +229,6 @@
         <div class="bm-page-head">
           <div>
             <h2>Dni wolne pracowników</h2>
-            <p class="bm-muted">Dni wolne są zapisywane w Supabase i powiązane z pracownikami z zakładki Użytkownicy/Zespół.</p>
           </div>
         </div>
         <div id="daysOffCalendar">${buildCalendar()}</div>
@@ -293,24 +292,15 @@
   }
 
   function showPanel(targetId) {
-    const panels = ["daysOffFormCard", "daysOffEditPanel", "daysOffDeletePanel"].map((id) => document.getElementById(id)).filter(Boolean);
+    const panels = ["daysOffFormCard", "daysOffEditPanel", "daysOffDeletePanel"].map((id) => document.getElementById(id));
     const target = document.getElementById(targetId);
-
-    if (window.cmOpenModalPanel && target) {
-      window.cmOpenModalPanel(target, panels);
-    } else {
-      panels.forEach((panel) => {
-        if (!panel) return;
-        panel.hidden = panel !== target;
-        panel.classList.toggle("cm-as-modal", panel === target);
-        panel.classList.toggle("cm-modal-active", panel === target);
-      });
-      if (target) target.hidden = false;
+    panels.forEach((panel) => { if (panel) panel.hidden = panel !== target; });
+    if (target) {
+      target.hidden = false;
+      target.scrollIntoView({ behavior: "smooth", block: "center" });
     }
-
-    try { window.cmScheduleNativePickerReinit?.(target || document); } catch (_) {}
-    try { window.cmReinitNativePickers?.(target || document); } catch (_) {}
-    try { window.cmUpdateGlobalModalState?.(); } catch (_) {}
+    try { window.cmReinitNativePickers?.(); } catch (_) {}
+    try { window.cmGlobalModalCleanup?.(); } catch (_) {}
   }
 
   function message(selector, text, ok = true) {

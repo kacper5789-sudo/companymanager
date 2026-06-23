@@ -4332,3 +4332,19 @@ html body .panel-card input[type="time"]::-webkit-calendar-picker-indicator {
     max-height: 90vh !important;
   }
 }
+
+/* 042C — lekkie przyspieszenie renderowania długich modułów */
+.bm-table-wrap,
+.cm-list-wrap,
+.cm-report-table-wrap {
+  contain: layout paint;
+}
+
+@supports (content-visibility: auto) {
+  .bm-table-wrap,
+  .cm-list-wrap,
+  .cm-report-table-wrap {
+    content-visibility: auto;
+    contain-intrinsic-size: 720px;
+  }
+}
