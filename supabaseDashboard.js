@@ -93,6 +93,25 @@
     return h * 60 + m;
   }
 
+  function timeFromMinutes(total) {
+    const safe = Math.max(0, Math.min(23 * 60 + 59, Number(total) || 0));
+    return `${String(Math.floor(safe / 60)).padStart(2, "0")}:${String(safe % 60).padStart(2, "0")}`;
+  }
+
+  function intFrom(value, fallback) {
+    const n = Number(value);
+    return Number.isFinite(n) ? n : fallback;
+  }
+
+  function dashboardSettings(data) {
+    const company = data?.company || {};
+    const start = normalizeTime(company.working_day_start || "08:00") || "08:00";
+    const end = normalizeTime(company.working_day_end || "20:00") || "20:00";
+    const duration = Math.max(5, intFrom(company.default_visit_duration_minutes, 30));
+    const breakMinutes = Math.max(0, intFrom(company.appointment_break_minutes, 0));
+    return { start, end, duration, breakMinutes };
+  }
+
 
   function combineDateTimeIso(dateValue, timeValue) {
     const date = String(dateValue || "").slice(0, 10);
@@ -269,7 +288,7 @@
   }
 
   async function fetchDashboardData(ctx) {
-    const [appointmentsRes, clientsRes, servicesRes, productsRes, usersRes, passesRes] = await Promise.all([
+    const [appointmentsRes, clientsRes, servicesRes, productsRes, usersRes, passesRes, companyRes] = await Promise.all([
       window.cmSupabase
         .from("appointments")
         .select("id, company_id, date, time, start_time, end_time, customer_id, client_id, employee_id, employee_name, service_id, service_name, position_id, product_id, product_name, product_price, product_quantity, pass_id, pass_name, pass_used_value, pass_used_units, status, deleted, note, price, total, payment_method, cancellation_reason, cancelled_at, starts_at, ends_at, appointment_datetime, created_at, updated_at")
@@ -296,7 +315,12 @@
         .from("passes")
         .select("id, company_id, customer_id, beneficiary_client_id, buyer_client_id, service_id, service_name, name, number, pass_type, value, remaining, total_units, remaining_units, valid_until, status, active")
         .eq("company_id", ctx.companyId)
-        .eq("active", true)
+        .eq("active", true),
+      window.cmSupabase
+        .from("companies")
+        .select("id, working_day_start, working_day_end, default_visit_duration_minutes, appointment_break_minutes")
+        .eq("id", ctx.companyId)
+        .maybeSingle()
     ]);
     if (appointmentsRes.error) throw appointmentsRes.error;
     if (clientsRes.error) throw clientsRes.error;
@@ -304,7 +328,9 @@
     if (productsRes.error) throw productsRes.error;
     if (usersRes.error) throw usersRes.error;
     if (passesRes.error) throw passesRes.error;
+    if (companyRes.error) throw companyRes.error;
     return {
+      company: companyRes.data || {},
       appointments: appointmentsRes.data || [],
       clients: (clientsRes.data || []).filter((item) => item.status !== "usunięty"),
       services: (servicesRes.data || []).filter((item) => item.active !== false),
@@ -401,14 +427,28 @@
 
   function scheduleRows(data, lookups, dateIso, activeWorkerIds = []) {
     const active = data.appointments.filter((item) => appointmentDate(item) === dateIso && item.deleted !== true && !["odwołana", "odwołane", "usunięte"].includes(String(item.status || "").toLowerCase()));
+    const settings = dashboardSettings(data);
+    const workStart = minutesFromTime(settings.start) ?? minutesFromTime("08:00");
+    const workEnd = minutesFromTime(settings.end) ?? minutesFromTime("20:00");
+    const visitDuration = Math.max(5, settings.duration || 30);
+    const breakMinutes = Math.max(0, settings.breakMinutes || 0);
+    const step = visitDuration + breakMinutes;
     const rows = [];
-    for (let hour = 6; hour <= 20; hour += 1) {
-      rows.push(`${String(hour).padStart(2, "0")}:00`);
-      if (hour < 20) rows.push(`${String(hour).padStart(2, "0")}:30`);
+
+    if (workStart == null || workEnd == null || workEnd <= workStart) {
+      rows.push({ start: "08:00", end: "08:30", label: "08:00 - 08:30" });
+    } else {
+      for (let min = workStart; min + visitDuration <= workEnd; min += step) {
+        const startTime = timeFromMinutes(min);
+        const endTime = timeFromMinutes(min + visitDuration);
+        rows.push({ start: startTime, end: endTime, label: `${startTime} - ${endTime}` });
+        if (rows.length > 220) break;
+      }
     }
-    return rows.map((time) => {
+
+    return rows.map((slot) => {
       const cells = data.users.map((employee) => {
-        const slotMin = minutesFromTime(time);
+        const slotMin = minutesFromTime(slot.start);
         const visit = active.find((item) => {
           if (!appointmentEmployeeMatches(item, employee)) return false;
           const start = minutesFromTime(appointmentStart(item));
@@ -416,11 +456,11 @@
           return slotMin != null && start != null && end != null && slotMin >= start && slotMin < end;
         });
         const inactiveClass = activeWorkerIds.includes(employee.id) ? "" : " inactive-worker";
-        if (!visit) return `<td class="bm-schedule-slot free${inactiveClass}" data-employee-id="${escapeHtml(employee.id)}" data-time="${escapeHtml(time)}" data-date="${escapeHtml(dateIso)}"><span>FREE</span></td>`;
+        if (!visit) return `<td class="bm-schedule-slot free${inactiveClass}" data-employee-id="${escapeHtml(employee.id)}" data-time="${escapeHtml(slot.start)}" data-date="${escapeHtml(dateIso)}"><span>FREE</span></td>`;
         const client = lookups.clientsById[appointmentClientId(visit)];
         const service = lookups.servicesById[visit.service_id];
         const product = lookups.productsById[visit.product_id];
-        const isStart = appointmentStart(visit) === time;
+        const isStart = appointmentStart(visit) === slot.start;
         const label = isStart
           ? `${escapeHtml(appointmentStart(visit))} - ${escapeHtml(appointmentEnd(visit))}<br>${escapeHtml(customerName(client))}: ${escapeHtml(serviceName(service) !== "-" ? serviceName(service) : productName(product))}`
           : `<span class="bm-continuation">ZAJĘTE do ${escapeHtml(appointmentEnd(visit))}</span>`;
@@ -431,9 +471,9 @@
           `Pracownik: ${personName(employee)}`,
           `Opis: ${visit.note || "Brak opisu"}`
         ].join("\n");
-        return `<td class="bm-schedule-slot busy${inactiveClass}" data-visit-id="${escapeHtml(visit.id)}" data-employee-id="${escapeHtml(employee.id)}" data-time="${escapeHtml(time)}" data-date="${escapeHtml(dateIso)}" data-slot-tooltip="${escapeHtml(tooltip)}"><span>${label}</span></td>`;
+        return `<td class="bm-schedule-slot busy${inactiveClass}" data-visit-id="${escapeHtml(visit.id)}" data-employee-id="${escapeHtml(employee.id)}" data-time="${escapeHtml(slot.start)}" data-date="${escapeHtml(dateIso)}" data-slot-tooltip="${escapeHtml(tooltip)}"><span>${label}</span></td>`;
       }).join("");
-      return `<tr><th class="bm-time-col">${escapeHtml(time)}</th>${cells}</tr>`;
+      return `<tr><th class="bm-time-col">${escapeHtml(slot.label)}</th>${cells}</tr>`;
     }).join("");
   }
 
@@ -660,8 +700,8 @@
         <div class="bm-page-head"><h2>Dodaj wpis do grafiku</h2></div>
         <form id="dashboardAppointmentAddForm" class="bm-form-grid">
           <label>Data<input type="date" name="date" value="${escapeHtml(selectedDate)}" required></label>
-          <label>Od<select name="start">${timeOptions("10:00")}</select></label>
-          <label>Do<select name="end">${timeOptions("10:30")}</select></label>
+          <label>Od<select name="start">${timeOptions(dashboardSettings(data).start)}</select></label>
+          <label>Do<select name="end">${timeOptions(timeFromMinutes((minutesFromTime(dashboardSettings(data).start) || 480) + dashboardSettings(data).duration))}</select></label>
           <label>Klient<select name="customerId" required><option value="">Wybierz klienta</option>${customerOptions}</select></label>
           <label>Pracownik<select name="employeeId" required><option value="">Wybierz pracownika</option>${employeeOptions}</select></label>
           <label>Usługi<select name="serviceId"><option value="">Wybierz usługę</option>${serviceOptions}</select></label>
@@ -831,8 +871,9 @@
       if (form.elements.start) form.elements.start.value = slotTime;
       if (form.elements.end) {
         const startMin = minutesFromTime(slotTime);
-        const endMin = startMin == null ? minutesFromTime("10:30") : startMin + 30;
-        const endValue = `${String(Math.floor(endMin / 60)).padStart(2, "0")}:${String(endMin % 60).padStart(2, "0")}`;
+        const settings = dashboardSettings(data);
+        const endMin = startMin == null ? minutesFromTime("10:30") : startMin + settings.duration;
+        const endValue = timeFromMinutes(endMin);
         form.elements.end.value = endValue;
       }
       if (form.elements.employeeId) form.elements.employeeId.value = employeeId;
