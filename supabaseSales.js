@@ -446,9 +446,17 @@
       ["passes", "Karnety"], ["passesByEmployee", "Karnety według pracowników"], ["payments", "Płatności"], ["paymentsByType", "Płatności według typów"]
     ];
 
-    const activeSales = (data.sales || []).filter((sale) => String(sale.payment_status || "").toLowerCase() !== "void");
-    const salesById = Object.fromEntries(activeSales.map((sale) => [sale.id, sale]));
+    const isCancelledAppointmentForSales = (appointment) => {
+      const status = normalizeText(appointment?.status || "");
+      return appointment?.deleted === true || ["odwolane", "odwolana", "anulowane", "anulowana", "cancelled", "canceled", "usuniete", "usunieta", "deleted"].includes(status);
+    };
     const appointmentById = Object.fromEntries((data.appointments || []).map((appointment) => [appointment.id, appointment]));
+    const activeSales = (data.sales || []).filter((sale) => {
+      if (String(sale.payment_status || "").toLowerCase() === "void") return false;
+      const linkedAppointment = sale.appointment_id ? appointmentById[sale.appointment_id] : null;
+      return !isCancelledAppointmentForSales(linkedAppointment);
+    });
+    const salesById = Object.fromEntries(activeSales.map((sale) => [sale.id, sale]));
     const clientById = Object.fromEntries(data.clients.map((client) => [client.id, client]));
     const userById = Object.fromEntries(data.users.map((user) => [user.id, user]));
     const serviceById = Object.fromEntries(data.services.map((service) => [service.id, service]));
