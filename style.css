@@ -4170,3 +4170,70 @@ input[type="time"]::-webkit-calendar-picker-indicator,
   line-height: 1.5;
   margin: 4px 0 14px;
 }
+
+/* CompanyManager 041E — global no-blur forms + clickable native date/time pickers */
+#cmGlobalFormOverlay,
+body.cm-modal-open #cmGlobalFormOverlay {
+  display: none !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  background: transparent !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+
+body.cm-modal-open {
+  overflow: auto !important;
+}
+
+.cm-as-modal {
+  position: static !important;
+  inset: auto !important;
+  top: auto !important;
+  left: auto !important;
+  transform: none !important;
+  z-index: auto !important;
+  width: auto !important;
+  max-height: none !important;
+  overflow: visible !important;
+  margin: 18px 0 !important;
+  box-shadow: none !important;
+}
+
+.cm-as-modal .bm-page-head {
+  position: static !important;
+  top: auto !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+
+input[type="date"],
+input[type="time"] {
+  color-scheme: dark !important;
+  pointer-events: auto !important;
+  touch-action: manipulation !important;
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator,
+input[type="time"]::-webkit-calendar-picker-indicator {
+  opacity: 1 !important;
+  filter: invert(1) brightness(1.35) !important;
+  cursor: pointer !important;
+  pointer-events: auto !important;
+  width: 22px !important;
+  height: 22px !important;
+  margin: 0 !important;
+  padding: 4px !important;
+  background: transparent !important;
+}
+
+/* Cofnięcie 041D: nie rysujemy własnego zegarka jako tła, bo zasłaniał natywny picker. */
+input[type="time"],
+.panel-body input[type="time"],
+.auth-body input[type="time"],
+.bm-field input[type="time"],
+.bm-form input[type="time"],
+.bm-modal input[type="time"] {
+  background-image: none !important;
+  padding-right: 14px !important;
+}
