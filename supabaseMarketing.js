@@ -1,5 +1,5 @@
-// CompanyManager — 093 Marketing EMAIL/SMS UI filters counter
-// Marketing zapisuje kampanie i odbiorców do Supabase. Realna wysyłka będzie podpięta w kolejnym kroku przez Edge Function.
+// CompanyManager — 094 Marketing EMAIL real send via Resend
+// Marketing zapisuje kampanie i odbiorców do Supabase oraz odpala Edge Function do realnej wysyłki EMAIL przez Resend.
 (function () {
   const PAGE = "marketing";
 
@@ -217,7 +217,7 @@
 
     area.innerHTML = `<section class="bm-page-card marketing-module">
       <div class="bm-page-head customers-head">
-        <div><h2>Marketing</h2><p>Email/SMS podłączone do Supabase. Wybierz odbiorców, sprawdź licznik i zapisz kampanię. Realne wysyłanie przez provider będzie w kolejnym kroku.</p></div>
+        <div><h2>Marketing</h2><p>Email/SMS podłączone do Supabase. Email wysyłamy przez Resend, SMS zostaje przygotowany pod kolejny etap.</p></div>
         <div class="bm-actions-row"><button id="showMarketingSms" type="button">SMS</button><button id="showMarketingEmail" type="button" class="bm-primary-btn">Email</button><button id="showDeleteCampaign" type="button" class="bm-danger-btn">Usuń</button></div>
       </div>
       <div class="bm-table-toolbar"><label>Szukaj: <input id="marketingSearch" type="search" placeholder="Szukaj kampanii" value="${escapeHtml(new URLSearchParams(location.search).get("q") || "")}"></label></div>
@@ -345,6 +345,18 @@
     updateCount(prefix);
   }
 
+  async function invokeEmailSend(campaignId, mode = "campaign") {
+    if (!window.cmSupabase?.functions?.invoke) {
+      throw new Error("Brak obsługi Edge Functions w kliencie Supabase.");
+    }
+    const { data, error } = await window.cmSupabase.functions.invoke("send-marketing-email", {
+      body: { campaign_id: campaignId, mode }
+    });
+    if (error) throw error;
+    if (data?.error) throw new Error(data.error);
+    return data;
+  }
+
   async function saveCampaign(prefix, status) {
     const isSms = prefix === "sms";
     const form = $(`#marketing${isSms ? "Sms" : "Email"}Form`);
@@ -369,18 +381,39 @@
 
     const msgId = isSms ? "#smsMarketingMessage" : "#emailMarketingMessage";
     try {
-      const result = await rpc("cm_marketing_save_campaign", { p_payload: payload });
-      if (status === "test") {
-        message(msgId, "Test zapisany w Supabase. Realna wysyłka zostanie podpięta w kolejnym kroku.", true);
-      } else if (status === "ready_to_send") {
-        message(msgId, `Kampania zapisana jako gotowa do wysłania. Odbiorcy: ${result?.recipient_count ?? 0}.`, true);
-      } else {
-        message(msgId, `Kampania zapisana jako szkic. Odbiorcy: ${result?.recipient_count ?? 0}.`, true);
+      if (isSms && status !== "draft") {
+        const result = await rpc("cm_marketing_save_campaign", { p_payload: payload });
+        message(msgId, `SMS zapisany w Supabase. Realna wysyłka SMS będzie w kolejnym etapie. Odbiorcy: ${result?.recipient_count ?? 0}.`, true);
+        setTimeout(() => location.reload(), 1100);
+        return;
       }
+
+      const result = await rpc("cm_marketing_save_campaign", { p_payload: payload });
+      const campaignId = result?.campaign_id;
+
+      if (!isSms && status === "test") {
+        if (!campaignId) throw new Error("Brak ID kampanii testowej.");
+        message(msgId, "Wysyłam testowy email przez Resend...", true);
+        const sendResult = await invokeEmailSend(campaignId, "test");
+        message(msgId, `Test email wysłany. Wysłano: ${sendResult?.sent ?? 0}, błędy: ${sendResult?.failed ?? 0}.`, (sendResult?.failed ?? 0) === 0);
+        setTimeout(() => location.reload(), 1400);
+        return;
+      }
+
+      if (!isSms && status === "ready_to_send") {
+        if (!campaignId) throw new Error("Brak ID kampanii.");
+        message(msgId, `Kampania zapisana. Rozpoczynam wysyłkę do ${result?.recipient_count ?? 0} odbiorców...`, true);
+        const sendResult = await invokeEmailSend(campaignId, "campaign");
+        message(msgId, `Wysyłka zakończona. Wysłano: ${sendResult?.sent ?? 0}, błędy: ${sendResult?.failed ?? 0}, pominięto: ${sendResult?.skipped ?? 0}.`, (sendResult?.failed ?? 0) === 0);
+        setTimeout(() => location.reload(), 1600);
+        return;
+      }
+
+      message(msgId, `Kampania zapisana jako szkic. Odbiorcy: ${result?.recipient_count ?? 0}.`, true);
       setTimeout(() => location.reload(), 900);
     } catch (error) {
-      console.error("Marketing save failed", error);
-      message(msgId, "Błąd zapisu kampanii: " + (error?.message || error), false);
+      console.error("Marketing save/send failed", error);
+      message(msgId, "Błąd kampanii: " + (error?.message || error), false);
     }
   }
 
