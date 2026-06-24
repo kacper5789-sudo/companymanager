@@ -1,5 +1,5 @@
 // CompanyManager — Historia aktywności / Company audit log
-// 078: Globalny ślad ruchów pracowników, bez logowania działań OWNERA.
+// 080: Historia aktywności firmy — neutralny opis, zakres 60 dni i paginacja.
 
 (function () {
   function isPage() {
@@ -57,6 +57,33 @@
     return "";
   }
 
+  const auditState = { page: 0, lastCount: 0 };
+
+  function getDateFromByRange() {
+    const range = document.getElementById("auditRangeFilter")?.value || "60";
+    const now = new Date();
+    if (range === "today") {
+      now.setHours(0, 0, 0, 0);
+      return now.toISOString();
+    }
+    const days = Math.min(Math.max(Number(range) || 60, 1), 60);
+    now.setDate(now.getDate() - days);
+    return now.toISOString();
+  }
+
+  function resetAuditPage() {
+    auditState.page = 0;
+  }
+
+  function updatePager(pageSize) {
+    const info = document.getElementById("auditPageInfo");
+    const prev = document.getElementById("auditPrevPage");
+    const next = document.getElementById("auditNextPage");
+    if (info) info.textContent = `Strona ${auditState.page + 1}`;
+    if (prev) prev.disabled = auditState.page <= 0;
+    if (next) next.disabled = auditState.lastCount < pageSize;
+  }
+
   async function getContext() {
     if (!window.cmSupabase) return { ok: false, message: "Nie załadowano Supabase." };
     const [{ data: access, error: accessError }, { data: context, error: contextError }] = await Promise.all([
@@ -80,10 +107,18 @@
           <div>
             <span class="bm-tag">Dziennik firmy</span>
             <h2>Historia aktywności</h2>
-            <p class="bm-muted">Globalny ślad operacji pracowników: dodawanie, edycja, usuwanie, odwołanie i Cofnij Czas. Działania OWNERA nie są zapisywane.</p>
+            <p class="bm-muted">Podgląd ostatnich działań i zmian w systemie. Domyślny zakres: ostatnie 60 dni.</p>
           </div>
         </div>
         <div class="cm-audit-filters">
+          <label>Okres
+            <select id="auditRangeFilter">
+              <option value="today">Dzisiaj</option>
+              <option value="7">7 dni</option>
+              <option value="30">30 dni</option>
+              <option value="60" selected>60 dni</option>
+            </select>
+          </label>
           <label>Akcja
             <select id="auditActionFilter">
               <option value="">Wszystkie</option>
@@ -102,12 +137,11 @@
           <label>Szukaj
             <input id="auditSearch" type="search" placeholder="Pracownik, moduł, rekord...">
           </label>
-          <label>Limit
-            <select id="auditLimit">
+          <label>Na stronę
+            <select id="auditPageSize">
               <option value="50">50</option>
               <option value="100" selected>100</option>
               <option value="200">200</option>
-              <option value="500">500</option>
             </select>
           </label>
           <button id="auditRefreshBtn" class="bm-primary-btn" type="button">Odśwież</button>
@@ -128,6 +162,11 @@
             </thead>
             <tbody id="auditRows"><tr><td colspan="7">Ładowanie...</td></tr></tbody>
           </table>
+        </div>
+        <div class="cm-audit-pager">
+          <button id="auditPrevPage" class="bm-secondary-btn" type="button">Poprzednia strona</button>
+          <span id="auditPageInfo">Strona 1</span>
+          <button id="auditNextPage" class="bm-secondary-btn" type="button">Następna strona</button>
         </div>
       </section>`;
   }
@@ -165,13 +204,15 @@
       status.textContent = "Ładowanie historii...";
       status.style.color = "#93c5fd";
     }
+    const pageSize = Number(document.getElementById("auditPageSize")?.value || 100);
     const params = {
       p_company_id: ctx.companyId || ctx.context?.company_id || null,
-      p_limit: Number(document.getElementById("auditLimit")?.value || 100),
+      p_limit: pageSize,
+      p_offset: auditState.page * pageSize,
       p_action: document.getElementById("auditActionFilter")?.value || null,
       p_module: document.getElementById("auditModuleFilter")?.value || null,
       p_search: document.getElementById("auditSearch")?.value || null,
-      p_date_from: null,
+      p_date_from: getDateFromByRange(),
       p_date_to: null
     };
     const { data, error } = await window.cmSupabase.rpc("cm_list_company_audit_logs", params);
@@ -185,8 +226,10 @@
     }
     fillModules(data || []);
     renderRows(data || []);
+    auditState.lastCount = (data || []).length;
+    updatePager(pageSize);
     if (status) {
-      status.textContent = `Wpisy: ${(data || []).length}`;
+      status.textContent = `Zakres: ostatnie ${document.getElementById("auditRangeFilter")?.selectedOptions?.[0]?.textContent || "60 dni"}. Wpisy na stronie: ${(data || []).length}`;
       status.style.color = "#86efac";
     }
   }
@@ -208,13 +251,21 @@
     }
     await loadLogs(ctx);
     document.getElementById("auditRefreshBtn")?.addEventListener("click", () => loadLogs(ctx));
-    ["auditActionFilter", "auditModuleFilter", "auditLimit"].forEach((id) => {
-      document.getElementById(id)?.addEventListener("change", () => loadLogs(ctx));
+    ["auditRangeFilter", "auditActionFilter", "auditModuleFilter", "auditPageSize"].forEach((id) => {
+      document.getElementById(id)?.addEventListener("change", () => { resetAuditPage(); loadLogs(ctx); });
+    });
+    document.getElementById("auditPrevPage")?.addEventListener("click", () => {
+      auditState.page = Math.max(0, auditState.page - 1);
+      loadLogs(ctx);
+    });
+    document.getElementById("auditNextPage")?.addEventListener("click", () => {
+      auditState.page += 1;
+      loadLogs(ctx);
     });
     let timer = null;
     document.getElementById("auditSearch")?.addEventListener("input", () => {
       clearTimeout(timer);
-      timer = setTimeout(() => loadLogs(ctx), 350);
+      timer = setTimeout(() => { resetAuditPage(); loadLogs(ctx); }, 350);
     });
   }
 

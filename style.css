@@ -6685,3 +6685,17 @@ button.bm-primary-btn:hover{filter:brightness(1.08);box-shadow:0 0 18px rgba(56,
 .cm-audit-badge.is-cancel{background:rgba(245,158,11,.14);color:#fbbf24;}
 .cm-audit-badge.is-undo{background:rgba(168,85,247,.14);color:#d8b4fe;}
 @media(max-width:900px){.cm-audit-filters{grid-template-columns:1fr 1fr}.cm-audit-filters .bm-primary-btn{grid-column:1/-1;}}
+
+/* 080 — Historia aktywności: neutralny widok + paginacja */
+.cm-audit-pager {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 14px;
+  color: rgba(226, 232, 240, 0.88);
+}
+.cm-audit-pager button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
