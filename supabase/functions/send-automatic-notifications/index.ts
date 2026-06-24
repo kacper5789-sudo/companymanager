@@ -379,45 +379,74 @@ async function processBirthdays(supabase: any, company: AnyRow, summary: AnyRow)
 }
 
 Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
-  if (req.method !== "POST") return jsonResponse({ error: "Method not allowed" }, 405);
+  try {
+    if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+    if (req.method !== "POST") return jsonResponse({ error: "Method not allowed" }, 405);
 
-  if (!RESEND_API_KEY) return jsonResponse({ error: "Missing RESEND_API_KEY secret" }, 500);
-  if (!SUPABASE_URL || !(SERVICE_ROLE_KEY || ANON_KEY)) return jsonResponse({ error: "Missing Supabase environment" }, 500);
+    if (!RESEND_API_KEY) return jsonResponse({ error: "Missing RESEND_API_KEY secret" }, 500);
+    if (!SUPABASE_URL) return jsonResponse({ error: "Missing SUPABASE_URL environment" }, 500);
 
-  if (CRON_SECRET) {
-    const provided = req.headers.get("x-cron-secret") || "";
-    if (provided !== CRON_SECRET) return jsonResponse({ error: "Unauthorized cron" }, 401);
+    if (CRON_SECRET) {
+      const provided = req.headers.get("x-cron-secret") || "";
+      if (provided !== CRON_SECRET) return jsonResponse({ error: "Unauthorized cron" }, 401);
+    }
+
+    const authHeader = req.headers.get("Authorization") || "";
+    const bearerKey = authHeader.toLowerCase().startsWith("bearer ") ? authHeader.slice(7).trim() : "";
+    const dbKey = SERVICE_ROLE_KEY || bearerKey || ANON_KEY;
+
+    if (!dbKey) {
+      return jsonResponse({
+        error: "Missing Supabase key",
+        hint: "Dodaj SUPABASE_SERVICE_ROLE_KEY w Edge Function Secrets albo wywołuj cron z Authorization: Bearer <secret/service_role key>.",
+      }, 500);
+    }
+
+    const supabase = createClient(SUPABASE_URL, dbKey, {
+      global: { headers: { Authorization: `Bearer ${dbKey}` } },
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
+
+    const body = await req.json().catch(() => ({}));
+    const companyFilter = normalizeText(body.company_id);
+
+    const query = supabase
+      .from("companies")
+      .select("id,name,visit_email_24,visit_email_sender,visit_email_subject,visit_email_template,birthday_email,birthday_email_sender,birthday_email_subject,birthday_email_template,after_add_email,after_add_email_sender,after_add_email_subject,after_add_email_template,after_visit_email,after_visit_email_sender,after_visit_email_subject,after_visit_email_template,active,deleted_at")
+      .limit(200);
+
+    const { data: companies, error: companyError } = companyFilter
+      ? await query.eq("id", companyFilter)
+      : await query;
+
+    if (companyError) {
+      console.error("companies query failed", companyError);
+      return jsonResponse({ error: companyError.message, stage: "companies_query" }, 500);
+    }
+
+    const summary = {
+      companies: 0,
+      sent: 0,
+      failed: 0,
+      skipped: 0,
+    };
+
+    for (const company of companies || []) {
+      if (company.deleted_at || company.active === false) continue;
+      summary.companies += 1;
+      await processAppointments(supabase, company, summary);
+      await processBirthdays(supabase, company, summary);
+    }
+
+    return jsonResponse({ ok: true, ...summary });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    const stack = error instanceof Error ? error.stack : undefined;
+    console.error("send-automatic-notifications fatal error", { message, stack });
+    return jsonResponse({
+      ok: false,
+      error: message,
+      stack: stack ? String(stack).slice(0, 1500) : null,
+    }, 500);
   }
-
-  const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY || ANON_KEY);
-  const body = await req.json().catch(() => ({}));
-  const companyFilter = normalizeText(body.company_id);
-
-  const query = supabase
-    .from("companies")
-    .select("id,name,visit_email_24,visit_email_sender,visit_email_subject,visit_email_template,birthday_email,birthday_email_sender,birthday_email_subject,birthday_email_template,after_add_email,after_add_email_sender,after_add_email_subject,after_add_email_template,after_visit_email,after_visit_email_sender,after_visit_email_subject,after_visit_email_template,active,deleted_at")
-    .limit(200);
-
-  const { data: companies, error: companyError } = companyFilter
-    ? await query.eq("id", companyFilter)
-    : await query;
-
-  if (companyError) return jsonResponse({ error: companyError.message }, 500);
-
-  const summary = {
-    companies: 0,
-    sent: 0,
-    failed: 0,
-    skipped: 0,
-  };
-
-  for (const company of companies || []) {
-    if (company.deleted_at || company.active === false) continue;
-    summary.companies += 1;
-    await processAppointments(supabase, company, summary);
-    await processBirthdays(supabase, company, summary);
-  }
-
-  return jsonResponse({ ok: true, ...summary });
 });
