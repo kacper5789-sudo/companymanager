@@ -7338,3 +7338,399 @@ html body .pwc-signature a{color:#f4c75f !important;}
   html body .bm-left-info-panel{margin:0 10px 12px !important;border-radius:18px !important;}
   html body .bm-panel-area{padding:0 10px 70px !important;}
 }
+
+/* CompanyManager v089 — contrast polish after warm gold theme */
+:root{
+  --cm-blue:#2563eb;
+  --cm-blue-hover:#1d4ed8;
+  --cm-gray:#4b5563;
+  --cm-gray-hover:#374151;
+  --cm-red:#dc2626;
+  --cm-red-hover:#b91c1c;
+  --cm-green:#16a34a;
+  --cm-green-hover:#15803d;
+  --cm-black:#111827;
+  --cm-gold:#b88111;
+  --cm-gold-strong:#8a5b05;
+  --cm-soft:#fffdf7;
+  --cm-soft-2:#fff7e7;
+  --cm-border:#ead5aa;
+}
+
+/* Czytelność bazowa po jasnym themie */
+html body,
+html body .bm-main,
+html body .bm-panel-area,
+html body .bm-page-card,
+html body .bm-current-section,
+html body .bm-topbar,
+html body .bm-left-info-panel,
+html body .bm-table,
+html body .cm-report-card,
+html body .cm-sales-page,
+html body .cm-sales-view,
+html body .cm-audit-page{
+  color:var(--cm-black) !important;
+}
+html body .bm-page-card,
+html body .bm-current-section,
+html body .bm-topbar,
+html body .bm-table-wrap,
+html body .cm-report-card,
+html body .cm-sales-view,
+html body .cm-chart-card,
+html body .cm-stat-card,
+html body .cm-kpi-card,
+html body .cm-report-panel,
+html body .work-schedule-card,
+html body .cm-work-schedule,
+html body .bm-form-grid,
+html body .bm-form-row,
+html body .bm-form-row-2,
+html body .marketing-extra-panel{
+  background:linear-gradient(180deg,var(--cm-soft),var(--cm-soft-2)) !important;
+  border-color:var(--cm-border) !important;
+  color:var(--cm-black) !important;
+}
+html body .bm-page-card *,
+html body .cm-report-card *,
+html body .cm-sales-view *,
+html body .cm-work-schedule *,
+html body .marketing-extra-panel *{
+  color:inherit;
+}
+
+/* Przyciski według funkcji */
+html body button,
+html body .bm-primary-btn,
+html body .btn{
+  color:#fff !important;
+  border:1px solid transparent !important;
+}
+html body button[id*="Add"],
+html body button[id*="showAdd"],
+html body button[id*="submitAdd"],
+html body button[id*="Save"],
+html body button[id*="save"],
+html body button[id*="Dodaj"],
+html body .bm-primary-btn,
+html body .cm-save-schedule-btn,
+html body #auditRefreshBtn,
+html body #showAddPosition,
+html body #showAddCustomer,
+html body #showAddService,
+html body #showAddProduct,
+html body #showAddVisit,
+html body #showAddWalkin,
+html body #showAddPass,
+html body #showTemplatePass,
+html body #showAddAdminUserBtn,
+html body #dashAddVisitBtn,
+html body #dashboardAddVisitBtn,
+html body #saveWorkScheduleBtn,
+html body #saveWorkScheduleBottomBtn{
+  background:linear-gradient(135deg,var(--cm-blue),var(--cm-blue-hover)) !important;
+  color:#fff !important;
+  border-color:rgba(37,99,235,.38) !important;
+  box-shadow:0 10px 24px rgba(37,99,235,.22) !important;
+}
+html body button[id*="Edit"],
+html body button[id*="showEdit"],
+html body .bm-secondary-btn,
+html body .bm-light-btn,
+html body #showEditVisit,
+html body #showEditAdminUserBtn,
+html body #showEditWorkScheduleBtn,
+html body #dashEditVisitBtn{
+  background:linear-gradient(135deg,var(--cm-gray),var(--cm-gray-hover)) !important;
+  color:#fff !important;
+  border-color:rgba(75,85,99,.38) !important;
+  box-shadow:0 10px 24px rgba(75,85,99,.18) !important;
+}
+html body button[id*="Delete"],
+html body button[id*="showDelete"],
+html body button[id*="delete"],
+html body button[id*="Cancel"],
+html body button[id*="cancel"],
+html body .bm-danger-btn,
+html body #showDeletePosition,
+html body #showDeleteCustomer,
+html body #showDeleteService,
+html body #showDeleteProduct,
+html body #showDeleteVisit,
+html body #showDeleteWalkin,
+html body #showDeletePass,
+html body #showDeleteAdminUserBtn,
+html body #showDeleteWorkScheduleBtn,
+html body #dashCancelVisitBtn{
+  background:linear-gradient(135deg,var(--cm-red),var(--cm-red-hover)) !important;
+  color:#fff !important;
+  border-color:rgba(220,38,38,.38) !important;
+  box-shadow:0 10px 24px rgba(220,38,38,.20) !important;
+}
+html body .bm-excel-btn,
+html body button[id*="Export"],
+html body button[id*="export"],
+html body button[id*="Import"],
+html body button[id*="import"],
+html body #cmReportExcelExportBtn,
+html body #cmReportJpgExportBtn,
+html body #salesExportBtn,
+html body #exportCustomersBtn,
+html body #importCustomersBtn,
+html body #exportProductsBtn,
+html body #importProductsBtn,
+html body #exportServicesBtn,
+html body #importServicesBtn{
+  background:linear-gradient(135deg,var(--cm-green),var(--cm-green-hover)) !important;
+  color:#fff !important;
+  border-color:rgba(22,163,74,.38) !important;
+  box-shadow:0 10px 24px rgba(22,163,74,.20) !important;
+}
+html body button:hover{filter:brightness(1.03) !important;}
+
+/* Pola wyszukiwania, selecty i daty — czytelne, ciemny tekst */
+html body input,
+html body select,
+html body textarea,
+html body .panel-input,
+html body .role-select,
+html body .bm-table-toolbar input,
+html body input[type="search"],
+html body input[type="date"],
+html body input[type="time"],
+html body input[type="number"],
+html body input::placeholder,
+html body textarea::placeholder{
+  color:var(--cm-black) !important;
+}
+html body input,
+html body select,
+html body textarea,
+html body .panel-input,
+html body .role-select,
+html body .bm-form-row input,
+html body .bm-form-row select,
+html body .bm-form-row-2 input,
+html body .bm-form-row-2 select,
+html body .bm-table-toolbar input{
+  background:#fff !important;
+  border:1px solid #d3b982 !important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.85) !important;
+}
+html body input::placeholder,
+html body textarea::placeholder{opacity:.72 !important;}
+html body label,
+html body .field label,
+html body .bm-form-grid label,
+html body .bm-form-row label,
+html body .bm-form-row-2 label{color:#191510 !important;font-weight:800 !important;}
+
+/* Czas w kalendarzu/grafiku — czarny i wyśrodkowany */
+html body .bm-schedule-table th:first-child,
+html body .bm-schedule-table td:first-child,
+html body .bm-schedule-table .time,
+html body .bm-time,
+html body .calendar-time,
+html body [data-time],
+html body .bm-live-clock,
+html body .bm-left-info-panel .bm-live-clock{
+  color:var(--cm-black) !important;
+  text-align:center !important;
+  font-weight:900 !important;
+}
+html body .bm-schedule-table th,
+html body .bm-schedule-table td{text-align:center !important;}
+html body .bm-schedule-table td:first-child{background:#fff2d7 !important;}
+html body .bm-free,
+html body .free,
+html body .bm-schedule-table .free{color:var(--cm-gold-strong) !important;font-weight:900 !important;}
+
+/* Statusy i etykiety */
+html body .bm-role,
+html body .bm-status,
+html body .status-badge,
+html body .cm-status,
+html body .badge,
+html body .pill{
+  border:1px solid rgba(37,99,235,.22) !important;
+  color:#1d4ed8 !important;
+  background:#eff6ff !important;
+}
+html body .bm-status.deleted,
+html body .status-deleted,
+html body .cm-status-deleted,
+html body [data-status="deleted"],
+html body [data-status="usunięte"],
+html body [data-status="usuniete"]{
+  color:#b91c1c !important;
+  background:#fee2e2 !important;
+  border-color:rgba(220,38,38,.28) !important;
+}
+html body .status-cancelled,
+html body .status-planned,
+html body .status-completed,
+html body .status-unfinished,
+html body [data-status="niezakończone"],
+html body [data-status="zakończone"],
+html body [data-status="zaplanowane"],
+html body [data-status="odwołane"]{
+  color:#1d4ed8 !important;
+  background:#dbeafe !important;
+  border-color:rgba(37,99,235,.25) !important;
+}
+
+/* Produkty / magazyn */
+html body .stock-low,
+html body .low-stock,
+html body [data-stock="mało"],
+html body [data-filter="lowStock"]{color:#b91c1c !important;background:#fee2e2 !important;border-color:rgba(220,38,38,.25) !important;}
+html body .stock-high,
+html body .high-stock,
+html body [data-stock="dużo"],
+html body [data-filter="highStock"]{color:#15803d !important;background:#dcfce7 !important;border-color:rgba(22,163,74,.25) !important;}
+html body .sale-only,
+html body [data-filter="saleOnly"],
+html body [data-sale-only="true"]{color:#1d4ed8 !important;background:#dbeafe !important;border-color:rgba(37,99,235,.25) !important;}
+html body .bm-table td,
+html body .data-table td,
+html body .cm-audit-table td{color:#111827 !important;}
+html body .bm-table th,
+html body .data-table th,
+html body .cm-audit-table th{color:#191510 !important;background:linear-gradient(180deg,#fff1cc,#eec36a) !important;}
+
+/* Raporty: zakładki złote, wartości czarne */
+html body .cm-sales-subnav button,
+html body .cm-report-tabs button,
+html body .report-tabs button,
+html body .cm-tab,
+html body .bm-tab,
+html body [data-report-view],
+html body [data-sales-view]{
+  background:linear-gradient(135deg,#fff2cc,#e8b847) !important;
+  color:#251a08 !important;
+  border:1px solid rgba(184,129,17,.42) !important;
+  box-shadow:0 8px 18px rgba(184,129,17,.14) !important;
+}
+html body .cm-sales-subnav button.active,
+html body .cm-report-tabs button.active,
+html body .report-tabs button.active,
+html body .cm-tab.active,
+html body .bm-tab.active{
+  background:linear-gradient(135deg,#d69a16,#f4c75f) !important;
+  color:#16110a !important;
+}
+html body .cm-summary,
+html body .cm-summary *,
+html body .summary,
+html body .summary *,
+html body .report-summary,
+html body .report-summary *,
+html body .cm-kpi-card,
+html body .cm-kpi-card *,
+html body .cm-stat-card,
+html body .cm-stat-card *,
+html body .bm-stats article,
+html body .bm-stats article *,
+html body .chart-card,
+html body .chart-card *,
+html body .cm-chart-card,
+html body .cm-chart-card *{
+  color:#111827 !important;
+}
+html body .bm-stats article,
+html body .cm-stat-card,
+html body .cm-kpi-card,
+html body .chart-card,
+html body .cm-chart-card{
+  background:#fffdf7 !important;
+  border:1px solid var(--cm-border) !important;
+}
+html body svg text,
+html body canvas + *,
+html body .recharts-text,
+html body .recharts-cartesian-axis-tick-value{fill:#111827 !important;color:#111827 !important;}
+html body .recharts-cartesian-grid line{stroke:#d8c08d !important;}
+
+/* SMS / Email jako niebieskie akcje */
+html body a[href*="sms"],
+html body a[href*="email"],
+html body button[id*="Sms"],
+html body button[id*="SMS"],
+html body button[id*="Email"],
+html body button[id*="email"]{
+  color:#1d4ed8 !important;
+  border-color:rgba(37,99,235,.25) !important;
+}
+
+/* Nazwy firm / nazwy wyróżnione */
+html body .company-name,
+html body [data-company-name],
+html body .cm-company-name,
+html body .bm-company-name{color:#111827 !important;font-weight:900 !important;}
+html body .cm-gold-name,
+html body .brand-name,
+html body .service-name-highlight{color:var(--cm-gold-strong) !important;font-weight:900 !important;}
+
+/* Grafik pracy — czytelny, bez przezroczystości */
+html body .cm-work-schedule,
+html body .work-schedule-page,
+html body .work-schedule-card,
+html body .cm-work-card,
+html body .cm-work-form,
+html body #workScheduleRoot,
+html body #workScheduleContent,
+html body .work-schedule-table,
+html body .cm-work-table{
+  background:#fffdf7 !important;
+  color:#111827 !important;
+  border-color:var(--cm-border) !important;
+}
+html body .work-schedule-table th,
+html body .work-schedule-table td,
+html body .cm-work-table th,
+html body .cm-work-table td,
+html body #workScheduleRoot th,
+html body #workScheduleRoot td{
+  color:#111827 !important;
+  background:#fffaf0 !important;
+  border-color:#ead5aa !important;
+}
+html body .work-schedule-table th,
+html body .cm-work-table th,
+html body #workScheduleRoot th{background:linear-gradient(180deg,#fff1cc,#eec36a) !important;}
+html body #workScheduleRoot input,
+html body #workScheduleRoot select,
+html body #workScheduleRoot textarea{background:#fff !important;color:#111827 !important;border-color:#d3b982 !important;}
+
+/* Raporty szczegółowe — Klienci, dzienny, okres, pracownicy */
+html body #customersReportsRoot,
+html body #dailyReportRoot,
+html body #periodReportRoot,
+html body #employeesReportsRoot,
+html body .customers-reports,
+html body .daily-report,
+html body .period-report,
+html body .employees-report,
+html body .cm-report-root{
+  color:#111827 !important;
+}
+html body #customersReportsRoot *,
+html body #dailyReportRoot *,
+html body #periodReportRoot *,
+html body #employeesReportsRoot *,
+html body .cm-report-root *{color:#111827;}
+html body #customersReportsRoot input,
+html body #dailyReportRoot input,
+html body #periodReportRoot input,
+html body #employeesReportsRoot input,
+html body #customersReportsRoot select,
+html body #dailyReportRoot select,
+html body #periodReportRoot select,
+html body #employeesReportsRoot select{color:#111827 !important;background:#fff !important;border-color:#d3b982 !important;}
+
+/* Scrollbar w nowym stylu */
+html body ::-webkit-scrollbar{width:13px;height:13px;}
+html body ::-webkit-scrollbar-track{background:#fff4da;}
+html body ::-webkit-scrollbar-thumb{background:#c89118;border-radius:999px;border:3px solid #fff4da;}
+html body ::-webkit-scrollbar-thumb:hover{background:#a76f12;}
