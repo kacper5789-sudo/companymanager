@@ -1,5 +1,5 @@
 // CompanyManager — Historia aktywności / Company audit log
-// 083: Historia aktywności — czytelne pola Przed/Po bez technicznego JSON.
+// 085: Historia aktywności — pełny tryb ludzki, bez UUID w kolumnie Rekord.
 
 (function () {
   function isPage() {
@@ -145,15 +145,63 @@
     return FIELD_LABELS[key] || String(key || "").replace(/_/g, " ").replace(/^./, (c) => c.toUpperCase());
   }
 
+  function isUuid(value) {
+    return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(value || "").trim());
+  }
+
+  function isTechnicalText(value) {
+    const s = String(value || "").trim();
+    if (!s) return true;
+    if (isUuid(s)) return true;
+    if (/^\{.*\}$/.test(s) || /^\[.*\]$/.test(s)) return true;
+    return false;
+  }
+
   function cleanRecordName(v) {
-    const s = String(v || "");
-    if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s)) return "Zmieniony rekord";
-    return s || "Zmieniony rekord";
+    const s = String(v || "").trim();
+    if (isTechnicalText(s)) return "Zmieniony rekord";
+    return s;
+  }
+
+  function extractReadableName(value) {
+    if (!value || typeof value !== "object") return "";
+    const candidates = [
+      value.record_label, value.target_label, value.name, value.full_name,
+      value.service_name, value.product_name, value.customer_name, value.client_name,
+      value.employee_name, value.buyer, value.email, value.phone, value.number, value.sale_number,
+      value.title, value.label
+    ];
+    for (const candidate of candidates) {
+      const text = String(candidate || "").trim();
+      if (text && !isTechnicalText(text)) return text;
+    }
+    if (value.old_data && typeof value.old_data === "object") {
+      const nested = extractReadableName(value.old_data);
+      if (nested) return nested;
+    }
+    if (value.new_data && typeof value.new_data === "object") {
+      const nested = extractReadableName(value.new_data);
+      if (nested) return nested;
+    }
+    return "";
   }
 
   function summarizeObject(obj) {
     if (!obj || typeof obj !== "object") return "-";
-    return obj.name || obj.full_name || obj.email || obj.record_label || obj.target_label || obj.service_name || obj.product_name || obj.customer_name || obj.number || "szczegóły";
+    return extractReadableName(obj) || "szczegóły";
+  }
+
+  function displayRecordName(item) {
+    const direct = [item?.record_label, item?.target_label];
+    for (const candidate of direct) {
+      const text = String(candidate || "").trim();
+      if (text && !isTechnicalText(text)) return text;
+    }
+    const fromNew = extractReadableName(item?.new_data);
+    if (fromNew) return fromNew;
+    const fromOld = extractReadableName(item?.old_data);
+    if (fromOld) return fromOld;
+    return "Zmieniony rekord";
   }
 
   function pickReadableEntries(value) {
@@ -164,7 +212,7 @@
       const rows = [];
       if (value.module) rows.push(["Moduł", normalizeModuleText(value.module)]);
       if (value.action_type) rows.push(["Cofnięta akcja", normalizeActionText(value.action_type)]);
-      const label = value.target_label || value.record_label || value.name || value.email;
+      const label = extractReadableName(value);
       if (label) rows.push(["Rekord", label]);
       if (value.undone_at) rows.push(["Data cofnięcia", formatDateTime(value.undone_at)]);
       const nested = value.new_data || value.old_data;
@@ -194,7 +242,6 @@
       entries.push([labelForField(key), formatAuditValue(val, key)]);
     }
     priority.forEach(addKey);
-    Object.keys(value).forEach(addKey);
     return entries.slice(0, 8);
   }
 
@@ -204,7 +251,7 @@
     if (String(item?.action || "").toUpperCase() === "UNDO" && (value.module || value.action_type || value.undone_at)) {
       const module = normalizeModuleText(value.module || item.module);
       const action = normalizeActionText(value.action_type || value.action || item.action);
-      const label = cleanRecordName(value.target_label || value.record_label || item.record_label || item.record_id);
+      const label = displayRecordName({ ...item, old_data: value.old_data || item.old_data, new_data: value.new_data || item.new_data, record_label: value.record_label || value.target_label || item.record_label });
       const undone = value.undone_at ? `<div><strong>Data cofnięcia:</strong> ${escapeHtml(formatDateTime(value.undone_at))}</div>` : "";
       return `<div class="cm-audit-readable"><div><strong>Cofnięto akcję:</strong></div><div>${escapeHtml(module)} → ${escapeHtml(action)} → ${escapeHtml(label)}</div>${undone}</div>`;
     }
@@ -372,7 +419,7 @@
         <td><strong>${escapeHtml(item.actor_name || "-")}</strong><br><small>${escapeHtml(item.actor_email || "")}</small></td>
         <td>${escapeHtml(item.module || item.table_name || "-")}</td>
         <td><span class="cm-audit-badge ${actionClass(item.action)}">${escapeHtml(actionLabel(item.action))}</span></td>
-        <td>${escapeHtml(item.record_label || item.record_id || "-")}</td>
+        <td>${escapeHtml(displayRecordName(item))}</td>
         <td>${formatChangeHtml(item.old_data, item, "old")}</td>
         <td>${formatChangeHtml(item.new_data, item, "new")}</td>
       </tr>`).join("");
