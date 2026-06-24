@@ -1,6 +1,6 @@
 // CompanyManager — send-automatic-notifications Edge Function
-// Automatyczne EMAIL: 24h przed wizytą, po dodaniu wizyty, po zakończeniu wizyty, urodziny.
-// Wymaga sekretu RESEND_API_KEY. Zalecane: SUPABASE_SERVICE_ROLE_KEY i EMAIL_FROM_ADDRESS.
+// Automatyczne EMAIL/SMS: 24h przed wizytą, po dodaniu wizyty, po zakończeniu wizyty, urodziny.
+// EMAIL przez Resend, SMS przez SMSAPI. Secrets: RESEND_API_KEY, SMSAPI_TOKEN, SUPABASE_SERVICE_ROLE_KEY.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.4";
 
@@ -12,6 +12,10 @@ const corsHeaders = {
 
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY") || "";
 const FROM_EMAIL = Deno.env.get("EMAIL_FROM_ADDRESS") || "no-reply@companymanager.com.pl";
+const SMSAPI_TOKEN = Deno.env.get("SMSAPI_TOKEN") || "";
+const SMSAPI_URL = Deno.env.get("SMSAPI_URL") || "https://api.smsapi.pl/sms.do";
+const SMSAPI_FROM = Deno.env.get("SMSAPI_FROM") || "";
+const SMS_DRY_RUN = ["1", "true", "yes", "tak"].includes(String(Deno.env.get("SMS_DRY_RUN") || "").toLowerCase());
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") || "";
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || Deno.env.get("SUPABASE_SERVICE_KEY") || "";
 const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY") || "";
@@ -49,6 +53,24 @@ function sanitizeSender(value: unknown, fallback = "CompanyManager") {
 
 function stripTags(value: string) {
   return String(value || "").replace(/<[^>]*>/g, "");
+}
+
+function sanitizeSmsSender(value: unknown, fallback = "") {
+  const raw = normalizeText(value, fallback)
+    .replace(/[^a-zA-Z0-9]/g, "")
+    .slice(0, 11);
+  return raw || normalizeText(fallback).replace(/[^a-zA-Z0-9]/g, "").slice(0, 11);
+}
+
+function normalizePhone(value: unknown) {
+  let phone = normalizeText(value).replace(/[\s().-]/g, "");
+  if (phone.startsWith("00")) phone = "+" + phone.slice(2);
+  if (/^\d{9}$/.test(phone)) phone = "+48" + phone;
+  return phone;
+}
+
+function isValidPhone(phone: string) {
+  return /^\+[1-9]\d{7,14}$/.test(phone);
 }
 
 function escapeHtml(value: unknown) {
@@ -126,6 +148,34 @@ async function sendWithResend(input: { to: string; fromName: string; subject: st
   return payload;
 }
 
+async function sendWithSmsApi(input: { to: string; fromName: string; body: string }) {
+  const to = normalizePhone(input.to);
+  if (!isValidPhone(to)) throw new Error("Niepoprawny numer telefonu");
+  const from = sanitizeSmsSender(input.fromName, SMSAPI_FROM);
+  const message = normalizeText(input.body).slice(0, 918);
+  if (!message) throw new Error("Pusta treść SMS");
+  if (SMS_DRY_RUN) return { dry_run: true, id: `dry_${Date.now()}`, to, from };
+  if (!SMSAPI_TOKEN) throw new Error("Missing SMSAPI_TOKEN secret");
+
+  const body = new URLSearchParams();
+  body.set("to", to.replace(/^\+/, ""));
+  body.set("message", message);
+  body.set("format", "json");
+  if (from) body.set("from", from);
+
+  const response = await fetch(SMSAPI_URL, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${SMSAPI_TOKEN}`,
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
+    body,
+  });
+  const payload = await response.json().catch(async () => ({ raw: await response.text().catch(() => "") }));
+  if (!response.ok || payload?.error) throw new Error(payload?.message || payload?.error || `SMSAPI HTTP ${response.status}`);
+  return payload;
+}
+
 async function logNotification(supabase: any, row: AnyRow) {
   const payload = {
     company_id: row.company_id,
@@ -193,6 +243,36 @@ function getEmailSettings(company: AnyRow, type: string) {
     sender: company.birthday_email_sender || company.name || "CompanyManager",
     subject: company.birthday_email_subject || "Wszystkiego najlepszego",
     body: company.birthday_email_template || "Cześć {klient},\nżyczymy wszystkiego najlepszego!\n{firma}",
+  };
+}
+
+
+function getSmsSettings(company: AnyRow, type: string) {
+  if (type === "visit_24") {
+    return {
+      enabled: !!company.visit_sms_24,
+      sender: company.visit_sms_sender || company.sms_sender || company.message_sender || SMSAPI_FROM || "",
+      body: company.visit_sms_template || "Cześć {klient}, przypominamy o wizycie {data} o {godzina}. {firma}",
+    };
+  }
+  if (type === "after_add") {
+    return {
+      enabled: !!company.after_add_sms,
+      sender: company.after_add_sms_sender || company.sms_sender || company.message_sender || SMSAPI_FROM || "",
+      body: company.after_add_sms_template || "Cześć {klient}, Twoja wizyta została zapisana na {data} o {godzina}. {firma}",
+    };
+  }
+  if (type === "after_visit") {
+    return {
+      enabled: !!company.after_visit_sms,
+      sender: company.after_visit_sms_sender || company.sms_sender || company.message_sender || SMSAPI_FROM || "",
+      body: company.after_visit_sms_template || "Cześć {klient}, dziękujemy za wizytę. {firma}",
+    };
+  }
+  return {
+    enabled: !!company.birthday_sms,
+    sender: company.birthday_sms_sender || company.sms_sender || company.message_sender || SMSAPI_FROM || "",
+    body: company.birthday_sms_template || "Cześć {klient}, życzymy wszystkiego najlepszego! {firma}",
   };
 }
 
@@ -273,12 +353,90 @@ async function sendAutomaticEmail(supabase: any, company: AnyRow, client: AnyRow
   }
 }
 
+
+async function sendAutomaticSms(supabase: any, company: AnyRow, client: AnyRow, appointment: AnyRow | null, type: string, dedupeKey: string, extra: AnyRow = {}) {
+  if (await alreadyLogged(supabase, dedupeKey)) return { skipped: true, reason: "duplicate" };
+
+  const settings = getSmsSettings(company, type);
+  if (!settings.enabled) return { skipped: true, reason: "disabled" };
+
+  const to = normalizePhone(client?.phone || client?.phone_number || client?.mobile);
+  if (!to || !isValidPhone(to)) {
+    await logNotification(supabase, {
+      company_id: company.id,
+      client_id: client?.id,
+      appointment_id: appointment?.id,
+      channel: "sms",
+      type,
+      recipient: to,
+      recipient_name: clientName(client),
+      sender_name: settings.sender,
+      content: settings.body,
+      status: "skipped",
+      provider: SMS_DRY_RUN ? "smsapi_dry_run" : "smsapi",
+      error_message: "Brak poprawnego numeru telefonu",
+      dedupe_key: dedupeKey,
+    });
+    return { skipped: true, reason: "missing_phone" };
+  }
+
+  const variables = {
+    client_name: clientName(client),
+    company_name: company.name || "",
+    date: formatDate(appointment?.date || appointment?.starts_at || extra.date),
+    time: formatTime(appointment?.time || appointment?.start_time || appointment?.starts_at || extra.time),
+    employee_name: employeeName(extra.employee),
+    service_name: normalizeText(extra.service?.name || appointment?.service_name),
+  };
+  const content = applyVariables(settings.body, variables).slice(0, 918);
+
+  try {
+    const result = await sendWithSmsApi({ to, fromName: settings.sender, body: content });
+    const providerId = result?.list?.[0]?.id || result?.id || result?.message_id || null;
+    await logNotification(supabase, {
+      company_id: company.id,
+      client_id: client?.id,
+      appointment_id: appointment?.id,
+      channel: "sms",
+      type,
+      recipient: to,
+      recipient_name: clientName(client),
+      sender_name: settings.sender,
+      content,
+      status: "sent",
+      provider: SMS_DRY_RUN ? "smsapi_dry_run" : "smsapi",
+      provider_message_id: providerId,
+      dedupe_key: dedupeKey,
+      sent_at: new Date().toISOString(),
+    });
+    return { sent: true };
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : String(error);
+    await logNotification(supabase, {
+      company_id: company.id,
+      client_id: client?.id,
+      appointment_id: appointment?.id,
+      channel: "sms",
+      type,
+      recipient: to,
+      recipient_name: clientName(client),
+      sender_name: settings.sender,
+      content,
+      status: "failed",
+      provider: SMS_DRY_RUN ? "smsapi_dry_run" : "smsapi",
+      error_message: msg,
+      dedupe_key: dedupeKey,
+    });
+    return { failed: true, error: msg };
+  }
+}
+
 async function fetchRelated(supabase: any, appointment: AnyRow) {
   const clientId = appointment.client_id || appointment.customer_id;
   const employeeId = appointment.employee_id;
   const serviceId = appointment.service_id;
   const [clientRes, employeeRes, serviceRes] = await Promise.all([
-    clientId ? supabase.from("clients").select("id,full_name,name,email,marketing_email,date_of_birth,birth_date,birthday,active,deleted_at").eq("id", clientId).maybeSingle() : Promise.resolve({ data: null }),
+    clientId ? supabase.from("clients").select("id,full_name,name,email,phone,phone_number,mobile,marketing_email,marketing_sms,date_of_birth,birth_date,birthday,active,deleted_at").eq("id", clientId).maybeSingle() : Promise.resolve({ data: null }),
     employeeId ? supabase.from("employees").select("id,full_name,name,email").eq("id", employeeId).maybeSingle() : Promise.resolve({ data: null }),
     serviceId ? supabase.from("services").select("id,name").eq("id", serviceId).maybeSingle() : Promise.resolve({ data: null }),
   ]);
@@ -293,7 +451,7 @@ async function processAppointments(supabase: any, company: AnyRow, summary: AnyR
   const recent = new Date(now.getTime() - 35 * 60 * 1000).toISOString();
 
   // 24h przed wizytą: wizyty z datą jutro.
-  if (company.visit_email_24) {
+  if (company.visit_email_24 || company.visit_sms_24) {
     const { data: rows } = await supabase
       .from("appointments")
       .select("id,company_id,client_id,customer_id,employee_id,service_id,date,time,start_time,status,active,deleted_at")
@@ -307,14 +465,21 @@ async function processAppointments(supabase: any, company: AnyRow, summary: AnyR
       if (["odwołane", "odwolane", "cancelled", "canceled", "deleted", "usunięte", "usuniete"].includes(status)) continue;
       const related = await fetchRelated(supabase, appt);
       if (!related.client) continue;
-      const key = `email:visit_24:${appt.id}:${tomorrowDate}`;
-      const r = await sendAutomaticEmail(supabase, company, related.client, appt, "visit_24", key, related);
-      if (r.sent) summary.sent += 1; else if (r.failed) summary.failed += 1; else summary.skipped += 1;
+      if (company.visit_email_24) {
+        const key = `email:visit_24:${appt.id}:${tomorrowDate}`;
+        const r = await sendAutomaticEmail(supabase, company, related.client, appt, "visit_24", key, related);
+        if (r.sent) summary.sent += 1; else if (r.failed) summary.failed += 1; else summary.skipped += 1;
+      }
+      if (company.visit_sms_24) {
+        const key = `sms:visit_24:${appt.id}:${tomorrowDate}`;
+        const r = await sendAutomaticSms(supabase, company, related.client, appt, "visit_24", key, related);
+        if (r.sent) summary.sent += 1; else if (r.failed) summary.failed += 1; else summary.skipped += 1;
+      }
     }
   }
 
   // Po dodaniu wizyty: tylko świeżo utworzone, żeby nie odpalić starych danych.
-  if (company.after_add_email) {
+  if (company.after_add_email || company.after_add_sms) {
     const { data: rows } = await supabase
       .from("appointments")
       .select("id,company_id,client_id,customer_id,employee_id,service_id,date,time,start_time,status,created_at,active,deleted_at")
@@ -326,14 +491,21 @@ async function processAppointments(supabase: any, company: AnyRow, summary: AnyR
     for (const appt of rows || []) {
       const related = await fetchRelated(supabase, appt);
       if (!related.client) continue;
-      const key = `email:after_add:${appt.id}`;
-      const r = await sendAutomaticEmail(supabase, company, related.client, appt, "after_add", key, related);
-      if (r.sent) summary.sent += 1; else if (r.failed) summary.failed += 1; else summary.skipped += 1;
+      if (company.after_add_email) {
+        const key = `email:after_add:${appt.id}`;
+        const r = await sendAutomaticEmail(supabase, company, related.client, appt, "after_add", key, related);
+        if (r.sent) summary.sent += 1; else if (r.failed) summary.failed += 1; else summary.skipped += 1;
+      }
+      if (company.after_add_sms) {
+        const key = `sms:after_add:${appt.id}`;
+        const r = await sendAutomaticSms(supabase, company, related.client, appt, "after_add", key, related);
+        if (r.sent) summary.sent += 1; else if (r.failed) summary.failed += 1; else summary.skipped += 1;
+      }
     }
   }
 
   // Po wizycie: świeżo zaktualizowane i zakończone.
-  if (company.after_visit_email) {
+  if (company.after_visit_email || company.after_visit_sms) {
     const { data: rows } = await supabase
       .from("appointments")
       .select("id,company_id,client_id,customer_id,employee_id,service_id,date,time,start_time,status,updated_at,active,deleted_at")
@@ -347,24 +519,30 @@ async function processAppointments(supabase: any, company: AnyRow, summary: AnyR
       if (!["zakończone", "zakonczone", "completed", "done", "finished", "zrealizowane"].includes(status)) continue;
       const related = await fetchRelated(supabase, appt);
       if (!related.client) continue;
-      const key = `email:after_visit:${appt.id}`;
-      const r = await sendAutomaticEmail(supabase, company, related.client, appt, "after_visit", key, related);
-      if (r.sent) summary.sent += 1; else if (r.failed) summary.failed += 1; else summary.skipped += 1;
+      if (company.after_visit_email) {
+        const key = `email:after_visit:${appt.id}`;
+        const r = await sendAutomaticEmail(supabase, company, related.client, appt, "after_visit", key, related);
+        if (r.sent) summary.sent += 1; else if (r.failed) summary.failed += 1; else summary.skipped += 1;
+      }
+      if (company.after_visit_sms) {
+        const key = `sms:after_visit:${appt.id}`;
+        const r = await sendAutomaticSms(supabase, company, related.client, appt, "after_visit", key, related);
+        if (r.sent) summary.sent += 1; else if (r.failed) summary.failed += 1; else summary.skipped += 1;
+      }
     }
   }
 }
 
 async function processBirthdays(supabase: any, company: AnyRow, summary: AnyRow) {
-  if (!company.birthday_email) return;
+  if (!company.birthday_email && !company.birthday_sms) return;
   const now = new Date();
   const month = pad(now.getMonth() + 1);
   const day = pad(now.getDate());
   const todayKey = isoDate(now);
   const { data: clients } = await supabase
     .from("clients")
-    .select("id,company_id,full_name,name,email,marketing_email,date_of_birth,birth_date,birthday,active,deleted_at")
+    .select("id,company_id,full_name,name,email,phone,phone_number,mobile,marketing_email,marketing_sms,date_of_birth,birth_date,birthday,active,deleted_at")
     .eq("company_id", company.id)
-    .eq("marketing_email", true)
     .is("deleted_at", null)
     .limit(500);
 
@@ -372,9 +550,16 @@ async function processBirthdays(supabase: any, company: AnyRow, summary: AnyRow)
     const bday = normalizeText(client.date_of_birth || client.birth_date || client.birthday);
     if (!bday || bday.length < 10) continue;
     if (bday.slice(5, 10) !== `${month}-${day}`) continue;
-    const key = `email:birthday:${client.id}:${todayKey}`;
-    const r = await sendAutomaticEmail(supabase, company, client, null, "birthday", key, { date: todayKey });
-    if (r.sent) summary.sent += 1; else if (r.failed) summary.failed += 1; else summary.skipped += 1;
+    if (company.birthday_email && client.marketing_email) {
+      const key = `email:birthday:${client.id}:${todayKey}`;
+      const r = await sendAutomaticEmail(supabase, company, client, null, "birthday", key, { date: todayKey });
+      if (r.sent) summary.sent += 1; else if (r.failed) summary.failed += 1; else summary.skipped += 1;
+    }
+    if (company.birthday_sms && client.marketing_sms) {
+      const key = `sms:birthday:${client.id}:${todayKey}`;
+      const r = await sendAutomaticSms(supabase, company, client, null, "birthday", key, { date: todayKey });
+      if (r.sent) summary.sent += 1; else if (r.failed) summary.failed += 1; else summary.skipped += 1;
+    }
   }
 }
 
@@ -383,7 +568,7 @@ Deno.serve(async (req) => {
     if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
     if (req.method !== "POST") return jsonResponse({ error: "Method not allowed" }, 405);
 
-    if (!RESEND_API_KEY) return jsonResponse({ error: "Missing RESEND_API_KEY secret" }, 500);
+    // RESEND_API_KEY jest wymagany tylko dla aktywnych emaili. SMS używa SMSAPI_TOKEN.
     if (!SUPABASE_URL) return jsonResponse({ error: "Missing SUPABASE_URL environment" }, 500);
 
     if (CRON_SECRET) {
@@ -412,7 +597,7 @@ Deno.serve(async (req) => {
 
     const query = supabase
       .from("companies")
-      .select("id,name,visit_email_24,visit_email_sender,visit_email_subject,visit_email_template,birthday_email,birthday_email_sender,birthday_email_subject,birthday_email_template,after_add_email,after_add_email_sender,after_add_email_subject,after_add_email_template,after_visit_email,after_visit_email_sender,after_visit_email_subject,after_visit_email_template,active,deleted_at")
+      .select("id,name,message_sender,sms_sender,visit_email_24,visit_email_sender,visit_email_subject,visit_email_template,birthday_email,birthday_email_sender,birthday_email_subject,birthday_email_template,after_add_email,after_add_email_sender,after_add_email_subject,after_add_email_template,after_visit_email,after_visit_email_sender,after_visit_email_subject,after_visit_email_template,visit_sms_24,visit_sms_sender,visit_sms_template,birthday_sms,birthday_sms_sender,birthday_sms_template,after_add_sms,after_add_sms_sender,after_add_sms_template,after_visit_sms,after_visit_sms_sender,after_visit_sms_template,active,deleted_at")
       .limit(200);
 
     const { data: companies, error: companyError } = companyFilter
