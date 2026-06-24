@@ -145,6 +145,12 @@
     return FIELD_LABELS[key] || String(key || "").replace(/_/g, " ").replace(/^./, (c) => c.toUpperCase());
   }
 
+  function cleanRecordName(v) {
+    const s = String(v || "");
+    if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s)) return "Zmieniony rekord";
+    return s || "Zmieniony rekord";
+  }
+
   function summarizeObject(obj) {
     if (!obj || typeof obj !== "object") return "-";
     return obj.name || obj.full_name || obj.email || obj.record_label || obj.target_label || obj.service_name || obj.product_name || obj.customer_name || obj.number || "szczegóły";
@@ -198,7 +204,7 @@
     if (String(item?.action || "").toUpperCase() === "UNDO" && (value.module || value.action_type || value.undone_at)) {
       const module = normalizeModuleText(value.module || item.module);
       const action = normalizeActionText(value.action_type || value.action || item.action);
-      const label = value.target_label || value.record_label || item.record_label || item.record_id || "rekord";
+      const label = cleanRecordName(value.target_label || value.record_label || item.record_label || item.record_id);
       const undone = value.undone_at ? `<div><strong>Data cofnięcia:</strong> ${escapeHtml(formatDateTime(value.undone_at))}</div>` : "";
       return `<div class="cm-audit-readable"><div><strong>Cofnięto akcję:</strong></div><div>${escapeHtml(module)} → ${escapeHtml(action)} → ${escapeHtml(label)}</div>${undone}</div>`;
     }
@@ -211,6 +217,7 @@
   function actionLabel(action) {
     const map = {
       CREATE: "Dodano",
+      INSERT: "Dodano",
       UPDATE: "Edytowano",
       DELETE: "Usunięto",
       CANCEL: "Odwołano",
