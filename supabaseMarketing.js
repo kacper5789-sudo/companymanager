@@ -1,4 +1,4 @@
-// CompanyManager — 094 Marketing EMAIL real send via Resend
+// CompanyManager — 096 Marketing EMAIL/SMS Supabase + reports
 // Marketing zapisuje kampanie i odbiorców do Supabase oraz odpala Edge Function do realnej wysyłki EMAIL przez Resend.
 (function () {
   const PAGE = "marketing";
@@ -476,6 +476,174 @@
     } catch (error) {
       console.error("Marketing Supabase error", error);
       area.innerHTML = `<section class="bm-page-card"><h2>Błąd marketingu</h2><p>${escapeHtml(error?.message || error)}</p></section>`;
+    }
+  }
+
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init);
+  else init();
+})();
+
+
+// CompanyManager — 096 Email/SMS reports from Supabase
+(function () {
+  const page = document.body?.dataset?.panelPage || "";
+  const isEmail = page === "emailReports" || location.pathname.includes("email.html");
+  const isSms = page === "smsReports" || location.pathname.includes("sms.html");
+  if (!isEmail && !isSms) return;
+
+  const channel = isSms ? "sms" : "email";
+  const title = isSms ? "SMS" : "Email";
+  const $ = (sel, root = document) => root.querySelector(sel);
+
+  function escapeHtml(value) {
+    return String(value ?? "").replace(/[&<>'"]/g, (c) => ({
+      "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;"
+    }[c]));
+  }
+
+  function formatDateTimePL(value) {
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return "—";
+    return `${String(date.getDate()).padStart(2, "0")}.${String(date.getMonth() + 1).padStart(2, "0")}.${date.getFullYear()}, ${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
+  }
+
+  function monthKey(value) {
+    const d = new Date(value);
+    if (Number.isNaN(d.getTime())) return "brak-daty";
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+  }
+
+  function monthLabel(key) {
+    if (key === "brak-daty") return "Brak daty";
+    const months = ["Sty", "Lut", "Mar", "Kwi", "Maj", "Cze", "Lip", "Sie", "Wrz", "Paź", "Lis", "Gru"];
+    const [y, m] = String(key).split("-");
+    return `${months[Number(m) - 1] || m} ${y}`;
+  }
+
+  function statusLabel(value) {
+    const s = String(value || "").toLowerCase();
+    if (s === "sent") return "Wysłano";
+    if (s === "test") return "Test";
+    if (s === "draft") return "Szkic";
+    if (s === "ready_to_send" || s === "ready") return "Gotowe";
+    if (s === "failed") return "Błąd";
+    if (s === "cancelled") return "Anulowane";
+    if (s === "deleted") return "Usunięte";
+    return value || "—";
+  }
+
+  function table(headers, rows, empty = "Brak danych") {
+    if (!rows.length) return `<div class="bm-empty-state">${escapeHtml(empty)}</div>`;
+    return `<div class="bm-table-wrap"><table class="bm-table"><thead><tr>${headers.map((h) => `<th>${escapeHtml(h)}</th>`).join("")}</tr></thead><tbody>${rows.map((row) => `<tr>${row.map((cell) => `<td>${cell}</td>`).join("")}</tr>`).join("")}</tbody></table></div>`;
+  }
+
+  async function waitForArea() {
+    for (let i = 0; i < 80; i += 1) {
+      const area = $(".bm-panel-area") || $(".bm-panel-workspace") || $("#dashboardRoot");
+      if (area && !area.textContent.includes("Ładowanie panelu")) return area;
+      await new Promise((resolve) => setTimeout(resolve, 80));
+    }
+    return $("#dashboardRoot") || document.body;
+  }
+
+  async function fetchReport() {
+    if (!window.cmSupabase) throw new Error("Brak połączenia z Supabase.");
+    const { data, error } = await window.cmSupabase.rpc("cm_marketing_report", { p_channel: channel });
+    if (error) throw error;
+    return data || { campaigns: [], summary: {} };
+  }
+
+  function downloadCsv(filename, rows) {
+    const csv = rows.map((row) => row.map((cell) => `"${String(cell ?? "").replace(/"/g, '""')}"`).join(";")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  }
+
+  function render(area, report) {
+    const campaigns = Array.isArray(report.campaigns) ? report.campaigns : [];
+    const summary = report.summary || {};
+
+    const groups = new Map();
+    campaigns.forEach((c) => {
+      const key = monthKey(c.sent_at || c.created_at || c.updated_at);
+      if (!groups.has(key)) groups.set(key, { key, label: monthLabel(key), campaigns: 0, recipients: 0, sent: 0, failed: 0, skipped: 0, pending: 0 });
+      const g = groups.get(key);
+      g.campaigns += 1;
+      g.recipients += Number(c.total_recipients || c.recipient_count || 0);
+      g.sent += Number(c.sent_count || 0);
+      g.failed += Number(c.failed_count || 0);
+      g.skipped += Number(c.skipped_count || 0);
+      g.pending += Number(c.pending_count || 0);
+    });
+
+    const monthRows = Array.from(groups.values()).sort((a, b) => String(b.key).localeCompare(String(a.key))).map((g) => [
+      escapeHtml(g.label),
+      String(g.campaigns),
+      String(g.recipients),
+      String(g.sent),
+      String(g.failed),
+      String(g.pending),
+      `<button type="button" class="bm-light-btn cm-marketing-report-month" data-month="${escapeHtml(g.key)}">Pobierz raport</button>`
+    ]);
+
+    const campaignRows = campaigns.map((c) => [
+      escapeHtml(c.subject || c.body || "Kampania"),
+      escapeHtml(formatDateTimePL(c.sent_at || c.created_at)),
+      escapeHtml(c.sender_name || "—"),
+      String(c.total_recipients || c.recipient_count || 0),
+      String(c.sent_count || 0),
+      String(c.failed_count || 0),
+      escapeHtml(statusLabel(c.status))
+    ]);
+
+    area.innerHTML = `<section class="bm-page-card cm-${channel}-report-card">
+      <div class="bm-page-head"><div><h2>${escapeHtml(title)}</h2><p>${channel === "email" ? "Raport kampanii email pobierany z Supabase i Resend." : "Raport kampanii SMS pobierany z Supabase. Wysyłkę SMS podepniemy w kolejnym etapie."}</p></div></div>
+      <div class="cm-period-kpis">
+        <div><span>Kampanie</span><b>${Number(summary.campaigns || campaigns.length)}</b></div>
+        <div><span>Odbiorcy</span><b>${Number(summary.recipients || 0)}</b></div>
+        <div><span>Wysłano</span><b>${Number(summary.sent || 0)}</b></div>
+        <div><span>Błędy</span><b>${Number(summary.failed || 0)}</b></div>
+      </div>
+      <div class="bm-table-toolbar"><button type="button" class="bm-green-btn" id="marketingReportExportAll">Export - CSV</button></div>
+      <h3>Podsumowanie miesięczne</h3>
+      ${table(["Miesiąc", "Kampanie", "Odbiorcy", "Wysłano", "Błędy", "Oczekuje", "Raport"], monthRows, `Brak kampanii ${title}`)}
+      <h3>Historia kampanii</h3>
+      ${table(["Kampania", "Data", "Nadawca", "Odbiorcy", "Wysłano", "Błędy", "Status"], campaignRows, `Brak kampanii ${title}`)}
+    </section>`;
+
+    $("#marketingReportExportAll", area)?.addEventListener("click", () => {
+      downloadCsv(`raport-${channel}-wszystko.csv`, [
+        ["Kampania", "Data", "Nadawca", "Odbiorcy", "Wysłano", "Błędy", "Pominięte", "Oczekuje", "Status"],
+        ...campaigns.map((c) => [c.subject || c.body || "Kampania", formatDateTimePL(c.sent_at || c.created_at), c.sender_name || "", c.total_recipients || c.recipient_count || 0, c.sent_count || 0, c.failed_count || 0, c.skipped_count || 0, c.pending_count || 0, statusLabel(c.status)])
+      ]);
+    });
+
+    area.querySelectorAll(".cm-marketing-report-month").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const key = btn.dataset.month;
+        const rows = campaigns.filter((c) => monthKey(c.sent_at || c.created_at || c.updated_at) === key);
+        downloadCsv(`raport-${channel}-${key}.csv`, [
+          ["Kampania", "Data", "Nadawca", "Odbiorcy", "Wysłano", "Błędy", "Pominięte", "Oczekuje", "Status"],
+          ...rows.map((c) => [c.subject || c.body || "Kampania", formatDateTimePL(c.sent_at || c.created_at), c.sender_name || "", c.total_recipients || c.recipient_count || 0, c.sent_count || 0, c.failed_count || 0, c.skipped_count || 0, c.pending_count || 0, statusLabel(c.status)])
+        ]);
+      });
+    });
+  }
+
+  async function init() {
+    const area = await waitForArea();
+    try {
+      const report = await fetchReport();
+      render(area, report);
+    } catch (error) {
+      area.innerHTML = `<section class="bm-page-card"><h2>Błąd raportu ${escapeHtml(title)}</h2><p>${escapeHtml(error?.message || error)}</p><p class="bm-muted">Odpal SQL: supabase/migrations/172_marketing_email_sms_reports_supabase.sql</p></section>`;
     }
   }
 
