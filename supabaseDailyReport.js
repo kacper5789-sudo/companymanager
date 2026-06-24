@@ -170,7 +170,7 @@
     const sb = window.cmSupabase;
 
     const [salesRes, paymentsRes, appointmentsRes, employeesRes, clientsRes] = await Promise.all([
-      sb.from("sales").select("id,company_id,client_id,employee_id,employee_name,appointment_id,total_gross,total_net,payment_status,payment_method,created_at,updated_at").eq("company_id", ctx.companyId).gte("created_at", range.startIso).lt("created_at", range.endIso),
+      sb.from("sales").select("id,company_id,client_id,employee_id,employee_name,appointment_id,total_gross,total_net,payment_status,payment_method,status,created_at,updated_at").eq("company_id", ctx.companyId).gte("created_at", range.startIso).lt("created_at", range.endIso),
       sb.from("payments").select("id,company_id,sale_id,appointment_id,amount,method,status,paid_at,created_at").eq("company_id", ctx.companyId).gte("created_at", range.startIso).lt("created_at", range.endIso),
       sb.from("appointments").select("id,company_id,client_id,client_name,employee_id,employee_name,service_id,service_name,product_id,product_name,total,price,paid_amount,payment_status,payment_method,status,date,starts_at,appointment_datetime,created_at").eq("company_id", ctx.companyId).eq("date", range.dayIso),
       sb.from("profiles").select("id,full_name,email,role,company_id").eq("company_id", ctx.companyId),
@@ -180,7 +180,12 @@
     const errors = [salesRes.error, paymentsRes.error, appointmentsRes.error, employeesRes.error, clientsRes.error].filter(Boolean);
     if (errors.length) throw new Error(errors.map(e => e.message).join(" | "));
 
-    const sales = (salesRes.data || []).filter(s => String(s.payment_status || "").toLowerCase() !== "void");
+    const inactiveSaleStatuses = ["void", "deleted", "usunięte", "usuniete", "cancelled", "canceled", "anulowane", "anulowana"];
+    const sales = (salesRes.data || []).filter(s => {
+      const ps = String(s.payment_status || "").toLowerCase();
+      const st = String(s.status || "").toLowerCase();
+      return !inactiveSaleStatuses.includes(ps) && !inactiveSaleStatuses.includes(st);
+    });
     const saleIds = sales.map(s => s.id).filter(Boolean);
     let saleItems = [];
     if (saleIds.length) {

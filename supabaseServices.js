@@ -202,16 +202,19 @@
         .from("services")
         .select("id, company_id, category_id, name, duration_hours, duration_minutes, price_from, price_to, show_online, prevent_overlap, deposit, position_id, description, code, include_commission, include_discount, active, created_at, updated_at")
         .eq("company_id", ctx.companyId)
+        .eq("active", true)
         .order("created_at", { ascending: false }),
       window.cmSupabase
         .from("service_categories")
         .select("id, company_id, name, created_at, updated_at")
         .eq("company_id", ctx.companyId)
+        .eq("active", true)
         .order("name", { ascending: true }),
       window.cmSupabase
         .from("positions")
         .select("id, company_id, name, active, created_at")
         .eq("company_id", ctx.companyId)
+        .eq("active", true)
         .order("name", { ascending: true })
     ]);
 
@@ -583,7 +586,7 @@
       const serviceId = document.querySelector("#deleteServiceSelect")?.value;
       if (!serviceId) { setMessage("#serviceDeleteMessage", "Wybierz usługę do usunięcia.", false); return; }
       const beforeService = servicesById[serviceId] || null;
-      const { error } = await window.cmSupabase.from("services").delete().eq("id", serviceId).eq("company_id", ctx.companyId);
+      const { error } = await window.cmSupabase.from("services").update({ active: false, status: "deleted", deleted_at: new Date().toISOString(), updated_at: new Date().toISOString() }).eq("id", serviceId).eq("company_id", ctx.companyId);
       if (error) { setMessage("#serviceDeleteMessage", "Błąd usuwania usługi: " + error.message, false); return; }
       await window.cmUndo?.record({ module: "services", actionType: "delete", targetTable: "services", targetId: serviceId, beforeData: beforeService, companyId: ctx.companyId });
       setMessage("#serviceDeleteMessage", "Usługa usunięta z Supabase.", true);
@@ -600,9 +603,9 @@
       if (!categoryId) { setMessage("#serviceDeleteMessage", "Wybierz kategorię do usunięcia.", false); return; }
       const servicesInCategory = services.filter((item) => String(item.category_id || "") === String(categoryId));
       const categoryBefore = categories.find((item) => String(item.id) === String(categoryId)) || null;
-      const { error: servicesError } = await window.cmSupabase.from("services").delete().eq("category_id", categoryId).eq("company_id", ctx.companyId);
+      const { error: servicesError } = await window.cmSupabase.from("services").update({ active: false, status: "deleted", deleted_at: new Date().toISOString(), updated_at: new Date().toISOString() }).eq("category_id", categoryId).eq("company_id", ctx.companyId);
       if (servicesError) { setMessage("#serviceDeleteMessage", "Błąd usuwania usług z kategorii: " + servicesError.message, false); return; }
-      const { error } = await window.cmSupabase.from("service_categories").delete().eq("id", categoryId).eq("company_id", ctx.companyId);
+      const { error } = await window.cmSupabase.from("service_categories").update({ active: false, status: "deleted", deleted_at: new Date().toISOString(), updated_at: new Date().toISOString() }).eq("id", categoryId).eq("company_id", ctx.companyId);
       if (error) { setMessage("#serviceDeleteMessage", "Błąd usuwania kategorii: " + error.message, false); return; }
       await window.cmUndo?.record({ module: "service_categories", actionType: "delete", targetTable: "service_categories", targetId: categoryId, beforeData: categoryBefore, companyId: ctx.companyId });
       for (const svc of servicesInCategory) await window.cmUndo?.record({ module: "services", actionType: "delete", targetTable: "services", targetId: svc.id, beforeData: svc, companyId: ctx.companyId });

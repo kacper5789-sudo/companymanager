@@ -1079,10 +1079,10 @@ document.addEventListener('DOMContentLoaded', () => {
     dashboard: 'Dashboard', calendar: 'Kalendarz', positions: 'Stanowiska pracy', employees: 'Zespół', users: 'Użytkownicy', workSchedule: 'Grafik pracy',
     daysOff: 'Dni wolne pracowników', customers: 'Klienci', services: 'Usługi', visits: 'Wizyty',
     reports: 'Wykres/Statystyka', customersReports: 'Klienci - raporty', dailyReport: 'Raport dzienny', periodReport: 'Raport z okresu', employeesReports: 'Pracownicy - raporty', smsReports: 'SMS', emailReports: 'Email', walkins: 'Sprzedaż bez wizyty', products: 'Produkty', marketing: 'Marketing',
-    passes: 'Karnety', sales: 'Sprzedaż', companyPanel: 'Panel Firmy', owner: 'Właściciel strony', companies: 'Firmy', settings: 'Ustawienia'
+    passes: 'Karnety', sales: 'Sprzedaż', companyPanel: 'Panel Firmy', owner: 'Właściciel strony', companies: 'Firmy', settings: 'Ustawienia', activity: 'Historia aktywności'
   };
 
-  const allPanelPages = ['dashboard','calendar','positions','employees','users','workSchedule','daysOff','customers','services','visits','reports','customersReports','dailyReport','periodReport','employeesReports','smsReports','emailReports','products','walkins','marketing','passes','sales','companyPanel','owner','companies','settings'];
+  const allPanelPages = ['dashboard','calendar','positions','employees','users','workSchedule','daysOff','customers','services','visits','reports','customersReports','dailyReport','periodReport','employeesReports','smsReports','emailReports','products','walkins','marketing','passes','sales','companyPanel','owner','activity','companies','settings'];
   const legacyEmployeePages = ['dashboard','calendar','visits','customers'];
   const hasOpenPermission = (user, page) => Array.isArray(user?.permissions) && user.permissions.includes(`open:${page}`);
   const reportPermissionPages = ['reports','customersReports','dailyReport','periodReport','employeesReports','smsReports','emailReports','sales'];
@@ -1383,6 +1383,7 @@ document.addEventListener('DOMContentLoaded', () => {
       'Użytkownicy':'Users',
       'Wyloguj się':'Log out',
       'Cofnij Czas':'Undo time',
+      'Historia aktywności':'Activity history',
       'Dane firmy':'Company details',
       'Ustawienia powiadomień':'Notification settings',
       'Ustawienia programu':'Program settings',
@@ -2241,6 +2242,7 @@ document.addEventListener('DOMContentLoaded', () => {
                   </div>
                   <button id="undoTimeBtn" class="bm-undo-time-btn" type="button">Cofnij Czas</button>
                   <a class="bm-owner-link ${page==='owner'?'active':''}" href="owner.html">Właściciel strony</a>
+                  ${canAccessPage(user, 'activity') ? `<a class="bm-owner-link bm-activity-link ${page==='activity'?'active':''}" href="activity.html">Historia aktywności</a>` : ''}
                   ${canAccessPage(user, 'reports') ? `<a class="bm-owner-link bm-stats-link ${page==='reports'?'active':''}" href="reports.html">Wykres/Statystyka</a>` : ''}
                   ${canAccessPage(user, 'customersReports') ? `<a class="bm-owner-link bm-customers-reports-link ${page==='customersReports'?'active':''}" href="customersraports.html">Klienci - raporty</a>` : ''}
                   ${canAccessPage(user, 'dailyReport') ? `<a class="bm-owner-link bm-daily-link ${page==='dailyReport'?'active':''}" href="daily-report.html">Raport dzienny</a>` : ''}
@@ -8114,6 +8116,7 @@ document.addEventListener('DOMContentLoaded', () => {
     else if (page === 'companyPanel') renderCompanyPanel(ctx);
     else if (page === 'owner') renderOwner(ctx);
     else if (page === 'companies') renderCompanies(ctx);
+    else if (page === 'activity') renderModulePage(ctx, 'activity');
     else if (page === 'settings') renderSettings(ctx);
     else renderModulePage(ctx, page);
     setupNativePickers();

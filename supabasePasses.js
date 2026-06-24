@@ -257,13 +257,15 @@
         .order("created_at", { ascending: false }),
       window.cmSupabase
         .from("clients")
-        .select("id, first_name, last_name, email, phone, status")
-        .eq("company_id", ctx.companyId),
+        .select("id, first_name, last_name, email, phone, status, active")
+        .eq("company_id", ctx.companyId)
+        .eq("active", true),
       window.cmSupabase.rpc("company_users_for_dropdown", { target_company_id: ctx.companyId }),
       window.cmSupabase
         .from("services")
         .select("id, name, active")
         .eq("company_id", ctx.companyId)
+        .eq("active", true)
         .order("name", { ascending: true }),
       window.cmSupabase
         .from("pass_templates")

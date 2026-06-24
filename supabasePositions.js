@@ -194,6 +194,7 @@
       .from("positions")
       .select("id, company_id, name, description, active, capacity, color, order_index, created_at, updated_at")
       .eq("company_id", ctx.companyId)
+      .eq("active", true)
       .order("order_index", { ascending: true })
       .order("name", { ascending: true });
     if (error) throw error;
@@ -345,7 +346,7 @@
       const beforePosition = positions.find((item) => String(item.id) === String(id)) || null;
       const { error } = await window.cmSupabase
         .from("positions")
-        .delete()
+        .update({ active: false, status: "deleted", deleted_at: new Date().toISOString(), updated_at: new Date().toISOString() })
         .eq("id", id)
         .eq("company_id", ctx.companyId);
       if (error) {

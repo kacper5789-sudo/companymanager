@@ -6669,3 +6669,19 @@ html[data-cm-ui="057"] .bm-left-info-panel .bm-date-btn{
 button.bm-primary-btn{border:1px solid rgba(96,165,250,.65);background:linear-gradient(135deg,rgba(37,99,235,.95),rgba(14,165,233,.82));color:#fff;font-weight:800;box-shadow:0 0 0 1px rgba(255,255,255,.04) inset,0 12px 26px rgba(37,99,235,.22);}
 .bm-actions-row .bm-primary-btn:hover,
 button.bm-primary-btn:hover{filter:brightness(1.08);box-shadow:0 0 18px rgba(56,189,248,.35),0 14px 30px rgba(37,99,235,.28);}
+
+/* 078 — Historia aktywności */
+.cm-audit-module .bm-page-head{align-items:flex-start;}
+.cm-audit-filters{display:grid;grid-template-columns:repeat(4,minmax(150px,1fr)) auto;gap:10px;align-items:end;margin:14px 0 12px;}
+.cm-audit-filters label{display:grid;gap:6px;color:#cbd5e1;font-size:12px;font-weight:800;}
+.cm-audit-filters input,.cm-audit-filters select{background:rgba(2,6,23,.62);border:1px solid rgba(148,163,184,.18);color:#e5edf7;border-radius:12px;padding:10px 12px;outline:none;}
+.cm-audit-filters input:focus,.cm-audit-filters select:focus{border-color:#38bdf8;box-shadow:0 0 0 4px rgba(56,189,248,.08);}
+.cm-audit-table{min-width:1180px;}
+.cm-audit-table code{display:block;max-width:280px;white-space:normal;word-break:break-word;color:#cbd5e1;background:rgba(15,23,42,.55);border:1px solid rgba(148,163,184,.12);border-radius:10px;padding:7px;font-size:11px;}
+.cm-audit-badge{display:inline-flex;align-items:center;border-radius:999px;padding:5px 9px;font-size:11px;font-weight:900;background:rgba(148,163,184,.16);color:#cbd5e1;}
+.cm-audit-badge.is-create{background:rgba(34,197,94,.14);color:#86efac;}
+.cm-audit-badge.is-update{background:rgba(56,189,248,.14);color:#7dd3fc;}
+.cm-audit-badge.is-delete{background:rgba(239,68,68,.14);color:#fca5a5;}
+.cm-audit-badge.is-cancel{background:rgba(245,158,11,.14);color:#fbbf24;}
+.cm-audit-badge.is-undo{background:rgba(168,85,247,.14);color:#d8b4fe;}
+@media(max-width:900px){.cm-audit-filters{grid-template-columns:1fr 1fr}.cm-audit-filters .bm-primary-btn{grid-column:1/-1;}}

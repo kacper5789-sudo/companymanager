@@ -312,7 +312,12 @@
     ]);
 
     const filteredAppointments = appointments.filter((row) => inRange(appointmentDate(row), from, to));
-    const filteredSales = sales.filter((row) => inRange(saleDate(row), from, to) && String(row.payment_status || "").toLowerCase() !== "void");
+    const inactiveSaleStatuses = ["void", "deleted", "usunięte", "usuniete", "cancelled", "canceled", "anulowane", "anulowana"];
+    const filteredSales = sales.filter((row) => {
+      const ps = String(row.payment_status || "").toLowerCase();
+      const st = String(row.status || "").toLowerCase();
+      return inRange(saleDate(row), from, to) && !inactiveSaleStatuses.includes(ps) && !inactiveSaleStatuses.includes(st);
+    });
     const saleIds = new Set(filteredSales.map((row) => row.id));
     const filteredItems = saleItems.filter((item) => saleIds.has(item.sale_id));
     const filteredDaysOff = daysOff.filter((row) => inRange(row.date || row.start_date || row.date_from || row.from_date || row.created_at, from, to));

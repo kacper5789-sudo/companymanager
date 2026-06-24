@@ -264,6 +264,7 @@
       .from("clients")
       .select("id, company_id, first_name, last_name, gender, phone, email, birth_date, address, city, postal_code, notes, source, marketing_sms, marketing_email, active, tags, total_visits, total_spent, last_visit_at, created_at, updated_at")
       .eq("company_id", companyId)
+      .eq("active", true)
       .order("created_at", { ascending: false });
   }
 
@@ -619,7 +620,7 @@
 
       const { error } = await window.cmSupabase
         .from("clients")
-        .delete()
+        .update({ active: false, status: "deleted", deleted_at: new Date().toISOString(), updated_at: new Date().toISOString() })
         .eq("id", clientId)
         .eq("company_id", ctx.companyId);
 

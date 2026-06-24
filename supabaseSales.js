@@ -231,10 +231,10 @@
       window.cmSupabase.from("sales").select("id, company_id, client_id, appointment_id, employee_id, employee_name, sale_number, status, total_net, total_tax, total_gross, discount_value, payment_status, note, created_at, updated_at").eq("company_id", ctx.companyId).gte("created_at", `${fromDate}T00:00:00`).lte("created_at", `${toDate}T23:59:59`).order("created_at", { ascending: false }),
       window.cmSupabase.from("sale_items").select("id, company_id, sale_id, item_type, service_id, product_id, name, name_snapshot, quantity, unit_price, discount, total, total_price, created_at").eq("company_id", ctx.companyId),
       window.cmSupabase.from("payments").select("id, company_id, sale_id, appointment_id, amount, method, status, paid_at, created_at").eq("company_id", ctx.companyId).gte("paid_at", `${fromDate}T00:00:00`).lte("paid_at", `${toDate}T23:59:59`).order("paid_at", { ascending: false }),
-      window.cmSupabase.from("clients").select("id, first_name, last_name, email, phone, status").eq("company_id", ctx.companyId),
-      window.cmSupabase.from("services").select("id, name, category_id, category, price, price_from").eq("company_id", ctx.companyId),
+      window.cmSupabase.from("clients").select("id, first_name, last_name, email, phone, status, active").eq("company_id", ctx.companyId).eq("active", true),
+      window.cmSupabase.from("services").select("id, name, category_id, category, price, price_from, active").eq("company_id", ctx.companyId).eq("active", true),
       window.cmSupabase.from("products").select("id, name, category, price").eq("company_id", ctx.companyId),
-      window.cmSupabase.from("service_categories").select("id, name").eq("company_id", ctx.companyId),
+      window.cmSupabase.from("service_categories").select("id, name, active").eq("company_id", ctx.companyId).eq("active", true),
       window.cmSupabase.rpc("company_users_for_dropdown", { target_company_id: ctx.companyId }),
       window.cmSupabase.from("appointments").select("id, client_id, client_name, service_id, service_name, product_id, product_name, employee_id, employee_name, payment_method, payment_status, status, finished, total, price, starts_at, appointment_datetime, date, start_time, created_at").eq("company_id", ctx.companyId),
       window.cmSupabase.from("passes").select("id, company_id, customer_id, buyer_client_id, beneficiary_client_id, employee_id, service_id, service_name, pass_type, sale_id, name, number, sale_date, sale_time, valid_until, payment_method, buyer, customer_name, employee_name, value, remaining, total_units, remaining_units, description, status, active, created_at").eq("company_id", ctx.companyId).eq("active", true).gte("sale_date", fromDate).lte("sale_date", toDate).order("sale_date", { ascending: false })
@@ -451,8 +451,11 @@
       return appointment?.deleted === true || ["odwolane", "odwolana", "anulowane", "anulowana", "cancelled", "canceled", "usuniete", "usunieta", "deleted"].includes(status);
     };
     const appointmentById = Object.fromEntries((data.appointments || []).map((appointment) => [appointment.id, appointment]));
+    const inactiveSaleStatuses = ["void", "deleted", "usunięte", "usuniete", "cancelled", "canceled", "anulowane", "anulowana"];
     const activeSales = (data.sales || []).filter((sale) => {
-      if (String(sale.payment_status || "").toLowerCase() === "void") return false;
+      const paymentStatus = String(sale.payment_status || "").toLowerCase();
+      const saleStatus = String(sale.status || "").toLowerCase();
+      if (inactiveSaleStatuses.includes(paymentStatus) || inactiveSaleStatuses.includes(saleStatus)) return false;
       const linkedAppointment = sale.appointment_id ? appointmentById[sale.appointment_id] : null;
       return !isCancelledAppointmentForSales(linkedAppointment);
     });
@@ -547,7 +550,11 @@
       })
       .filter((row) => passesFilter("employees", selectedEmployees, row.employeeId) && passesFilter("productCategories", selectedProductCategories, row.productCategory) && passesFilter("productNames", selectedProductNames, row.productId));
 
-    const passItemsRaw = (data.passes || []).map((pass) => {
+    const inactivePassStatuses = ["void", "deleted", "usunięte", "usuniete", "cancelled", "canceled", "anulowane", "anulowana"];
+    const passItemsRaw = (data.passes || [])
+      .filter((pass) => pass.active !== false && !inactivePassStatuses.includes(String(pass.status || "").toLowerCase()))
+      .filter((pass) => !pass.sale_id || !!salesById[pass.sale_id])
+      .map((pass) => {
       const employeeId = pass.employee_id || "";
       const clientId = pass.beneficiary_client_id || pass.customer_id || "";
       return {
