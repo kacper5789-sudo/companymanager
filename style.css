@@ -7734,3 +7734,560 @@ html body ::-webkit-scrollbar{width:13px;height:13px;}
 html body ::-webkit-scrollbar-track{background:#fff4da;}
 html body ::-webkit-scrollbar-thumb{background:#c89118;border-radius:999px;border:3px solid #fff4da;}
 html body ::-webkit-scrollbar-thumb:hover{background:#a76f12;}
+
+/* =========================================================
+   090 — Gold theme readability pass
+   Cel: jasny złoto-kremowy motyw bez białych/ciemnych nieczytelnych tekstów
+   ========================================================= */
+:root{
+  --cm-ink:#111827;
+  --cm-muted-ink:#374151;
+  --cm-soft-panel:#fffdf7;
+  --cm-soft-panel-2:#fff8e8;
+  --cm-soft-panel-3:#f7ecd1;
+  --cm-soft-border:#dcc28b;
+  --cm-gold-text:#8a5a00;
+  --cm-gold-bg:#fff3cd;
+  --cm-gold-bg-hover:#f2dfaa;
+  --cm-blue:#2563eb;
+  --cm-blue-bg:#eaf2ff;
+  --cm-red:#dc2626;
+  --cm-red-bg:#fee2e2;
+  --cm-green:#16a34a;
+  --cm-green-bg:#dcfce7;
+  --cm-gray-btn:#6b7280;
+  --cm-gray-bg:#f3f4f6;
+}
+
+/* Globalne wzmocnienie czytelności w jasnym motywie */
+html body,
+html body main,
+html body .bm-main,
+html body .bm-content,
+html body .panel-main,
+html body .page-content,
+html body .bm-page-card,
+html body .bm-card,
+html body .cm-card,
+html body .section-card,
+html body .report-card,
+html body .dashboard-card{
+  color:var(--cm-ink) !important;
+}
+
+html body .bm-page-card,
+html body .bm-card,
+html body .cm-card,
+html body .section-card,
+html body .report-card,
+html body .dashboard-card,
+html body .bm-panel,
+html body .cm-panel,
+html body fieldset,
+html body .filter-panel,
+html body .filters,
+html body .bm-filter-panel{
+  background:var(--cm-soft-panel) !important;
+  border-color:var(--cm-soft-border) !important;
+  box-shadow:0 12px 32px rgba(126,83,12,.10) !important;
+}
+
+html body h1,
+html body h2,
+html body h3,
+html body h4,
+html body h5,
+html body label,
+html body .label,
+html body .bm-label,
+html body .field-label,
+html body .bm-page-head,
+html body .bm-page-head *,
+html body .panel-title,
+html body .section-title,
+html body .card-title,
+html body .title,
+html body .subtitle,
+html body p,
+html body span,
+html body small,
+html body strong,
+html body div{
+  text-shadow:none !important;
+}
+
+html body .bm-muted,
+html body .muted,
+html body .hint,
+html body .help,
+html body .description,
+html body .panel-description,
+html body .text-muted,
+html body small{
+  color:var(--cm-muted-ink) !important;
+}
+
+/* Inputy, daty, szukajki — czarne i bez przezroczystości */
+html body input,
+html body select,
+html body textarea,
+html body .search-input,
+html body .bm-search,
+html body .cm-search,
+html body input[type="search"],
+html body input[type="date"],
+html body input[type="time"],
+html body input[type="number"],
+html body .date-input,
+html body .time-input{
+  color:var(--cm-ink) !important;
+  background:#ffffff !important;
+  border:1px solid #c9ad73 !important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.7), 0 4px 12px rgba(126,83,12,.06) !important;
+  opacity:1 !important;
+  -webkit-text-fill-color:var(--cm-ink) !important;
+}
+html body input::placeholder,
+html body textarea::placeholder,
+html body .search-input::placeholder{
+  color:#111827 !important;
+  opacity:.72 !important;
+}
+html body input:focus,
+html body select:focus,
+html body textarea:focus{
+  border-color:#b98116 !important;
+  outline:2px solid rgba(217,156,35,.22) !important;
+  background:#fffefb !important;
+}
+
+/* Przyciski według funkcji */
+html body button,
+html body .btn,
+html body .bm-btn,
+html body .cm-btn{
+  color:var(--cm-ink) !important;
+}
+html body button[id*="add"],
+html body button[id*="Add"],
+html body button[class*="add"],
+html body .bm-primary-btn,
+html body .primary-btn,
+html body .add-btn,
+html body .cm-add-btn,
+html body .bm-actions-row button:first-child:not(.bm-danger-btn):not(.bm-light-btn),
+html body button:has(+ .bm-light-btn){
+  background:linear-gradient(135deg,#3b82f6,#1d4ed8) !important;
+  color:#fff !important;
+  border-color:#1d4ed8 !important;
+}
+html body button[id*="edit"],
+html body button[id*="Edit"],
+html body button[class*="edit"],
+html body .bm-light-btn,
+html body .edit-btn,
+html body .cm-edit-btn{
+  background:linear-gradient(135deg,#f3f4f6,#d1d5db) !important;
+  color:#111827 !important;
+  border-color:#9ca3af !important;
+}
+html body button[id*="delete"],
+html body button[id*="Delete"],
+html body button[class*="delete"],
+html body button[id*="remove"],
+html body button[id*="Remove"],
+html body .bm-danger-btn,
+html body .danger-btn,
+html body .delete-btn,
+html body .cm-delete-btn{
+  background:linear-gradient(135deg,#ef4444,#b91c1c) !important;
+  color:#fff !important;
+  border-color:#991b1b !important;
+}
+html body button[id*="export"],
+html body button[id*="Export"],
+html body button[id*="import"],
+html body button[id*="Import"],
+html body .bm-excel-btn,
+html body .export-btn,
+html body .import-btn,
+html body .cm-sales-export-btn,
+html body .excel-btn{
+  background:linear-gradient(135deg,#22c55e,#15803d) !important;
+  color:#fff !important;
+  border-color:#166534 !important;
+}
+
+/* Karnety: pokaż wszystkie / aktualne / zrealizowane / po terminie */
+html body .passes-status-tabs,
+html body .pass-status-tabs,
+html body .cm-pass-status-tabs,
+html body .bm-pass-status-tabs,
+html body .passes-filters,
+html body .passes-filter-tabs{
+  background:var(--cm-soft-panel) !important;
+  border-color:var(--cm-soft-border) !important;
+}
+html body .passes-status-tabs a,
+html body .pass-status-tabs a,
+html body .cm-pass-status-tabs a,
+html body .bm-pass-status-tabs a,
+html body .passes-filters a,
+html body .passes-filter-tabs a,
+html body a[href*="passes.html?status="],
+html body a[href*="status=aktualne"],
+html body a[href*="status=all"]{
+  background:#f3f4f6 !important;
+  color:#111827 !important;
+  border:1px solid #c9ad73 !important;
+  box-shadow:0 6px 14px rgba(17,24,39,.06) !important;
+}
+html body .passes-status-tabs a:hover,
+html body .pass-status-tabs a:hover,
+html body .cm-pass-status-tabs a:hover,
+html body a[href*="passes.html?status="]:hover{
+  background:#e5e7eb !important;
+  color:#111827 !important;
+}
+html body .passes-status-tabs a.active,
+html body .pass-status-tabs a.active,
+html body .cm-pass-status-tabs a.active,
+html body a[href*="passes.html?status="].active{
+  background:linear-gradient(135deg,#fff3cd,#e9bd55) !important;
+  color:#111827 !important;
+  border-color:#b98116 !important;
+}
+
+/* Raporty/Sprzedaż: zakładki złote, napisy czarne, hover szary */
+html body .cm-sales-subnav,
+html body .cm-report-tabs,
+html body .report-tabs,
+html body .bm-tabs,
+html body .tabs,
+html body .tab-list,
+html body .report-nav,
+html body .sales-report-tabs{
+  background:var(--cm-soft-panel) !important;
+  border-color:var(--cm-soft-border) !important;
+}
+html body .cm-sales-subnav button,
+html body .cm-report-tabs button,
+html body .report-tabs button,
+html body .bm-tabs button,
+html body .tabs button,
+html body .tab-list button,
+html body .report-nav button,
+html body .sales-report-tabs button,
+html body [data-report-view],
+html body [data-sales-view]{
+  background:var(--cm-gold-bg) !important;
+  color:#111827 !important;
+  border:1px solid #c99b36 !important;
+  box-shadow:0 6px 15px rgba(126,83,12,.08) !important;
+}
+html body .cm-sales-subnav button:hover,
+html body .cm-report-tabs button:hover,
+html body .report-tabs button:hover,
+html body .bm-tabs button:hover,
+html body .tabs button:hover,
+html body .tab-list button:hover,
+html body .report-nav button:hover,
+html body .sales-report-tabs button:hover,
+html body [data-report-view]:hover,
+html body [data-sales-view]:hover{
+  background:#e5e7eb !important;
+  color:#111827 !important;
+  border-color:#9ca3af !important;
+}
+html body .cm-sales-subnav button.active,
+html body .cm-report-tabs button.active,
+html body .report-tabs button.active,
+html body .bm-tabs button.active,
+html body .tabs button.active,
+html body .tab-list button.active,
+html body [data-report-view].active,
+html body [data-sales-view].active{
+  background:linear-gradient(135deg,#e8b847,#f7d982) !important;
+  color:#111827 !important;
+  border-color:#a86f10 !important;
+  font-weight:900 !important;
+}
+
+/* Raporty: wszystkie sekcje i teksty czarne/czytelne */
+html body #reportsRoot,
+html body #customersReportsRoot,
+html body #dailyReportRoot,
+html body #periodReportRoot,
+html body #employeesReportsRoot,
+html body .cm-report-root,
+html body .customers-reports,
+html body .daily-report,
+html body .period-report,
+html body .employees-report,
+html body .cm-sales-report,
+html body .sales-report,
+html body .bm-report,
+html body .report-page{
+  color:var(--cm-ink) !important;
+  background:transparent !important;
+}
+html body #reportsRoot *,
+html body #customersReportsRoot *,
+html body #dailyReportRoot *,
+html body #periodReportRoot *,
+html body #employeesReportsRoot *,
+html body .cm-report-root *,
+html body .customers-reports *,
+html body .daily-report *,
+html body .period-report *,
+html body .employees-report *,
+html body .cm-sales-report *,
+html body .sales-report *,
+html body .report-page *{
+  color:var(--cm-ink) !important;
+}
+html body #reportsRoot .bm-muted,
+html body #customersReportsRoot .bm-muted,
+html body #dailyReportRoot .bm-muted,
+html body #periodReportRoot .bm-muted,
+html body #employeesReportsRoot .bm-muted,
+html body .cm-report-root .bm-muted,
+html body .report-page .bm-muted,
+html body .report-page small{
+  color:var(--cm-muted-ink) !important;
+}
+html body #reportsRoot .bm-page-card,
+html body #customersReportsRoot .bm-page-card,
+html body #dailyReportRoot .bm-page-card,
+html body #periodReportRoot .bm-page-card,
+html body #employeesReportsRoot .bm-page-card,
+html body .cm-report-root .bm-page-card,
+html body .report-page .bm-page-card,
+html body .report-section,
+html body .report-table-card,
+html body .report-summary-card,
+html body .finance-card,
+html body .kpi-card,
+html body .stat-card,
+html body .summary-card{
+  background:#fffdf7 !important;
+  color:#111827 !important;
+  border:1px solid var(--cm-soft-border) !important;
+}
+html body #reportsRoot input,
+html body #reportsRoot select,
+html body #customersReportsRoot input,
+html body #customersReportsRoot select,
+html body #dailyReportRoot input,
+html body #dailyReportRoot select,
+html body #periodReportRoot input,
+html body #periodReportRoot select,
+html body #employeesReportsRoot input,
+html body #employeesReportsRoot select,
+html body .cm-report-root input,
+html body .cm-report-root select,
+html body .report-page input,
+html body .report-page select{
+  background:#fff !important;
+  color:#111827 !important;
+  border-color:#c9ad73 !important;
+  -webkit-text-fill-color:#111827 !important;
+}
+
+/* Karty KPI/finanse/wykresy */
+html body .bm-stats,
+html body .stats-grid,
+html body .kpi-grid,
+html body .summary-grid{
+  color:#111827 !important;
+}
+html body .bm-stats article,
+html body .stats-grid article,
+html body .kpi-grid article,
+html body .summary-grid article,
+html body .cm-kpi-card,
+html body .cm-stat-card,
+html body .chart-card,
+html body .cm-chart-card,
+html body .recharts-wrapper{
+  background:#fffdf7 !important;
+  border-color:var(--cm-soft-border) !important;
+  color:#111827 !important;
+}
+html body .bm-stats article *,
+html body .stats-grid article *,
+html body .kpi-grid article *,
+html body .summary-grid article *,
+html body .cm-kpi-card *,
+html body .cm-stat-card *,
+html body .chart-card *,
+html body .cm-chart-card *{
+  color:#111827 !important;
+}
+html body svg text,
+html body .recharts-text,
+html body .recharts-cartesian-axis-tick-value,
+html body .recharts-label,
+html body .recharts-legend-item-text{
+  fill:#111827 !important;
+  color:#111827 !important;
+}
+html body .recharts-cartesian-grid line{stroke:#d8c08d !important;}
+html body .recharts-tooltip-wrapper,
+html body .recharts-default-tooltip{
+  color:#111827 !important;
+  background:#fffdf7 !important;
+  border-color:#c9ad73 !important;
+}
+
+/* Grafik pracy — jeszcze jaśniej i czytelniej */
+html body #workScheduleRoot,
+html body .cm-work-schedule,
+html body .work-schedule-page,
+html body .work-schedule-card,
+html body .cm-work-card,
+html body .cm-work-form,
+html body .work-schedule-table,
+html body .cm-work-table{
+  background:#fffdf7 !important;
+  color:#111827 !important;
+  border-color:#d7bd83 !important;
+  opacity:1 !important;
+}
+html body #workScheduleRoot *,
+html body .cm-work-schedule *,
+html body .work-schedule-page *,
+html body .work-schedule-card *,
+html body .cm-work-card *,
+html body .cm-work-form *,
+html body .work-schedule-table *,
+html body .cm-work-table *{
+  color:#111827 !important;
+  opacity:1 !important;
+}
+html body #workScheduleRoot .bm-muted,
+html body #workScheduleRoot small,
+html body .cm-work-schedule .bm-muted,
+html body .work-schedule-page .bm-muted{
+  color:#374151 !important;
+}
+html body #workScheduleRoot table,
+html body .work-schedule-table,
+html body .cm-work-table{
+  background:#fff !important;
+  border:1px solid #d7bd83 !important;
+}
+html body #workScheduleRoot th,
+html body #workScheduleRoot td,
+html body .work-schedule-table th,
+html body .work-schedule-table td,
+html body .cm-work-table th,
+html body .cm-work-table td{
+  background:#fffaf0 !important;
+  color:#111827 !important;
+  border-color:#e2c991 !important;
+}
+html body #workScheduleRoot th,
+html body .work-schedule-table th,
+html body .cm-work-table th{
+  background:linear-gradient(180deg,#fff1cc,#efc45f) !important;
+  color:#111827 !important;
+}
+html body #workScheduleRoot input,
+html body #workScheduleRoot select,
+html body #workScheduleRoot textarea,
+html body .work-schedule-page input,
+html body .work-schedule-page select{
+  background:#fff !important;
+  color:#111827 !important;
+  border-color:#c9ad73 !important;
+}
+
+/* Tabele globalnie — nie zostawiaj białych napisów na jasnym */
+html body table,
+html body table *,
+html body .bm-table,
+html body .bm-table *,
+html body .data-table,
+html body .data-table *,
+html body .cm-table,
+html body .cm-table *,
+html body .report-table,
+html body .report-table *{
+  color:#111827 !important;
+}
+html body table th,
+html body .bm-table th,
+html body .data-table th,
+html body .cm-table th,
+html body .report-table th{
+  background:linear-gradient(180deg,#fff1cc,#efc45f) !important;
+  color:#111827 !important;
+  border-color:#d7bd83 !important;
+}
+html body table td,
+html body .bm-table td,
+html body .data-table td,
+html body .cm-table td,
+html body .report-table td{
+  background:#fffdf7 !important;
+  color:#111827 !important;
+  border-color:#ead5aa !important;
+}
+html body table tr:nth-child(even) td,
+html body .bm-table tr:nth-child(even) td,
+html body .data-table tr:nth-child(even) td,
+html body .cm-table tr:nth-child(even) td{
+  background:#fff8e8 !important;
+}
+
+/* Statusy — niebieskie, usunięte czerwone */
+html body .status-badge,
+html body .bm-status,
+html body .cm-status,
+html body .badge,
+html body .pill,
+html body [data-status]{
+  color:#1d4ed8 !important;
+  background:#eaf2ff !important;
+  border-color:rgba(37,99,235,.28) !important;
+}
+html body .status-deleted,
+html body .bm-status.deleted,
+html body .cm-status-deleted,
+html body [data-status="deleted"],
+html body [data-status="usunięte"],
+html body [data-status="usuniete"]{
+  color:#b91c1c !important;
+  background:#fee2e2 !important;
+  border-color:rgba(220,38,38,.28) !important;
+}
+
+/* Nazwy/ważne wartości */
+html body .brand-name,
+html body .service-name-highlight,
+html body .gold-name,
+html body .cm-gold-name,
+html body .record-name,
+html body .entity-name{
+  color:#9a6500 !important;
+  font-weight:900 !important;
+}
+html body .company-name,
+html body .cm-company-name,
+html body .bm-company-name,
+html body [data-company-name]{
+  color:#111827 !important;
+  font-weight:900 !important;
+}
+
+/* Linki/akcje SMS Email */
+html body a[href*="sms"],
+html body a[href*="email"],
+html body .sms-link,
+html body .email-link,
+html body .sms-action,
+html body .email-action{
+  color:#1d4ed8 !important;
+  font-weight:800 !important;
+}
