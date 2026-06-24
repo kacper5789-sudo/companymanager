@@ -1,5 +1,5 @@
 // CompanyManager — Historia aktywności / Company audit log
-// 082: Historia aktywności — direct select fallback + poprawny zakres firmy.
+// 083: Historia aktywności — czytelne pola Przed/Po bez technicznego JSON.
 
 (function () {
   function isPage() {
@@ -23,16 +23,189 @@
     return date.toLocaleString("pl-PL", { year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" });
   }
 
-  function shortJson(value) {
-    if (!value || typeof value !== "object") return "-";
-    const keys = ["name", "full_name", "email", "status", "active", "sale_price", "value", "total_gross", "payment_status", "deleted_at"];
-    const picked = {};
-    keys.forEach((key) => {
-      if (Object.prototype.hasOwnProperty.call(value, key)) picked[key] = value[key];
-    });
-    const data = Object.keys(picked).length ? picked : value;
-    const text = JSON.stringify(data, null, 0);
-    return text.length > 180 ? text.slice(0, 180) + "..." : text;
+  const TECHNICAL_AUDIT_KEYS = new Set([
+    "id", "company_id", "actor_id", "actor_role", "user_id", "created_by", "updated_by", "deleted_by",
+    "target_id", "record_id", "sale_id", "sale_item_id", "appointment_id", "pass_id", "pass_template_id",
+    "client_id", "customer_id", "buyer_client_id", "beneficiary_client_id", "employee_id", "service_id", "product_id",
+    "undo_action_id", "source", "metadata", "raw", "table_name", "schema", "search_path"
+  ]);
+
+  const FIELD_LABELS = {
+    name: "Nazwa",
+    full_name: "Imię i nazwisko",
+    first_name: "Imię",
+    last_name: "Nazwisko",
+    email: "Email",
+    phone: "Telefon",
+    status: "Status",
+    active: "Aktywne",
+    deleted_at: "Data usunięcia",
+    updated_at: "Data aktualizacji",
+    sale_price: "Cena sprzedaży",
+    value: "Wartość",
+    total_gross: "Brutto",
+    total_net: "Netto",
+    total_price: "Suma",
+    payment_status: "Status płatności",
+    payment_method: "Płatność",
+    method: "Płatność",
+    price: "Cena",
+    price_gross: "Cena brutto",
+    price_net: "Cena netto",
+    quantity: "Ilość",
+    stock_quantity: "Pula",
+    sold_count: "Sprzedano",
+    remaining_stock: "Pozostało w puli",
+    pass_type: "Typ karnetu",
+    type: "Typ",
+    service_name: "Usługa",
+    product_name: "Produkt",
+    employee_name: "Pracownik",
+    customer_name: "Klient",
+    buyer: "Kupujący",
+    description: "Opis",
+    note: "Notatka",
+    date_from: "Od",
+    date_to: "Do",
+    start_date: "Od",
+    end_date: "Do",
+    starts_at: "Start",
+    ends_at: "Koniec",
+    valid_until: "Ważny do",
+    number: "Numer",
+    sale_number: "Numer sprzedaży",
+    module: "Moduł",
+    action_type: "Akcja",
+    target_label: "Rekord",
+    record_label: "Rekord",
+    old_data: "Przed",
+    new_data: "Po",
+    undone_at: "Data cofnięcia"
+  };
+
+  const MODULE_LABELS = {
+    profiles: "Użytkownicy",
+    employees: "Zespół",
+    positions: "Stanowiska pracy",
+    days_off: "Dni wolne pracowników",
+    clients: "Klienci",
+    services: "Usługi",
+    products: "Produkty",
+    appointments: "Wizyty",
+    sales: "Sprzedaż",
+    sale_items: "Pozycje sprzedaży",
+    payments: "Płatności",
+    passes: "Karnety",
+    pass_templates: "Typy karnetów",
+    marketing_campaigns: "Marketing",
+    undo_actions: "Cofnij Czas"
+  };
+
+  function normalizeActionText(value) {
+    const raw = String(value || "").toUpperCase();
+    return actionLabel(raw) || value || "-";
+  }
+
+  function normalizeModuleText(value) {
+    const key = String(value || "").toLowerCase();
+    return MODULE_LABELS[key] || value || "-";
+  }
+
+  function normalizeStatusText(value) {
+    const text = String(value ?? "").toLowerCase();
+    const map = {
+      active: "aktywny",
+      true: "tak",
+      false: "nie",
+      deleted: "usunięty",
+      void: "unieważniony",
+      cancelled: "odwołany",
+      canceled: "odwołany",
+      completed: "zakończony",
+      paid: "opłacony",
+      pending: "oczekuje",
+      approved: "zatwierdzony",
+      inactive: "nieaktywny",
+      aktualne: "aktualny"
+    };
+    return map[text] || String(value ?? "-");
+  }
+
+  function formatAuditValue(value, key) {
+    if (value === null || value === undefined || value === "") return "-";
+    if (typeof value === "boolean") return value ? "tak" : "nie";
+    if (key && ["status", "payment_status", "active"].includes(key)) return normalizeStatusText(value);
+    if (key && /(_at|_date|date_from|date_to|starts_at|ends_at|valid_until)$/i.test(key)) return formatDateTime(value);
+    if (typeof value === "number") return String(value);
+    if (typeof value === "object") return summarizeObject(value);
+    return String(value);
+  }
+
+  function labelForField(key) {
+    return FIELD_LABELS[key] || String(key || "").replace(/_/g, " ").replace(/^./, (c) => c.toUpperCase());
+  }
+
+  function summarizeObject(obj) {
+    if (!obj || typeof obj !== "object") return "-";
+    return obj.name || obj.full_name || obj.email || obj.record_label || obj.target_label || obj.service_name || obj.product_name || obj.customer_name || obj.number || "szczegóły";
+  }
+
+  function pickReadableEntries(value) {
+    if (!value || typeof value !== "object") return [];
+
+    // Przy logach Cofnij Czas często wpada cały rekord undo_actions. Pokazujemy sens, nie technikalia.
+    if (value.module || value.action_type || value.undone_at || value.old_data || value.new_data) {
+      const rows = [];
+      if (value.module) rows.push(["Moduł", normalizeModuleText(value.module)]);
+      if (value.action_type) rows.push(["Cofnięta akcja", normalizeActionText(value.action_type)]);
+      const label = value.target_label || value.record_label || value.name || value.email;
+      if (label) rows.push(["Rekord", label]);
+      if (value.undone_at) rows.push(["Data cofnięcia", formatDateTime(value.undone_at)]);
+      const nested = value.new_data || value.old_data;
+      if (nested && typeof nested === "object") {
+        pickReadableEntries(nested).slice(0, 4).forEach(([k, v]) => rows.push([k, v]));
+      }
+      return rows;
+    }
+
+    const priority = [
+      "name", "full_name", "email", "phone", "status", "active", "deleted_at",
+      "employee_name", "customer_name", "buyer", "service_name", "product_name",
+      "price", "sale_price", "value", "total_gross", "payment_status", "payment_method",
+      "quantity", "stock_quantity", "sold_count", "remaining_stock", "pass_type", "type",
+      "date_from", "date_to", "start_date", "end_date", "starts_at", "ends_at", "valid_until",
+      "description", "note"
+    ];
+
+    const seen = new Set();
+    const entries = [];
+    function addKey(key) {
+      if (seen.has(key) || TECHNICAL_AUDIT_KEYS.has(key)) return;
+      if (!Object.prototype.hasOwnProperty.call(value, key)) return;
+      const val = value[key];
+      if (val === null || val === undefined || val === "") return;
+      seen.add(key);
+      entries.push([labelForField(key), formatAuditValue(val, key)]);
+    }
+    priority.forEach(addKey);
+    Object.keys(value).forEach(addKey);
+    return entries.slice(0, 8);
+  }
+
+  function formatChangeHtml(value, item, side) {
+    if (!value || typeof value !== "object") return `<span class="bm-muted">-</span>`;
+
+    if (String(item?.action || "").toUpperCase() === "UNDO" && (value.module || value.action_type || value.undone_at)) {
+      const module = normalizeModuleText(value.module || item.module);
+      const action = normalizeActionText(value.action_type || value.action || item.action);
+      const label = value.target_label || value.record_label || item.record_label || item.record_id || "rekord";
+      const undone = value.undone_at ? `<div><strong>Data cofnięcia:</strong> ${escapeHtml(formatDateTime(value.undone_at))}</div>` : "";
+      return `<div class="cm-audit-readable"><div><strong>Cofnięto akcję:</strong></div><div>${escapeHtml(module)} → ${escapeHtml(action)} → ${escapeHtml(label)}</div>${undone}</div>`;
+    }
+
+    const entries = pickReadableEntries(value);
+    if (!entries.length) return `<span class="bm-muted">Brak czytelnych zmian</span>`;
+    return `<div class="cm-audit-readable">${entries.map(([key, val]) => `<div><strong>${escapeHtml(key)}:</strong> ${escapeHtml(val)}</div>`).join("")}</div>`;
   }
 
   function actionLabel(action) {
@@ -193,8 +366,8 @@
         <td>${escapeHtml(item.module || item.table_name || "-")}</td>
         <td><span class="cm-audit-badge ${actionClass(item.action)}">${escapeHtml(actionLabel(item.action))}</span></td>
         <td>${escapeHtml(item.record_label || item.record_id || "-")}</td>
-        <td><code>${escapeHtml(shortJson(item.old_data))}</code></td>
-        <td><code>${escapeHtml(shortJson(item.new_data))}</code></td>
+        <td>${formatChangeHtml(item.old_data, item, "old")}</td>
+        <td>${formatChangeHtml(item.new_data, item, "new")}</td>
       </tr>`).join("");
   }
 

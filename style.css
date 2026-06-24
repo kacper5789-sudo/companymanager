@@ -6699,3 +6699,23 @@ button.bm-primary-btn:hover{filter:brightness(1.08);box-shadow:0 0 18px rgba(56,
   opacity: 0.45;
   cursor: not-allowed;
 }
+
+/* 083 Audit log readable changes */
+.cm-audit-readable {
+  white-space: normal;
+  line-height: 1.45;
+  font-size: 12px;
+  min-width: 180px;
+}
+.cm-audit-readable div + div {
+  margin-top: 3px;
+}
+.cm-audit-readable strong {
+  color: rgba(226, 232, 240, 0.92);
+  font-weight: 700;
+}
+.cm-audit-table td:nth-child(6),
+.cm-audit-table td:nth-child(7) {
+  vertical-align: top;
+  max-width: 280px;
+}
