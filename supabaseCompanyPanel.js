@@ -246,17 +246,22 @@
           ${textarea("Treść SMS po wizycie", "after_visit_sms_template", val(company, "after_visit_sms_template"), 5)}
         </fieldset>
         <fieldset class="cm-notification-box"><legend>Powiadomienia automatyczne EMAIL</legend>
+          <p class="bm-muted cm-full-field">Pole „Nadawca email” jest nazwą widoczną u klienta, np. „PWC Studio”. Techniczny adres wysyłki będzie podpięty później przez CompanyManager.</p>
           ${check("powiadamiaj o wizytach przez EMAIL - 24h przed wizytą", "visit_email_24", checked(company, "visit_email_24"))}
-          ${field("Nadawca email", "visit_email_sender", val(company, "visit_email_sender", "company_email", "email"))}
+          ${field("Nadawca email", "visit_email_sender", val(company, "visit_email_sender", "name", "company_email", "email"), "text", "maxlength=50 placeholder='np. Nazwa firmy'")}
+          ${field("Temat email", "visit_email_subject", val(company, "visit_email_subject") || "Przypomnienie o wizycie", "text", "maxlength=120")}
           ${textarea("Treść email", "visit_email_template", val(company, "visit_email_template"), 6)}
           ${check("wyślij życzenia urodzinowe przez EMAIL", "birthday_email", checked(company, "birthday_email"))}
-          ${field("Nadawca email", "birthday_email_sender", val(company, "birthday_email_sender", "company_email", "email"))}
+          ${field("Nadawca email", "birthday_email_sender", val(company, "birthday_email_sender", "name", "company_email", "email"), "text", "maxlength=50 placeholder='np. Nazwa firmy'")}
+          ${field("Temat email", "birthday_email_subject", val(company, "birthday_email_subject") || "Wszystkiego najlepszego", "text", "maxlength=120")}
           ${textarea("Treść email z życzeniami", "birthday_email_template", val(company, "birthday_email_template"), 6)}
           ${check("wyślij EMAIL po dodaniu wizyty", "after_add_email", checked(company, "after_add_email"))}
-          ${field("Nadawca email", "after_add_email_sender", val(company, "after_add_email_sender", "company_email", "email"))}
+          ${field("Nadawca email", "after_add_email_sender", val(company, "after_add_email_sender", "name", "company_email", "email"), "text", "maxlength=50 placeholder='np. Nazwa firmy'")}
+          ${field("Temat email", "after_add_email_subject", val(company, "after_add_email_subject") || "Potwierdzenie rezerwacji", "text", "maxlength=120")}
           ${textarea("Treść email po dodaniu wizyty", "after_add_email_template", val(company, "after_add_email_template"), 6)}
           ${check("wyślij EMAIL po wizycie", "after_visit_email", checked(company, "after_visit_email"))}
-          ${field("Nadawca email", "after_visit_email_sender", val(company, "after_visit_email_sender", "company_email", "email"))}
+          ${field("Nadawca email", "after_visit_email_sender", val(company, "after_visit_email_sender", "name", "company_email", "email"), "text", "maxlength=50 placeholder='np. Nazwa firmy'")}
+          ${field("Temat email", "after_visit_email_subject", val(company, "after_visit_email_subject") || "Dziękujemy za wizytę", "text", "maxlength=120")}
           ${textarea("Treść email po wizycie", "after_visit_email_template", val(company, "after_visit_email_template"), 6)}
         </fieldset>
         <div class="cm-form-actions cm-full-field"><button type="submit" class="bm-primary-btn">Zapisz powiadomienia</button></div>
