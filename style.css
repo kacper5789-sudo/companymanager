@@ -7047,3 +7047,294 @@ footer,.cm-footer{color:#7a6b58 !important;}
   .bm-sidebar,.bm-nav-top{background:linear-gradient(180deg,#201d18,#171511) !important;}
   .bm-main.bm-main-top{padding-top:14px !important;}
 }
+
+
+/* CompanyManager v088 — warm gold full panel completion
+   Dociągnięcie: Dashboard, górne menu i menu użytkownika. Bez zmian logiki. */
+:root{
+  --cm-warm-bg:#fff8ec;
+  --cm-warm-bg-2:#f6ead5;
+  --cm-warm-panel:#fffdf7;
+  --cm-warm-panel-2:#fff4dc;
+  --cm-warm-line:rgba(167,111,18,.20);
+  --cm-warm-line-strong:rgba(167,111,18,.32);
+  --cm-warm-text:#1b1711;
+  --cm-warm-muted:#776854;
+  --cm-warm-gold:#c89118;
+  --cm-warm-gold-2:#f4c75f;
+  --cm-warm-dark:#211d17;
+  --cm-warm-dark-2:#15130f;
+}
+
+html body.panel-body,
+html body[data-panel-page]{
+  background:
+    radial-gradient(circle at 18% 8%,rgba(244,199,95,.28),transparent 31rem),
+    radial-gradient(circle at 90% 10%,rgba(255,255,255,.70),transparent 26rem),
+    linear-gradient(135deg,var(--cm-warm-bg),var(--cm-warm-bg-2) 58%,#fffdf7) !important;
+  color:var(--cm-warm-text) !important;
+}
+html body.panel-body::before,
+html body[data-panel-page]::before{
+  background:
+    radial-gradient(circle at 18% 10%,rgba(244,199,95,.26),transparent 28rem),
+    linear-gradient(180deg,rgba(255,255,255,.10),rgba(255,248,236,.74)) !important;
+}
+
+/* Górne menu */
+html body .bm-horizontal-menu{
+  min-height:58px !important;
+  padding:9px 16px !important;
+  border-bottom:1px solid rgba(244,199,95,.28) !important;
+  background:linear-gradient(90deg,var(--cm-warm-dark),var(--cm-warm-dark-2)) !important;
+  box-shadow:0 14px 35px rgba(43,31,12,.24) !important;
+}
+html body .bm-horizontal-menu::-webkit-scrollbar-thumb{
+  background:linear-gradient(90deg,var(--cm-warm-gold),var(--cm-warm-gold-2)) !important;
+}
+html body .bm-horizontal-brand,
+html body .bm-horizontal-brand.bm-logo-home{
+  color:#fff2d2 !important;
+  border-color:rgba(244,199,95,.34) !important;
+  background:rgba(244,199,95,.08) !important;
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.04) !important;
+}
+html body .bm-horizontal-brand:hover,
+html body .bm-horizontal-brand.active{
+  color:var(--cm-warm-gold-2) !important;
+  background:rgba(244,199,95,.16) !important;
+  border-color:rgba(244,199,95,.55) !important;
+}
+html body .bm-nav-top{
+  background:transparent !important;
+  border:0 !important;
+  box-shadow:none !important;
+}
+html body .bm-nav-top a{
+  color:#f4ead9 !important;
+  background:transparent !important;
+  border:1px solid transparent !important;
+}
+html body .bm-nav-top a:hover{
+  color:var(--cm-warm-gold-2) !important;
+  background:rgba(244,199,95,.10) !important;
+  border-color:rgba(244,199,95,.20) !important;
+}
+html body .bm-nav-top a.active{
+  color:#1b1711 !important;
+  background:linear-gradient(135deg,var(--cm-warm-gold),var(--cm-warm-gold-2)) !important;
+  border-color:rgba(244,199,95,.55) !important;
+  box-shadow:0 10px 22px rgba(184,129,17,.22), inset 0 1px 0 rgba(255,255,255,.32) !important;
+}
+
+/* Menu użytkownika / lewy panel */
+html body .bm-left-info-panel{
+  background:linear-gradient(180deg,rgba(255,253,247,.98),rgba(255,246,225,.96)) !important;
+  border:1px solid var(--cm-warm-line) !important;
+  box-shadow:16px 20px 54px rgba(117,79,14,.12) !important;
+  color:var(--cm-warm-text) !important;
+}
+html body .bm-left-info-panel,
+html body .bm-left-info-panel *{
+  color:var(--cm-warm-text) !important;
+}
+html body .bm-left-info-panel .bm-live-clock,
+html body .bm-worker-count,
+html body .bm-free,
+html body .free{
+  color:var(--cm-warm-gold) !important;
+}
+html body .bm-left-info-panel .bm-today,
+html body .bm-left-info-panel .bm-calendar-center .bm-today,
+html body .bm-left-info-panel .bm-owner-link,
+html body .bm-left-info-panel .bm-user-stack button,
+html body .bm-left-info-panel .bm-admin-dropdown-toggle,
+html body .bm-left-info-panel .cm-language-toggle,
+html body .bm-left-info-panel .cm-language-current{
+  background:rgba(255,255,255,.76) !important;
+  border:1px solid rgba(167,111,18,.22) !important;
+  color:var(--cm-warm-text) !important;
+  box-shadow:0 9px 22px rgba(117,79,14,.08) !important;
+}
+html body .bm-left-info-panel .bm-undo-time-btn,
+html body .bm-left-info-panel button[data-undo],
+html body .bm-left-info-panel .bm-user-stack .bm-undo-time-btn{
+  background:linear-gradient(135deg,var(--cm-warm-gold),var(--cm-warm-gold-2)) !important;
+  color:#1b1711 !important;
+  border-color:rgba(184,129,17,.42) !important;
+  box-shadow:0 11px 24px rgba(184,129,17,.20) !important;
+}
+html body .bm-left-info-panel .bm-owner-link:hover,
+html body .bm-left-info-panel .bm-admin-dropdown-toggle:hover,
+html body .bm-left-info-panel .bm-admin-dropdown-toggle[aria-expanded="true"]{
+  background:#fff4d8 !important;
+  border-color:var(--cm-warm-gold) !important;
+}
+html body .bm-admin-dropdown-menu{
+  background:linear-gradient(180deg,#fffdf7,#fff1d5) !important;
+  border-color:var(--cm-warm-line-strong) !important;
+  box-shadow:0 20px 46px rgba(117,79,14,.18) !important;
+}
+html body .bm-admin-dropdown-menu a,
+html body .bm-admin-dropdown-menu button{
+  background:rgba(255,255,255,.78) !important;
+  color:var(--cm-warm-text) !important;
+  border:1px solid rgba(167,111,18,.16) !important;
+}
+html body .bm-admin-dropdown-menu a:hover,
+html body .bm-admin-dropdown-menu button:hover{
+  background:#fff2d2 !important;
+  color:#1b1711 !important;
+  border-color:var(--cm-warm-gold) !important;
+}
+html body .bm-admin-dropdown-menu .bm-admin-dropdown-logout{
+  background:#fff1f1 !important;
+  color:#8a1d1d !important;
+  border-color:rgba(185,28,28,.25) !important;
+}
+
+/* Dashboard / grafik wizyt */
+html body .bm-panel-area{
+  color:var(--cm-warm-text) !important;
+}
+html body .bm-current-section,
+html body .bm-schedule-datebar,
+html body .bm-dashboard-schedule .bm-page-card,
+html body .bm-appointment-form,
+html body #dashboardAppointmentForm,
+html body #dashboardEditVisitPanel,
+html body #dashboardCancelVisitPanel{
+  background:linear-gradient(180deg,rgba(255,253,247,.98),rgba(255,246,225,.95)) !important;
+  border:1px solid var(--cm-warm-line) !important;
+  color:var(--cm-warm-text) !important;
+  box-shadow:0 18px 44px rgba(117,79,14,.11) !important;
+}
+html body .bm-schedule-datebar{
+  top:58px !important;
+  border-radius:18px !important;
+}
+html body .bm-schedule-datebar #dashRelativeLabel,
+html body .bm-schedule-datebar #dashFullDate{
+  color:var(--cm-warm-text) !important;
+}
+html body .bm-schedule-datebar button,
+html body .bm-dashboard-actions .bm-light-btn,
+html body .bm-dashboard-actions .bm-worker-count,
+html body .bm-light-btn{
+  background:rgba(255,255,255,.84) !important;
+  color:var(--cm-warm-text) !important;
+  border:1px solid rgba(167,111,18,.25) !important;
+  box-shadow:0 8px 20px rgba(117,79,14,.08) !important;
+}
+html body .bm-schedule-datebar button:hover,
+html body .bm-dashboard-actions .bm-light-btn:hover,
+html body .bm-light-btn:hover{
+  background:#fff2d2 !important;
+  border-color:var(--cm-warm-gold) !important;
+}
+html body .bm-dashboard-actions .bm-danger-btn,
+html body .bm-danger-btn{
+  background:#fff0f0 !important;
+  color:#8a1d1d !important;
+  border:1px solid rgba(185,28,28,.28) !important;
+  box-shadow:0 8px 20px rgba(117,79,14,.06) !important;
+}
+html body .bm-schedule-table-wrap{
+  background:rgba(255,253,247,.86) !important;
+  border:1px solid var(--cm-warm-line) !important;
+  border-radius:20px !important;
+  box-shadow:0 22px 60px rgba(117,79,14,.12) !important;
+}
+html body .bm-schedule-table{
+  color:var(--cm-warm-text) !important;
+  background:transparent !important;
+}
+html body .bm-schedule-table th{
+  background:linear-gradient(180deg,#fff5de,#f8dfaa) !important;
+  color:#2b2113 !important;
+  border-right:1px solid rgba(167,111,18,.16) !important;
+  border-bottom:1px solid rgba(167,111,18,.20) !important;
+}
+html body .bm-schedule-table td{
+  background:rgba(255,253,247,.64) !important;
+  color:#1f1a12 !important;
+  border-right:1px solid rgba(167,111,18,.12) !important;
+  border-bottom:1px solid rgba(167,111,18,.12) !important;
+}
+html body .bm-schedule-table tr:nth-child(even) td{
+  background:rgba(255,247,229,.58) !important;
+}
+html body .bm-schedule-table tr:hover td{
+  background:rgba(244,199,95,.13) !important;
+}
+html body .bm-schedule-table .free,
+html body .bm-schedule-table [data-status="free"],
+html body .bm-schedule-table td:has(.free){
+  color:var(--cm-warm-gold) !important;
+}
+
+/* Pozostałe panele — dopięcie, żeby nie zostały granatowe */
+html body .bm-page-card,
+html body .bm-topbar,
+html body .bm-table-wrap,
+html body .cm-report-card,
+html body .cm-card,
+html body .cm-panel,
+html body .cm-company-panel-card,
+html body .cm-audit-page .bm-page-card{
+  background:linear-gradient(180deg,rgba(255,253,247,.98),rgba(255,246,225,.95)) !important;
+  border-color:var(--cm-warm-line) !important;
+  color:var(--cm-warm-text) !important;
+  box-shadow:0 18px 44px rgba(117,79,14,.10) !important;
+}
+html body .bm-page-card h1,
+html body .bm-page-card h2,
+html body .bm-page-card h3,
+html body .bm-page-head h1,
+html body .bm-page-head h2,
+html body .bm-topbar h1,
+html body .cm-report-card h2{
+  color:var(--cm-warm-text) !important;
+}
+html body .bm-page-card p,
+html body .bm-muted,
+html body .cm-muted,
+html body .bm-topbar p{
+  color:var(--cm-warm-muted) !important;
+}
+html body .bm-table th,
+html body .cm-audit-table th{
+  background:linear-gradient(180deg,#fff5de,#f8dfaa) !important;
+  color:#2b2113 !important;
+}
+html body .bm-table td,
+html body .cm-audit-table td{
+  color:#1f1a12 !important;
+}
+html body input,
+html body select,
+html body textarea,
+html body .panel-input,
+html body .role-select{
+  background:rgba(255,255,255,.86) !important;
+  color:var(--cm-warm-text) !important;
+  border-color:rgba(167,111,18,.24) !important;
+}
+html body input:focus,
+html body select:focus,
+html body textarea:focus{
+  border-color:var(--cm-warm-gold) !important;
+  box-shadow:0 0 0 4px rgba(200,145,24,.13) !important;
+}
+html body .pwc-signature{
+  background:rgba(33,29,23,.92) !important;
+  border-color:rgba(244,199,95,.28) !important;
+  color:#d8c9ae !important;
+}
+html body .pwc-signature a{color:#f4c75f !important;}
+
+@media(max-width:980px){
+  html body .bm-horizontal-menu{position:relative !important;}
+  html body .bm-left-info-panel{margin:0 10px 12px !important;border-radius:18px !important;}
+  html body .bm-panel-area{padding:0 10px 70px !important;}
+}
