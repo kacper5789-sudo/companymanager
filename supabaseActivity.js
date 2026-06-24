@@ -94,7 +94,7 @@
     if (contextError) return { ok: false, message: contextError.message };
     if (!access || access.allowed !== true) return { ok: false, message: access?.reason || "Brak dostępu." };
     const role = String(access.role || "").toUpperCase();
-    const companyId = context?.company_id || access.company_id || null;
+    const companyId = context?.company_id || context?.effective_company_id || access.company_id || null;
     if (role !== "OWNER" && role !== "ADMIN") return { ok: false, message: "Dostęp do historii aktywności ma ADMIN/OWNER." };
     if (!companyId && role !== "OWNER") return { ok: false, message: "Brak firmy." };
     return { ok: true, access, context, role, companyId };
@@ -206,7 +206,7 @@
     }
     const pageSize = Number(document.getElementById("auditPageSize")?.value || 100);
     const params = {
-      p_company_id: ctx.companyId || ctx.context?.company_id || null,
+      p_company_id: ctx.companyId || null,
       p_limit: pageSize,
       p_offset: auditState.page * pageSize,
       p_action: document.getElementById("auditActionFilter")?.value || null,
