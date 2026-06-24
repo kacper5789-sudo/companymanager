@@ -6719,3 +6719,51 @@ button.bm-primary-btn:hover{filter:brightness(1.08);box-shadow:0 0 18px rgba(56,
   vertical-align: top;
   max-width: 280px;
 }
+
+
+/* CompanyManager v091 — left identity time/name centering fix */
+.bm-left-info-panel .bm-calendar-center{
+  width:100% !important;
+  margin-left:auto !important;
+  margin-right:auto !important;
+  text-align:center !important;
+}
+.bm-left-info-panel .bm-calendar-center .bm-today{
+  justify-content:center !important;
+  text-align:center !important;
+  width:100% !important;
+}
+.bm-left-info-panel .bm-calendar-center .bm-today strong{
+  display:block !important;
+  width:100% !important;
+  text-align:center !important;
+}
+.bm-left-info-panel .bm-live-clock{
+  display:block !important;
+  width:100% !important;
+  text-align:center !important;
+  margin-left:auto !important;
+  margin-right:auto !important;
+  font-variant-numeric:tabular-nums !important;
+}
+.bm-left-info-panel .bm-user-stack{
+  align-items:center !important;
+  justify-content:center !important;
+  text-align:center !important;
+  width:100% !important;
+}
+.bm-left-info-panel .bm-user-stack strong,
+.bm-left-info-panel .bm-user-stack b{
+  display:block !important;
+  width:100% !important;
+  text-align:center !important;
+}
+.bm-left-info-panel .bm-admin-dropdown{
+  width:100% !important;
+  display:flex !important;
+  justify-content:center !important;
+}
+.bm-left-info-panel .bm-admin-dropdown-toggle{
+  margin-left:auto !important;
+  margin-right:auto !important;
+}
