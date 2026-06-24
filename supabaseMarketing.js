@@ -1,4 +1,4 @@
-// CompanyManager — 092 Marketing EMAIL/SMS Supabase base
+// CompanyManager — 093 Marketing EMAIL/SMS UI filters counter
 // Marketing zapisuje kampanie i odbiorców do Supabase. Realna wysyłka będzie podpięta w kolejnym kroku przez Edge Function.
 (function () {
   const PAGE = "marketing";
@@ -9,6 +9,7 @@
   if (!isPage()) return;
 
   const $ = (sel, root = document) => root.querySelector(sel);
+  let currentClients = [];
   const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
 
   function escapeHtml(value) {
@@ -123,18 +124,59 @@
     };
   }
 
-  async function countRecipients(channel, form) {
-    const result = await rpc("cm_marketing_recipients", {
-      p_channel: channel,
-      p_filters: recipientFiltersFromForm(form)
+  function isChecked(form, name) {
+    return form.querySelector(`[name="${name}"]`)?.checked === true;
+  }
+
+  function localRecipientCount(channel, form) {
+    const filters = recipientFiltersFromForm(form);
+    const wanted = currentClients.filter((client) => {
+      if (client.active === false) return false;
+      if (channel === "email") {
+        if (!client.marketing_email || !String(client.email || "").trim()) return false;
+      } else {
+        if (!client.marketing_sms || !String(client.phone || "").trim()) return false;
+      }
+
+      const anyFilter = filters.allCustomers || filters.selectedCustomers || filters.allWomen || filters.allMen || filters.updatedRange || filters.addedRange;
+      if (!anyFilter) return true;
+      if (filters.allCustomers) return true;
+      if (filters.selectedCustomers && filters.clientIds.includes(client.id)) return true;
+
+      const gender = normalizeText(client.gender || "");
+      if (filters.allWomen && ["kobieta", "female", "woman"].includes(gender)) return true;
+      if (filters.allMen && ["mezczyzna", "mezczyzna", "mężczyzna", "male", "man"].includes(gender)) return true;
+
+      const inRange = (value, from, to) => {
+        const d = String(value || "").slice(0, 10);
+        if (!d) return false;
+        return (!from || d >= from) && (!to || d <= to);
+      };
+      if (filters.updatedRange && inRange(client.updated_at, filters.updatedFrom, filters.updatedTo)) return true;
+      if (filters.addedRange && inRange(client.created_at, filters.addedFrom, filters.addedTo)) return true;
+      return false;
     });
-    return Number(result?.count || 0);
+    return wanted.length;
+  }
+
+  async function countRecipients(channel, form) {
+    try {
+      const result = await rpc("cm_marketing_recipients", {
+        p_channel: channel,
+        p_filters: recipientFiltersFromForm(form)
+      });
+      return Number(result?.count || 0);
+    } catch (error) {
+      console.warn("cm_marketing_recipients RPC failed, using local count", error);
+      return localRecipientCount(channel, form);
+    }
   }
 
   function recipientsHtml(customerOptions, prefix) {
     const now = todayIso();
     return `<fieldset class="full marketing-recipients"><legend>Wyślij do</legend>
-      <label class="bm-checkbox-line"><input type="checkbox" name="allCustomers"> wszystkich klientów ze zgodą marketingową</label>
+      <label class="bm-checkbox-line"><input type="checkbox" name="allCustomers" checked> wszystkich klientów ze zgodą marketingową</label>
+      <label class="bm-checkbox-line"><input type="checkbox" name="selectedGroups" disabled> wybranych grup klientów <span class="bm-muted">— grupy klientów podepniemy w kolejnym etapie</span></label>
       <label class="bm-checkbox-line"><input type="checkbox" name="selectedCustomers" class="marketing-mode-checkbox" data-panel="${prefix}CustomersPanel"> wybranych klientów</label>
       <div id="${prefix}CustomersPanel" class="marketing-extra-panel" hidden><label>Wybierz klientów<select name="customers" multiple>${customerOptions}</select></label></div>
       <label class="bm-checkbox-line"><input type="checkbox" name="allWomen"> wszystkich kobiet ze zgodą</label>
@@ -175,8 +217,8 @@
 
     area.innerHTML = `<section class="bm-page-card marketing-module">
       <div class="bm-page-head customers-head">
-        <div><h2>Marketing</h2><p>Podłączone do Supabase. Na tym etapie kampanie są zapisywane i przygotowane do wysyłki; realny provider email/SMS będzie w kolejnym kroku.</p></div>
-        <div class="bm-actions-row"><button id="showMarketingSms" type="button">SMS</button><button id="showMarketingEmail" type="button">Email</button><button id="showDeleteCampaign" type="button" class="bm-danger-btn">Usuń</button></div>
+        <div><h2>Marketing</h2><p>Email/SMS podłączone do Supabase. Wybierz odbiorców, sprawdź licznik i zapisz kampanię. Realne wysyłanie przez provider będzie w kolejnym kroku.</p></div>
+        <div class="bm-actions-row"><button id="showMarketingSms" type="button">SMS</button><button id="showMarketingEmail" type="button" class="bm-primary-btn">Email</button><button id="showDeleteCampaign" type="button" class="bm-danger-btn">Usuń</button></div>
       </div>
       <div class="bm-table-toolbar"><label>Szukaj: <input id="marketingSearch" type="search" placeholder="Szukaj kampanii" value="${escapeHtml(new URLSearchParams(location.search).get("q") || "")}"></label></div>
       ${table(["Kampania", "Data", "Kanał", "Nadawca", "Odbiorcy", "Status"], campaignRows, "Brak kampanii marketingowych")}
@@ -197,7 +239,7 @@
       <p id="smsMarketingMessage" class="panel-message"></p>
     </section>
 
-    <section id="marketingEmailCard" class="bm-page-card bm-inner-card" hidden>
+    <section id="marketingEmailCard" class="bm-page-card bm-inner-card">
       <h2>Email</h2>
       <form id="marketingEmailForm" class="bm-form-grid bm-wide-form marketing-form">
         <label>Nadawca email<input name="emailSender" list="emailSenderList" maxlength="50" placeholder="np. ${escapeHtml(senderFallback(company))}" value="${escapeHtml(company.visit_email_sender || senderFallback(company))}"><datalist id="emailSenderList">${senderOptions(company)}</datalist></label>
@@ -254,9 +296,30 @@
     const form = $(`#marketing${prefix === "sms" ? "Sms" : "Email"}Form`);
     if (!form) return;
     form.querySelectorAll("input, select, textarea").forEach((el) => el.addEventListener("change", () => updateCount(prefix)));
+
+    const allCustomers = form.querySelector('[name="allCustomers"]');
+    allCustomers?.addEventListener("change", () => {
+      if (allCustomers.checked) {
+        form.querySelectorAll('.marketing-mode-checkbox, [name="allWomen"], [name="allMen"]').forEach((other) => {
+          other.checked = false;
+          const otherPanel = other.dataset?.panel ? document.getElementById(other.dataset.panel) : null;
+          if (otherPanel) otherPanel.hidden = true;
+        });
+      }
+      updateCount(prefix);
+    });
+
+    form.querySelectorAll('[name="allWomen"], [name="allMen"]').forEach((box) => {
+      box.addEventListener("change", () => {
+        if (box.checked && allCustomers) allCustomers.checked = false;
+        updateCount(prefix);
+      });
+    });
+
     form.querySelectorAll(".marketing-mode-checkbox").forEach((box) => {
       box.addEventListener("change", () => {
         const panel = box.dataset.panel ? document.getElementById(box.dataset.panel) : null;
+        if (box.checked && allCustomers) allCustomers.checked = false;
         if (box.checked && box.dataset.exclusive === "date") {
           form.querySelectorAll('.marketing-mode-checkbox[data-exclusive="date"]').forEach((other) => {
             if (other !== box) {
@@ -370,6 +433,7 @@
       const ctx = await fetchContext();
       const company = ctx?.company || {};
       const clients = await fetchClients(company.id);
+      currentClients = clients || [];
       render(area, {
         company,
         profile: ctx?.profile || {},
