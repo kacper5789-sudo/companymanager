@@ -1,5 +1,5 @@
 // CompanyManager — Historia aktywności / Company audit log
-// 080: Historia aktywności firmy — neutralny opis, zakres 60 dni i paginacja.
+// 082: Historia aktywności — direct select fallback + poprawny zakres firmy.
 
 (function () {
   function isPage() {
@@ -94,7 +94,7 @@
     if (contextError) return { ok: false, message: contextError.message };
     if (!access || access.allowed !== true) return { ok: false, message: access?.reason || "Brak dostępu." };
     const role = String(access.role || "").toUpperCase();
-    const companyId = context?.company_id || context?.effective_company_id || access.company_id || null;
+    const companyId = context?.company_id || access.company_id || null;
     if (role !== "OWNER" && role !== "ADMIN") return { ok: false, message: "Dostęp do historii aktywności ma ADMIN/OWNER." };
     if (!companyId && role !== "OWNER") return { ok: false, message: "Brak firmy." };
     return { ok: true, access, context, role, companyId };
@@ -198,6 +198,50 @@
       </tr>`).join("");
   }
 
+  function normalizeAuditRows(rows) {
+    return (rows || []).map((item) => ({
+      id: item.id,
+      company_id: item.company_id,
+      created_at: item.created_at,
+      actor_name: item.actor_name,
+      actor_email: item.actor_email,
+      actor_role: item.actor_role,
+      module: item.module,
+      table_name: item.table_name,
+      action: item.action,
+      record_id: item.record_id,
+      record_label: item.record_label,
+      old_data: item.old_data,
+      new_data: item.new_data,
+      source: item.source
+    }));
+  }
+
+  async function loadLogsDirect(ctx, params) {
+    let query = window.cmSupabase
+      .from("company_audit_logs")
+      .select("id, company_id, created_at, actor_name, actor_email, actor_role, module, table_name, action, record_id, record_label, old_data, new_data, source")
+      .gte("created_at", params.p_date_from)
+      .order("created_at", { ascending: false })
+      .order("id", { ascending: false })
+      .range(params.p_offset, params.p_offset + params.p_limit - 1);
+
+    // ADMIN ma RLS tylko na swoją firmę. OWNER ogląda kontekst aktualnie wybranej firmy.
+    if (params.p_company_id) query = query.eq("company_id", params.p_company_id);
+    if (params.p_action) query = query.eq("action", params.p_action);
+    if (params.p_module) query = query.eq("module", params.p_module);
+
+    const search = String(params.p_search || "").trim();
+    if (search) {
+      const safe = search.replace(/[%_,]/g, "");
+      query = query.or(`actor_name.ilike.%${safe}%,actor_email.ilike.%${safe}%,module.ilike.%${safe}%,action.ilike.%${safe}%,record_label.ilike.%${safe}%`);
+    }
+
+    const { data, error } = await query;
+    if (error) throw error;
+    return normalizeAuditRows(data || []);
+  }
+
   async function loadLogs(ctx) {
     const status = document.getElementById("auditStatus");
     if (status) {
@@ -206,7 +250,7 @@
     }
     const pageSize = Number(document.getElementById("auditPageSize")?.value || 100);
     const params = {
-      p_company_id: ctx.companyId || null,
+      p_company_id: ctx.companyId || ctx.context?.company_id || ctx.access?.company_id || null,
       p_limit: pageSize,
       p_offset: auditState.page * pageSize,
       p_action: document.getElementById("auditActionFilter")?.value || null,
@@ -215,21 +259,38 @@
       p_date_from: getDateFromByRange(),
       p_date_to: null
     };
-    const { data, error } = await window.cmSupabase.rpc("cm_list_company_audit_logs", params);
-    if (error) {
-      if (status) {
-        status.textContent = error.message || "Błąd ładowania historii.";
-        status.style.color = "#fca5a5";
-      }
-      renderRows([]);
-      return;
+
+    let logs = [];
+    let rpcError = null;
+
+    // Najpierw RPC, ale jeśli zwróci pustkę przez kontekst firmy, robimy bezpieczny direct select pod RLS.
+    try {
+      const { data, error } = await window.cmSupabase.rpc("cm_list_company_audit_logs", params);
+      if (error) rpcError = error;
+      else logs = normalizeAuditRows(data || []);
+    } catch (err) {
+      rpcError = err;
     }
-    fillModules(data || []);
-    renderRows(data || []);
-    auditState.lastCount = (data || []).length;
+
+    if (!logs.length) {
+      try {
+        logs = await loadLogsDirect(ctx, params);
+      } catch (directError) {
+        if (status) {
+          status.textContent = directError.message || rpcError?.message || "Błąd ładowania historii.";
+          status.style.color = "#fca5a5";
+        }
+        renderRows([]);
+        return;
+      }
+    }
+
+    fillModules(logs || []);
+    renderRows(logs || []);
+    auditState.lastCount = (logs || []).length;
     updatePager(pageSize);
     if (status) {
-      status.textContent = `Zakres: ostatnie ${document.getElementById("auditRangeFilter")?.selectedOptions?.[0]?.textContent || "60 dni"}. Wpisy na stronie: ${(data || []).length}`;
+      status.textContent = `Zakres: ostatnie ${document.getElementById("auditRangeFilter")?.selectedOptions?.[0]?.textContent || "60 dni"}. Wpisy na stronie: ${(logs || []).length}`;
       status.style.color = "#86efac";
     }
   }
