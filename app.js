@@ -2236,13 +2236,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     <div id="adminDropdownMenu" class="bm-admin-dropdown-menu" hidden>
                       <a href="company-panel.html">Panel Firmy</a>
                       <a href="users.html">Użytkownicy</a>
-                      ${canAccessPage(user, 'workSchedule') ? `<a href="work-schedule.html">Grafik pracy</a>` : ''}
+                      ${canAccessPage(user, 'activity') ? `<a href="activity.html">Historia aktywności</a>` : ''}
                       <button id="panelLogoutBtn" class="bm-admin-dropdown-logout" type="button">Wyloguj się</button>
                     </div>
                   </div>
                   <button id="undoTimeBtn" class="bm-undo-time-btn" type="button">Cofnij Czas</button>
                   <a class="bm-owner-link ${page==='owner'?'active':''}" href="owner.html">Właściciel strony</a>
-                  ${canAccessPage(user, 'activity') ? `<a class="bm-owner-link bm-activity-link ${page==='activity'?'active':''}" href="activity.html">Historia aktywności</a>` : ''}
+                  ${canAccessPage(user, 'workSchedule') ? `<a class="bm-owner-link bm-work-schedule-link ${page==='workSchedule'?'active':''}" href="work-schedule.html">Grafik pracy</a>` : ''}
                   ${canAccessPage(user, 'reports') ? `<a class="bm-owner-link bm-stats-link ${page==='reports'?'active':''}" href="reports.html">Wykres/Statystyka</a>` : ''}
                   ${canAccessPage(user, 'customersReports') ? `<a class="bm-owner-link bm-customers-reports-link ${page==='customersReports'?'active':''}" href="customersraports.html">Klienci - raporty</a>` : ''}
                   ${canAccessPage(user, 'dailyReport') ? `<a class="bm-owner-link bm-daily-link ${page==='dailyReport'?'active':''}" href="daily-report.html">Raport dzienny</a>` : ''}
