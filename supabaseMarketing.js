@@ -217,8 +217,8 @@
 
     area.innerHTML = `<section class="bm-page-card marketing-module">
       <div class="bm-page-head customers-head">
-        <div><h2>Marketing</h2><p>Email/SMS podłączone do Supabase. Email wysyłamy przez Resend, SMS przez Edge Function send-marketing-sms/SMSPLANET.</p></div>
-        <div class="bm-actions-row"><button id="showMarketingSms" type="button">SMS</button><button id="showMarketingEmail" type="button" class="bm-primary-btn">Email</button><button id="showDeleteCampaign" type="button" class="bm-danger-btn">Usuń</button></div>
+        <div><h2>Marketing</h2><p>Email/SMS podłączone do Supabase. Kampanie zostają w historii i nie są usuwane, żeby statystyki oraz rozliczenia SMS/Email były spójne.</p></div>
+        <div class="bm-actions-row"><button id="showMarketingSms" type="button">SMS</button><button id="showMarketingEmail" type="button" class="bm-primary-btn">Email</button></div>
       </div>
       <div class="bm-table-toolbar"><label>Szukaj: <input id="marketingSearch" type="search" placeholder="Szukaj kampanii" value="${escapeHtml(new URLSearchParams(location.search).get("q") || "")}"></label></div>
       ${table(["Kampania", "Data", "Kanał", "Nadawca", "Odbiorcy", "Status"], campaignRows, "Brak kampanii marketingowych")}
@@ -252,15 +252,6 @@
         <div class="bm-form-row-2 full"><button type="button" id="saveEmailCampaign">Zapisz</button><button type="button" id="sendEmailCampaign">Wyślij</button></div>
       </form>
       <p id="emailMarketingMessage" class="panel-message"></p>
-    </section>
-
-    <section id="marketingDeleteCard" class="bm-page-card bm-inner-card" hidden>
-      <h2>Usuń kampanię</h2>
-      <form id="marketingDeleteForm" class="bm-form-grid bm-wide-form">
-        <label class="full">Wybierz kampanię<select name="campaignId">${campaigns.map((c) => `<option value="${escapeHtml(c.id)}">${escapeHtml([c.subject || channelLabel(c.channel), formatDateTimePL(c.created_at), channelLabel(c.channel), campaignStatusLabel(c.status)].filter(Boolean).join(" — "))}</option>`).join("")}</select></label>
-        <div class="bm-form-row-2 full"><button type="button" id="deleteMarketingCampaign" class="bm-danger-btn">Usuń</button></div>
-      </form>
-      <p id="deleteMarketingMessage" class="panel-message"></p>
     </section>`;
 
     bind(area, state);
@@ -414,11 +405,9 @@
   async function bind(area, state) {
     const smsCard = $("#marketingSmsCard", area);
     const emailCard = $("#marketingEmailCard", area);
-    const deleteCard = $("#marketingDeleteCard", area);
-    const panels = [smsCard, emailCard, deleteCard];
+    const panels = [smsCard, emailCard];
     $("#showMarketingSms", area)?.addEventListener("click", () => showOnlyPanel(smsCard, panels));
     $("#showMarketingEmail", area)?.addEventListener("click", () => showOnlyPanel(emailCard, panels));
-    $("#showDeleteCampaign", area)?.addEventListener("click", () => showOnlyPanel(deleteCard, panels));
     $("#marketingSearch", area)?.addEventListener("keydown", (event) => {
       if (event.key === "Enter") {
         const val = encodeURIComponent(event.target.value || "");
@@ -435,22 +424,6 @@
     $("#sendSmsCampaign", area)?.addEventListener("click", () => saveCampaign("sms", "ready_to_send"));
     $("#saveEmailCampaign", area)?.addEventListener("click", () => saveCampaign("email", "draft"));
     $("#sendEmailCampaign", area)?.addEventListener("click", () => saveCampaign("email", "ready_to_send"));
-
-    $("#deleteMarketingCampaign", area)?.addEventListener("click", async () => {
-      const id = $("#marketingDeleteForm [name='campaignId']", area)?.value;
-      if (!id) return message("#deleteMarketingMessage", "Wybierz kampanię.", false);
-      try {
-        const { error } = await window.cmSupabase
-          .from("marketing_campaigns")
-          .update({ status: "deleted", active: false, deleted_at: new Date().toISOString() })
-          .eq("id", id);
-        if (error) throw error;
-        message("#deleteMarketingMessage", "Kampania została usunięta z aktywnej listy.", true);
-        setTimeout(() => location.reload(), 700);
-      } catch (error) {
-        message("#deleteMarketingMessage", "Błąd usuwania kampanii: " + (error?.message || error), false);
-      }
-    });
   }
 
   async function init() {

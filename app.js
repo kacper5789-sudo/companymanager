@@ -989,7 +989,7 @@ document.addEventListener('DOMContentLoaded', () => {
     sales_without_visit_history: ['sprzedaż bez wizyt (dostęp do historii - tabeli poniżej)'],
     marketing_sms: ['marketing (wysyłka reklamy sms/email)', 'marketing (wysyłka reklamy sms/email/usuń)'],
     marketing_email: ['marketing (wysyłka reklamy sms/email)', 'marketing (wysyłka reklamy sms/email/usuń)'],
-    marketing_delete: ['marketing (wysyłka reklamy sms/email/usuń)'],
+    marketing_delete: ['marketing (wysyłka reklamy sms/email)'],
     passes_add: ['karnety (dodawanie, edycja, usuwanie)'],
     passes_edit: ['karnety (dodawanie, edycja, usuwanie)'],
     passes_delete: ['karnety (dodawanie, edycja, usuwanie)'],
@@ -1153,7 +1153,7 @@ document.addEventListener('DOMContentLoaded', () => {
     ['wizyty (zakończone, zaplanowane, odwołane, usunięte) - dostęp do historii (tabeli poniżej)', ['[data-visit-history="all"]','#showVisitHistory','.visit-history-btn','a[href*="history"]']],
     ['sprzedaż bez wizyt (dodawanie, edycja, usuwanie)', ['#showAddWalkin','#showDeleteWalkin','#walkinForm button[type="submit"]','#walkinDeleteForm button[type="submit"]']],
     ['sprzedaż bez wizyt (dostęp do historii - tabeli poniżej)', ['[data-walkin-history]','#showWalkinHistory','.walkin-history-btn']],
-    ['marketing (wysyłka reklamy sms/email/usuń)', ['#showMarketingSms','#showMarketingEmail','#showDeleteCampaign','#sendSmsTest','#sendEmailTest','#saveSmsCampaign','#sendSmsCampaign','#saveEmailCampaign','#sendEmailCampaign','#deleteMarketingCampaign']],
+    ['marketing (wysyłka reklamy sms/email)', ['#showMarketingSms','#showMarketingEmail','#sendSmsTest','#sendEmailTest','#saveSmsCampaign','#sendSmsCampaign','#saveEmailCampaign','#sendEmailCampaign']],
     ['karnety (dodawanie, edycja, usuwanie)', ['#showAddPass','#showDeletePass']],
     ['grafik pracy (dodawanie)', ['#showAddWorkScheduleBtn']],
     ['grafik pracy (edycja, usuwanie)', ['#showEditWorkScheduleBtn','#showDeleteWorkScheduleBtn']]
@@ -1769,7 +1769,7 @@ document.addEventListener('DOMContentLoaded', () => {
     'wizyty (zakończone, zaplanowane, odwołane, usunięte) - dostęp do historii (tabeli poniżej)':'appointments (completed, planned, cancelled, deleted) - history access (table below)',
     'sprzedaż bez wizyt (dodawanie, edycja, usuwanie)':'sales without appointments (add, edit, delete)',
     'sprzedaż bez wizyt (dostęp do historii - tabeli poniżej)':'sales without appointments (history access - table below)',
-    'marketing (wysyłka reklamy sms/email/usuń)':'marketing (send SMS/email advertising/delete)',
+    'marketing (wysyłka reklamy sms/email)':'marketing (send SMS/email advertising)',
     'karnety (dodawanie, edycja, usuwanie)':'passes (add, edit, delete)',
     'raport dzienny dzisiejszy (przeglądanie)':'today’s daily report (view)',
     'raport dzienny wczorajszy, jutrzejszy (przeglądanie)':'yesterday’s/tomorrow’s daily report (view)',
@@ -5098,7 +5098,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const campaignsTable = campaignRows.length ? table(['Kampania','Data i godzina wysłania','Kanał','OPIS','L. klientów','Status','Grupa Klientów'], campaignRows) : `<div class="bm-empty-state">Nie znaleziono żadnych danych</div>`;
 
     const content = `<section class="bm-page-card marketing-module">
-      <div class="bm-page-head customers-head"><h2>Marketing</h2><div class="bm-actions-row"><button id="showMarketingSms" type="button">SMS</button><button id="showMarketingEmail" type="button">Email</button><button id="showDeleteCampaign" type="button" class="bm-danger-btn">Usuń</button></div></div>
+      <div class="bm-page-head customers-head"><h2>Marketing</h2><div class="bm-actions-row"><button id="showMarketingSms" type="button">SMS</button><button id="showMarketingEmail" type="button">Email</button></div></div>
       <div class="bm-table-toolbar"><div class="cm-limit-toolbar">${limitDropdownHtml('marketingLimit', '50')}</div><label>Szukaj: <input id="marketingSearch" type="search" placeholder="Szukaj kampanii" value="${escapeHtml(new URLSearchParams(window.location.search).get('q') || '')}"></label></div>
       ${campaignsTable}
     </section>
@@ -5130,25 +5130,15 @@ document.addEventListener('DOMContentLoaded', () => {
         <div class="bm-form-row-2 full"><button type="button" id="saveEmailCampaign">Zapisz</button><button type="button" id="sendEmailCampaign">Wyślij</button></div>
       </form>
       <p id="emailMarketingMessage" class="panel-message"></p>
-    </section>
-    <section id="marketingDeleteCard" class="bm-page-card bm-inner-card" hidden>
-      <h2>Usuń kampanię</h2>
-      <form id="marketingDeleteForm" class="bm-form-grid bm-wide-form">
-        <label class="full">Wybierz kampanię<select name="campaignId">${campaigns.map(c => `<option value="${escapeHtml(c.id)}">${escapeHtml([c.name, formatDateTimePL(c.sentAt), c.channel, String(c.description || '').slice(0,70), c.customerCount + ' klientów', c.status, c.customerGroup].filter(Boolean).join(' — '))}</option>`).join('')}</select></label>
-        <div class="bm-form-row-2 full"><button type="button" id="deleteMarketingCampaign" class="bm-danger-btn">Usuń</button></div>
-      </form>
-      <p id="deleteMarketingMessage" class="panel-message"></p>
     </section>`;
 
     renderPanelFrame(ctx, 'marketing', content, '', '');
     setupLimitDropdown('#marketingLimit', null);
     const smsCard = document.querySelector('#marketingSmsCard');
     const emailCard = document.querySelector('#marketingEmailCard');
-    const deleteCard = document.querySelector('#marketingDeleteCard');
-    const marketingPanels = [smsCard, emailCard, deleteCard];
+    const marketingPanels = [smsCard, emailCard];
     document.querySelector('#showMarketingSms')?.addEventListener('click', () => showOnlyPanel(smsCard, marketingPanels));
     document.querySelector('#showMarketingEmail')?.addEventListener('click', () => showOnlyPanel(emailCard, marketingPanels));
-    document.querySelector('#showDeleteCampaign')?.addEventListener('click', () => showOnlyPanel(deleteCard, marketingPanels));
     const search = document.querySelector('#marketingSearch');
     search?.addEventListener('keydown', (event) => {
       if (event.key === 'Enter') {
@@ -5189,18 +5179,6 @@ document.addEventListener('DOMContentLoaded', () => {
       if (msg) { msg.textContent = statusLabel === 'Wysłanie' ? 'Kampania wysłana w wersji demo.' : 'Kampania zapisana.'; msg.style.color = '#86efac'; }
       setTimeout(()=>window.location.reload(),650);
     };
-    document.querySelector('#deleteMarketingCampaign')?.addEventListener('click', () => {
-      const currentDb = loadDatabase();
-      const form = document.querySelector('#marketingDeleteForm');
-      const msg = document.querySelector('#deleteMarketingMessage');
-      const campaignId = String(new FormData(form).get('campaignId') || '');
-      if (!campaignId) { if (msg) { msg.textContent = 'Wybierz kampanię do usunięcia.'; msg.style.color = '#fca5a5'; } return; }
-      saveUndoSnapshot('Usunięcie kampanii marketingowej', currentDb);
-      currentDb.marketingCampaigns = (currentDb.marketingCampaigns || []).filter(c => c.id !== campaignId);
-      saveDatabase(currentDb);
-      if (msg) { msg.textContent = 'Kampania została usunięta.'; msg.style.color = '#86efac'; }
-      setTimeout(() => window.location.reload(), 650);
-    });
     document.querySelector('#saveSmsCampaign')?.addEventListener('click', () => saveCampaign('SMS','Zapisanie'));
     document.querySelector('#sendSmsCampaign')?.addEventListener('click', () => saveCampaign('SMS','Wysłanie'));
     document.querySelector('#saveEmailCampaign')?.addEventListener('click', () => saveCampaign('Email','Zapisanie'));
