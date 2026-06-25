@@ -507,6 +507,20 @@
       const { data: insertedAppointment, error } = await window.cmSupabase.from("appointments").insert(payload).select("*").single();
       if (error) { setMessage("#visitMessage", "Błąd zapisu wizyty: " + error.message, false); return; }
       await window.cmUndo?.record({ module: "appointments", actionType: "insert", targetTable: "appointments", targetId: insertedAppointment?.id, afterData: insertedAppointment || payload, companyId: ctx.companyId });
+
+      // 103: natychmiastowe powiadomienia SMS/EMAIL po dodaniu wizyty
+      try {
+        await window.cmSupabase.functions.invoke("send-automatic-notifications", {
+          body: {
+            event: "appointment_created",
+            appointment_id: insertedAppointment?.id,
+            company_id: ctx.companyId
+          }
+        });
+      } catch (notifyError) {
+        console.warn("Appointment notification failed", notifyError);
+      }
+
       setMessage("#visitMessage", "Wizyta zapisana w Supabase.", true);
       setTimeout(renderAppointments, 450);
     });
