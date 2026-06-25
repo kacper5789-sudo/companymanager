@@ -8461,46 +8461,87 @@ document.addEventListener('DOMContentLoaded', () => {
 
   initPublicLanguagePickers();
 
+  const CM_SUPABASE_OWNED_PAGES = new Set([
+    'dashboard','employees','users','calendar','customers','positions','daysOff','services','visits',
+    'reports','customersReports','dailyReport','periodReport','employeesReports','workSchedule',
+    'smsReports','emailReports','walkins','products','marketing','passes','sales','companyPanel',
+    'owner','companies','activity','settings'
+  ]);
+
+  const getCmRuntimeMode = () => {
+    const mode = String(window.CM_DATA_MODE || window.cmDataMode || '').toLowerCase();
+    if (mode === 'local_fallback' || mode === 'local') return 'local_fallback';
+    if (mode === 'supabase') return 'supabase';
+    return window.cmSupabase ? 'supabase' : 'local_fallback';
+  };
+
+  const renderSupabaseFirstShell = (ctx, page) => {
+    const title = pageLabels[page] || 'CompanyManager';
+    const fallbackNotice = getCmRuntimeMode() === 'local_fallback'
+      ? '<div class="cm-data-mode-banner cm-data-mode-warning">⚠ Tryb awaryjny: Supabase jest niedostępny. Uruchomiono lokalny fallback.</div>'
+      : '<div class="cm-data-mode-banner" data-no-translate>Supabase mode</div>';
+    renderPanelFrame(ctx, page, `
+      ${fallbackNotice}
+      <section class="bm-page-card cm-supabase-loading-card">
+        <h2>${escapeHtml(title)}</h2>
+        <p class="bm-muted">Ładowanie danych z Supabase...</p>
+      </section>
+    `, title, '');
+  };
+
+  window.cmGetAppContext = async () => {
+    if (window.CM_APP_CONTEXT && Date.now() - Number(window.CM_APP_CONTEXT.loadedAt || 0) < 30000) return window.CM_APP_CONTEXT;
+    const access = getSupabaseAccessSnapshot();
+    const settings = getCmCompanySettings();
+    const ctx = { access, settings, mode: getCmRuntimeMode(), loadedAt: Date.now() };
+    window.CM_APP_CONTEXT = ctx;
+    return ctx;
+  };
+
   if (dashboardRoot) {
     const page = document.body.dataset.panelPage || 'dashboard';
     const ctx = getCurrentContext();
     if (!ctx.session || !ctx.user || !ctx.company) { clearSession(); window.location.href = '../login.html'; return; }
     scheduleNotificationProcessors(ctx.company.id);
     if (!canAccessPage(ctx.user, page)) { renderPanelFrame(ctx, page, '<section class="bm-page-card"><h2>Brak dostępu</h2><p>Twoja rola nie ma dostępu do tego modułu.</p></section>', 'Brak dostępu', 'Ten moduł jest ograniczony rolą użytkownika.'); return; }
-    if (page === 'dashboard') renderDashboard(ctx);
-    else if (page === 'employees') renderEmployees(ctx);
-    else if (page === 'users') renderUsers(ctx);
-    else if (page === 'calendar') renderCalendar(ctx);
-    else if (page === 'customers') renderCustomers(ctx);
-    else if (page === 'positions') renderPositions(ctx);
-    else if (page === 'daysOff' && window.cmSupabase) {
-      // Supabase module owns Dni wolne pracowników.
-      // Do not render the legacy localStorage version here, because it overwrites
-      // the RPC-powered form and makes "Zapisz dni wolne" appear not to work.
-      renderPanelFrame(ctx, 'daysOff', '<section class="bm-page-card"><h2>Dni wolne pracowników</h2><p class="bm-muted">Ładowanie danych z Supabase...</p></section>', '', '');
+
+    const dataMode = getCmRuntimeMode();
+    const supabaseOwned = CM_SUPABASE_OWNED_PAGES.has(page);
+    if (dataMode === 'supabase' && supabaseOwned) {
+      // Production mode: Supabase owns the page. We render only the shared shell/sidebar.
+      // Legacy localStorage renderers stay disabled, so modules do not flash or double-render.
+      renderSupabaseFirstShell(ctx, page);
+    } else {
+      // Emergency fallback only. This path is used when Supabase is unavailable.
+      if (page === 'dashboard') renderDashboard(ctx);
+      else if (page === 'employees') renderEmployees(ctx);
+      else if (page === 'users') renderUsers(ctx);
+      else if (page === 'calendar') renderCalendar(ctx);
+      else if (page === 'customers') renderCustomers(ctx);
+      else if (page === 'positions') renderPositions(ctx);
+      else if (page === 'daysOff') renderDaysOff(ctx);
+      else if (page === 'services') renderServices(ctx);
+      else if (page === 'visits') renderVisits(ctx);
+      else if (page === 'reports') renderReports(ctx);
+      else if (page === 'customersReports') renderCustomersReports(ctx);
+      else if (page === 'dailyReport') renderDailyReport(ctx);
+      else if (page === 'periodReport') renderPeriodReport(ctx);
+      else if (page === 'employeesReports') renderEmployeesReports(ctx);
+      else if (page === 'workSchedule') renderEmployeesReports(ctx, 'workSchedule', true);
+      else if (page === 'smsReports') renderSmsReports(ctx);
+      else if (page === 'emailReports') renderEmailReports(ctx);
+      else if (page === 'walkins') renderWalkins(ctx);
+      else if (page === 'products') renderProducts(ctx);
+      else if (page === 'marketing') renderMarketing(ctx);
+      else if (page === 'passes') renderPasses(ctx);
+      else if (page === 'sales') renderSales(ctx);
+      else if (page === 'companyPanel') renderCompanyPanel(ctx);
+      else if (page === 'owner') renderOwner(ctx);
+      else if (page === 'companies') renderCompanies(ctx);
+      else if (page === 'activity') renderModulePage(ctx, 'activity');
+      else if (page === 'settings') renderSettings(ctx);
+      else renderModulePage(ctx, page);
     }
-    else if (page === 'daysOff') renderDaysOff(ctx);
-    else if (page === 'services') renderServices(ctx);
-    else if (page === 'visits') renderVisits(ctx);
-    else if (page === 'reports') renderReports(ctx);
-    else if (page === 'customersReports') renderCustomersReports(ctx);
-    else if (page === 'dailyReport') renderDailyReport(ctx);
-    else if (page === 'periodReport') renderPeriodReport(ctx);
-    else if (page === 'employeesReports') renderEmployeesReports(ctx);
-    else if (page === 'workSchedule') renderEmployeesReports(ctx, 'workSchedule', true);
-    else if (page === 'smsReports') renderSmsReports(ctx);
-    else if (page === 'emailReports') renderEmailReports(ctx);
-    else if (page === 'walkins') renderWalkins(ctx);
-    else if (page === 'products') renderProducts(ctx);
-    else if (page === 'marketing') renderMarketing(ctx);
-    else if (page === 'passes') renderPasses(ctx);
-    else if (page === 'sales') renderSales(ctx);
-    else if (page === 'companyPanel') renderCompanyPanel(ctx);
-    else if (page === 'owner') renderOwner(ctx);
-    else if (page === 'companies') renderCompanies(ctx);
-    else if (page === 'activity') renderModulePage(ctx, 'activity');
-    else if (page === 'settings') renderSettings(ctx);
-    else renderModulePage(ctx, page);
     setupNativePickers();
     setupGlobalModalObserver();
   }
