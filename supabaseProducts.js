@@ -92,6 +92,33 @@
     return keys.some((key) => permissions[key] === true || permissions[key] === "true" || permissions[key] === 1 || permissions[key] === "1");
   }
 
+
+  function canExportData(ctx) {
+    return hasAnyPermission(ctx, [
+      "export_data",
+      "export danych",
+      "export danych z całej platformy",
+      "export/import danych"
+    ]);
+  }
+
+  function canImportData(ctx) {
+    return hasAnyPermission(ctx, [
+      "import_data",
+      "import danych",
+      "import danych do całej platformy",
+      "export/import danych"
+    ]);
+  }
+
+  function guardExportImport(ctx, type, selector) {
+    const ok = type === "export" ? canExportData(ctx) : canImportData(ctx);
+    if (ok) return true;
+    const permission = type === "export" ? "export danych z całej platformy" : "import danych do całej platformy";
+    setMessage(selector, "Brak uprawnienia: " + permission, false);
+    return false;
+  }
+
   function canOpenProducts(ctx) { return hasAnyPermission(ctx, ["open_products", "products_open", "Produkty", "produkty"]); }
   function canAddProducts(ctx) { return hasAnyPermission(ctx, ["products_add", "produkty_add", "produkty (dodawanie, edycja, usuwanie)"]); }
   function canDeleteProducts(ctx) { return hasAnyPermission(ctx, ["products_delete", "produkty_delete", "produkty (dodawanie, edycja, usuwanie)"]); }
@@ -284,6 +311,8 @@
     const filter = new URLSearchParams(window.location.search).get("filter") || "all";
     const allowAdd = canAddProducts(ctx);
     const allowDelete = canDeleteProducts(ctx);
+    const allowExport = canExportData(ctx);
+    const allowImport = canImportData(ctx);
     const categories = [...new Set(products.map((product) => product.category).filter(Boolean))];
     const companies = [...new Set(products.map((product) => product.company_name).filter(Boolean))];
     const categoryOptions = categories.map((name) => `<option value="${escapeHtml(name)}">${escapeHtml(name)}</option>`).join("");
@@ -294,7 +323,7 @@
       .map(([value, label]) => `<button type="button" class="bm-tab-btn ${filter === value ? "active" : ""}" data-product-filter="${value}">${label}</button>`).join("");
 
     area.innerHTML = `<section class="bm-page-card products-module">
-      <div class="bm-page-head customers-head"><h2>Pokaż produkty:</h2><div class="bm-actions-row"><button id="exportProductsBtn" type="button" class="bm-excel-btn">Export</button><button id="importProductsBtn" type="button" class="bm-excel-btn">Import</button><input id="importProductsFile" type="file" accept=".xls,.xlsx,.csv" hidden>${allowAdd ? `<button id="showAddProduct" type="button">Dodaj</button>` : ""}${allowDelete ? `<button id="showDeleteProduct" type="button" class="bm-danger-btn">Usuń</button>` : ""}</div></div>
+      <div class="bm-page-head customers-head"><h2>Pokaż produkty:</h2><div class="bm-actions-row">${allowExport ? `<button id="exportProductsBtn" type="button" class="bm-excel-btn" data-required-permission="export danych z całej platformy">Export</button>` : ""}${allowImport ? `<button id="importProductsBtn" type="button" class="bm-excel-btn" data-required-permission="import danych do całej platformy">Import</button><input id="importProductsFile" type="file" accept=".xls,.xlsx,.csv" hidden>` : ""}${allowAdd ? `<button id="showAddProduct" type="button">Dodaj</button>` : ""}${allowDelete ? `<button id="showDeleteProduct" type="button" class="bm-danger-btn">Usuń</button>` : ""}</div></div>
       <div class="bm-tabs">${filterButtons}</div>
       <div class="bm-table-toolbar cm-limit-toolbar">${moduleLimitDropdownHtml("productsLimit")}</div>
       <div class="bm-product-filters">
@@ -345,8 +374,8 @@
   function bindActions(ctx, products, filter) {
     const formCard = document.querySelector("#productFormCard");
     const deleteCard = document.querySelector("#productDeleteCard");
-    document.querySelector("#exportProductsBtn")?.addEventListener("click", () => downloadProducts(products));
-    document.querySelector("#importProductsBtn")?.addEventListener("click", () => setMessage("#productsMessage", "Import produktów do Supabase zostanie podpięty osobnym krokiem. Export działa.", false));
+    document.querySelector("#exportProductsBtn")?.addEventListener("click", () => { if (!guardExportImport(ctx, "export", "#productsMessage")) return; downloadProducts(products); });
+    document.querySelector("#importProductsBtn")?.addEventListener("click", () => { if (!guardExportImport(ctx, "import", "#productsMessage")) return; setMessage("#productsMessage", "Import produktów do Supabase zostanie podpięty osobnym krokiem. Export działa.", false); });
     document.querySelector("#showAddProduct")?.addEventListener("click", () => showOnlyPanel(formCard, [formCard, deleteCard]));
     document.querySelector("#showDeleteProduct")?.addEventListener("click", () => showOnlyPanel(deleteCard, [formCard, deleteCard]));
     document.querySelectorAll("[data-product-filter]").forEach((btn) => btn.addEventListener("click", () => {

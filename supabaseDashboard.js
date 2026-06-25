@@ -357,7 +357,10 @@
     if (clientsRes.error) throw clientsRes.error;
     if (servicesRes.error) throw servicesRes.error;
     if (productsRes.error) throw productsRes.error;
-    if (usersRes.error) throw usersRes.error;
+    const safeUsersData = usersRes.error ? [] : (usersRes.data || []);
+    if (usersRes.error) {
+      console.warn("Dashboard users dropdown skipped", usersRes.error.message || usersRes.error);
+    }
     if (passesRes.error) throw passesRes.error;
     if (companyRes.error) throw companyRes.error;
     if (workSchedulesRes.error) console.warn("Dashboard work schedules skipped", workSchedulesRes.error.message || workSchedulesRes.error);
@@ -370,7 +373,7 @@
       clients: (clientsRes.data || []).filter((item) => item.status !== "usunięty"),
       services: (servicesRes.data || []).filter((item) => item.active !== false),
       products: (productsRes.data || []).filter((item) => item.active !== false),
-      users: uniqueUsers(usersRes.data || []),
+      users: uniqueUsers(safeUsersData),
       passes: (passesRes.data || []).filter((item) => item.status !== "usunięte" && item.status !== "zrealizowane")
     };
   }

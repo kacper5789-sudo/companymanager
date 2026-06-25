@@ -963,42 +963,42 @@ document.addEventListener('DOMContentLoaded', () => {
     users_add: ['użytkownicy — dodawanie', 'Zespół - użytkownicy (dodawanie, edycja, usuwanie)', 'Użytkownicy (dodawanie, edycja, usuwanie)'],
     users_edit: ['użytkownicy — edycja', 'Zespół - użytkownicy (dodawanie, edycja, usuwanie)', 'Użytkownicy (dodawanie, edycja, usuwanie)'],
     users_delete: ['użytkownicy — usuwanie/blokada', 'Zespół - użytkownicy (dodawanie, edycja, usuwanie)', 'Użytkownicy (dodawanie, edycja, usuwanie)'],
-    days_off_add: ['dni wolne (dodawanie)'],
-    days_off_edit: ['dni wolne (usuwanie, edycja)', 'dni wolne(dodawanie,edycja,usuwanie)'],
-    days_off_delete: ['dni wolne (usuwanie, edycja)', 'dni wolne(dodawanie,edycja,usuwanie)'],
+    days_off_add: ['dni wolne — dodawanie', 'dni wolne (dodawanie)'],
+    days_off_edit: ['dni wolne — edycja', 'dni wolne (usuwanie, edycja)', 'dni wolne(dodawanie,edycja,usuwanie)'],
+    days_off_delete: ['dni wolne — usuwanie', 'dni wolne (usuwanie, edycja)', 'dni wolne(dodawanie,edycja,usuwanie)'],
     clients_add: ['klienci — dodawanie', 'klienci (dodawanie, edycja, usuwanie)'],
     clients_edit: ['klienci — edycja', 'klienci (dodawanie, edycja, usuwanie)'],
     clients_delete: ['klienci — usuwanie', 'klienci (dodawanie, edycja, usuwanie)'],
     clients_history: ['klienci — historia', 'klienci - historia (przeglądanie historii klientów)', 'klienci - historia (przeglądanie historii klientów - tabeli poniżej)'],
-    services_add: ['usługi (dodawanie, edycja, usuwanie)'],
-    services_edit: ['usługi (dodawanie, edycja, usuwanie)'],
-    services_delete: ['usługi (dodawanie, edycja, usuwanie)'],
-    products_add: ['produkty (dodawanie, edycja, usuwanie)'],
-    products_edit: ['produkty (dodawanie, edycja, usuwanie)'],
-    products_delete: ['produkty (dodawanie, edycja, usuwanie)'],
-    warehouse_manage: ['produkty (magazyn)'],
-    appointments_add: ['wizyty (dodawanie, edycja, zakończenie, usuwanie)'],
-    appointments_edit: ['wizyty (dodawanie, edycja, zakończenie, usuwanie)', 'wizyty niezakończone (dodawanie, edycja, usuwanie / odwołanie)'],
-    appointments_finish: ['wizyty (dodawanie, edycja, zakończenie, usuwanie)'],
-    appointments_delete: ['wizyty (dodawanie, edycja, zakończenie, usuwanie)', 'wizyty niezakończone (dodawanie, edycja, usuwanie / odwołanie)'],
-    appointments_unfinished_history: ['wizyty (niezakończone) - dostęp do historii'],
-    appointments_unfinished_manage: ['wizyty niezakończone (dodawanie, edycja, usuwanie / odwołanie)'],
-    appointments_history: ['wizyty - historia (przeglądanie historii wizyt)', 'wizyty (zakończone, zaplanowane, odwołane, usunięte) - dostęp do historii (tabeli poniżej)'],
-    sales_without_visit_add: ['sprzedaż bez wizyt (dodawanie, edycja, usuwanie)'],
-    sales_without_visit_edit: ['sprzedaż bez wizyt (dodawanie, edycja, usuwanie)'],
-    sales_without_visit_delete: ['sprzedaż bez wizyt (dodawanie, edycja, usuwanie)'],
-    sales_without_visit_history: ['sprzedaż bez wizyt (dostęp do historii - tabeli poniżej)'],
-    marketing_sms: ['marketing (wysyłka reklamy sms/email)', 'marketing (wysyłka reklamy sms/email/usuń)'],
-    marketing_email: ['marketing (wysyłka reklamy sms/email)', 'marketing (wysyłka reklamy sms/email/usuń)'],
-    marketing_delete: ['marketing (wysyłka reklamy sms/email)'],
-    passes_add: ['karnety (dodawanie, edycja, usuwanie)'],
-    passes_edit: ['karnety (dodawanie, edycja, usuwanie)'],
-    passes_delete: ['karnety (dodawanie, edycja, usuwanie)'],
-    daily_report_today: ['raport dzienny dzisiejszy (przeglądanie)'],
-    daily_report_other_days: ['raport dzienny wczorajszy, jutrzejszy (przeglądanie)'],
-    work_schedule_add: ['grafik pracy (dodawanie)', 'grafik pracy (dodawanie,edycja,usuwanie)'],
-    work_schedule_edit: ['grafik pracy (edycja, usuwanie)', 'grafik pracy (dodawanie,edycja,usuwanie)'],
-    work_schedule_delete: ['grafik pracy (edycja, usuwanie)', 'grafik pracy (dodawanie,edycja,usuwanie)'],
+    services_add: ['usługi — dodawanie', 'usługi (dodawanie, edycja, usuwanie)'],
+    services_edit: ['usługi — edycja', 'usługi (dodawanie, edycja, usuwanie)'],
+    services_delete: ['usługi — usuwanie', 'usługi (dodawanie, edycja, usuwanie)'],
+    products_add: ['produkty — dodawanie', 'produkty (dodawanie, edycja, usuwanie)'],
+    products_edit: ['produkty — edycja', 'produkty (dodawanie, edycja, usuwanie)'],
+    products_delete: ['produkty — usuwanie', 'produkty (dodawanie, edycja, usuwanie)'],
+    warehouse_manage: ['produkty — magazyn', 'produkty (magazyn)'],
+    appointments_add: ['wizyty — dodawanie', 'wizyty (dodawanie, edycja, zakończenie, usuwanie)'],
+    appointments_edit: ['wizyty — edycja', 'wizyty (dodawanie, edycja, zakończenie, usuwanie)', 'wizyty niezakończone (dodawanie, edycja, usuwanie / odwołanie)'],
+    appointments_finish: ['wizyty — zakończenie', 'wizyty (dodawanie, edycja, zakończenie, usuwanie)'],
+    appointments_delete: ['wizyty — usuwanie', 'wizyty (dodawanie, edycja, zakończenie, usuwanie)', 'wizyty niezakończone (dodawanie, edycja, usuwanie / odwołanie)'],
+    appointments_unfinished_history: ['wizyty niezakończone — historia', 'wizyty (niezakończone) - dostęp do historii'],
+    appointments_unfinished_manage: ['wizyty niezakończone — zarządzanie', 'wizyty niezakończone (dodawanie, edycja, usuwanie / odwołanie)'],
+    appointments_history: ['wizyty — historia', 'wizyty - historia (przeglądanie historii wizyt)', 'wizyty (zakończone, zaplanowane, odwołane, usunięte) - dostęp do historii (tabeli poniżej)'],
+    sales_without_visit_add: ['sprzedaż bez wizyty — dodawanie', 'sprzedaż bez wizyt (dodawanie, edycja, usuwanie)'],
+    sales_without_visit_edit: ['sprzedaż bez wizyty — edycja', 'sprzedaż bez wizyt (dodawanie, edycja, usuwanie)'],
+    sales_without_visit_delete: ['sprzedaż bez wizyty — usuwanie', 'sprzedaż bez wizyt (dodawanie, edycja, usuwanie)'],
+    sales_without_visit_history: ['sprzedaż bez wizyty — historia', 'sprzedaż bez wizyt (dostęp do historii - tabeli poniżej)'],
+    marketing_sms: ['marketing — SMS', 'marketing (wysyłka reklamy sms/email)', 'marketing (wysyłka reklamy sms/email/usuń)'],
+    marketing_email: ['marketing — Email', 'marketing (wysyłka reklamy sms/email)', 'marketing (wysyłka reklamy sms/email/usuń)'],
+    marketing_delete: ['marketing — usuwanie', 'marketing (wysyłka reklamy sms/email)'],
+    passes_add: ['karnety — dodawanie', 'karnety (dodawanie, edycja, usuwanie)'],
+    passes_edit: ['karnety — edycja', 'karnety (dodawanie, edycja, usuwanie)'],
+    passes_delete: ['karnety — usuwanie', 'karnety (dodawanie, edycja, usuwanie)'],
+    daily_report_today: ['raport dzienny — dziś', 'raport dzienny dzisiejszy (przeglądanie)'],
+    daily_report_other_days: ['raport dzienny — inne dni', 'raport dzienny wczorajszy, jutrzejszy (przeglądanie)'],
+    work_schedule_add: ['grafik pracy — dodawanie', 'grafik pracy (dodawanie)', 'grafik pracy (dodawanie,edycja,usuwanie)'],
+    work_schedule_edit: ['grafik pracy — edycja', 'grafik pracy (edycja, usuwanie)', 'grafik pracy (dodawanie,edycja,usuwanie)'],
+    work_schedule_delete: ['grafik pracy — usuwanie', 'grafik pracy (edycja, usuwanie)', 'grafik pracy (dodawanie,edycja,usuwanie)'],
     reports_access: ['dostęp do raportów'],
     export_data: ['export danych z całej platformy', 'export/import danych'],
     import_data: ['import danych do całej platformy', 'export/import danych']
@@ -1099,6 +1099,8 @@ document.addEventListener('DOMContentLoaded', () => {
     'sprzedaż bez wizyt wczorajsza i wcześniejsza (dodawanie, edycja, usuwanie)': ['sprzedaż bez wizyt (dodawanie, edycja, usuwanie)'],
     'marketing (wysyłka reklamy sms/email)': ['marketing (wysyłka reklamy sms/email/usuń)'],
     'export/import danych': ['export danych z całej platformy', 'import danych do całej platformy'],
+    'export danych z całej platformy': ['export danych', 'export/import danych'],
+    'import danych do całej platformy': ['import danych', 'export/import danych'],
     'raport dzienny wczorajszy, jutrzejszy (przeglądanie)': ['raport dzienny wczorajszy, jutrzejszy (przeglądanie)']
   };
 
@@ -1115,6 +1117,36 @@ document.addEventListener('DOMContentLoaded', () => {
     const aliases = permissionAliases[permissionLabel] || [];
     if (aliases.some(alias => user.permissions.includes(alias))) return true;
     return Object.entries(permissionAliases).some(([legacy, current]) => current.includes(permissionLabel) && user.permissions.includes(legacy));
+  };
+
+  window.cmHasSystemPermission = hasSystemPermission;
+
+  const isExportImportControl = (element, mode) => {
+    if (!element) return false;
+    const text = String(element.textContent || element.value || '').trim().toLowerCase();
+    const id = String(element.id || '').toLowerCase();
+    const data = String(element.getAttribute?.('data-required-permission') || '').toLowerCase();
+    if (mode === 'export') {
+      return id.includes('export') || data.includes('export') || text === 'export' || text === 'eksport' || element.matches?.('[data-report-export], [data-chart-export], .cm-sales-export-btn, .cm-report-export-btn');
+    }
+    if (mode === 'import') {
+      return id.includes('import') || data.includes('import') || text === 'import';
+    }
+    return false;
+  };
+
+  const blockExportImportIfNeeded = (event, mode) => {
+    const target = event.target?.closest?.('button,a,input,label,.bm-excel-btn,[data-report-export],[data-chart-export],[data-import-btn],[data-required-permission]');
+    if (!target || !isExportImportControl(target, mode)) return;
+    const currentUser = getCurrentContext().user;
+    const permission = mode === 'export' ? 'export danych z całej platformy' : 'import danych do całej platformy';
+    if (currentUser && !['owner','admin'].includes(String(currentUser.role || '').toLowerCase()) && !hasSystemPermission(currentUser, permission)) {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      event.stopPropagation();
+      alert('Brak uprawnienia: ' + permission);
+      return false;
+    }
   };
 
   const permissionBlockedHtml = (permissionLabel) => `<div class="bm-empty-state cm-permission-notice">Brak uprawnienia: ${escapeHtml(permissionLabel)}</div>`;
@@ -1137,28 +1169,49 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   const cmPermissionRules = [
-    ['stanowiska pracy (dodawanie, edycja, usuwanie)', ['#showAddPosition','#showDeletePosition','#confirmDeletePosition','.edit-position-btn']],
-    ['Zespół - użytkownicy (dodawanie, edycja, usuwanie)', ['#showAddAdminUserBtn','#showEditAdminUserBtn','#showDeleteAdminUserBtn']],
-    ['dni wolne (dodawanie)', ['#showAddDaysOff']],
-    ['dni wolne (usuwanie, edycja)', ['#showEditDaysOff','#showDeleteDaysOff','#deleteDaysOffBtn']],
-    ['klienci — dodawanie', ['#showAddCustomer','#customerForm button[type="submit"]']],
-    ['klienci — edycja', ['#showEditCustomer','#customerEditForm button[type="submit"]']],
-    ['klienci — usuwanie', ['#showDeleteCustomer','#customerDeleteForm button[type="submit"]']],
-    ['klienci (dodawanie, edycja, usuwanie)', ['#showAddCustomer','#showEditCustomer','#showDeleteCustomer','#customerForm button[type="submit"]','#customerEditForm button[type="submit"]','#customerDeleteForm button[type="submit"]']],
-    ['klienci - historia (przeglądanie historii klientów - tabeli poniżej)', ['[data-customer-history]','#showCustomerHistory','.customer-history-btn','a[href*="customer-history"]']],
-    ['usługi (dodawanie, edycja, usuwanie)', ['#showAddService','#showDeleteService','#deleteServiceBtn','#deleteServiceCategoryBtn','#showServiceCategoryManager']],
-    ['produkty (dodawanie, edycja, usuwanie)', ['#showAddProduct','#showDeleteProduct','#deleteProductBtn','#productForm button[type="submit"]']],
-    ['produkty (magazyn)', ['[data-product-filter="low"]','[data-product-filter="high"]','[data-product-filter="saleOnly"]','input[name="packageStock"]','input[name="lowPackageStock"]','input[name="unitStock"]','input[name="unitsPerPackage"]']],
-    ['wizyty (dodawanie, edycja, zakończenie, usuwanie)', []],
-    ['wizyty (niezakończone) - dostęp do historii', ['[data-visit-history="unfinished"]','#showUnfinishedVisitHistory','.visit-unfinished-history-btn']],
-    ['wizyty niezakończone (dodawanie, edycja, usuwanie / odwołanie)', ['#dashEditVisitBtn','#dashCancelVisitBtn']],
-    ['wizyty (zakończone, zaplanowane, odwołane, usunięte) - dostęp do historii (tabeli poniżej)', ['[data-visit-history="all"]','#showVisitHistory','.visit-history-btn','a[href*="history"]']],
-    ['sprzedaż bez wizyt (dodawanie, edycja, usuwanie)', ['#showAddWalkin','#showDeleteWalkin','#walkinForm button[type="submit"]','#walkinDeleteForm button[type="submit"]']],
-    ['sprzedaż bez wizyt (dostęp do historii - tabeli poniżej)', ['[data-walkin-history]','#showWalkinHistory','.walkin-history-btn']],
-    ['marketing (wysyłka reklamy sms/email)', ['#showMarketingSms','#showMarketingEmail','#sendSmsTest','#sendEmailTest','#saveSmsCampaign','#sendSmsCampaign','#saveEmailCampaign','#sendEmailCampaign']],
-    ['karnety (dodawanie, edycja, usuwanie)', ['#showAddPass','#showDeletePass']],
-    ['grafik pracy (dodawanie)', ['#showAddWorkScheduleBtn']],
-    ['grafik pracy (edycja, usuwanie)', ['#showEditWorkScheduleBtn','#showDeleteWorkScheduleBtn']]
+    ['stanowiska pracy — dodawanie', ['#showAddPosition', '#addPositionForm button[type="submit"]']],
+    ['stanowiska pracy — edycja', ['.edit-position-btn', '#editPositionForm button[type="submit"]']],
+    ['stanowiska pracy — usuwanie', ['#showDeletePosition', '#confirmDeletePosition', '#deletePositionForm button[type="submit"]']],
+    ['użytkownicy — dodawanie', ['#showAddAdminUserBtn', '#addAdminUserForm button[type="submit"]']],
+    ['użytkownicy — edycja', ['#showEditAdminUserBtn', '#editAdminUserForm button[type="submit"]']],
+    ['użytkownicy — usuwanie/blokada', ['#showDeleteAdminUserBtn', '#deleteAdminUserForm button[type="submit"]']],
+    ['dni wolne — dodawanie', ['#showAddDaysOff', '#addDaysOffForm button[type="submit"]']],
+    ['dni wolne — edycja', ['#showEditDaysOff', '#editDaysOffForm button[type="submit"]']],
+    ['dni wolne — usuwanie', ['#showDeleteDaysOff', '#deleteDaysOffBtn', '#deleteDaysOffForm button[type="submit"]']],
+    ['klienci — dodawanie', ['#showAddCustomer', '#customerForm button[type="submit"]']],
+    ['klienci — edycja', ['#showEditCustomer', '#customerEditForm button[type="submit"]']],
+    ['klienci — usuwanie', ['#showDeleteCustomer', '#customerDeleteForm button[type="submit"]']],
+    ['klienci — historia', ['[data-customer-history]', '#showCustomerHistory', '.customer-history-btn', 'a[href*="customer-history"]']],
+    ['usługi — dodawanie', ['#showAddService', '#addServiceForm button[type="submit"]', '#showAddServiceCategory', '#addServiceCategoryForm button[type="submit"]']],
+    ['usługi — edycja', ['#showEditService', '#editServiceForm button[type="submit"]', '.edit-service-btn', '.edit-service-category-btn']],
+    ['usługi — usuwanie', ['#showDeleteService', '#deleteServiceBtn', '#deleteServiceCategoryBtn', '#deleteServiceForm button[type="submit"]']],
+    ['produkty — dodawanie', ['#showAddProduct', '#productForm button[type="submit"]']],
+    ['produkty — edycja', ['#showEditProduct', '#productEditForm button[type="submit"]', '.edit-product-btn']],
+    ['produkty — usuwanie', ['#showDeleteProduct', '#deleteProductBtn', '#productDeleteForm button[type="submit"]']],
+    ['produkty — magazyn', ['[data-product-filter="low"]', '[data-product-filter="high"]', '[data-product-filter="saleOnly"]', 'input[name="packageStock"]', 'input[name="lowPackageStock"]', 'input[name="unitStock"]', 'input[name="unitsPerPackage"]']],
+    ['wizyty — dodawanie', ['#showAddVisit', '#addVisitForm button[type="submit"]', '#dashAddVisitBtn']],
+    ['wizyty — edycja', ['#showEditVisit', '#editVisitForm button[type="submit"]', '#dashEditVisitBtn']],
+    ['wizyty — zakończenie', ['#finishVisitBtn', '.finish-visit-btn', '#dashFinishVisitBtn']],
+    ['wizyty — usuwanie', ['#showDeleteVisit', '#deleteVisitBtn', '#dashCancelVisitBtn', '.cancel-visit-btn', '.delete-visit-btn']],
+    ['wizyty niezakończone — historia', ['[data-visit-history="unfinished"]', '#showUnfinishedVisitHistory', '.visit-unfinished-history-btn']],
+    ['wizyty niezakończone — zarządzanie', ['#dashEditVisitBtn', '#dashCancelVisitBtn']],
+    ['wizyty — historia', ['[data-visit-history="all"]', '#showVisitHistory', '.visit-history-btn', 'a[href*="history"]']],
+    ['sprzedaż bez wizyty — dodawanie', ['#showAddWalkin', '#walkinForm button[type="submit"]']],
+    ['sprzedaż bez wizyty — edycja', ['#showEditWalkin', '#walkinEditForm button[type="submit"]', '.edit-walkin-btn']],
+    ['sprzedaż bez wizyty — usuwanie', ['#showDeleteWalkin', '#walkinDeleteForm button[type="submit"]', '#deleteWalkinBtn']],
+    ['sprzedaż bez wizyty — historia', ['[data-walkin-history]', '#showWalkinHistory', '.walkin-history-btn']],
+    ['marketing — SMS', ['#showMarketingSms', '#sendSmsTest', '#saveSmsCampaign', '#sendSmsCampaign']],
+    ['marketing — Email', ['#showMarketingEmail', '#sendEmailTest', '#saveEmailCampaign', '#sendEmailCampaign']],
+    ['marketing — usuwanie', ['#deleteMarketingCampaign', '.delete-marketing-campaign-btn']],
+    ['karnety — dodawanie', ['#showAddPass', '#addPassForm button[type="submit"]', '#showAddPassTemplate']],
+    ['karnety — edycja', ['#showEditPass', '#editPassForm button[type="submit"]', '.edit-pass-btn']],
+    ['karnety — usuwanie', ['#showDeletePass', '#deletePassBtn', '.delete-pass-btn']],
+    ['raport dzienny — dziś', ['#dailyReportTodayBtn']],
+    ['raport dzienny — inne dni', ['#dailyReportDate', '#dailyPrevDay', '#dailyNextDay']],
+    ['grafik pracy — dodawanie', ['#showAddWorkScheduleBtn', '[data-add-schedule]']],
+    ['grafik pracy — edycja', ['#showEditWorkScheduleBtn', '#saveWorkScheduleBtn', '#saveWorkScheduleBottomBtn', '#copyCompanyHoursBtn', '#applyAllDaysBtn', '.cm-save-schedule-btn', '[data-edit-employee]']],
+    ['grafik pracy — usuwanie', ['#showDeleteWorkScheduleBtn', '#clearScheduleBtn', '[data-delete-employee]']],
+    ['dostęp do raportów', ['[data-report-export]', '[data-chart-export]', '.cm-sales-export-btn', '.cm-report-export-btn']]
   ];
 
   const disableElementsForPermission = (permissionLabel, selectors, panelUser) => {
@@ -1182,20 +1235,23 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     }
     if (!hasSystemPermission(panelUser, 'export danych z całej platformy')) {
-      document.querySelectorAll('[data-report-export], [data-chart-export], .cm-sales-export-btn, .cm-report-export-btn, #exportCustomersBtn, #exportServicesBtn, #exportProductsBtn').forEach(element => {
+      document.querySelectorAll('[data-report-export], [data-chart-export], .cm-sales-export-btn, .cm-report-export-btn, .bm-excel-btn, button[id*="export" i], #exportCustomersBtn, #exportServicesBtn, #exportProductsBtn').forEach(element => {
         element.setAttribute('disabled', 'disabled');
         element.classList.add('cm-permission-disabled');
         element.title = 'Brak uprawnienia: export danych z całej platformy';
       });
     }
     if (!hasSystemPermission(panelUser, 'import danych do całej platformy')) {
-      document.querySelectorAll('#importCustomersBtn, #importServicesBtn, #importProductsBtn, [data-import-btn]').forEach(element => {
+      document.querySelectorAll('#importCustomersBtn, #importServicesBtn, #importProductsBtn, [data-import-btn], button[id*="import" i]').forEach(element => {
         element.setAttribute('disabled', 'disabled');
         element.classList.add('cm-permission-disabled');
         element.title = 'Brak uprawnienia: import danych do całej platformy';
       });
     }
   };
+
+  document.addEventListener('click', (event) => blockExportImportIfNeeded(event, 'import'), true);
+  document.addEventListener('click', (event) => blockExportImportIfNeeded(event, 'export'), true);
 
   document.addEventListener('click', (event) => {
     const target = event.target?.closest?.('#importCustomersBtn,#importServicesBtn,#importProductsBtn,[data-import-btn]');
@@ -8638,3 +8694,127 @@ document.addEventListener('DOMContentLoaded', () => {
     setupGlobalModalObserver();
   }
 });
+
+
+// CompanyManager 120 — full employee permission guard overlay
+(function () {
+  function norm(raw) {
+    if (!raw) return {};
+    if (Array.isArray(raw)) return raw.reduce((a, k) => (a[String(k)] = true, a), {});
+    if (typeof raw === 'object') return raw;
+    try { return norm(JSON.parse(raw)); } catch (_) { return {}; }
+  }
+  function currentAccess() {
+    try { return JSON.parse(localStorage.getItem('cm_access') || 'null') || {}; } catch (_) { return {}; }
+  }
+  function isAdminLike() {
+    const role = String(currentAccess().role || '').toUpperCase();
+    return role === 'OWNER' || role === 'ADMIN';
+  }
+  function has(key) {
+    if (isAdminLike()) return true;
+    const p = norm(currentAccess().permissions || {});
+    return p.all === true || p.admin === true || p[key] === true || p[key] === 'true' || p[key] === 1 || p[key] === '1';
+  }
+  const pageRules = {
+    positions: { add:'positions_add', edit:'positions_edit', del:'positions_delete' },
+    users: { add:'users_add', edit:'users_edit', del:'users_delete' },
+    daysOff: { add:'days_off_add', edit:'days_off_edit', del:'days_off_delete' },
+    customers: { add:'clients_add', edit:'clients_edit', del:'clients_delete', history:'clients_history' },
+    services: { add:'services_add', edit:'services_edit', del:'services_delete' },
+    products: { add:'products_add', edit:'products_edit', del:'products_delete', warehouse:'warehouse_manage' },
+    visits: { add:'appointments_add', edit:'appointments_edit', finish:'appointments_finish', del:'appointments_delete', history:'appointments_history' },
+    walkins: { add:'sales_without_visit_add', edit:'sales_without_visit_edit', del:'sales_without_visit_delete', history:'sales_without_visit_history' },
+    passes: { add:'passes_add', edit:'passes_edit', del:'passes_delete' },
+    workSchedule: { add:'work_schedule_add', edit:'work_schedule_edit', del:'work_schedule_delete' },
+    marketing: { sms:'marketing_sms', email:'marketing_email', del:'marketing_delete' }
+  };
+  const textMap = [
+    [/^(dodaj|add|utwórz|utworz)/i, 'add'],
+    [/^(edytuj|edit|zapisz|save|zastosuj|ustaw wolne)/i, 'edit'],
+    [/^(usuń|usun|delete|odwołaj|odwolaj)/i, 'del'],
+    [/^(zakończ|zakoncz|finish)/i, 'finish'],
+    [/historia|history/i, 'history'],
+    [/sms/i, 'sms'],
+    [/email/i, 'email']
+  ];
+  function page() { return document.body?.dataset?.panelPage || ''; }
+  function classify(el) {
+    const id = String(el.id || '').toLowerCase();
+    const ds = Object.values(el.dataset || {}).join(' ').toLowerCase();
+    const txt = String(el.textContent || el.value || '').trim().toLowerCase();
+    const raw = `${id} ${ds} ${txt}`;
+    if (/export/.test(raw)) return 'export';
+    if (/import/.test(raw)) return 'import';
+    if (/finish|zakończ|zakoncz/.test(raw)) return 'finish';
+    if (/delete|usuń|usun|odwołaj|odwolaj|cancel/.test(raw)) return 'del';
+    if (/edit|edytuj|save|zapisz|zastosuj|ustaw wolne/.test(raw)) return 'edit';
+    if (/add|dodaj|utwórz|utworz/.test(raw)) return 'add';
+    if (/historia|history/.test(raw)) return 'history';
+    if (/sms/.test(raw)) return 'sms';
+    if (/email/.test(raw)) return 'email';
+    for (const [rx, action] of textMap) if (rx.test(txt)) return action;
+    return '';
+  }
+  function permissionFor(el) {
+    const explicit = el.getAttribute?.('data-required-permission-key');
+    if (explicit) return explicit;
+    const action = classify(el);
+    if (action === 'export') return 'export_data';
+    if (action === 'import') return 'import_data';
+    const rules = pageRules[page()] || {};
+    return rules[action] || '';
+  }
+  function deny(el, key) {
+    el.classList.add('cm-permission-disabled');
+    el.setAttribute('disabled', 'disabled');
+    el.setAttribute('aria-disabled', 'true');
+    el.title = 'Brak uprawnienia: ' + key;
+  }
+  function apply(root=document) {
+    if (isAdminLike()) return;
+    const nodes = root.querySelectorAll ? root.querySelectorAll('button,a,input[type="button"],input[type="submit"],label.bm-excel-btn,[data-required-permission-key]') : [];
+    nodes.forEach((el) => {
+      const key = permissionFor(el);
+      if (key && !has(key)) deny(el, key);
+    });
+    const p = page();
+    if (p === 'products' && !has('warehouse_manage')) {
+      document.querySelectorAll('[data-product-filter="low"],[data-product-filter="high"],[data-product-filter="saleOnly"]').forEach((el)=>{ el.hidden=true; el.style.display='none'; });
+    }
+    if (p === 'marketing') {
+      if (!has('marketing_sms')) document.querySelectorAll('#showMarketingSms,#marketingSmsCard').forEach((el)=>{ el.hidden=true; el.style.display='none'; });
+      if (!has('marketing_email')) document.querySelectorAll('#showMarketingEmail,#marketingEmailCard').forEach((el)=>{ el.hidden=true; el.style.display='none'; });
+    }
+  }
+  function block(event) {
+    if (isAdminLike()) return;
+    const el = event.target?.closest?.('button,a,input[type="button"],input[type="submit"],label.bm-excel-btn,[data-required-permission-key]');
+    if (!el) return;
+    const key = permissionFor(el);
+    if (key && !has(key)) {
+      event.preventDefault(); event.stopPropagation(); event.stopImmediatePropagation?.();
+      alert('Brak uprawnienia: ' + key);
+      return false;
+    }
+  }
+  document.addEventListener('click', block, true);
+  document.addEventListener('submit', function(event){
+    if (isAdminLike()) return;
+    const form = event.target;
+    const raw = `${form.id || ''} ${form.className || ''}`.toLowerCase();
+    const p = pageRules[page()] || {};
+    let key = '';
+    if (/delete|usun|usuń/.test(raw)) key = p.del;
+    else if (/edit|save|zapisz/.test(raw)) key = p.edit;
+    else if (/add|dodaj|form/.test(raw)) key = p.add;
+    if (key && !has(key)) {
+      event.preventDefault(); event.stopPropagation(); event.stopImmediatePropagation?.();
+      alert('Brak uprawnienia: ' + key);
+    }
+  }, true);
+  const mo = new MutationObserver(() => apply(document));
+  document.addEventListener('DOMContentLoaded', () => { apply(document); mo.observe(document.body, { childList:true, subtree:true }); });
+  setTimeout(() => apply(document), 300);
+  window.cmApplyPermissionGuard = apply;
+})();

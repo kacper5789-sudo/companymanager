@@ -134,6 +134,33 @@
     return keys.some((key) => permissions[key] === true || permissions[key] === "true" || permissions[key] === 1 || permissions[key] === "1");
   }
 
+
+  function canExportData(ctx) {
+    return hasAnyPermission(ctx, [
+      "export_data",
+      "export danych",
+      "export danych z całej platformy",
+      "export/import danych"
+    ]);
+  }
+
+  function canImportData(ctx) {
+    return hasAnyPermission(ctx, [
+      "import_data",
+      "import danych",
+      "import danych do całej platformy",
+      "export/import danych"
+    ]);
+  }
+
+  function guardExportImport(ctx, type, selector) {
+    const ok = type === "export" ? canExportData(ctx) : canImportData(ctx);
+    if (ok) return true;
+    const permission = type === "export" ? "export danych z całej platformy" : "import danych do całej platformy";
+    setMessage(selector, "Brak uprawnienia: " + permission, false);
+    return false;
+  }
+
   function canOpenClients(ctx) {
     return hasAnyPermission(ctx, [
       "open_clients",
@@ -383,6 +410,8 @@
     const allowEdit = canEditClients(ctx);
     const allowDelete = canDeleteClients(ctx);
     const allowHistory = canViewClientHistory(ctx);
+    const allowExport = canExportData(ctx);
+    const allowImport = canImportData(ctx);
     const customerHistoryPermission = "klienci — historia";
     const customerOptions = customers.map((client) => `<option value="${escapeHtml(client.id)}">${escapeHtml(clientOptionLabel(client))}</option>`).join("");
 
@@ -391,9 +420,8 @@
         <div class="bm-page-head customers-head">
           <h2>Lista klientów</h2>
           <div class="bm-actions-row">
-            <button id="exportCustomersBtn" type="button" class="bm-excel-btn">Export</button>
-            <button id="importCustomersBtn" type="button" class="bm-excel-btn">Import</button>
-            <input id="importCustomersFile" type="file" accept=".xls,.xlsx,.csv" hidden>
+            ${allowExport ? `<button id="exportCustomersBtn" type="button" class="bm-excel-btn" data-required-permission="export danych z całej platformy">Export</button>` : ""}
+            ${allowImport ? `<button id="importCustomersBtn" type="button" class="bm-excel-btn" data-required-permission="import danych do całej platformy">Import</button><input id="importCustomersFile" type="file" accept=".xls,.xlsx,.csv" hidden>` : ""}
             ${allowAdd ? `<button id="showAddCustomer" type="button">Dodaj</button>` : ""}
             ${allowEdit ? `<button id="showEditCustomer" type="button">Edytuj</button>` : ""}
             ${allowDelete ? `<button id="showDeleteCustomer" type="button" class="bm-danger-btn">Usuń</button>` : ""}
@@ -635,6 +663,7 @@
     });
 
     document.querySelector("#exportCustomersBtn")?.addEventListener("click", () => {
+      if (!guardExportImport(ctx, "export", "#customersMessage")) return;
       const headers = ["Imię", "Nazwisko", "Płeć", "Telefon", "Email", "Adres", "Kod pocztowy", "Miejscowość", "Urodziny", "Ważna informacja", "Marketing SMS", "Marketing Email", "Status"];
       const rows = customers.map((client) => [
         client.first_name || "",
@@ -662,6 +691,7 @@
     });
 
     document.querySelector("#importCustomersBtn")?.addEventListener("click", () => {
+      if (!guardExportImport(ctx, "import", "#customersMessage")) return;
       document.querySelector("#importCustomersFile")?.click();
     });
 

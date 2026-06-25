@@ -108,6 +108,33 @@
     return keys.some((key) => permissions[key] === true || permissions[key] === "true" || permissions[key] === 1 || permissions[key] === "1");
   }
 
+
+  function canExportData(ctx) {
+    return hasAnyPermission(ctx, [
+      "export_data",
+      "export danych",
+      "export danych z całej platformy",
+      "export/import danych"
+    ]);
+  }
+
+  function canImportData(ctx) {
+    return hasAnyPermission(ctx, [
+      "import_data",
+      "import danych",
+      "import danych do całej platformy",
+      "export/import danych"
+    ]);
+  }
+
+  function guardExportImport(ctx, type, selector) {
+    const ok = type === "export" ? canExportData(ctx) : canImportData(ctx);
+    if (ok) return true;
+    const permission = type === "export" ? "export danych z całej platformy" : "import danych do całej platformy";
+    setMessage(selector, "Brak uprawnienia: " + permission, false);
+    return false;
+  }
+
   function canOpenServices(ctx) {
     return hasAnyPermission(ctx, ["open_services", "services_open", "uslugi", "Usługi"]);
   }
@@ -407,6 +434,8 @@
     const allowAdd = canAddServices(ctx);
     const allowEdit = canEditServices(ctx);
     const allowDelete = canDeleteServices(ctx);
+    const allowExport = canExportData(ctx);
+    const allowImport = canImportData(ctx);
     const serviceOptions = services.map((service) => `<option value="${escapeHtml(service.id)}">${escapeHtml(serviceLabel(service, categories))}</option>`).join("");
     const categoryOptions = categories.map((category) => `<option value="${escapeHtml(category.id)}">${escapeHtml(category.name)}</option>`).join("");
     const categoryList = categories.length
@@ -418,9 +447,8 @@
         <div class="bm-page-head">
           <h2>Lista usług</h2>
           <div class="bm-action-row">
-            <button id="exportServicesBtn" type="button" class="bm-excel-btn">Export</button>
-            <button id="importServicesBtn" type="button" class="bm-excel-btn">Import</button>
-            <input id="importServicesFile" type="file" accept=".xls,.xlsx,.csv,.txt" hidden>
+            ${allowExport ? `<button id="exportServicesBtn" type="button" class="bm-excel-btn" data-required-permission="export danych z całej platformy">Export</button>` : ""}
+            ${allowImport ? `<button id="importServicesBtn" type="button" class="bm-excel-btn" data-required-permission="import danych do całej platformy">Import</button><input id="importServicesFile" type="file" accept=".xls,.xlsx,.csv,.txt" hidden>` : ""}
             ${allowAdd ? `<button id="showAddService" type="button">Dodaj</button>` : ""}
             ${allowEdit ? `<button id="showEditService" type="button">Edytuj</button>` : ""}
             ${allowDelete ? `<button id="showDeleteService" type="button" class="bm-danger-btn">Usuń</button>` : ""}
@@ -519,8 +547,8 @@
     const servicesById = Object.fromEntries(services.map((service) => [service.id, service]));
     let selectedEditServiceId = "";
 
-    document.querySelector("#exportServicesBtn")?.addEventListener("click", () => downloadServices(services, categories, positions));
-    document.querySelector("#importServicesBtn")?.addEventListener("click", () => setMessage("#servicesMessage", "Import usług do Supabase zostanie podpięty osobnym krokiem. Export działa.", false));
+    document.querySelector("#exportServicesBtn")?.addEventListener("click", () => { if (!guardExportImport(ctx, "export", "#servicesMessage")) return; downloadServices(services, categories, positions); });
+    document.querySelector("#importServicesBtn")?.addEventListener("click", () => { if (!guardExportImport(ctx, "import", "#servicesMessage")) return; setMessage("#servicesMessage", "Import usług do Supabase zostanie podpięty osobnym krokiem. Export działa.", false); });
 
     document.querySelector("#showAddService")?.addEventListener("click", () => showOnly(serviceFormCard));
     document.querySelector("#showEditService")?.addEventListener("click", () => showOnly(serviceEditCard));

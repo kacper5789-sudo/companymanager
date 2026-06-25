@@ -108,6 +108,33 @@
     return Array.from(new Set(values)).map((v) => `<option value="${escapeHtml(v)}">${escapeHtml(v)}</option>`).join("");
   }
 
+
+  function normalizePermissions(raw) {
+    if (!raw) return {};
+    if (Array.isArray(raw)) return raw.reduce((acc, key) => ({ ...acc, [String(key)]: true }), {});
+    if (typeof raw === "object") return raw;
+    try { return normalizePermissions(JSON.parse(raw)); } catch (_) { return {}; }
+  }
+
+  function currentAccess() {
+    try { return JSON.parse(localStorage.getItem("cm_access") || "null") || {}; } catch (_) { return {}; }
+  }
+
+  function hasPermission(key) {
+    const access = currentAccess();
+    const role = String(access.role || "").toUpperCase();
+    if (role === "OWNER" || role === "ADMIN") return true;
+    const permissions = normalizePermissions(access.permissions || {});
+    return permissions.all === true || permissions.admin === true || permissions[key] === true || permissions[key] === "true" || permissions[key] === 1 || permissions[key] === "1";
+  }
+
+  function ensureMarketingPermission(channel) {
+    const key = channel === "sms" ? "marketing_sms" : "marketing_email";
+    if (hasPermission(key)) return true;
+    message(channel === "sms" ? "#smsMarketingMessage" : "#emailMarketingMessage", `Brak uprawnienia: ${key}`, false);
+    return false;
+  }
+
   function recipientFiltersFromForm(form) {
     return {
       allCustomers: form.querySelector('[name="allCustomers"]')?.checked === true,
@@ -218,13 +245,13 @@
     area.innerHTML = `<section class="bm-page-card marketing-module">
       <div class="bm-page-head customers-head">
         <div><h2>Marketing</h2><p>Email/SMS podłączone do Supabase. Kampanie zostają w historii i nie są usuwane, żeby statystyki oraz rozliczenia SMS/Email były spójne.</p></div>
-        <div class="bm-actions-row"><button id="showMarketingSms" type="button" class="bm-light-btn">SMS</button><button id="showMarketingEmail" type="button" class="bm-light-btn">Email</button></div>
+        <div class="bm-actions-row">${hasPermission("marketing_sms") ? `<button id="showMarketingSms" type="button" class="bm-light-btn">SMS</button>` : ""}${hasPermission("marketing_email") ? `<button id="showMarketingEmail" type="button" class="bm-light-btn">Email</button>` : ""}</div>
       </div>
       <div class="bm-table-toolbar"><label>Szukaj: <input id="marketingSearch" type="search" placeholder="Szukaj kampanii" value="${escapeHtml(new URLSearchParams(location.search).get("q") || "")}"></label></div>
       ${table(["Kampania", "Data", "Kanał", "Nadawca", "Odbiorcy", "Status"], campaignRows, "Brak kampanii marketingowych")}
     </section>
 
-    <section id="marketingSmsCard" class="bm-page-card bm-inner-card cm-marketing-flyout" hidden>
+    <section id="marketingSmsCard" class="bm-page-card bm-inner-card cm-marketing-flyout" hidden ${!hasPermission("marketing_sms") ? `style="display:none"` : ""}>
       <h2>SMS</h2>
       <form id="marketingSmsForm" class="bm-form-grid bm-wide-form marketing-form">
         <label>Nadawca SMS<input name="smsSender" maxlength="11" placeholder="do 11 znaków" value="${escapeHtml(company.visit_sms_sender || company.message_sender || "")}"></label>
@@ -239,7 +266,7 @@
       <p id="smsMarketingMessage" class="panel-message"></p>
     </section>
 
-    <section id="marketingEmailCard" class="bm-page-card bm-inner-card cm-marketing-flyout" hidden>
+    <section id="marketingEmailCard" class="bm-page-card bm-inner-card cm-marketing-flyout" hidden ${!hasPermission("marketing_email") ? `style="display:none"` : ""}>
       <h2>Email</h2>
       <form id="marketingEmailForm" class="bm-form-grid bm-wide-form marketing-form">
         <label>Nadawca email<input name="emailSender" list="emailSenderList" maxlength="50" placeholder="np. ${escapeHtml(senderFallback(company))}" value="${escapeHtml(company.visit_email_sender || senderFallback(company))}"><datalist id="emailSenderList">${senderOptions(company)}</datalist></label>
@@ -351,6 +378,7 @@
 
   async function saveCampaign(prefix, status) {
     const isSms = prefix === "sms";
+    if (!ensureMarketingPermission(isSms ? "sms" : "email")) return;
     const form = $(`#marketing${isSms ? "Sms" : "Email"}Form`);
     if (!form) return;
     const data = Object.fromEntries(new FormData(form).entries());

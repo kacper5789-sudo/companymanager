@@ -66,12 +66,18 @@
     try { return normalizePermissions(JSON.parse(raw)); } catch (_) { return {}; }
   }
 
-  function hasAccess(ctx) {
+  function hasAnyPermission(ctx, keys) {
     const role = normalizeRole(ctx?.access?.role || ctx?.context?.role);
     if (role === "OWNER" || role === "ADMIN") return true;
     const permissions = normalizePermissions(ctx?.access?.permissions || ctx?.context?.permissions);
-    return permissions.all === true || permissions.admin === true || permissions.open_work_schedule === true || permissions.work_schedule === true;
+    if (permissions.all === true || permissions.admin === true) return true;
+    return keys.some((key) => permissions[key] === true || permissions[key] === "true" || permissions[key] === 1 || permissions[key] === "1");
   }
+
+  function hasAccess(ctx) { return hasAnyPermission(ctx, ["open_work_schedule", "work_schedule"]); }
+  function canAdd(ctx) { return hasAnyPermission(ctx, ["work_schedule_add"]); }
+  function canEdit(ctx) { return hasAnyPermission(ctx, ["work_schedule_edit"]); }
+  function canDelete(ctx) { return hasAnyPermission(ctx, ["work_schedule_delete"]); }
 
   async function getContext() {
     if (!window.cmSupabase) throw new Error("Nie załadowano połączenia z Supabase.");
@@ -152,8 +158,8 @@
         <td><strong>${escapeHtml(employeeName(employee))}</strong></td>
         ${cells.map((cell) => `<td>${escapeHtml(cell)}</td>`).join("")}
         <td class="cm-work-actions">
-          <button type="button" class="bm-light-btn" data-edit-employee="${escapeHtml(employee.id)}">Edytuj</button>
-          <button type="button" class="bm-danger-btn" data-delete-employee="${escapeHtml(employee.id)}">Usuń</button>
+          ${canEdit(state.ctx) ? `<button type="button" class="bm-light-btn" data-edit-employee="${escapeHtml(employee.id)}">Edytuj</button>` : ""}
+          ${canDelete(state.ctx) ? `<button type="button" class="bm-danger-btn" data-delete-employee="${escapeHtml(employee.id)}">Usuń</button>` : ""}
         </td>
       </tr>`;
     }).join("");
@@ -187,10 +193,10 @@
             <label>Przerwa do<input type="time" id="quickBreakEnd" value=""></label>
           </div>
           <div class="cm-work-actions-bar">
-            <button type="button" id="copyCompanyHoursBtn" class="bm-light-btn cm-work-btn cm-work-btn-neutral">Zastosuj pn-pt</button>
-            <button type="button" id="applyAllDaysBtn" class="bm-light-btn cm-work-btn cm-work-btn-neutral">Zastosuj cały tydzień</button>
-            <button type="button" id="clearScheduleBtn" class="bm-danger-btn cm-work-btn cm-work-btn-danger">Ustaw wolne</button>
-            <button type="button" id="saveWorkScheduleBtn" class="bm-primary-btn cm-save-schedule-btn cm-work-btn cm-work-btn-save">Zapisz grafik</button>
+            ${canEdit(state.ctx) ? `<button type="button" id="copyCompanyHoursBtn" class="bm-light-btn cm-work-btn cm-work-btn-neutral">Zastosuj pn-pt</button>` : ""}
+            ${canEdit(state.ctx) ? `<button type="button" id="applyAllDaysBtn" class="bm-light-btn cm-work-btn cm-work-btn-neutral">Zastosuj cały tydzień</button>` : ""}
+            ${canDelete(state.ctx) ? `<button type="button" id="clearScheduleBtn" class="bm-danger-btn cm-work-btn cm-work-btn-danger">Ustaw wolne</button>` : ""}
+            ${canEdit(state.ctx) ? `<button type="button" id="saveWorkScheduleBtn" class="bm-primary-btn cm-save-schedule-btn cm-work-btn cm-work-btn-save">Zapisz grafik</button>` : ""}
           </div>
           <p id="workScheduleMessage" class="panel-message"></p>
         </section>
@@ -204,7 +210,7 @@
       </div>
 
       <div class="cm-work-bottom-actions">
-        <button type="button" id="saveWorkScheduleBottomBtn" class="bm-primary-btn cm-save-schedule-btn cm-work-btn cm-work-btn-save">Zapisz grafik</button>
+        ${canEdit(state.ctx) ? `<button type="button" id="saveWorkScheduleBottomBtn" class="bm-primary-btn cm-save-schedule-btn cm-work-btn cm-work-btn-save">Zapisz grafik</button>` : ""}
       </div>
 
       <div class="cm-section-title-row">
@@ -249,6 +255,7 @@
   }
 
   async function save() {
+    if (!canEdit(state.ctx)) return message("Brak uprawnienia: grafik pracy — edycja", false);
     const employee = state.employees.find((row) => String(row.id) === String(state.selectedEmployeeId));
     if (!employee) return message("Wybierz pracownika.", false);
     const rows = $$(".cm-work-schedule-editor tbody tr").map((tr) => ({
@@ -287,6 +294,7 @@
   }
 
   function applyToRows(mode) {
+    if (!canEdit(state.ctx)) return message("Brak uprawnienia: grafik pracy — edycja", false);
     const q = quickValues();
     $$(".cm-work-schedule-editor tbody tr").forEach((tr) => {
       const day = Number(tr.dataset.day);
@@ -303,6 +311,7 @@
   }
 
   function setFree() {
+    if (!canDelete(state.ctx)) return message("Brak uprawnienia: grafik pracy — usuwanie", false);
     $$(".cm-work-schedule-editor tbody tr").forEach((tr) => {
       const working = $("[data-working]", tr);
       if (working) working.checked = false;
@@ -320,6 +329,7 @@
   }
 
   async function deleteSchedule(employeeId) {
+    if (!canDelete(state.ctx)) return message("Brak uprawnienia: grafik pracy — usuwanie", false);
     const employee = state.employees.find((row) => String(row.id) === String(employeeId));
     if (!employee) return;
     if (!confirm(`Usunąć grafik pracownika: ${employeeName(employee)}?`)) return;
