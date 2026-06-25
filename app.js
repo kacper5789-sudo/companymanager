@@ -1325,8 +1325,18 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!toggle || !month) return;
     renderMiniCalendar();
     const clock = document.querySelector('#liveClock');
-    const updateClock = () => { if (clock) { const now = new Date(); clock.textContent = now.toLocaleTimeString('pl-PL', { hour:'2-digit', minute:'2-digit', second:'2-digit' }); } };
+    const updateClock = () => {
+      if (!clock) return;
+      const settings = window.cmGetCompanySettings ? window.cmGetCompanySettings() : { timezone:'Europe/Warsaw', language:'pl' };
+      const locale = normalizeCmLanguage(settings.language) === 'en-gb' ? 'en-GB' : 'pl-PL';
+      try {
+        clock.textContent = new Intl.DateTimeFormat(locale, { timeZone: settings.timezone || 'Europe/Warsaw', hour:'2-digit', minute:'2-digit', second:'2-digit', hour12:false }).format(new Date());
+      } catch (_) {
+        clock.textContent = new Date().toLocaleTimeString('pl-PL', { hour:'2-digit', minute:'2-digit', second:'2-digit' });
+      }
+    };
     updateClock();
+    window.addEventListener('cm:company-settings-changed', updateClock);
     if (!window.__cmClockStarted) { window.__cmClockStarted = true; setInterval(updateClock, 1000); }
     toggle.addEventListener('click', () => { month.hidden = !month.hidden; if (!month.hidden) renderMiniCalendar(); });
     month.addEventListener('click', (event) => {
@@ -2077,7 +2087,135 @@ document.addEventListener('DOMContentLoaded', () => {
   const CM_LANGUAGE_LABELS = { pl:'PL', 'en-gb':'ENG' };
   const CM_LANGUAGE_NAMES = { pl:'Polska', 'en-gb':'Anglia' };
   const CM_LANGUAGE_ORDER = ['pl', 'en-gb'];
-  const normalizeCmLanguage = (lang) => CM_LANGUAGE_LABELS[String(lang || '').toLowerCase()] ? String(lang || '').toLowerCase() : 'pl';
+  const normalizeCmLanguage = (lang) => {
+    const raw = String(lang || '').toLowerCase().trim();
+    if (raw === 'en' || raw === 'eng' || raw === 'english' || raw === 'gb') return 'en-gb';
+    if (raw === 'pl' || raw === 'polski' || raw === 'polish') return 'pl';
+    return CM_LANGUAGE_LABELS[raw] ? raw : 'pl';
+  };
+
+  const CM_SETTINGS_DEFAULTS = {
+    language: 'pl',
+    currency: 'PLN',
+    timezone: 'Europe/Warsaw',
+    exchange_rates: { PLN: 1, EUR: 0.23, USD: 0.27 }
+  };
+
+  const normalizeCmCurrency = (value) => {
+    const raw = String(value || '').toUpperCase().trim();
+    return ['PLN','EUR','USD'].includes(raw) ? raw : 'PLN';
+  };
+
+  const normalizeCmTimezone = (value) => {
+    const raw = String(value || '').trim();
+    const aliases = {
+      'warsaw/poland': 'Europe/Warsaw',
+      'poland/warsaw': 'Europe/Warsaw',
+      'warszawa': 'Europe/Warsaw',
+      'polska': 'Europe/Warsaw',
+      'london/uk': 'Europe/London',
+      'uk/london': 'Europe/London',
+      'new york': 'America/New_York',
+      'new_york': 'America/New_York'
+    };
+    const candidate = aliases[raw.toLowerCase()] || raw || 'Europe/Warsaw';
+    try { new Intl.DateTimeFormat('pl-PL', { timeZone: candidate }).format(new Date()); return candidate; }
+    catch (_) { return 'Europe/Warsaw'; }
+  };
+
+  const getCmCompanySettings = () => {
+    try {
+      const stored = JSON.parse(localStorage.getItem('cm_company_settings') || 'null') || {};
+      const access = JSON.parse(localStorage.getItem('cm_access') || 'null') || {};
+      return {
+        ...CM_SETTINGS_DEFAULTS,
+        ...stored,
+        language: normalizeCmLanguage(stored.language || access.company_language || access.language || CM_SETTINGS_DEFAULTS.language),
+        currency: normalizeCmCurrency(stored.currency || access.currency || CM_SETTINGS_DEFAULTS.currency),
+        timezone: normalizeCmTimezone(stored.timezone || access.timezone || CM_SETTINGS_DEFAULTS.timezone),
+        exchange_rates: { ...CM_SETTINGS_DEFAULTS.exchange_rates, ...(stored.exchange_rates || {}) }
+      };
+    } catch (_) { return { ...CM_SETTINGS_DEFAULTS }; }
+  };
+
+  const setCmCompanySettings = (settings) => {
+    const normalized = {
+      ...getCmCompanySettings(),
+      ...(settings || {}),
+      language: normalizeCmLanguage(settings?.language || getCmCompanySettings().language),
+      currency: normalizeCmCurrency(settings?.currency || getCmCompanySettings().currency),
+      timezone: normalizeCmTimezone(settings?.timezone || getCmCompanySettings().timezone)
+    };
+    localStorage.setItem('cm_company_settings', JSON.stringify(normalized));
+    window.dispatchEvent(new CustomEvent('cm:company-settings-changed', { detail: normalized }));
+    return normalized;
+  };
+
+  window.cmGetCompanySettings = getCmCompanySettings;
+  window.cmSetCompanySettings = setCmCompanySettings;
+  window.cmFormatDateTime = (value, options = {}) => {
+    const settings = getCmCompanySettings();
+    const lang = normalizeCmLanguage(settings.language) === 'en-gb' ? 'en-GB' : 'pl-PL';
+    const date = value instanceof Date ? value : new Date(value || Date.now());
+    return new Intl.DateTimeFormat(lang, { timeZone: settings.timezone, ...options }).format(date);
+  };
+  window.cmFormatMoney = (value, opts = {}) => {
+    const settings = getCmCompanySettings();
+    const currency = normalizeCmCurrency(opts.currency || settings.currency);
+    const lang = normalizeCmLanguage(settings.language) === 'en-gb' ? 'en-GB' : 'pl-PL';
+    const base = Number(value || 0);
+    const rates = { ...CM_SETTINGS_DEFAULTS.exchange_rates, ...(settings.exchange_rates || {}) };
+    const converted = opts.raw === true ? base : base * Number(rates[currency] || 1);
+    try { return new Intl.NumberFormat(lang, { style:'currency', currency, minimumFractionDigits:2, maximumFractionDigits:2 }).format(converted); }
+    catch (_) { return `${converted.toFixed(2)} ${currency}`; }
+  };
+
+  window.cmApplyCurrencyToDom = (root = document) => {
+    const settings = getCmCompanySettings();
+    const currency = normalizeCmCurrency(settings.currency);
+    if (!root || currency === 'PLN') return;
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+      acceptNode(node) {
+        const parent = node.parentElement;
+        if (!parent || parent.closest('[data-no-currency], input, textarea, select, script, style')) return NodeFilter.FILTER_REJECT;
+        if (node.__cmCurrencyApplied) return NodeFilter.FILTER_REJECT;
+        return /(PLN|zł)/.test(node.nodeValue || '') ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT;
+      }
+    });
+    const nodes = [];
+    while (walker.nextNode()) nodes.push(walker.currentNode);
+    nodes.forEach((node) => {
+      let text = node.nodeValue || '';
+      text = text.replace(/(\d+(?:[,.]\d{1,2})?)\s*(PLN|zł)/g, (_, amount) => {
+        const n = Number(String(amount).replace(',', '.')) || 0;
+        return window.cmFormatMoney(n);
+      });
+      text = text.replace(/\(PLN\)/g, `(${currency})`).replace(/\bPLN\b/g, currency);
+      node.nodeValue = text;
+      node.__cmCurrencyApplied = true;
+    });
+  };
+
+  window.addEventListener('cm:company-settings-changed', () => {
+    setTimeout(() => window.cmApplyCurrencyToDom?.(document), 0);
+  });
+
+  window.cmRefreshCompanySettings = async () => {
+    if (!window.cmSupabase?.rpc) return getCmCompanySettings();
+    try {
+      const { data, error } = await window.cmSupabase.rpc('company_panel_get');
+      if (error || !data?.company) return getCmCompanySettings();
+      const company = data.company;
+      const settings = setCmCompanySettings({
+        language: company.language || 'pl',
+        currency: company.currency || 'PLN',
+        timezone: company.timezone || 'Europe/Warsaw',
+        exchange_rates: company.exchange_rates || getCmCompanySettings().exchange_rates
+      });
+      return settings;
+    } catch (_) { return getCmCompanySettings(); }
+  };
+
   const getCmAccessLanguage = () => {
     try {
       const access = JSON.parse(localStorage.getItem('cm_access') || 'null');
@@ -2263,6 +2401,7 @@ document.addEventListener('DOMContentLoaded', () => {
           </div>
         </main>
       </div>`;
+    setTimeout(() => window.cmApplyCurrencyToDom?.(dashboardRoot), 0);
     const langPicker = document.querySelector('[data-language-picker]');
     const langToggle = langPicker?.querySelector('.cm-language-current');
     const langMenu = langPicker?.querySelector('.cm-language-menu');
@@ -2281,6 +2420,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const persistCmLanguage = async (lang) => {
       const normalized = normalizeCmLanguage(lang);
       localStorage.setItem('cmLanguage', normalized);
+      if (window.cmSetCompanySettings) window.cmSetCompanySettings({ language: normalized });
       try {
         if (window.cmSupabase?.rpc) {
           await window.cmSupabase.rpc('cm_set_language', { p_language: normalized });
@@ -2303,7 +2443,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!window.cmSupabase?.rpc) return;
         const { data, error } = await window.cmSupabase.rpc('cm_get_language');
         if (error || !data) return;
-        const remoteLang = normalizeCmLanguage(data.language || data.profile_language || data.company_language);
+        const companySettings = await (window.cmRefreshCompanySettings ? window.cmRefreshCompanySettings() : Promise.resolve(null));
+        const remoteLang = normalizeCmLanguage(companySettings?.language || data.language || data.profile_language || data.company_language);
         if (remoteLang && remoteLang !== savedLang) {
           savedLang = remoteLang;
           localStorage.setItem('cmLanguage', savedLang);

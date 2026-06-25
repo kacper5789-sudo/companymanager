@@ -6809,3 +6809,12 @@ html body .bm-actions-row .bm-light-btn:hover{
 .cm-notification-fields label.cm-full-field,
 .cm-notification-fields label:has(textarea){grid-column:1/-1;}
 @media(max-width:760px){.cm-notification-fields{grid-template-columns:1fr}.cm-marketing-flyout{width:100%;}}
+
+/* 107 — ustawienia ogólne: waluta/strefa/język */
+.cm-currency-rate-grid{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:14px;
+  margin-top:10px;
+}
+@media(max-width:720px){.cm-currency-rate-grid{grid-template-columns:1fr;}}

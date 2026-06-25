@@ -63,6 +63,37 @@
     return obj?.[key] === true || obj?.[key] === "true" || obj?.[key] === 1;
   }
 
+  function normalizeLanguage(value) {
+    const raw = String(value || '').toLowerCase().trim();
+    if (raw === 'en' || raw === 'eng' || raw === 'english') return 'en-gb';
+    return raw === 'en-gb' ? 'en-gb' : 'pl';
+  }
+
+  function normalizeTimezone(value) {
+    const raw = String(value || '').trim();
+    const aliases = { 'warsaw/poland':'Europe/Warsaw', 'poland/warsaw':'Europe/Warsaw', 'warszawa':'Europe/Warsaw' };
+    return aliases[raw.toLowerCase()] || raw || 'Europe/Warsaw';
+  }
+
+  function readExchangeRates(company) {
+    let raw = company?.exchange_rates;
+    if (typeof raw === 'string') { try { raw = JSON.parse(raw); } catch (_) { raw = null; } }
+    return { PLN: 1, EUR: Number(raw?.EUR || 0.23), USD: Number(raw?.USD || 0.27) };
+  }
+
+  function syncGlobalSettings(company) {
+    if (!company) return;
+    const settings = {
+      language: normalizeLanguage(company.language),
+      currency: String(company.currency || 'PLN').toUpperCase(),
+      timezone: normalizeTimezone(company.timezone),
+      exchange_rates: readExchangeRates(company)
+    };
+    if (window.cmSetCompanySettings) window.cmSetCompanySettings(settings);
+    else localStorage.setItem('cm_company_settings', JSON.stringify(settings));
+    localStorage.setItem('cmLanguage', settings.language);
+  }
+
 
   const DEFAULT_PAYMENT_METHODS = [
     { name: "gotówka", turnover: true, commission: true, default: true }
@@ -279,9 +310,26 @@
       <div class="bm-page-head"><h2>Ustawienia programu</h2></div>
       <form class="bm-form-grid cm-company-panel-form" data-company-panel-form="program">
         <fieldset class="cm-notification-box cm-general-settings-box"><legend>Ustawienia ogólne</legend>
-          <label>Język programu<select name="language"><option value="pl" ${val(company,"language") === "pl" ? "selected" : ""}>Polski</option><option value="en" ${val(company,"language") === "en" ? "selected" : ""}>English</option></select></label>
-          <label>Waluta<select name="currency"><option value="PLN" ${val(company,"currency") === "PLN" ? "selected" : ""}>PLN</option><option value="EUR" ${val(company,"currency") === "EUR" ? "selected" : ""}>EUR</option><option value="USD" ${val(company,"currency") === "USD" ? "selected" : ""}>USD</option></select></label>
-          ${field("Strefa czasowa", "timezone", val(company, "timezone") || "Europe/Warsaw")}
+          <label>Język programu<select name="language" data-general-language><option value="pl" ${normalizeLanguage(val(company,"language")) === "pl" ? "selected" : ""}>Polski</option><option value="en-gb" ${normalizeLanguage(val(company,"language")) === "en-gb" ? "selected" : ""}>English</option></select></label>
+          <label>Waluta<select name="currency" data-general-currency><option value="PLN" ${(val(company,"currency") || "PLN") === "PLN" ? "selected" : ""}>PLN</option><option value="EUR" ${val(company,"currency") === "EUR" ? "selected" : ""}>EUR</option><option value="USD" ${val(company,"currency") === "USD" ? "selected" : ""}>USD</option></select></label>
+          <label>Strefa czasowa<select name="timezone" data-general-timezone>
+            ${[
+              ['Europe/Warsaw','Warsaw / Poland'],
+              ['Europe/London','London / UK'],
+              ['Europe/Berlin','Berlin / Germany'],
+              ['Europe/Paris','Paris / France'],
+              ['America/New_York','New York / USA'],
+              ['America/Chicago','Chicago / USA'],
+              ['America/Los_Angeles','Los Angeles / USA']
+            ].map(([value,label]) => `<option value="${escapeHtml(value)}" ${normalizeTimezone(val(company,'timezone')) === value ? 'selected' : ''}>${escapeHtml(label)}</option>`).join('')}
+          </select></label>
+          <div class="cm-currency-conversion-note cm-full-field">
+            <p class="bm-muted">Waluta steruje formatem cen w panelu. Kursy są zapisane przy firmie i przygotowane pod bezpieczne przeliczanie wartości w kolejnym kroku.</p>
+            <div class="cm-currency-rate-grid">
+              ${field("Kurs PLN → EUR", "exchange_rate_eur", readExchangeRates(company).EUR, "number", "min=0 step=0.0001")}
+              ${field("Kurs PLN → USD", "exchange_rate_usd", readExchangeRates(company).USD, "number", "min=0 step=0.0001")}
+            </div>
+          </div>
         </fieldset>
         <fieldset class="cm-notification-box cm-marketing-consent-box"><legend>Dodaj klienta — zgoda na reklamę</legend>
           ${check("Pokaż pola zgody marketingowej przy dodawaniu/edycji klienta", "client_marketing_consent_enabled", val(company, "client_marketing_consent_enabled") === "" ? true : checked(company, "client_marketing_consent_enabled"))}
@@ -359,6 +407,16 @@
     const paymentMethods = collectPaymentMethods(form);
     if (paymentMethods) data.payment_methods = paymentMethods;
     if (data.data_retention_months === "never") data.data_retention_months = "";
+    if (data.language) data.language = normalizeLanguage(data.language);
+    if (data.timezone) data.timezone = normalizeTimezone(data.timezone);
+    if (data.currency) data.currency = String(data.currency).toUpperCase();
+    if (data.exchange_rate_eur || data.exchange_rate_usd) {
+      data.exchange_rates = {
+        PLN: 1,
+        EUR: Number(data.exchange_rate_eur || 0.23),
+        USD: Number(data.exchange_rate_usd || 0.27)
+      };
+    }
     return data;
   }
 
@@ -398,9 +456,31 @@
         const old = button?.textContent || "Zapisz";
         if (button) { button.disabled = true; button.textContent = "Zapisuję..."; }
         try {
-          await savePanel(formPayload(form));
+          const payload = formPayload(form);
+          await savePanel(payload);
+          if (form.getAttribute('data-company-panel-form') === 'program') {
+            try {
+              await window.cmSupabase?.rpc?.('cm_update_general_settings', {
+                p_language: payload.language || null,
+                p_currency: payload.currency || null,
+                p_timezone: payload.timezone || null,
+                p_exchange_rates: payload.exchange_rates || null
+              });
+            } catch (settingsError) {
+              console.warn('Nie zapisano rozszerzonych ustawień ogólnych przez RPC.', settingsError);
+            }
+            syncGlobalSettings({
+              ...(state.data?.company || {}),
+              ...payload,
+              exchange_rates: payload.exchange_rates || readExchangeRates(state.data?.company || {})
+            });
+            if (payload.language) {
+              localStorage.setItem('cmLanguage', normalizeLanguage(payload.language));
+            }
+          }
           alert("Zapisano panel firmy.");
           state.data = await fetchPanel();
+          syncGlobalSettings(state.data.company || {});
           render(state);
         } catch (error) {
           alert("Błąd zapisu panelu firmy: " + (error?.message || error));
@@ -416,6 +496,7 @@
     const data = state.data || {};
     const company = data.company || {};
     const profile = data.profile || {};
+    syncGlobalSettings(company);
     const view = currentView();
     const body = view === "notifications" ? renderNotifications(company)
       : view === "program-settings" ? renderProgramSettings(company)
