@@ -17,7 +17,8 @@ const SMS_PROVIDER_TOKEN = Deno.env.get("SMS_PROVIDER_TOKEN") || "";
 const SMS_PROVIDER_URL = Deno.env.get("SMS_PROVIDER_URL") || Deno.env.get("SMSPLANET_URL") || "https://api2.smsplanet.pl/sms";
 const SMS_FALLBACK_FROM = Deno.env.get("SMS_FALLBACK_FROM") || Deno.env.get("SMS_FALLBACK_FROM") || "";
 const SMS_CLEAR_POLISH = !["0", "false", "no", "nie"].includes(String(Deno.env.get("SMS_CLEAR_POLISH") || "true").toLowerCase());
-const SMS_DRY_RUN = ["1", "true", "yes", "tak"].includes(String(Deno.env.get("SMS_DRY_RUN") || "").toLowerCase());
+const SMS_FORCE_LIVE = ["1", "true", "yes", "tak"].includes(String(Deno.env.get("SMS_FORCE_LIVE") || "").toLowerCase());
+const SMS_DRY_RUN = !SMS_FORCE_LIVE && ["1", "true", "yes", "tak"].includes(String(Deno.env.get("SMS_DRY_RUN") || "").trim().toLowerCase());
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") || "";
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || Deno.env.get("SUPABASE_SERVICE_KEY") || "";
 const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY") || "";
@@ -156,7 +157,11 @@ async function sendWithSmsProvider(input: { to: string; fromName: string; body: 
   const from = sanitizeSmsSender(input.fromName, SMS_FALLBACK_FROM);
   const message = normalizeText(input.body).slice(0, 918);
   if (!message) throw new Error("Pusta treść SMS");
-  if (SMS_DRY_RUN) return { dry_run: true, messageId: `dry_${Date.now()}`, to, from, provider: SMS_PROVIDER };
+  if (SMS_DRY_RUN) {
+    console.log("SMS dry run active", { provider: SMS_PROVIDER, to, from, forceLive: SMS_FORCE_LIVE });
+    return { dry_run: true, messageId: `dry_${Date.now()}`, to, from, provider: SMS_PROVIDER };
+  }
+  console.log("SMS live send active", { provider: SMS_PROVIDER, to, from, forceLive: SMS_FORCE_LIVE });
   if (!SMS_PROVIDER_TOKEN) throw new Error("Missing SMS_PROVIDER_TOKEN secret");
   if (SMS_PROVIDER !== "smsplanet") throw new Error(`Unsupported SMS_PROVIDER: ${SMS_PROVIDER}`);
   if (!from) throw new Error("Brak nadawcy SMS. Ustaw nadawcę w Panelu firmy i zatwierdź go u operatora SMSPLANET.");

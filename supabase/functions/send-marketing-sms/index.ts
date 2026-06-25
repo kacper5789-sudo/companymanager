@@ -17,7 +17,8 @@ const SMS_PROVIDER_TOKEN = Deno.env.get("SMS_PROVIDER_TOKEN") || "";
 const SMS_PROVIDER_URL = Deno.env.get("SMS_PROVIDER_URL") || Deno.env.get("SMSPLANET_URL") || "https://api2.smsplanet.pl/sms";
 const SMS_FALLBACK_FROM = Deno.env.get("SMS_FALLBACK_FROM") || "";
 const SMS_CLEAR_POLISH = !["0", "false", "no", "nie"].includes(String(Deno.env.get("SMS_CLEAR_POLISH") || "true").toLowerCase());
-const SMS_DRY_RUN = ["1", "true", "yes", "tak"].includes(String(Deno.env.get("SMS_DRY_RUN") || "").toLowerCase());
+const SMS_FORCE_LIVE = ["1", "true", "yes", "tak"].includes(String(Deno.env.get("SMS_FORCE_LIVE") || "").toLowerCase());
+const SMS_DRY_RUN = !SMS_FORCE_LIVE && ["1", "true", "yes", "tak"].includes(String(Deno.env.get("SMS_DRY_RUN") || "").trim().toLowerCase());
 
 type AnyRow = Record<string, any>;
 
@@ -55,8 +56,10 @@ async function sendSms(input: { to: string; from: string; message: string }) {
   if (!message) throw new Error("Pusta treść SMS");
 
   if (SMS_DRY_RUN) {
+    console.log("SMS dry run active", { provider: SMS_PROVIDER, to, from, forceLive: SMS_FORCE_LIVE });
     return { dry_run: true, messageId: `dry_${Date.now()}`, to, from, provider: SMS_PROVIDER, points: 0 };
   }
+  console.log("SMS live send active", { provider: SMS_PROVIDER, to, from, forceLive: SMS_FORCE_LIVE });
   if (!SMS_PROVIDER_TOKEN) throw new Error("Missing SMS_PROVIDER_TOKEN secret");
   if (SMS_PROVIDER !== "smsplanet") throw new Error(`Unsupported SMS_PROVIDER: ${SMS_PROVIDER}`);
   if (!from) throw new Error("Brak nadawcy SMS. Ustaw nadawcę w Panelu firmy i zatwierdź go u operatora SMSPLANET.");
@@ -178,7 +181,7 @@ Deno.serve(async (req) => {
     const nextStatus = failed > 0 && sent === 0 ? "ready_to_send" : "sent";
     await supabase.from("marketing_campaigns").update({ status: nextStatus, sent_at: sent > 0 ? new Date().toISOString() : null, updated_at: new Date().toISOString(), last_error: failed > 0 ? `${failed} błędów wysyłki SMS` : null }).eq("id", campaignId);
 
-    return jsonResponse({ ok: true, provider: SMS_DRY_RUN ? `${SMS_PROVIDER}_dry_run` : SMS_PROVIDER, sent, failed, skipped });
+    return jsonResponse({ ok: true, provider: SMS_DRY_RUN ? `${SMS_PROVIDER}_dry_run` : SMS_PROVIDER, dryRun: SMS_DRY_RUN, forceLive: SMS_FORCE_LIVE, sent, failed, skipped });
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     const stack = error instanceof Error ? error.stack : undefined;
