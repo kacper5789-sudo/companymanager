@@ -85,6 +85,7 @@
 
   const tabPermissions = [
     ["open_company_manager", "CompanyManager"],
+    ["open_company_panel", "Panel firmy"],
     ["open_positions", "Stanowiska pracy"],
     ["open_team", "Zespół"],
     ["open_days_off", "Dni wolne pracowników"],

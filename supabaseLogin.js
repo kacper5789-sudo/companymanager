@@ -39,6 +39,90 @@
     } catch (_) { return "pl"; }
   }
 
+
+  function parseTimeMinutes(value, fallback) {
+    const raw = String(value || fallback || "").trim();
+    const match = raw.match(/^(\d{1,2}):(\d{2})/);
+    if (!match) return null;
+    const h = Math.max(0, Math.min(23, Number(match[1])));
+    const m = Math.max(0, Math.min(59, Number(match[2])));
+    return h * 60 + m;
+  }
+
+  function currentMinutesInTimezone(timezone) {
+    const tz = String(timezone || "Europe/Warsaw");
+    try {
+      const parts = new Intl.DateTimeFormat("en-GB", {
+        timeZone: tz,
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false
+      }).formatToParts(new Date());
+      const hour = Number(parts.find((p) => p.type === "hour")?.value || "0");
+      const minute = Number(parts.find((p) => p.type === "minute")?.value || "0");
+      return hour * 60 + minute;
+    } catch (_) {
+      const now = new Date();
+      return now.getHours() * 60 + now.getMinutes();
+    }
+  }
+
+  function isNowInsideLoginWindow(fromValue, toValue, timezone) {
+    const from = parseTimeMinutes(fromValue, "04:00");
+    const to = parseTimeMinutes(toValue, "22:00");
+    if (from === null || to === null) return true;
+    const now = currentMinutesInTimezone(timezone || "Europe/Warsaw");
+    if (from === to) return true;
+    if (from < to) return now >= from && now <= to;
+    // Zakres przez północ, np. 22:00-06:00.
+    return now >= from || now <= to;
+  }
+
+  function firstDefined(...values) {
+    return values.find((value) => value !== undefined && value !== null && value !== "");
+  }
+
+  async function getLoginGuard(accessData) {
+    const guard = {
+      login_allowed: firstDefined(accessData?.login_allowed, accessData?.loginAllowed, true) !== false,
+      login_hours_enabled: firstDefined(accessData?.login_hours_enabled, accessData?.loginHoursEnabled, false) === true,
+      login_hour_from: firstDefined(accessData?.login_hour_from, accessData?.loginHourFrom, null),
+      login_hour_to: firstDefined(accessData?.login_hour_to, accessData?.loginHourTo, null),
+      timezone: firstDefined(accessData?.timezone, accessData?.company_timezone, accessData?.settings?.timezone, "Europe/Warsaw")
+    };
+
+    // Jeżeli get_my_access nie zwrócił pól godzinowych, dociągamy profil zalogowanego użytkownika.
+    if (window.cmSupabase && accessData?.user_id) {
+      try {
+        const { data, error } = await window.cmSupabase
+          .from("profiles")
+          .select("login_allowed,login_hours_enabled,login_hour_from,login_hour_to")
+          .eq("id", accessData.user_id)
+          .maybeSingle();
+        if (!error && data) {
+          guard.login_allowed = data.login_allowed !== false;
+          guard.login_hours_enabled = data.login_hours_enabled === true;
+          guard.login_hour_from = data.login_hour_from || guard.login_hour_from;
+          guard.login_hour_to = data.login_hour_to || guard.login_hour_to;
+        }
+      } catch (profileError) {
+        console.warn("CompanyManager login guard profile warning", profileError);
+      }
+    }
+
+    return guard;
+  }
+
+  function loginGuardErrorMessage(guard) {
+    if (guard.login_allowed === false) return "Logowanie do tego konta jest zablokowane.";
+    if (guard.login_hours_enabled && !isNowInsideLoginWindow(guard.login_hour_from || "04:00", guard.login_hour_to || "22:00", guard.timezone)) {
+      const from = String(guard.login_hour_from || "04:00").slice(0, 5);
+      const to = String(guard.login_hour_to || "22:00").slice(0, 5);
+      return `Logowanie dozwolone tylko w godzinach od ${from} do ${to}.`;
+    }
+    return "";
+  }
+
   function setLegacyPanelSession(accessData) {
     const selectedLanguage = getSelectedPublicLanguage();
     accessData = { ...(accessData || {}), language: selectedLanguage, profile_language: selectedLanguage, company_language: selectedLanguage };
@@ -113,6 +197,21 @@
           errorMessage: accessData?.reason || "brak dostępu"
         });
         loginSuccess.textContent = "Dostęp zablokowany: " + (accessData?.reason || "brak dostępu");
+        return;
+      }
+
+      const loginGuard = await getLoginGuard(accessData);
+      const loginGuardMessage = loginGuardErrorMessage(loginGuard);
+      if (loginGuardMessage) {
+        await window.cmSupabase.auth.signOut().catch(() => {});
+        await recordLoginLog({
+          email,
+          status: loginGuard.login_allowed === false ? "blocked" : "outside_hours",
+          userId: accessData?.user_id || null,
+          companyId: accessData?.company_id || null,
+          errorMessage: loginGuardMessage
+        });
+        loginSuccess.textContent = loginGuardMessage;
         return;
       }
 

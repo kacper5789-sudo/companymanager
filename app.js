@@ -932,7 +932,8 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   const supabaseOpenPermissionMap = {
-    open_company_manager: ['dashboard','companyPanel','calendar','settings'],
+    open_company_manager: ['dashboard','calendar'],
+    open_company_panel: ['companyPanel','settings'],
     open_positions: ['positions'],
     open_team: ['employees','users'],
     open_days_off: ['daysOff'],
@@ -1035,6 +1036,7 @@ document.addEventListener('DOMContentLoaded', () => {
       companyId,
       positionId: access.position_id || '',
       permissions: legacyPermissions,
+      supabasePermissions,
       supabasePermissions,
       source: 'supabase'
     };
@@ -2638,7 +2640,7 @@ document.addEventListener('DOMContentLoaded', () => {
                   <div class="bm-admin-dropdown">
                     <button id="adminDropdownToggle" class="bm-admin-dropdown-toggle" type="button" aria-expanded="false" aria-controls="adminDropdownMenu">${escapeHtml(roleLabels[role] || role)} <span>▾</span></button>
                     <div id="adminDropdownMenu" class="bm-admin-dropdown-menu" hidden>
-                      <a href="company-panel.html">Panel Firmy</a>
+                      ${canAccessPage(user, 'companyPanel') ? `<a href="company-panel.html">Panel Firmy</a>` : ''}
                       <a href="users.html">Użytkownicy</a>
                       ${canAccessPage(user, 'activity') ? `<a href="activity.html">Historia aktywności</a>` : ''}
                       <button id="panelLogoutBtn" class="bm-admin-dropdown-logout" type="button">Wyloguj się</button>
@@ -3565,6 +3567,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const userTabPermissionsList = [
     ['dashboard', 'CompanyManager'],
+    ['companyPanel', 'Panel firmy'],
     ['positions', 'Stanowiska pracy'],
     ['employees', 'Zespół'],
     ['daysOff', 'Dni wolne pracowników'],
