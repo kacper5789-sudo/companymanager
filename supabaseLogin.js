@@ -31,7 +31,24 @@
     }
   }
 
+  function getSelectedPublicLanguage() {
+    try {
+      const raw = localStorage.getItem("cmLanguage") || localStorage.getItem("cm_public_language") || "pl";
+      const lang = window.cmNormalizePublicLanguage ? window.cmNormalizePublicLanguage(raw) : (String(raw).toLowerCase().startsWith("en") ? "en-gb" : "pl");
+      return lang === "en-gb" ? "en-gb" : "pl";
+    } catch (_) { return "pl"; }
+  }
+
   function setLegacyPanelSession(accessData) {
+    const selectedLanguage = getSelectedPublicLanguage();
+    accessData = { ...(accessData || {}), language: selectedLanguage, profile_language: selectedLanguage, company_language: selectedLanguage };
+    try {
+      const settings = JSON.parse(localStorage.getItem("cm_company_settings") || "{}");
+      settings.language = selectedLanguage;
+      localStorage.setItem("cm_company_settings", JSON.stringify(settings));
+      localStorage.setItem("cmLanguage", selectedLanguage);
+      localStorage.setItem("cm_language_source", "login");
+    } catch (_) {}
     const role = String(accessData?.role || "").toUpperCase();
     const legacyRole = role === "OWNER" ? "owner" : role === "ADMIN" ? "admin" : "employee";
 

@@ -2389,10 +2389,11 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
       const stored = JSON.parse(localStorage.getItem('cm_company_settings') || 'null') || {};
       const access = JSON.parse(localStorage.getItem('cm_access') || 'null') || {};
+      const explicitLanguage = localStorage.getItem('cmLanguage') || localStorage.getItem('cm_public_language') || '';
       return {
         ...CM_SETTINGS_DEFAULTS,
         ...stored,
-        language: normalizeCmLanguage(stored.language || access.company_language || access.language || CM_SETTINGS_DEFAULTS.language),
+        language: normalizeCmLanguage(explicitLanguage || stored.language || access.company_language || access.language || CM_SETTINGS_DEFAULTS.language),
         currency: normalizeCmCurrency(stored.currency || access.currency || CM_SETTINGS_DEFAULTS.currency),
         timezone: normalizeCmTimezone(stored.timezone || access.timezone || CM_SETTINGS_DEFAULTS.timezone),
         exchange_rates: { ...CM_SETTINGS_DEFAULTS.exchange_rates, ...(stored.exchange_rates || {}) }
@@ -2409,6 +2410,7 @@ document.addEventListener('DOMContentLoaded', () => {
       timezone: normalizeCmTimezone(settings?.timezone || getCmCompanySettings().timezone)
     };
     localStorage.setItem('cm_company_settings', JSON.stringify(normalized));
+    if (normalized.language) localStorage.setItem('cmLanguage', normalizeCmLanguage(normalized.language));
     window.dispatchEvent(new CustomEvent('cm:company-settings-changed', { detail: normalized }));
     return normalized;
   };
@@ -2468,8 +2470,9 @@ document.addEventListener('DOMContentLoaded', () => {
       const { data, error } = await window.cmSupabase.rpc('company_panel_get');
       if (error || !data?.company) return getCmCompanySettings();
       const company = data.company;
+      const localLang = localStorage.getItem('cmLanguage') || localStorage.getItem('cm_public_language') || '';
       const settings = setCmCompanySettings({
-        language: company.language || 'pl',
+        language: localLang || company.language || 'pl',
         currency: company.currency || 'PLN',
         timezone: company.timezone || 'Europe/Warsaw',
         exchange_rates: company.exchange_rates || getCmCompanySettings().exchange_rates
@@ -2706,9 +2709,10 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!window.cmSupabase?.rpc) return;
         const { data, error } = await window.cmSupabase.rpc('cm_get_language');
         if (error || !data) return;
+        const hasExplicitLocalLanguage = Boolean(localStorage.getItem('cmLanguage') || localStorage.getItem('cm_public_language'));
         const companySettings = await (window.cmRefreshCompanySettings ? window.cmRefreshCompanySettings() : Promise.resolve(null));
         const remoteLang = normalizeCmLanguage(companySettings?.language || data.language || data.profile_language || data.company_language);
-        if (remoteLang && remoteLang !== savedLang) {
+        if (!hasExplicitLocalLanguage && remoteLang && remoteLang !== savedLang) {
           savedLang = remoteLang;
           localStorage.setItem('cmLanguage', savedLang);
           renderLanguageMenu();
