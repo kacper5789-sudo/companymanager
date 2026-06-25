@@ -508,20 +508,37 @@
       if (error) { setMessage("#visitMessage", "Błąd zapisu wizyty: " + error.message, false); return; }
       await window.cmUndo?.record({ module: "appointments", actionType: "insert", targetTable: "appointments", targetId: insertedAppointment?.id, afterData: insertedAppointment || payload, companyId: ctx.companyId });
 
-      // 103: natychmiastowe powiadomienia SMS/EMAIL po dodaniu wizyty
+      // 104: powiadomienie po dodaniu wizyty musi iść natychmiast, a nie czekać na cron.
+      // Błędu powiadomienia nie blokujemy zapisu wizyty, tylko pokazujemy go użytkownikowi.
+      let notifyMessage = "";
       try {
-        await window.cmSupabase.functions.invoke("send-automatic-notifications", {
-          body: {
-            event: "appointment_created",
-            appointment_id: insertedAppointment?.id,
-            company_id: ctx.companyId
+        if (insertedAppointment?.id && window.cmSupabase?.functions?.invoke) {
+          const { data: notifyData, error: notifyError } = await window.cmSupabase.functions.invoke("send-automatic-notifications", {
+            body: {
+              event: "appointment_created",
+              type: "appointment_created",
+              appointment_id: insertedAppointment.id,
+              company_id: ctx.companyId,
+            },
+          });
+          if (notifyError) {
+            notifyMessage = ` Powiadomienie nie wyszło: ${notifyError.message || notifyError}`;
+            console.warn("appointment_created notification failed", notifyError);
+          } else if (notifyData?.error) {
+            notifyMessage = ` Powiadomienie nie wyszło: ${notifyData.error}`;
+            console.warn("appointment_created notification returned error", notifyData);
+          } else if ((Number(notifyData?.sent || 0) + Number(notifyData?.failed || 0)) > 0) {
+            notifyMessage = ` Powiadomienia: wysłano ${notifyData.sent || 0}, błędów ${notifyData.failed || 0}.`;
+          } else {
+            notifyMessage = " Powiadomienia: brak odbiorcy albo automat wyłączony.";
           }
-        });
+        }
       } catch (notifyError) {
-        console.warn("Appointment notification failed", notifyError);
+        notifyMessage = ` Powiadomienie nie wyszło: ${notifyError?.message || notifyError}`;
+        console.warn("appointment_created notification exception", notifyError);
       }
 
-      setMessage("#visitMessage", "Wizyta zapisana w Supabase.", true);
+      setMessage("#visitMessage", "Wizyta zapisana w Supabase." + notifyMessage, true);
       setTimeout(renderAppointments, 450);
     });
 

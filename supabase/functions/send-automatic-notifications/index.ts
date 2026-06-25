@@ -542,6 +542,57 @@ async function processAppointments(supabase: any, company: AnyRow, summary: AnyR
   }
 }
 
+
+async function processAppointmentCreatedEvent(supabase: any, company: AnyRow, appointmentId: string, summary: AnyRow) {
+  if (!appointmentId) {
+    summary.skipped += 1;
+    return;
+  }
+
+  const { data: appt, error: apptError } = await supabase
+    .from("appointments")
+    .select("id,company_id,client_id,customer_id,employee_id,service_id,date,time,start_time,status,created_at,active,deleted_at")
+    .eq("id", appointmentId)
+    .eq("company_id", company.id)
+    .maybeSingle();
+
+  if (apptError) {
+    console.error("appointment_created appointment query failed", apptError);
+    summary.failed += 1;
+    return;
+  }
+  if (!appt || appt.deleted_at || appt.active === false) {
+    summary.skipped += 1;
+    return;
+  }
+
+  const related = await fetchRelated(supabase, appt);
+  if (!related.client) {
+    await logNotification(supabase, {
+      company_id: company.id,
+      channel: "system",
+      type: "appointment_created_missing_client",
+      status: "skipped",
+      appointment_id: appt.id,
+      error_message: "Brak klienta dla wizyty — nie wysłano powiadomienia po dodaniu wizyty.",
+      dedupe_key: `system:appointment_created_missing_client:${appt.id}`,
+    });
+    summary.skipped += 1;
+    return;
+  }
+
+  if (company.after_add_email) {
+    const key = `email:after_add:${appt.id}`;
+    const r = await sendAutomaticEmail(supabase, company, related.client, appt, "after_add", key, related);
+    if (r.sent) summary.sent += 1; else if (r.failed) summary.failed += 1; else summary.skipped += 1;
+  }
+  if (company.after_add_sms) {
+    const key = `sms:after_add:${appt.id}`;
+    const r = await sendAutomaticSms(supabase, company, related.client, appt, "after_add", key, related);
+    if (r.sent) summary.sent += 1; else if (r.failed) summary.failed += 1; else summary.skipped += 1;
+  }
+}
+
 async function processBirthdays(supabase: any, company: AnyRow, summary: AnyRow) {
   if (!company.birthday_email && !company.birthday_sms) return;
   const now = new Date();
@@ -603,10 +654,41 @@ Deno.serve(async (req) => {
 
     const body = await req.json().catch(() => ({}));
     const companyFilter = normalizeText(body.company_id);
+    const eventType = normalizeText(body.event || body.type);
+    const appointmentId = normalizeText(body.appointment_id || body.visit_id);
+
+    const companySelect = "id,name,message_sender,sms_sender,visit_email_24,visit_email_sender,visit_email_subject,visit_email_template,birthday_email,birthday_email_sender,birthday_email_subject,birthday_email_template,after_add_email,after_add_email_sender,after_add_email_subject,after_add_email_template,after_visit_email,after_visit_email_sender,after_visit_email_subject,after_visit_email_template,visit_sms_24,visit_sms_sender,visit_sms_template,birthday_sms,birthday_sms_sender,birthday_sms_template,after_add_sms,after_add_sms_sender,after_add_sms_template,after_visit_sms,after_visit_sms_sender,after_visit_sms_template,active,deleted_at";
+
+    const summary = {
+      companies: 0,
+      sent: 0,
+      failed: 0,
+      skipped: 0,
+    };
+
+    // 104: event natychmiastowy po dodaniu wizyty. Cron zostaje dla 24h/urodzin/po wizycie.
+    if (["appointment_created", "after_add", "visit_created"].includes(eventType) && appointmentId) {
+      if (!companyFilter) return jsonResponse({ error: "Missing company_id for appointment_created event" }, 400);
+      const { data: company, error: companyError } = await supabase
+        .from("companies")
+        .select(companySelect)
+        .eq("id", companyFilter)
+        .maybeSingle();
+      if (companyError) {
+        console.error("company query failed", companyError);
+        return jsonResponse({ error: companyError.message, stage: "company_query" }, 500);
+      }
+      if (!company || company.deleted_at || company.active === false) {
+        return jsonResponse({ ok: true, event: eventType, companies: 0, sent: 0, failed: 0, skipped: 1 });
+      }
+      summary.companies = 1;
+      await processAppointmentCreatedEvent(supabase, company, appointmentId, summary);
+      return jsonResponse({ ok: true, event: eventType, appointment_id: appointmentId, ...summary });
+    }
 
     const query = supabase
       .from("companies")
-      .select("id,name,message_sender,sms_sender,visit_email_24,visit_email_sender,visit_email_subject,visit_email_template,birthday_email,birthday_email_sender,birthday_email_subject,birthday_email_template,after_add_email,after_add_email_sender,after_add_email_subject,after_add_email_template,after_visit_email,after_visit_email_sender,after_visit_email_subject,after_visit_email_template,visit_sms_24,visit_sms_sender,visit_sms_template,birthday_sms,birthday_sms_sender,birthday_sms_template,after_add_sms,after_add_sms_sender,after_add_sms_template,after_visit_sms,after_visit_sms_sender,after_visit_sms_template,active,deleted_at")
+      .select(companySelect)
       .limit(200);
 
     const { data: companies, error: companyError } = companyFilter
@@ -617,13 +699,6 @@ Deno.serve(async (req) => {
       console.error("companies query failed", companyError);
       return jsonResponse({ error: companyError.message, stage: "companies_query" }, 500);
     }
-
-    const summary = {
-      companies: 0,
-      sent: 0,
-      failed: 0,
-      skipped: 0,
-    };
 
     for (const company of companies || []) {
       if (company.deleted_at || company.active === false) continue;
