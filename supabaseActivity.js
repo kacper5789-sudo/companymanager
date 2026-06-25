@@ -284,7 +284,7 @@
     return "";
   }
 
-  const auditState = { page: 0, lastCount: 0 };
+  const auditState = { page: 0, lastCount: 0, totalKnown: null };
 
   function getDateFromByRange() {
     const range = document.getElementById("auditRangeFilter")?.value || "60";
@@ -302,13 +302,56 @@
     auditState.page = 0;
   }
 
+  function buildAuditPages(currentPage, totalPages) {
+    const total = Math.max(1, Number(totalPages) || 1);
+    const current = Math.min(Math.max(1, Number(currentPage) || 1), total);
+    if (total <= 9) return Array.from({ length: total }, (_, i) => i + 1);
+    const pages = new Set([1, total, current, current - 1, current + 1, current - 2, current + 2]);
+    if (current <= 4) [2, 3, 4, 5, 6].forEach((p) => pages.add(p));
+    if (current >= total - 3) [total - 5, total - 4, total - 3, total - 2, total - 1].forEach((p) => pages.add(p));
+    return [...pages].filter((p) => p >= 1 && p <= total).sort((a, b) => a - b);
+  }
+
   function updatePager(pageSize) {
     const info = document.getElementById("auditPageInfo");
     const prev = document.getElementById("auditPrevPage");
     const next = document.getElementById("auditNextPage");
-    if (info) info.textContent = `Strona ${auditState.page + 1}`;
+    const numbers = document.getElementById("auditPageNumbers");
+    const jumpInput = document.getElementById("auditPageJumpInput");
+    const page = auditState.page + 1;
+    const from = auditState.lastCount ? auditState.page * pageSize + 1 : 0;
+    const to = auditState.lastCount ? auditState.page * pageSize + auditState.lastCount : 0;
+    const totalKnown = Number(auditState.totalKnown || 0);
+    const displayTotal = totalKnown || (auditState.lastCount ? Math.max(to, pageSize) : 0);
+    const totalPages = totalKnown ? Math.max(1, Math.ceil(totalKnown / pageSize)) : Math.max(page, auditState.lastCount >= pageSize ? page + 1 : page);
+    if (info) info.textContent = auditState.lastCount ? `Pozycje od ${from} do ${to} z ${displayTotal} łącznie` : "Pozycje od 0 do 0 z 0 łącznie";
     if (prev) prev.disabled = auditState.page <= 0;
-    if (next) next.disabled = auditState.lastCount < pageSize;
+    if (next) next.disabled = auditState.lastCount < pageSize && page >= totalPages;
+    if (jumpInput) {
+      jumpInput.min = "1";
+      jumpInput.max = String(totalPages);
+      jumpInput.placeholder = String(page);
+    }
+    if (numbers) {
+      numbers.innerHTML = "";
+      let last = 0;
+      buildAuditPages(page, totalPages).forEach((pageNo) => {
+        if (last && pageNo - last > 1) {
+          const ellipsis = document.createElement("span");
+          ellipsis.className = "cm-page-ellipsis";
+          ellipsis.textContent = "…";
+          numbers.appendChild(ellipsis);
+        }
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = `bm-light-btn cm-page-number${pageNo === page ? " active" : ""}`;
+        btn.dataset.auditPage = String(pageNo);
+        btn.textContent = String(pageNo);
+        if (pageNo === page) btn.setAttribute("aria-current", "page");
+        numbers.appendChild(btn);
+        last = pageNo;
+      });
+    }
   }
 
   async function getContext() {
@@ -390,10 +433,17 @@
             <tbody id="auditRows"><tr><td colspan="7">Ładowanie...</td></tr></tbody>
           </table>
         </div>
-        <div class="cm-audit-pager">
-          <button id="auditPrevPage" class="bm-secondary-btn" type="button">Poprzednia strona</button>
-          <span id="auditPageInfo">Strona 1</span>
-          <button id="auditNextPage" class="bm-secondary-btn" type="button">Następna strona</button>
+        <div class="cm-audit-pager cm-table-pagination">
+          <div id="auditPageInfo" class="cm-table-pagination-info">Pozycje od 0 do 0 z 0 łącznie</div>
+          <div class="cm-table-pagination-controls">
+            <button id="auditPrevPage" class="bm-light-btn" type="button" title="Poprzednia strona">&lt;</button>
+            <div id="auditPageNumbers" class="cm-page-numbers"></div>
+            <button id="auditNextPage" class="bm-light-btn" type="button" title="Następna strona">&gt;</button>
+          </div>
+          <form id="auditPageJump" class="cm-page-jump" autocomplete="off">
+            <label>Przejdź do strony <input id="auditPageJumpInput" class="cm-page-jump-input" type="number" min="1" step="1" inputmode="numeric"></label>
+            <button type="submit" class="bm-light-btn">Idź</button>
+          </form>
         </div>
       </section>`;
   }
@@ -447,7 +497,7 @@
   async function loadLogsDirect(ctx, params) {
     let query = window.cmSupabase
       .from("company_audit_logs")
-      .select("id, company_id, created_at, actor_name, actor_email, actor_role, module, table_name, action, record_id, record_label, old_data, new_data, source")
+      .select("id, company_id, created_at, actor_name, actor_email, actor_role, module, table_name, action, record_id, record_label, old_data, new_data, source", { count: "exact" })
       .gte("created_at", params.p_date_from)
       .order("created_at", { ascending: false })
       .order("id", { ascending: false })
@@ -464,9 +514,9 @@
       query = query.or(`actor_name.ilike.%${safe}%,actor_email.ilike.%${safe}%,module.ilike.%${safe}%,action.ilike.%${safe}%,record_label.ilike.%${safe}%`);
     }
 
-    const { data, error } = await query;
+    const { data, error, count } = await query;
     if (error) throw error;
-    return normalizeAuditRows(data || []);
+    return { rows: normalizeAuditRows(data || []), count: Number(count || 0) };
   }
 
   async function loadLogs(ctx) {
@@ -488,6 +538,7 @@
     };
 
     let logs = [];
+    auditState.totalKnown = null;
     let rpcError = null;
 
     // Najpierw RPC, ale jeśli zwróci pustkę przez kontekst firmy, robimy bezpieczny direct select pod RLS.
@@ -501,7 +552,7 @@
 
     if (!logs.length) {
       try {
-        logs = await loadLogsDirect(ctx, params);
+        { const direct = await loadLogsDirect(ctx, params); logs = direct.rows || []; auditState.totalKnown = direct.count || null; }
       } catch (directError) {
         if (status) {
           status.textContent = directError.message || rpcError?.message || "Błąd ładowania historii.";
@@ -515,6 +566,7 @@
     fillModules(logs || []);
     renderRows(logs || []);
     auditState.lastCount = (logs || []).length;
+    if (!auditState.totalKnown && auditState.lastCount < pageSize) auditState.totalKnown = auditState.page * pageSize + auditState.lastCount;
     updatePager(pageSize);
     if (status) {
       status.textContent = `Zakres: ostatnie ${document.getElementById("auditRangeFilter")?.selectedOptions?.[0]?.textContent || "60 dni"}. Wpisy na stronie: ${(logs || []).length}`;
@@ -549,6 +601,25 @@
     document.getElementById("auditNextPage")?.addEventListener("click", () => {
       auditState.page += 1;
       loadLogs(ctx);
+    });
+    document.getElementById("auditPageNumbers")?.addEventListener("click", (event) => {
+      const btn = event.target?.closest?.("[data-audit-page]");
+      if (!btn) return;
+      const page = Number(btn.dataset.auditPage || 1);
+      if (Number.isFinite(page) && page > 0) {
+        auditState.page = page - 1;
+        loadLogs(ctx);
+      }
+    });
+    document.getElementById("auditPageJump")?.addEventListener("submit", (event) => {
+      event.preventDefault();
+      const input = document.getElementById("auditPageJumpInput");
+      const page = Number(input?.value);
+      if (Number.isFinite(page) && page > 0) {
+        auditState.page = Math.max(0, Math.floor(page) - 1);
+        if (input) input.value = "";
+        loadLogs(ctx);
+      }
     });
     let timer = null;
     document.getElementById("auditSearch")?.addEventListener("input", () => {

@@ -4010,6 +4010,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const setupGlobalTablePagination = (root = document) => {
     const scope = root instanceof Element ? root : document;
     scope.querySelectorAll('.bm-table-wrap').forEach((wrap, wrapIndex) => {
+      if (wrap.classList.contains('cm-audit-table-wrap')) return;
       const tableEl = wrap.querySelector('table.bm-table');
       if (!tableEl || tableEl.dataset.paginationReady === '1') return;
       const tbody = tableEl.querySelector('tbody');
@@ -4026,9 +4027,9 @@ document.addEventListener('DOMContentLoaded', () => {
       controls.innerHTML = `
         <div class="cm-table-pagination-info"></div>
         <div class="cm-table-pagination-controls" aria-label="Paginacja tabeli">
-          <button type="button" class="bm-light-btn cm-page-prev" aria-label="Poprzednia strona">&lt;</button>
+          <button type="button" class="bm-light-btn cm-page-prev" title="Poprzednia strona">&lt;</button>
           <div class="cm-page-numbers" aria-label="Numery stron"></div>
-          <button type="button" class="bm-light-btn cm-page-next" aria-label="Następna strona">&gt;</button>
+          <button type="button" class="bm-light-btn cm-page-next" title="Następna strona">&gt;</button>
         </div>
         <form class="cm-page-jump" autocomplete="off">
           <label>Przejdź do strony <input class="cm-page-jump-input" type="number" min="1" step="1" inputmode="numeric"></label>
@@ -4049,7 +4050,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const prev = controls.querySelector('.cm-page-prev');
         const next = controls.querySelector('.cm-page-next');
         const jumpInput = controls.querySelector('.cm-page-jump-input');
-        if (info) info.textContent = totalRows ? `Pozycje od ${start + 1} do ${end} z ${totalRows} łącznie` : 'Pozycje od 0 do 0 z 0 łącznie';
+        const displayTotal = totalRows ? Math.max(totalRows, limit) : 0;
+        if (info) info.textContent = totalRows ? `Pozycje od ${start + 1} do ${end} z ${displayTotal} łącznie` : 'Pozycje od 0 do 0 z 0 łącznie';
         renderPaginationButtons(numbers, currentPage, totalPages);
         if (prev) prev.disabled = currentPage <= 1;
         if (next) next.disabled = currentPage >= totalPages;
@@ -4076,7 +4078,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const input = controls.querySelector('.cm-page-jump-input');
         const value = Number(input?.value);
         if (Number.isFinite(value) && value >= 1) {
-          currentPage = value;
+          const limit = findNearestPageLimit(wrap);
+          const totalRows = allRows.length;
+          const totalPages = Math.max(1, Math.ceil(totalRows / limit));
+          currentPage = Math.min(Math.max(1, value), totalPages);
           renderPage();
           if (input) input.value = '';
         }
