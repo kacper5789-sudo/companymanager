@@ -2796,6 +2796,7 @@ document.addEventListener('DOMContentLoaded', () => {
     wireMiniCalendar();
     cleanupLegacyPagination(document.querySelector('.bm-panel-area') || document);
     setupGlobalTablePagination(document.querySelector('.bm-panel-area') || document);
+    installGlobalPaginationObserver();
     enforceCurrentUserPermissions(user, page);
   };
 
@@ -3970,6 +3971,42 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   };
 
+  const buildPaginationPages = (currentPage, totalPages) => {
+    const total = Math.max(1, Number(totalPages) || 1);
+    const current = Math.min(Math.max(1, Number(currentPage) || 1), total);
+    if (total <= 9) return Array.from({ length: total }, (_, i) => i + 1);
+    const pages = new Set([1, total, current, current - 1, current + 1, current - 2, current + 2]);
+    if (current <= 4) [2, 3, 4, 5, 6].forEach(p => pages.add(p));
+    if (current >= total - 3) [total - 5, total - 4, total - 3, total - 2, total - 1].forEach(p => pages.add(p));
+    return [...pages].filter(p => p >= 1 && p <= total).sort((a, b) => a - b);
+  };
+
+  const renderPaginationButtons = (holder, currentPage, totalPages) => {
+    if (!holder) return;
+    const total = Math.max(1, Number(totalPages) || 1);
+    const current = Math.min(Math.max(1, Number(currentPage) || 1), total);
+    const pages = buildPaginationPages(current, total);
+    let last = 0;
+    holder.innerHTML = '';
+    pages.forEach(page => {
+      if (last && page - last > 1) {
+        const ellipsis = document.createElement('span');
+        ellipsis.className = 'cm-page-ellipsis';
+        ellipsis.textContent = '…';
+        holder.appendChild(ellipsis);
+      }
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = `bm-light-btn cm-page-number${page === current ? ' active' : ''}`;
+      btn.dataset.page = String(page);
+      btn.textContent = String(page);
+      btn.setAttribute('aria-label', `Przejdź do strony ${page}`);
+      if (page === current) btn.setAttribute('aria-current', 'page');
+      holder.appendChild(btn);
+      last = page;
+    });
+  };
+
   const setupGlobalTablePagination = (root = document) => {
     const scope = root instanceof Element ? root : document;
     scope.querySelectorAll('.bm-table-wrap').forEach((wrap, wrapIndex) => {
@@ -3988,11 +4025,15 @@ document.addEventListener('DOMContentLoaded', () => {
       controls.className = 'cm-table-pagination';
       controls.innerHTML = `
         <div class="cm-table-pagination-info"></div>
-        <div class="cm-table-pagination-controls">
+        <div class="cm-table-pagination-controls" aria-label="Paginacja tabeli">
           <button type="button" class="bm-light-btn cm-page-prev" aria-label="Poprzednia strona">&lt;</button>
-          <span><b class="cm-page-current">1</b> z <b class="cm-page-total">1</b></span>
+          <div class="cm-page-numbers" aria-label="Numery stron"></div>
           <button type="button" class="bm-light-btn cm-page-next" aria-label="Następna strona">&gt;</button>
-        </div>`;
+        </div>
+        <form class="cm-page-jump" autocomplete="off">
+          <label>Przejdź do strony <input class="cm-page-jump-input" type="number" min="1" step="1" inputmode="numeric"></label>
+          <button type="submit" class="bm-light-btn">Idź</button>
+        </form>`;
       wrap.insertAdjacentElement('afterend', controls);
 
       const renderPage = () => {
@@ -4004,20 +4045,42 @@ document.addEventListener('DOMContentLoaded', () => {
         const end = Math.min(start + limit, totalRows);
         allRows.forEach((row, index) => { row.hidden = index < start || index >= end; });
         const info = controls.querySelector('.cm-table-pagination-info');
-        const current = controls.querySelector('.cm-page-current');
-        const total = controls.querySelector('.cm-page-total');
+        const numbers = controls.querySelector('.cm-page-numbers');
         const prev = controls.querySelector('.cm-page-prev');
         const next = controls.querySelector('.cm-page-next');
-        if (info) info.textContent = totalRows ? `Pozycje od ${start + 1} do ${end} z ${totalRows} łącznie` : 'Pozycji 0 z 0 dostępnych';
-        if (current) current.textContent = String(currentPage);
-        if (total) total.textContent = String(totalPages);
+        const jumpInput = controls.querySelector('.cm-page-jump-input');
+        if (info) info.textContent = totalRows ? `Pozycje od ${start + 1} do ${end} z ${totalRows} łącznie` : 'Pozycje od 0 do 0 z 0 łącznie';
+        renderPaginationButtons(numbers, currentPage, totalPages);
         if (prev) prev.disabled = currentPage <= 1;
         if (next) next.disabled = currentPage >= totalPages;
+        if (jumpInput) {
+          jumpInput.max = String(totalPages);
+          jumpInput.placeholder = String(currentPage);
+        }
         controls.hidden = totalPages <= 1;
       };
 
-      controls.querySelector('.cm-page-prev')?.addEventListener('click', () => { currentPage -= 1; renderPage(); });
-      controls.querySelector('.cm-page-next')?.addEventListener('click', () => { currentPage += 1; renderPage(); });
+      controls.addEventListener('click', (event) => {
+        const target = event.target;
+        const pageBtn = target?.closest?.('.cm-page-number');
+        if (pageBtn) {
+          const nextPage = Number(pageBtn.dataset.page);
+          if (Number.isFinite(nextPage)) { currentPage = nextPage; renderPage(); }
+          return;
+        }
+        if (target?.closest?.('.cm-page-prev')) { currentPage -= 1; renderPage(); return; }
+        if (target?.closest?.('.cm-page-next')) { currentPage += 1; renderPage(); }
+      });
+      controls.querySelector('.cm-page-jump')?.addEventListener('submit', (event) => {
+        event.preventDefault();
+        const input = controls.querySelector('.cm-page-jump-input');
+        const value = Number(input?.value);
+        if (Number.isFinite(value) && value >= 1) {
+          currentPage = value;
+          renderPage();
+          if (input) input.value = '';
+        }
+      });
       document.addEventListener('change', (event) => {
         const target = event.target;
         if (target && (target.matches('select[id*="Limit"], select[id$="PageSize"], select[data-global-page-limit]') || target.matches('input[id*="Limit"]'))) {
@@ -4035,6 +4098,23 @@ document.addEventListener('DOMContentLoaded', () => {
       });
       renderPage();
     });
+  };
+
+  const installGlobalPaginationObserver = () => {
+    if (window.cmGlobalPaginationObserverInstalled || typeof MutationObserver === 'undefined') return;
+    window.cmGlobalPaginationObserverInstalled = true;
+    let timer = null;
+    const run = () => {
+      clearTimeout(timer);
+      timer = setTimeout(() => {
+        const root = document.querySelector('.bm-panel-area') || document;
+        cleanupLegacyPagination(root);
+        setupGlobalTablePagination(root);
+      }, 80);
+    };
+    const observer = new MutationObserver(run);
+    observer.observe(document.body, { childList: true, subtree: true });
+    run();
   };
 
   const renderCustomers = (ctx) => {
@@ -8210,7 +8290,7 @@ document.addEventListener('DOMContentLoaded', () => {
       <button id="salesShow" class="bm-light-btn" type="submit">Pokaż</button>
     </form>`;
     const listTools = () => `<div class="bm-table-toolbar"><label class="cm-limit-label">${limitDropdownHtml('salesLimit', Number(limitValue) || 50)}</label><label>Szukaj: <input id="salesSearch" type="search" value="${escapeHtml(searchValue)}" placeholder="Szukaj"></label></div>`;
-    const pager = (from, to, total, page, pages) => `<div class="cm-sales-pager"><span>${total ? `Pozycje od ${from} do ${to} z ${total} łącznie` : 'Pozycji 0 z 0 dostępnych'}</span>${pages ? `<span>Strona <input value="${page}" inputmode="numeric"> z ${pages}</span>` : ''}</div>`;
+    const pager = (from, to, total, page, pages) => `<div class="cm-sales-pager cm-pagination-row"><span>${total ? `Pozycje od ${from} do ${to} z ${total} łącznie` : 'Pozycje od 0 do 0 z 0 łącznie'}</span><span class="cm-pagination-controls">&lt; <strong>${page} z ${Math.max(pages || 1, 1)}</strong> &gt;</span></div>`;
     const empty = (headers) => `${table(headers, [headers.map((_,i)=> i === 0 ? 'Nie znaleziono żadnych danych' : '')])}${pager(0,0,0,1,0)}`;
     const filterBySearch = (rows) => !searchNeedle ? rows : rows.filter(row => normalizeText(row.join(' ')).includes(searchNeedle));
     const paginate = (rows) => rows;

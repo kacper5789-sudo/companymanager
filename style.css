@@ -2919,9 +2919,10 @@ body.cm-modal-open #cmGlobalFormOverlay{
 .cm-sales-export-btn:hover{transform:translateY(-1px);box-shadow:0 16px 34px rgba(22,163,74,.30);filter:brightness(1.05);}
 .bm-table-tools{display:flex;gap:14px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin:14px 0;color:#cbd5e1;font-size:13px;font-weight:800;}
 .bm-table-tools input,.bm-table-tools select,.cm-sales-filters input,.cm-sales-filters select{margin-left:6px;}
-.cm-sales-pager{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;color:#94a3b8;font-size:13px;margin-top:12px;}
-.cm-sales-pager input{width:54px;text-align:center;margin:0 6px;}
-@media(max-width:760px){.bm-table-tools{align-items:stretch}.bm-table-tools label{width:100%;}.cm-sales-pager{display:block}.cm-sales-pager span{display:block;margin-top:8px;}}
+.cm-sales-pager{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;color:#94a3b8;font-size:13px;margin-top:12px;}
+.cm-sales-pager .cm-pagination-controls{display:inline-flex;align-items:center;gap:8px;color:#cbd5e1;}
+.cm-sales-pager .cm-pagination-controls strong{font-weight:700;color:#e5edf7;}
+@media(max-width:760px){.bm-table-tools{align-items:stretch}.bm-table-tools label{width:100%;}.cm-sales-pager{display:block}.cm-sales-pager span{display:block;margin-top:8px;}.cm-sales-pager .cm-pagination-controls{display:inline-flex;}}
 
 /* CompanyManager v1.2.4 — sales cleanup + polished date fields */
 .cm-sales-page{padding-top:20px;}
@@ -6844,4 +6845,65 @@ html body .bm-actions-row .bm-light-btn:hover{
 }
 html[data-cm-data-mode="supabase"] .cm-data-mode-banner[data-no-translate] {
   opacity: 0.55;
+}
+
+/* 113 — global numbered pagination with direct page jump */
+.cm-table-pagination{
+  flex-wrap:wrap;
+  justify-content:space-between;
+}
+.cm-page-numbers{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  flex-wrap:wrap;
+}
+.cm-page-number{
+  min-width:34px!important;
+  height:32px!important;
+  padding:0 10px!important;
+}
+.cm-page-number.active,
+.cm-page-number[aria-current="page"]{
+  color:#f8fafc!important;
+  border-color:rgba(96,165,250,.7)!important;
+  background:rgba(59,130,246,.24)!important;
+  box-shadow:0 0 0 1px rgba(59,130,246,.18) inset, 0 10px 24px rgba(37,99,235,.18)!important;
+}
+.cm-page-ellipsis{
+  color:#94a3b8;
+  padding:0 2px;
+  user-select:none;
+}
+.cm-page-jump{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  margin-left:auto;
+}
+.cm-page-jump label{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  color:#94a3b8;
+  font-size:13px;
+}
+.cm-page-jump-input{
+  width:74px;
+  height:32px;
+  border-radius:10px;
+  border:1px solid rgba(148,163,184,.28);
+  background:rgba(15,23,42,.62);
+  color:#e5edf7;
+  padding:0 10px;
+  outline:none;
+}
+.cm-page-jump-input:focus{
+  border-color:rgba(96,165,250,.65);
+  box-shadow:0 0 0 3px rgba(59,130,246,.16);
+}
+@media(max-width:760px){
+  .cm-table-pagination{align-items:stretch!important;}
+  .cm-table-pagination-controls{width:100%;justify-content:center;}
+  .cm-page-jump{width:100%;justify-content:center;margin-left:0;}
 }

@@ -153,7 +153,7 @@
   }
 
   function pager(from, to, total, page, pages) {
-    return `<div class="cm-sales-pager"><span>${total ? `Pozycje od ${from} do ${to} z ${total} łącznie` : "Pozycji 0 z 0 dostępnych"}</span>${pages ? `<span>Strona <input value="${page}" inputmode="numeric"> z ${pages}</span>` : ""}</div>`;
+    return `<div class="cm-sales-pager cm-pagination-row"><span>${total ? `Pozycje od ${from} do ${to} z ${total} łącznie` : "Pozycje od 0 do 0 z 0 łącznie"}</span><span class="cm-pagination-controls">&lt; <strong>${page} z ${Math.max(pages || 1, 1)}</strong> &gt;</span></div>`;
   }
 
   function getParams() {
