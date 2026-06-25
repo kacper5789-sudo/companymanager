@@ -169,15 +169,17 @@
     const range = dateRange(day);
     const sb = window.cmSupabase;
 
-    const [salesRes, paymentsRes, appointmentsRes, employeesRes, clientsRes] = await Promise.all([
+    const [salesRes, paymentsRes, appointmentsRes, employeesRes, clientsRes, notificationLogsRes, emailRecipientsRes] = await Promise.all([
       sb.from("sales").select("id,company_id,client_id,employee_id,employee_name,appointment_id,total_gross,total_net,payment_status,payment_method,status,created_at,updated_at").eq("company_id", ctx.companyId).gte("created_at", range.startIso).lt("created_at", range.endIso),
       sb.from("payments").select("id,company_id,sale_id,appointment_id,amount,method,status,paid_at,created_at").eq("company_id", ctx.companyId).gte("created_at", range.startIso).lt("created_at", range.endIso),
       sb.from("appointments").select("id,company_id,client_id,client_name,employee_id,employee_name,service_id,service_name,product_id,product_name,total,price,paid_amount,payment_status,payment_method,status,date,starts_at,appointment_datetime,created_at").eq("company_id", ctx.companyId).eq("date", range.dayIso),
       sb.from("profiles").select("id,full_name,email,role,company_id").eq("company_id", ctx.companyId),
-      sb.from("clients").select("id,first_name,last_name,created_at,company_id").eq("company_id", ctx.companyId).gte("created_at", range.startIso).lt("created_at", range.endIso)
+      sb.from("clients").select("id,first_name,last_name,created_at,company_id").eq("company_id", ctx.companyId).gte("created_at", range.startIso).lt("created_at", range.endIso),
+      sb.from("notification_logs").select("id,company_id,channel,type,status,provider_message_id,sent_at,created_at").eq("company_id", ctx.companyId).gte("created_at", range.startIso).lt("created_at", range.endIso),
+      sb.from("marketing_campaign_recipients").select("id,channel,status,sent_at,created_at").eq("channel", "email").eq("status", "sent").gte("sent_at", range.startIso).lt("sent_at", range.endIso)
     ]);
 
-    const errors = [salesRes.error, paymentsRes.error, appointmentsRes.error, employeesRes.error, clientsRes.error].filter(Boolean);
+    const errors = [salesRes.error, paymentsRes.error, appointmentsRes.error, employeesRes.error, clientsRes.error, notificationLogsRes.error, emailRecipientsRes.error].filter(Boolean);
     if (errors.length) throw new Error(errors.map(e => e.message).join(" | "));
 
     const inactiveSaleStatuses = ["void", "deleted", "usunięte", "usuniete", "cancelled", "canceled", "anulowane", "anulowana"];
@@ -200,7 +202,16 @@
       if (p.sale_id && !activeSaleIds.has(p.sale_id)) return false;
       return true;
     });
-    return { sales, payments, appointments: appointmentsRes.data || [], employees: employeesRes.data || [], clients: clientsRes.data || [], saleItems };
+    return {
+      sales,
+      payments,
+      appointments: appointmentsRes.data || [],
+      employees: employeesRes.data || [],
+      clients: clientsRes.data || [],
+      saleItems,
+      notificationLogs: notificationLogsRes.data || [],
+      emailRecipients: emailRecipientsRes.data || []
+    };
   }
 
   function buildReport(data) {
@@ -210,6 +221,8 @@
     const employees = data.employees || [];
     const saleItems = data.saleItems || [];
     const clients = data.clients || [];
+    const notificationLogs = data.notificationLogs || [];
+    const emailRecipients = data.emailRecipients || [];
     const saleMap = new Map(sales.map(s => [s.id, s]));
     const employeeMap = new Map(employees.map(e => [e.id, e]));
     const employeeNameKey = (value) => String(value || "").trim().toLowerCase().replace(/\s+/g, " ");
@@ -291,6 +304,12 @@
       .filter(row => row.visits || row.serviceCount || row.productCount || row.passCount)
       .sort((a, b) => a.name.localeCompare(b.name, "pl"));
 
+    const sentLogs = notificationLogs.filter((log) => String(log.status || "").toLowerCase() === "sent");
+    const smsSent = sentLogs.filter((log) => String(log.channel || "").toLowerCase() === "sms").length;
+    const emailSentFromLogs = sentLogs.filter((log) => String(log.channel || "").toLowerCase() === "email").length;
+    const emailSentFromMarketing = emailRecipients.filter((row) => String(row.status || "").toLowerCase() === "sent").length;
+    const emailSent = emailSentFromLogs + emailSentFromMarketing;
+
     return {
       plannedVisits: appointments.filter(isPlanned).length,
       finishedVisits: appointments.filter(isFinished).length,
@@ -307,7 +326,9 @@
       employeeRows,
       serviceItems,
       productItems,
-      passItems
+      passItems,
+      smsSent,
+      emailSent
     };
   }
 
@@ -393,7 +414,7 @@
         <section class="cm-period-section"><h3>Produkty</h3><p>Sprzedane produkty w tym dniu: <b>${int(report.productItems.length)}</b></p>${productsTable}</section>
         <section class="cm-period-section"><h3>Karnety</h3><p>Sprzedane karnety w tym dniu: <b>${int(report.passItems.length)}</b></p>${passesTable}</section>
         <section class="cm-period-section"><h3>Pracownicy</h3>${employeeTable}</section>
-        <section class="cm-period-section cm-comm-grid"><div><h3>SMS</h3><p>Wysłane SMS</p><b>0</b></div><div><h3>Email</h3><p>Wysłane EMAIL</p><b>0</b></div></section>
+        <section class="cm-period-section cm-comm-grid"><div><h3>SMS</h3><p>Wysłane SMS</p><b>${int(report.smsSent)}</b></div><div><h3>Email</h3><p>Wysłane EMAIL</p><b>${int(report.emailSent)}</b></div></section>
       </section>`;
 
     const move = (delta) => {
@@ -438,6 +459,8 @@
     rows.push(["Wizyty zaplanowane", report.plannedVisits]);
     rows.push(["Wizyty zakończone", report.finishedVisits]);
     rows.push(["Wizyty odwołane", report.cancelledVisits]);
+    rows.push(["SMS wysłane", report.smsSent || 0]);
+    rows.push(["Email wysłane", report.emailSent || 0]);
     rows.push([]);
     rows.push(["Usługi", "L.szt.", "Wartość"]);
     report.serviceRows.forEach(r => rows.push([r.name, r.count, r.value.toFixed(2)]));
