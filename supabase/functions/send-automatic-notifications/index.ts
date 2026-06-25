@@ -1,6 +1,6 @@
 // CompanyManager — send-automatic-notifications Edge Function
 // Automatyczne EMAIL/SMS: 24h przed wizytą, po dodaniu wizyty, po zakończeniu wizyty, urodziny.
-// EMAIL przez Resend, SMS przez SMSAPI. Secrets: RESEND_API_KEY, SMSAPI_TOKEN, SUPABASE_SERVICE_ROLE_KEY.
+// EMAIL przez Resend, SMS przez SMSPLANET. Secrets: RESEND_API_KEY, SMS_PROVIDER=smsplanet, SMS_PROVIDER_TOKEN, SUPABASE_SERVICE_ROLE_KEY.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.4";
 
@@ -12,9 +12,11 @@ const corsHeaders = {
 
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY") || "";
 const FROM_EMAIL = Deno.env.get("EMAIL_FROM_ADDRESS") || "no-reply@companymanager.com.pl";
-const SMSAPI_TOKEN = Deno.env.get("SMSAPI_TOKEN") || "";
-const SMSAPI_URL = Deno.env.get("SMSAPI_URL") || "https://api.smsapi.pl/sms.do";
-const SMSAPI_FROM = Deno.env.get("SMSAPI_FROM") || "";
+const SMS_PROVIDER = String(Deno.env.get("SMS_PROVIDER") || "smsplanet").toLowerCase();
+const SMS_PROVIDER_TOKEN = Deno.env.get("SMS_PROVIDER_TOKEN") || "";
+const SMS_PROVIDER_URL = Deno.env.get("SMS_PROVIDER_URL") || Deno.env.get("SMSPLANET_URL") || "https://api2.smsplanet.pl/sms";
+const SMS_FALLBACK_FROM = Deno.env.get("SMS_FALLBACK_FROM") || Deno.env.get("SMS_FALLBACK_FROM") || "";
+const SMS_CLEAR_POLISH = !["0", "false", "no", "nie"].includes(String(Deno.env.get("SMS_CLEAR_POLISH") || "true").toLowerCase());
 const SMS_DRY_RUN = ["1", "true", "yes", "tak"].includes(String(Deno.env.get("SMS_DRY_RUN") || "").toLowerCase());
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") || "";
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || Deno.env.get("SUPABASE_SERVICE_KEY") || "";
@@ -148,31 +150,33 @@ async function sendWithResend(input: { to: string; fromName: string; subject: st
   return payload;
 }
 
-async function sendWithSmsApi(input: { to: string; fromName: string; body: string }) {
+async function sendWithSmsProvider(input: { to: string; fromName: string; body: string }) {
   const to = normalizePhone(input.to);
   if (!isValidPhone(to)) throw new Error("Niepoprawny numer telefonu");
-  const from = sanitizeSmsSender(input.fromName, SMSAPI_FROM);
+  const from = sanitizeSmsSender(input.fromName, SMS_FALLBACK_FROM);
   const message = normalizeText(input.body).slice(0, 918);
   if (!message) throw new Error("Pusta treść SMS");
-  if (SMS_DRY_RUN) return { dry_run: true, id: `dry_${Date.now()}`, to, from };
-  if (!SMSAPI_TOKEN) throw new Error("Missing SMSAPI_TOKEN secret");
+  if (SMS_DRY_RUN) return { dry_run: true, messageId: `dry_${Date.now()}`, to, from, provider: SMS_PROVIDER };
+  if (!SMS_PROVIDER_TOKEN) throw new Error("Missing SMS_PROVIDER_TOKEN secret");
+  if (SMS_PROVIDER !== "smsplanet") throw new Error(`Unsupported SMS_PROVIDER: ${SMS_PROVIDER}`);
+  if (!from) throw new Error("Brak nadawcy SMS. Ustaw nadawcę w Panelu firmy i zatwierdź go u operatora SMSPLANET.");
 
   const body = new URLSearchParams();
+  body.set("from", from);
   body.set("to", to.replace(/^\+/, ""));
-  body.set("message", message);
-  body.set("format", "json");
-  if (from) body.set("from", from);
+  body.set("msg", message);
+  if (SMS_CLEAR_POLISH) body.set("clear_polish", "1");
 
-  const response = await fetch(SMSAPI_URL, {
+  const response = await fetch(SMS_PROVIDER_URL, {
     method: "POST",
     headers: {
-      Authorization: `Bearer ${SMSAPI_TOKEN}`,
+      Authorization: `Bearer ${SMS_PROVIDER_TOKEN}`,
       "Content-Type": "application/x-www-form-urlencoded",
     },
     body,
   });
   const payload = await response.json().catch(async () => ({ raw: await response.text().catch(() => "") }));
-  if (!response.ok || payload?.error) throw new Error(payload?.message || payload?.error || `SMSAPI HTTP ${response.status}`);
+  if (!response.ok || payload?.errorMsg || payload?.errorCode) throw new Error(payload?.errorMsg || payload?.message || payload?.error || `SMSPLANET HTTP ${response.status}`);
   return payload;
 }
 
@@ -251,27 +255,27 @@ function getSmsSettings(company: AnyRow, type: string) {
   if (type === "visit_24") {
     return {
       enabled: !!company.visit_sms_24,
-      sender: company.visit_sms_sender || company.sms_sender || company.message_sender || SMSAPI_FROM || "",
+      sender: company.visit_sms_sender || company.sms_sender || company.message_sender || SMS_FALLBACK_FROM || "",
       body: company.visit_sms_template || "Cześć {klient}, przypominamy o wizycie {data} o {godzina}. {firma}",
     };
   }
   if (type === "after_add") {
     return {
       enabled: !!company.after_add_sms,
-      sender: company.after_add_sms_sender || company.sms_sender || company.message_sender || SMSAPI_FROM || "",
+      sender: company.after_add_sms_sender || company.sms_sender || company.message_sender || SMS_FALLBACK_FROM || "",
       body: company.after_add_sms_template || "Cześć {klient}, Twoja wizyta została zapisana na {data} o {godzina}. {firma}",
     };
   }
   if (type === "after_visit") {
     return {
       enabled: !!company.after_visit_sms,
-      sender: company.after_visit_sms_sender || company.sms_sender || company.message_sender || SMSAPI_FROM || "",
+      sender: company.after_visit_sms_sender || company.sms_sender || company.message_sender || SMS_FALLBACK_FROM || "",
       body: company.after_visit_sms_template || "Cześć {klient}, dziękujemy za wizytę. {firma}",
     };
   }
   return {
     enabled: !!company.birthday_sms,
-    sender: company.birthday_sms_sender || company.sms_sender || company.message_sender || SMSAPI_FROM || "",
+    sender: company.birthday_sms_sender || company.sms_sender || company.message_sender || SMS_FALLBACK_FROM || "",
     body: company.birthday_sms_template || "Cześć {klient}, życzymy wszystkiego najlepszego! {firma}",
   };
 }
@@ -373,7 +377,7 @@ async function sendAutomaticSms(supabase: any, company: AnyRow, client: AnyRow, 
       sender_name: settings.sender,
       content: settings.body,
       status: "skipped",
-      provider: SMS_DRY_RUN ? "smsapi_dry_run" : "smsapi",
+      provider: SMS_DRY_RUN ? `${SMS_PROVIDER}_dry_run` : SMS_PROVIDER,
       error_message: "Brak poprawnego numeru telefonu",
       dedupe_key: dedupeKey,
     });
@@ -391,8 +395,8 @@ async function sendAutomaticSms(supabase: any, company: AnyRow, client: AnyRow, 
   const content = applyVariables(settings.body, variables).slice(0, 918);
 
   try {
-    const result = await sendWithSmsApi({ to, fromName: settings.sender, body: content });
-    const providerId = result?.list?.[0]?.id || result?.id || result?.message_id || null;
+    const result = await sendWithSmsProvider({ to, fromName: settings.sender, body: content });
+    const providerId = result?.messageId || result?.list?.[0]?.id || result?.id || result?.message_id || null;
     await logNotification(supabase, {
       company_id: company.id,
       client_id: client?.id,
@@ -404,7 +408,7 @@ async function sendAutomaticSms(supabase: any, company: AnyRow, client: AnyRow, 
       sender_name: settings.sender,
       content,
       status: "sent",
-      provider: SMS_DRY_RUN ? "smsapi_dry_run" : "smsapi",
+      provider: SMS_DRY_RUN ? `${SMS_PROVIDER}_dry_run` : SMS_PROVIDER,
       provider_message_id: providerId,
       dedupe_key: dedupeKey,
       sent_at: new Date().toISOString(),
@@ -423,7 +427,7 @@ async function sendAutomaticSms(supabase: any, company: AnyRow, client: AnyRow, 
       sender_name: settings.sender,
       content,
       status: "failed",
-      provider: SMS_DRY_RUN ? "smsapi_dry_run" : "smsapi",
+      provider: SMS_DRY_RUN ? `${SMS_PROVIDER}_dry_run` : SMS_PROVIDER,
       error_message: msg,
       dedupe_key: dedupeKey,
     });
@@ -568,7 +572,7 @@ Deno.serve(async (req) => {
     if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
     if (req.method !== "POST") return jsonResponse({ error: "Method not allowed" }, 405);
 
-    // RESEND_API_KEY jest wymagany tylko dla aktywnych emaili. SMS używa SMSAPI_TOKEN.
+    // RESEND_API_KEY jest wymagany tylko dla aktywnych emaili. SMS używa SMS_PROVIDER_TOKEN.
     if (!SUPABASE_URL) return jsonResponse({ error: "Missing SUPABASE_URL environment" }, 500);
 
     if (CRON_SECRET) {

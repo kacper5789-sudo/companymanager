@@ -1,6 +1,6 @@
 // CompanyManager — send-marketing-sms Edge Function
-// Ręczna wysyłka kampanii SMS przez SMSAPI.
-// Secrets wymagane: SMSAPI_TOKEN. Opcjonalnie: SMSAPI_FROM, SMSAPI_URL, SMS_DRY_RUN=true.
+// Ręczna wysyłka kampanii SMS przez wybranego providera.
+// Domyślnie: SMSPLANET. Secrets: SMS_PROVIDER=smsplanet, SMS_PROVIDER_TOKEN. Opcjonalnie: SMS_PROVIDER_URL, SMS_DRY_RUN=true, SMS_CLEAR_POLISH=true.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.4";
 
@@ -12,9 +12,11 @@ const corsHeaders = {
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") || "";
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || Deno.env.get("SUPABASE_SERVICE_KEY") || "";
-const SMSAPI_TOKEN = Deno.env.get("SMSAPI_TOKEN") || "";
-const SMSAPI_URL = Deno.env.get("SMSAPI_URL") || "https://api.smsapi.pl/sms.do";
-const SMSAPI_FROM = Deno.env.get("SMSAPI_FROM") || "";
+const SMS_PROVIDER = String(Deno.env.get("SMS_PROVIDER") || "smsplanet").toLowerCase();
+const SMS_PROVIDER_TOKEN = Deno.env.get("SMS_PROVIDER_TOKEN") || "";
+const SMS_PROVIDER_URL = Deno.env.get("SMS_PROVIDER_URL") || Deno.env.get("SMSPLANET_URL") || "https://api2.smsplanet.pl/sms";
+const SMS_FALLBACK_FROM = Deno.env.get("SMS_FALLBACK_FROM") || "";
+const SMS_CLEAR_POLISH = !["0", "false", "no", "nie"].includes(String(Deno.env.get("SMS_CLEAR_POLISH") || "true").toLowerCase());
 const SMS_DRY_RUN = ["1", "true", "yes", "tak"].includes(String(Deno.env.get("SMS_DRY_RUN") || "").toLowerCase());
 
 type AnyRow = Record<string, any>;
@@ -48,32 +50,34 @@ function isValidPhone(phone: string) {
 async function sendSms(input: { to: string; from: string; message: string }) {
   const to = normalizePhone(input.to);
   if (!isValidPhone(to)) throw new Error("Niepoprawny numer telefonu");
-  const from = normalizeSmsSender(input.from, SMSAPI_FROM);
+  const from = normalizeSmsSender(input.from, SMS_FALLBACK_FROM);
   const message = normalizeText(input.message).slice(0, 918);
   if (!message) throw new Error("Pusta treść SMS");
 
   if (SMS_DRY_RUN) {
-    return { dry_run: true, id: `dry_${Date.now()}`, to, from, points: 0 };
+    return { dry_run: true, messageId: `dry_${Date.now()}`, to, from, provider: SMS_PROVIDER, points: 0 };
   }
-  if (!SMSAPI_TOKEN) throw new Error("Missing SMSAPI_TOKEN secret");
+  if (!SMS_PROVIDER_TOKEN) throw new Error("Missing SMS_PROVIDER_TOKEN secret");
+  if (SMS_PROVIDER !== "smsplanet") throw new Error(`Unsupported SMS_PROVIDER: ${SMS_PROVIDER}`);
+  if (!from) throw new Error("Brak nadawcy SMS. Ustaw nadawcę w Panelu firmy i zatwierdź go u operatora SMSPLANET.");
 
   const body = new URLSearchParams();
+  body.set("from", from);
   body.set("to", to.replace(/^\+/, ""));
-  body.set("message", message);
-  body.set("format", "json");
-  if (from) body.set("from", from);
+  body.set("msg", message);
+  if (SMS_CLEAR_POLISH) body.set("clear_polish", "1");
 
-  const response = await fetch(SMSAPI_URL, {
+  const response = await fetch(SMS_PROVIDER_URL, {
     method: "POST",
     headers: {
-      Authorization: `Bearer ${SMSAPI_TOKEN}`,
+      Authorization: `Bearer ${SMS_PROVIDER_TOKEN}`,
       "Content-Type": "application/x-www-form-urlencoded",
     },
     body,
   });
   const payload = await response.json().catch(async () => ({ raw: await response.text().catch(() => "") }));
-  if (!response.ok || payload?.error) {
-    throw new Error(payload?.message || payload?.error || `SMSAPI HTTP ${response.status}`);
+  if (!response.ok || payload?.errorMsg || payload?.errorCode) {
+    throw new Error(payload?.errorMsg || payload?.message || payload?.error || `SMSPLANET HTTP ${response.status}`);
   }
   return payload;
 }
@@ -97,7 +101,7 @@ async function logNotification(supabase: any, row: AnyRow) {
     sender_name: row.sender_name || null,
     content: row.content || null,
     status: row.status || "pending",
-    provider: SMS_DRY_RUN ? "smsapi_dry_run" : "smsapi",
+    provider: SMS_DRY_RUN ? `${SMS_PROVIDER}_dry_run` : SMS_PROVIDER,
     provider_message_id: row.provider_message_id || null,
     error_message: row.error_message || null,
     dedupe_key: row.dedupe_key || null,
@@ -159,7 +163,7 @@ Deno.serve(async (req) => {
       }
       try {
         const result = await sendSms({ to: phone, from: campaign.sender_name, message: campaign.body });
-        const providerId = result?.list?.[0]?.id || result?.id || result?.message_id || null;
+        const providerId = result?.messageId || result?.list?.[0]?.id || result?.id || result?.message_id || null;
         sent += 1;
         await updateRecipient(supabase, recipient.id, { status: "sent", sent_at: new Date().toISOString(), provider_message_id: providerId, error_message: null });
         await logNotification(supabase, { company_id: campaign.company_id, client_id: recipient.client_id, recipient: phone, recipient_name: recipient.recipient_name, sender_name: campaign.sender_name, content: campaign.body, status: "sent", provider_message_id: providerId, dedupe_key: dedupeKey, sent_at: new Date().toISOString() });
@@ -174,7 +178,7 @@ Deno.serve(async (req) => {
     const nextStatus = failed > 0 && sent === 0 ? "ready_to_send" : "sent";
     await supabase.from("marketing_campaigns").update({ status: nextStatus, sent_at: sent > 0 ? new Date().toISOString() : null, updated_at: new Date().toISOString(), last_error: failed > 0 ? `${failed} błędów wysyłki SMS` : null }).eq("id", campaignId);
 
-    return jsonResponse({ ok: true, provider: SMS_DRY_RUN ? "smsapi_dry_run" : "smsapi", sent, failed, skipped });
+    return jsonResponse({ ok: true, provider: SMS_DRY_RUN ? `${SMS_PROVIDER}_dry_run` : SMS_PROVIDER, sent, failed, skipped });
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     const stack = error instanceof Error ? error.stack : undefined;

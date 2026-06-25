@@ -1915,7 +1915,7 @@ document.addEventListener('DOMContentLoaded', () => {
     '300 PLN netto':'300 PLN net',
     '500 PLN netto':'500 PLN net',
     '0,10 PLN netto / szt.':'0.10 PLN net / item',
-    '0,40 PLN netto / szt.':'0.40 PLN net / item',
+    '0,75 PLN netto / szt.':'0.75 PLN net / item',
     'SMS Polska:':'SMS Poland:',
     'SMS zagranica:':'International SMS:',
     'Do cen należy doliczyć 23% VAT.':'23% VAT must be added to the prices.',

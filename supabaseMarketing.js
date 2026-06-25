@@ -1,5 +1,5 @@
 // CompanyManager — 098 Marketing EMAIL/SMS Supabase + real SMS
-// Marketing zapisuje kampanie i odbiorców do Supabase oraz odpala Edge Functions: EMAIL przez Resend, SMS przez SMSAPI.
+// Marketing zapisuje kampanie i odbiorców do Supabase oraz odpala Edge Functions: EMAIL przez Resend, SMS przez SMSPLANET.
 (function () {
   const PAGE = "marketing";
 
@@ -217,7 +217,7 @@
 
     area.innerHTML = `<section class="bm-page-card marketing-module">
       <div class="bm-page-head customers-head">
-        <div><h2>Marketing</h2><p>Email/SMS podłączone do Supabase. Email wysyłamy przez Resend, SMS przez Edge Function send-marketing-sms/SMSAPI.</p></div>
+        <div><h2>Marketing</h2><p>Email/SMS podłączone do Supabase. Email wysyłamy przez Resend, SMS przez Edge Function send-marketing-sms/SMSPLANET.</p></div>
         <div class="bm-actions-row"><button id="showMarketingSms" type="button">SMS</button><button id="showMarketingEmail" type="button" class="bm-primary-btn">Email</button><button id="showDeleteCampaign" type="button" class="bm-danger-btn">Usuń</button></div>
       </div>
       <div class="bm-table-toolbar"><label>Szukaj: <input id="marketingSearch" type="search" placeholder="Szukaj kampanii" value="${escapeHtml(new URLSearchParams(location.search).get("q") || "")}"></label></div>

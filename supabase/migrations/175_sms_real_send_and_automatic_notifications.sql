@@ -1,6 +1,6 @@
 -- COMPANYMANAGER — 098 SMS REAL SEND + AUTOMATIC SMS
 -- Ręczne SMS-y z Marketingu oraz automatyczne SMS-y korzystają z Edge Functions.
--- Provider: SMSAPI przez secret SMSAPI_TOKEN.
+-- Provider: SMSPLANET przez secret SMS_PROVIDER_TOKEN.
 
 create extension if not exists pgcrypto;
 
