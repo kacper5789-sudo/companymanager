@@ -463,7 +463,7 @@
       <p class="cm-pass-status-help"><strong>Aktualne</strong> = można używać. <strong>Zrealizowane</strong> = wykorzystane do zera. <strong>Po terminie</strong> = minęła data ważności.</p>`;
 
     area.innerHTML = `<section class="bm-page-card passes-module">
-      <div class="bm-page-head customers-head"><h2>Karnety</h2><div class="bm-actions-row">${allowAdd ? `<button id="showTemplatePass" type="button" class="bm-primary-btn">Dodaj typ karnetu</button><button id="showAddPass" type="button" class="bm-primary-btn">Sprzedaj karnet</button>` : ""}${allowDelete ? `<button id="showDeletePass" type="button" class="bm-danger-btn">Usuń</button>` : ""}</div></div>
+      <div class="bm-page-head customers-head"><h2>Karnety</h2><div class="bm-actions-row">${allowAdd ? `<button id="showTemplatePass" type="button" class="bm-light-btn">Dodaj typ karnetu</button><button id="showAddPass" type="button" class="bm-light-btn">Sprzedaj karnet</button>` : ""}${allowDelete ? `<button id="showDeletePass" type="button" class="bm-danger-btn">Usuń</button>` : ""}</div></div>
       ${filterTabs}
       <section id="templatePassPanel" class="bm-page-card bm-inner-card" hidden>
         <div class="bm-page-head customers-head"><h2>Dodaj typ karnetu do puli</h2></div>

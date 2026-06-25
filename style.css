@@ -6767,3 +6767,45 @@ button.bm-primary-btn:hover{filter:brightness(1.08);box-shadow:0 0 18px rgba(56,
   margin-left:auto !important;
   margin-right:auto !important;
 }
+
+
+/* 102 — Marketing/notifications UX cleanup */
+html body .bm-actions-row button.bm-light-btn,
+html body button.bm-light-btn,
+html body .bm-actions-row .bm-light-btn{
+  border:1px solid rgba(148,163,184,.34)!important;
+  background:rgba(15,23,42,.42)!important;
+  color:#e5f0ff!important;
+  box-shadow:none!important;
+  border-radius:14px!important;
+}
+html body .bm-actions-row button.bm-light-btn:hover,
+html body button.bm-light-btn:hover,
+html body .bm-actions-row .bm-light-btn:hover{
+  background:rgba(56,189,248,.13)!important;
+  border-color:rgba(56,189,248,.45)!important;
+  color:#fff!important;
+}
+.cm-marketing-flyout{
+  width:min(920px, calc(100% - 32px));
+  margin:24px auto!important;
+}
+.cm-notification-toggle-block{
+  display:grid;
+  gap:10px;
+  padding:10px 0;
+  border-bottom:1px solid rgba(148,163,184,.12);
+}
+.cm-notification-toggle-block:last-child{border-bottom:0;}
+.cm-notification-fields{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:14px;
+  padding:14px;
+  border:1px solid rgba(148,163,184,.18);
+  background:rgba(15,23,42,.30);
+  border-radius:16px;
+}
+.cm-notification-fields label.cm-full-field,
+.cm-notification-fields label:has(textarea){grid-column:1/-1;}
+@media(max-width:760px){.cm-notification-fields{grid-template-columns:1fr}.cm-marketing-flyout{width:100%;}}

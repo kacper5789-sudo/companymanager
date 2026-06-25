@@ -227,42 +227,47 @@
     </section>`;
   }
 
+  function notificationBlock(kind, enabledName, enabledLabel, fieldsHtml, isOpen) {
+    return `<div class="cm-notification-toggle-block">
+      ${check(enabledLabel, enabledName, isOpen)}
+      <div class="cm-notification-fields cm-full-field" data-notification-fields-for="${escapeHtml(enabledName)}" ${isOpen ? "" : "hidden"}>${fieldsHtml}</div>
+    </div>`;
+  }
+
   function renderNotifications(company) {
+    const smsSender = (key) => val(company, key, "sms_sender", "message_sender");
+    const emailSender = (key) => val(company, key, "name", "company_email", "email");
     return `<section class="bm-page-card cm-notification-settings-page" id="notifications">
-      <div class="bm-page-head"><h2>Ustawienia powiadomień</h2></div>
+      <div class="bm-page-head"><h2>Ustawienia powiadomień</h2><p>Treść i nadawca pokazują się dopiero po zaznaczeniu danego automatu.</p></div>
       <form class="bm-form-grid cm-company-panel-form" data-company-panel-form="notifications">
         <fieldset class="cm-notification-box"><legend>Powiadomienia automatyczne SMS</legend>
-          ${check("powiadamiaj o wizytach przez SMS - 24h przed wizytą", "visit_sms_24", checked(company, "visit_sms_24"))}
-          ${field("Nadawca SMS", "visit_sms_sender", val(company, "visit_sms_sender", "sms_sender", "message_sender"))}
-          ${textarea("Treść SMS", "visit_sms_template", val(company, "visit_sms_template"), 5)}
-          ${check("wyślij życzenia urodzinowe przez SMS", "birthday_sms", checked(company, "birthday_sms"))}
-          ${field("Nadawca SMS", "birthday_sms_sender", val(company, "birthday_sms_sender", "sms_sender", "message_sender"))}
-          ${textarea("Treść SMS z życzeniami", "birthday_sms_template", val(company, "birthday_sms_template"), 5)}
-          ${check("wyślij SMS po dodaniu wizyty", "after_add_sms", checked(company, "after_add_sms"))}
-          ${field("Nadawca SMS", "after_add_sms_sender", val(company, "after_add_sms_sender", "sms_sender", "message_sender"))}
-          ${textarea("Treść SMS po dodaniu wizyty", "after_add_sms_template", val(company, "after_add_sms_template"), 5)}
-          ${check("wyślij SMS po wizycie", "after_visit_sms", checked(company, "after_visit_sms"))}
-          ${field("Nadawca SMS", "after_visit_sms_sender", val(company, "after_visit_sms_sender", "sms_sender", "message_sender"))}
-          ${textarea("Treść SMS po wizycie", "after_visit_sms_template", val(company, "after_visit_sms_template"), 5)}
+          ${notificationBlock("sms", "visit_sms_24", "powiadamiaj o wizytach przez SMS - 24h przed wizytą",
+            `${field("Nadawca SMS", "visit_sms_sender", smsSender("visit_sms_sender"))}${textarea("Treść SMS", "visit_sms_template", val(company, "visit_sms_template"), 5)}`,
+            checked(company, "visit_sms_24"))}
+          ${notificationBlock("sms", "birthday_sms", "wyślij życzenia urodzinowe przez SMS",
+            `${field("Nadawca SMS", "birthday_sms_sender", smsSender("birthday_sms_sender"))}${textarea("Treść SMS z życzeniami", "birthday_sms_template", val(company, "birthday_sms_template"), 5)}`,
+            checked(company, "birthday_sms"))}
+          ${notificationBlock("sms", "after_add_sms", "wyślij SMS po dodaniu wizyty",
+            `${field("Nadawca SMS", "after_add_sms_sender", smsSender("after_add_sms_sender"))}${textarea("Treść SMS po dodaniu wizyty", "after_add_sms_template", val(company, "after_add_sms_template"), 5)}`,
+            checked(company, "after_add_sms"))}
+          ${notificationBlock("sms", "after_visit_sms", "wyślij SMS po wizycie",
+            `${field("Nadawca SMS", "after_visit_sms_sender", smsSender("after_visit_sms_sender"))}${textarea("Treść SMS po wizycie", "after_visit_sms_template", val(company, "after_visit_sms_template"), 5)}`,
+            checked(company, "after_visit_sms"))}
         </fieldset>
         <fieldset class="cm-notification-box"><legend>Powiadomienia automatyczne EMAIL</legend>
-          <p class="bm-muted cm-full-field">Pole „Nadawca email” jest nazwą widoczną u klienta, np. „PWC Studio”. Techniczny adres wysyłki będzie podpięty później przez CompanyManager.</p>
-          ${check("powiadamiaj o wizytach przez EMAIL - 24h przed wizytą", "visit_email_24", checked(company, "visit_email_24"))}
-          ${field("Nadawca email", "visit_email_sender", val(company, "visit_email_sender", "name", "company_email", "email"), "text", "maxlength=50 placeholder='np. Nazwa firmy'")}
-          ${field("Temat email", "visit_email_subject", val(company, "visit_email_subject") || "Przypomnienie o wizycie", "text", "maxlength=120")}
-          ${textarea("Treść email", "visit_email_template", val(company, "visit_email_template"), 6)}
-          ${check("wyślij życzenia urodzinowe przez EMAIL", "birthday_email", checked(company, "birthday_email"))}
-          ${field("Nadawca email", "birthday_email_sender", val(company, "birthday_email_sender", "name", "company_email", "email"), "text", "maxlength=50 placeholder='np. Nazwa firmy'")}
-          ${field("Temat email", "birthday_email_subject", val(company, "birthday_email_subject") || "Wszystkiego najlepszego", "text", "maxlength=120")}
-          ${textarea("Treść email z życzeniami", "birthday_email_template", val(company, "birthday_email_template"), 6)}
-          ${check("wyślij EMAIL po dodaniu wizyty", "after_add_email", checked(company, "after_add_email"))}
-          ${field("Nadawca email", "after_add_email_sender", val(company, "after_add_email_sender", "name", "company_email", "email"), "text", "maxlength=50 placeholder='np. Nazwa firmy'")}
-          ${field("Temat email", "after_add_email_subject", val(company, "after_add_email_subject") || "Potwierdzenie rezerwacji", "text", "maxlength=120")}
-          ${textarea("Treść email po dodaniu wizyty", "after_add_email_template", val(company, "after_add_email_template"), 6)}
-          ${check("wyślij EMAIL po wizycie", "after_visit_email", checked(company, "after_visit_email"))}
-          ${field("Nadawca email", "after_visit_email_sender", val(company, "after_visit_email_sender", "name", "company_email", "email"), "text", "maxlength=50 placeholder='np. Nazwa firmy'")}
-          ${field("Temat email", "after_visit_email_subject", val(company, "after_visit_email_subject") || "Dziękujemy za wizytę", "text", "maxlength=120")}
-          ${textarea("Treść email po wizycie", "after_visit_email_template", val(company, "after_visit_email_template"), 6)}
+          <p class="bm-muted cm-full-field">Pole „Nadawca email” jest nazwą widoczną u klienta, np. „PWC Studio”. Techniczny adres wysyłki obsługuje CompanyManager.</p>
+          ${notificationBlock("email", "visit_email_24", "powiadamiaj o wizytach przez EMAIL - 24h przed wizytą",
+            `${field("Nadawca email", "visit_email_sender", emailSender("visit_email_sender"), "text", "maxlength=50 placeholder='np. Nazwa firmy'")}${field("Temat email", "visit_email_subject", val(company, "visit_email_subject") || "Przypomnienie o wizycie", "text", "maxlength=120")}${textarea("Treść email", "visit_email_template", val(company, "visit_email_template"), 6)}`,
+            checked(company, "visit_email_24"))}
+          ${notificationBlock("email", "birthday_email", "wyślij życzenia urodzinowe przez EMAIL",
+            `${field("Nadawca email", "birthday_email_sender", emailSender("birthday_email_sender"), "text", "maxlength=50 placeholder='np. Nazwa firmy'")}${field("Temat email", "birthday_email_subject", val(company, "birthday_email_subject") || "Wszystkiego najlepszego", "text", "maxlength=120")}${textarea("Treść email z życzeniami", "birthday_email_template", val(company, "birthday_email_template"), 6)}`,
+            checked(company, "birthday_email"))}
+          ${notificationBlock("email", "after_add_email", "wyślij EMAIL po dodaniu wizyty",
+            `${field("Nadawca email", "after_add_email_sender", emailSender("after_add_email_sender"), "text", "maxlength=50 placeholder='np. Nazwa firmy'")}${field("Temat email", "after_add_email_subject", val(company, "after_add_email_subject") || "Potwierdzenie rezerwacji", "text", "maxlength=120")}${textarea("Treść email po dodaniu wizyty", "after_add_email_template", val(company, "after_add_email_template"), 6)}`,
+            checked(company, "after_add_email"))}
+          ${notificationBlock("email", "after_visit_email", "wyślij EMAIL po wizycie",
+            `${field("Nadawca email", "after_visit_email_sender", emailSender("after_visit_email_sender"), "text", "maxlength=50 placeholder='np. Nazwa firmy'")}${field("Temat email", "after_visit_email_subject", val(company, "after_visit_email_subject") || "Dziękujemy za wizytę", "text", "maxlength=120")}${textarea("Treść email po wizycie", "after_visit_email_template", val(company, "after_visit_email_template"), 6)}`,
+            checked(company, "after_visit_email"))}
         </fieldset>
         <div class="cm-form-actions cm-full-field"><button type="submit" class="bm-primary-btn">Zapisz powiadomienia</button></div>
       </form>
@@ -373,8 +378,19 @@
     });
   }
 
+  function bindNotificationToggles(root) {
+    $$('[data-notification-fields-for]', root).forEach((fields) => {
+      const name = fields.getAttribute('data-notification-fields-for');
+      const input = root.querySelector(`input[type="checkbox"][name="${name}"]`);
+      const sync = () => { fields.hidden = !input?.checked; };
+      sync();
+      input?.addEventListener('change', sync);
+    });
+  }
+
   function bindForms(root, state) {
     bindPaymentMethodButtons(root);
+    bindNotificationToggles(root);
     $$('[data-company-panel-form]', root).forEach((form) => {
       form.addEventListener("submit", async (event) => {
         event.preventDefault();
