@@ -1260,7 +1260,21 @@ document.addEventListener('DOMContentLoaded', () => {
   let cmCalendarDate = new Date(CM_TODAY.getFullYear(), CM_TODAY.getMonth(), 1);
   let cmYearStart = CM_TODAY.getFullYear();
 
-  const formatDisplayDate = (date) => `${date.getDate()} ${monthNamesPLGenitive[date.getMonth()]} ${date.getFullYear()}`;
+  const getCmUiLocale = () => normalizeCmLanguage((window.cmGetCompanySettings ? window.cmGetCompanySettings().language : getStoredCmLanguage?.()) || 'pl') === 'en-gb' ? 'en-GB' : 'pl-PL';
+  const formatDisplayDate = (date) => {
+    const settings = window.cmGetCompanySettings ? window.cmGetCompanySettings() : { timezone:'Europe/Warsaw' };
+    try {
+      return new Intl.DateTimeFormat(getCmUiLocale(), { timeZone: settings.timezone || 'Europe/Warsaw', day:'numeric', month:'long', year:'numeric' }).format(date);
+    } catch (_) {
+      return `${date.getDate()} ${monthNamesPLGenitive[date.getMonth()]} ${date.getFullYear()}`;
+    }
+  };
+  const getMonthTitle = (date) => {
+    const settings = window.cmGetCompanySettings ? window.cmGetCompanySettings() : { timezone:'Europe/Warsaw' };
+    try { return new Intl.DateTimeFormat(getCmUiLocale(), { timeZone: settings.timezone || 'Europe/Warsaw', month:'long', year:'numeric' }).format(date); }
+    catch (_) { return `${monthNamesPL[date.getMonth()]} ${date.getFullYear()}`; }
+  };
+  const getWeekdayShortLabels = () => getCmUiLocale() === 'en-GB' ? ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'] : ['Pn','Wt','Śr','Cz','Pt','So','N'];
   const normalizeDate = (date) => new Date(date.getFullYear(), date.getMonth(), date.getDate());
   const sameDay = (a,b) => normalizeDate(a).getTime() === normalizeDate(b).getTime();
 
@@ -1287,10 +1301,10 @@ document.addEventListener('DOMContentLoaded', () => {
     return `
       <div class="bm-month-head">
         <button type="button" id="cmPrevMonth" aria-label="Poprzedni miesiąc">‹</button>
-        <strong id="cmYearToggle" title="Pokaż lata">${monthNamesPL[month]} ${year}</strong>
+        <strong id="cmYearToggle" title="Pokaż lata">${getMonthTitle(new Date(year, month, 1))}</strong>
         <button type="button" id="cmNextMonth" aria-label="Następny miesiąc">›</button>
       </div>
-      <table><thead><tr><th>Pn</th><th>Wt</th><th>Śr</th><th>Cz</th><th>Pt</th><th>So</th><th>N</th></tr></thead><tbody>${rows}</tbody></table>`;
+      <table><thead><tr>${getWeekdayShortLabels().map(d => `<th>${d}</th>`).join('')}</tr></thead><tbody>${rows}</tbody></table>`;
   };
 
   const buildYearPickerHtml = () => {
@@ -1336,7 +1350,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     };
     updateClock();
-    window.addEventListener('cm:company-settings-changed', updateClock);
+    window.addEventListener('cm:company-settings-changed', () => { updateClock(); renderMiniCalendar(); const strong = toggle?.querySelector('strong'); if (strong) strong.textContent = formatDisplayDate(CM_TODAY); });
     if (!window.__cmClockStarted) { window.__cmClockStarted = true; setInterval(updateClock, 1000); }
     toggle.addEventListener('click', () => { month.hidden = !month.hidden; if (!month.hidden) renderMiniCalendar(); });
     month.addEventListener('click', (event) => {
@@ -2084,6 +2098,254 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
 
+
+  Object.assign(cmTranslations['en-gb'], {
+    // 108_full_i18n_translation_cleanup — missing dynamic UI labels and mixed-output cleanup.
+    'Description i nadawca pokazują się dopiero po zaznaczeniu danego automatu.':'Description and sender fields appear only after enabling a given automation.',
+    'Pole „Nadawca email” jest nazwą widoczną u klienta, np. „PWC Studio”. Techniczny adres wysyłki obsługuje CompanyManager.':'The “Email sender” field is the display name visible to the customer, e.g. “PWC Studio”. The technical sending address is handled by CompanyManager.',
+    'Pole „Email sender” jest nazwą widoczną u klienta, np. „PWC Studio”. Techniczny adres wysyłki obsługuje CompanyManager.':'The “Email sender” field is the display name visible to the customer, e.g. “PWC Studio”. The technical sending address is handled by CompanyManager.',
+    'wyślij życzenia urodzinowe przez SMS':'send birthday wishes by SMS',
+    'SMS content z życzeniami':'Birthday SMS content',
+    'Treść SMS z życzeniami':'Birthday SMS content',
+    'SMS content po dodaniu wizyty':'SMS content after adding appointment',
+    'Treść SMS po dodaniu wizyty':'SMS content after adding appointment',
+    'wyślij SMS po wizycie':'send SMS after appointment',
+    'SMS content po wizycie':'SMS content after appointment',
+    'Treść SMS po wizycie':'SMS content after appointment',
+    'wyślij życzenia urodzinowe przez EMAIL':'send birthday wishes by email',
+    'Subject email':'Email subject',
+    'Temat email':'Email subject',
+    'Email content z życzeniami':'Birthday email content',
+    'Treść email z życzeniami':'Birthday email content',
+    'Email content po dodaniu wizyty':'Email content after adding appointment',
+    'Treść email po dodaniu wizyty':'Email content after adding appointment',
+    'wyślij EMAIL po wizycie':'send email after appointment',
+    'Email content po wizycie':'Email content after appointment',
+    'Treść email po wizycie':'Email content after appointment',
+    'Przypomnienie o wizycie':'Appointment reminder',
+    'Wszystkiego najlepszego':'Happy birthday',
+    'Potwierdzenie rezerwacji':'Booking confirmation',
+    'Dziękujemy za wizytę':'Thank you for your visit',
+    'Settings ogólne':'General settings',
+    'Ustawienia ogólne':'General settings',
+    'Język programu':'Program language',
+    'Waluta':'Currency',
+    'Strefa czasowa':'Time zone',
+    'Waluta steruje formatem cen w panelu. Kursy są zapisane przy firmie i przygotowane pod bezpieczne przeliczanie wartości w kolejnym kroku.':'Currency controls price formatting in the panel. Exchange rates are stored per company and are prepared for safe value conversion in the next step.',
+    'Kurs PLN → EUR':'PLN → EUR exchange rate',
+    'Kurs PLN → USD':'PLN → USD exchange rate',
+    'Add customer — zgoda na reklamę':'Add customer — marketing consent',
+    'Dodaj klienta — zgoda na reklamę':'Add customer — marketing consent',
+    'Show pola zgody marketingowej przy dodawaniu/edycji klienta':'Show marketing consent fields when adding/editing a customer',
+    'Pokaż pola zgody marketingowej przy dodawaniu/edycji klienta':'Show marketing consent fields when adding/editing a customer',
+    'Domyślnie zaznacz zgodę SMS jako NIE / wymaga świadomego wyboru':'Default SMS consent to NO / require explicit choice',
+    'Zgody zapisują się przy customerse jako osobne pola: SMS i Email. Dzięki temu w Marketingu wiadomo, komu można wysłać reklamę.':'Consents are saved on customers as separate SMS and Email fields. This lets Marketing know who can receive advertising.',
+    'Zgody zapisują się przy kliencie jako osobne pola: SMS i Email. Dzięki temu w Marketingu wiadomo, komu można wysłać reklamę.':'Consents are saved on customers as separate SMS and Email fields. This lets Marketing know who can receive advertising.',
+    'Working hours companies':'Company working hours',
+    'Working hours od':'Working hours from',
+    'Working hours do':'Working hours to',
+    'Domyślny czas wizyty (min)':'Default appointment duration (min)',
+    'Przerwa między wizytami':'Break between appointments',
+    'Bez przerwy':'No break',
+    'Te ustawienia sterują siatką godzin na Dashboardzie. Przykład: 08:00-20:00, wizyta 30 min, przerwa 5 min → 08:00-08:30, 08:35-09:05, 09:10-09:40.':'These settings control the time grid on the Dashboard. Example: 08:00-20:00, 30 min appointment, 5 min break → 08:00-08:30, 08:35-09:05, 09:10-09:40.',
+    '⚠ UWAGA!':'⚠ WARNING!',
+    'Dane zostaną automatycznie deleted po upływie wybranego czasu.':'Data will be automatically deleted after the selected period.',
+    'Dane zostaną automatycznie usunięte po upływie wybranego czasu.':'Data will be automatically deleted after the selected period.',
+    'Nigdy':'Never',
+    'Value „Nigdy” oznacza none automatycznego usuwania danych. To ustawienie jest domyślne dla bezpieczeństwa nowych firm.':'The “Never” value means no automatic data deletion. This is the default setting for new companies’ safety.',
+    'Wartość „Nigdy” oznacza brak automatycznego usuwania danych. To ustawienie jest domyślne dla bezpieczeństwa nowych firm.':'The “Never” value means no automatic data deletion. This is the default setting for new companies’ safety.',
+    'Domyślna metoda to cash. Możesz dodać własne metody i oznaczyć, czy mają liczyć się do obrotu oraz prowizji.':'The default method is cash. You can add your own methods and mark whether they count toward turnover and commission.',
+    'Prowizje':'Commissions',
+    'Name metody':'Method name',
+    'Email faktury':'Invoice email',
+    'Aktualny package':'Current package',
+    'dzisiaj':'today',
+    'eam':'Team',
+    'Preview pracowników companies z Supabase. Tworzenie i edycja kont jest w zakładce Users.':'Employee preview from Supabase. Account creation and editing is in the Users tab.',
+    'Podgląd pracowników firmy z Supabase. Tworzenie i edycja kont jest w zakładce Użytkownicy.':'Employee preview from Supabase. Account creation and editing is in the Users tab.',
+    'Zarządzaj użytkownikami':'Manage users',
+    'Employees':'Employees',
+    'Active logowanie':'Active login',
+    'Zablokowane logowanie':'Blocked login',
+    'Czerwiec':'June',
+    'Reklama SMS':'SMS advertising',
+    'Reklama Email':'Email advertising',
+    'Czas trwania':'Duration',
+    'Lista usług':'Service list',
+    'mało na magazynie':'low stock',
+    'dużo na magazynie':'high stock',
+    'tylko do sprzedaży':'sale only',
+    'Date i godzina':'Date and time',
+    'Email/SMS podłączone do Supabase. Kampanie zostają w historii i nie są usuwane, żeby statystyki oraz rozliczenia SMS/Email były spójne.':'Email/SMS connected to Supabase. Campaigns remain in history and are not deleted so SMS/Email statistics and billing stay consistent.',
+    'Aktualne = można używać. Zrealizowane = wykorzystane do zera. Po terminie = minęła data ważności.':'Current = can be used. Completed = used to zero. Expired = validity date has passed.',
+    'Ustaw dowolne godziny pracy pracowników. Dashboard korzysta z tych godzin przy tworzeniu slotów wizyt.':'Set any employee working hours. The Dashboard uses these hours when creating appointment slots.',
+    'Edycja grafiku':'Schedule editing',
+    'Employee':'Employee',
+    'Szybko od':'Quick from',
+    'Szybko do':'Quick to',
+    'Przerwa od':'Break from',
+    'Przerwa do':'Break to',
+    'Zastosuj pn-pt':'Apply Mon-Fri',
+    'Zastosuj cały tydzień':'Apply full week',
+    'Ustaw wolne':'Set day off',
+    'Save grafik':'Save schedule',
+    'Zapisz grafik':'Save schedule',
+    'Dzień':'Day',
+    'From':'From',
+    'To':'To',
+    'Czas':'Time',
+    'Pracuje':'Working',
+    'Pon':'Mon', 'Wt':'Tue', 'Śr':'Wed', 'Czw':'Thu', 'Pt':'Fri', 'Sob':'Sat', 'Nd':'Sun',
+    'Podsumowanie grafików':'Schedule summary',
+    'Przychód today':'Revenue today',
+    'Przychód dziś':'Revenue today',
+    'Zakres: ostatnie 20 × dni, razem z dzisiaj':'Range: last 20 days, including today',
+    'Dni — ostatnie 20 dni':'Days — last 20 days',
+    'Okres':'Period',
+    'Zapisało się klientów':'Customers signed up',
+    'Count klientów':'Customer count',
+    'Liczba klientów':'Customer count',
+    'Zakres':'Range',
+    'Count wizyt':'Appointment count',
+    'Liczba wizyt':'Appointment count',
+    'Number of services':'Number of services',
+    'Liczba usług':'Number of services',
+    'Services value':'Services value',
+    'Wartość usług':'Services value',
+    'Customers w tabeli':'Customers in table',
+    'Klienci w tabeli':'Customers in table',
+    'Daily report':'Daily report',
+    'Przychódervices':'Revenue services',
+    'Przychódservices':'Revenue services',
+    'Sprzedane usługi w tym dniu':'Services sold on this day',
+    'Sprzedane usługi w tym dniu:':'Services sold on this day:',
+    'Salese':'Sales',
+    'Sprzedaże':'Sales',
+    'Nowi customers':'New customers',
+    'Nowi klienci':'New customers',
+    'Appointments completed':'Completed appointments',
+    'Appointments planned':'Planned appointments',
+    'Appointments cancelled':'Cancelled appointments',
+    'Pozycje sprzedaży':'Sales items',
+    'Podsumowanie sprzedaży i wizyt':'Sales and appointments summary',
+    'Products value':'Products value',
+    'Wartość produktów':'Products value',
+    'Nowi k.':'New c.',
+    'Nowi k. %':'New c. %',
+    'K. powracający':'Returning c.',
+    'K. powracający %':'Returning c. %',
+    'Days off według pracowników':'Days off by employee',
+    'Dni wolne według pracowników':'Days off by employee',
+    'Czas pracy':'Working time',
+    'Czas wyznaczony':'Assigned time',
+    'Grafik %':'Schedule %',
+    'Kampanie':'Campaigns',
+    'Odbiorcy':'Recipients',
+    'Sent':'Sent',
+    'Błędy':'Errors',
+    'Oczekuje':'Pending',
+    'Report':'Report',
+    'Automat: Automatyczne powiadomienie':'Automation: Automatic notification',
+    'Report kampanii email pobierany z Supabase i Resend.':'Email campaign report loaded from Supabase and Resend.',
+    'Export - CSV':'Export - CSV',
+    'Podsumowanie miesięczne':'Monthly summary',
+    'None kampanii Email':'No email campaigns',
+    'Brak kampanii Email':'No email campaigns',
+    'Historia kampanii':'Campaign history',
+    'Brak kampanii marketingowych':'No marketing campaigns',
+    'Szukaj kampanii':'Search campaigns',
+    'Wiadomość pojawi się tutaj.':'The message will appear here.',
+    'Wpisz treść wiadomości':'Enter message content',
+    'Liczba znaków':'Character count',
+    'Test wiadomości':'Message test',
+    'Wyślij test':'Send test',
+    'Wyślij do':'Send to',
+    'wszystkich klientów ze zgodą marketingową':'all customers with marketing consent',
+    'wybranych grup klientów':'selected customer groups',
+    '— grupy klientów podepniemy w kolejnym etapie':'— customer groups will be connected in the next stage',
+    'wybranych klientów':'selected customers',
+    'wszystkich kobiet ze zgodą':'all women with consent',
+    'wszystkich mężczyzn ze zgodą':'all men with consent',
+    'data ostatniej aktualizacji klienta':'customer last update date',
+    'data dodania klienta':'customer creation date',
+    'Liczba znalezionych telefonów':'Number of found phone numbers',
+    'Liczba znalezionych emaili':'Number of found emails',
+    'Wybierz klientów':'Select customers',
+    'Wyślij':'Send',
+    'Oczekujące':'Pending',
+    'Wysłano':'Sent',
+    'Błąd':'Error',
+    'Gotowe do wysłania':'Ready to send',
+    'Kampania':'Campaign',
+    'Kanał':'Channel',
+    'Nadawca':'Sender',
+    'Wysłane':'Sent',
+    'Raport':'Report',
+    'Przychód':'Revenue',
+    'Usługi':'Services',
+    'Produkty':'Products',
+    'Karnety':'Passes',
+    'Wizyty':'Appointments',
+    'Klient':'Customer',
+    'Klienci - raporty':'Customer reports',
+    'Pracownicy - raporty':'Employee reports',
+    'Nazwa metody':'Method name',
+    'Usuń':'Delete',
+    'cash':'cash',
+    'gotówka':'cash',
+    'none':'none',
+    'brak':'none'
+  });
+
+  const CM_EN_TEXT_CLEANUPS = [
+    [/\bwyślij\s+życzenia\s+urodzinowe\s+przez\s+SMS\b/gi, 'send birthday wishes by SMS'],
+    [/\bwyślij\s+SMS\s+po\s+wizycie\b/gi, 'send SMS after appointment'],
+    [/\bwyślij\s+życzenia\s+urodzinowe\s+przez\s+EMAIL\b/gi, 'send birthday wishes by email'],
+    [/\bwyślij\s+EMAIL\s+po\s+wizycie\b/gi, 'send email after appointment'],
+    [/\bTreść\s+SMS\s+z\s+życzeniami\b/gi, 'Birthday SMS content'],
+    [/\bSMS content\s+z\s+życzeniami\b/gi, 'Birthday SMS content'],
+    [/\bSMS content\s+po\s+dodaniu\s+wizyty\b/gi, 'SMS content after adding appointment'],
+    [/\bSMS content\s+po\s+wizycie\b/gi, 'SMS content after appointment'],
+    [/\bEmail content\s+z\s+życzeniami\b/gi, 'Birthday email content'],
+    [/\bEmail content\s+po\s+dodaniu\s+wizyty\b/gi, 'Email content after adding appointment'],
+    [/\bEmail content\s+po\s+wizycie\b/gi, 'Email content after appointment'],
+    [/\bSubject email\b/g, 'Email subject'],
+    [/\bSettings ogólne\b/g, 'General settings'],
+    [/\bWorking hours od\b/g, 'Working hours from'],
+    [/\bWorking hours do\b/g, 'Working hours to'],
+    [/\bDate i godzina\b/g, 'Date and time'],
+    [/\bSave grafik\b/g, 'Save schedule'],
+    [/\bPrzychód today\b/g, 'Revenue today'],
+    [/\bCustomers w tabeli\b/g, 'Customers in table'],
+    [/\bCount wizyt\b/g, 'Appointment count'],
+    [/\bCount klientów\b/g, 'Customer count'],
+    [/\bNowi customers\b/g, 'New customers'],
+    [/\bSalese\b/g, 'Sales'],
+    [/\bPrzychódervices\b/g, 'Revenue services'],
+    [/\bNone kampanii Email\b/g, 'No email campaigns'],
+    [/\bDane zostaną automatycznie deleted\b/g, 'Data will be automatically deleted'],
+    [/\bValue „Nigdy” oznacza none\b/g, 'The “Never” value means no'],
+    [/\bcustomerse\b/g, 'customers'],
+    [/\bcompanies\b/g, 'company'],
+    [/\blogowanie\b/gi, 'login'],
+    [/\bUstawienia\b/g, 'Settings'],
+    [/\bJęzyk programu\b/g, 'Program language'],
+    [/\bWaluta\b/g, 'Currency'],
+    [/\bStrefa czasowa\b/g, 'Time zone'],
+    [/\bZastosuj\b/g, 'Apply'],
+    [/\bcały tydzień\b/g, 'full week'],
+    [/\bpn-pt\b/gi, 'Mon-Fri'],
+    [/\bPracuje\b/g, 'Working'],
+    [/\bŚr\b/g, 'Wed'], [/\bCzw\b/g, 'Thu'], [/\bPon\b/g, 'Mon'], [/\bWt\b/g, 'Tue'], [/\bPt\b/g, 'Fri'], [/\bSob\b/g, 'Sat'], [/\bNd\b/g, 'Sun']
+  ];
+
+  const cmCleanupEnglishText = (text) => {
+    if (!text) return text;
+    let out = text;
+    CM_EN_TEXT_CLEANUPS.forEach(([pattern, replacement]) => { out = out.replace(pattern, replacement); });
+    return out;
+  };
+
   const CM_LANGUAGE_LABELS = { pl:'PL', 'en-gb':'ENG' };
   const CM_LANGUAGE_NAMES = { pl:'Polska', 'en-gb':'Anglia' };
   const CM_LANGUAGE_ORDER = ['pl', 'en-gb'];
@@ -2253,6 +2515,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
       if (!changed) return text;
     }
+    if ((getStoredCmLanguage?.() || 'pl') !== 'pl') translated = cmCleanupEnglishText(translated);
     return leading + translated + trailing;
   };
 
