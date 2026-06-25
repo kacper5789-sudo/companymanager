@@ -82,28 +82,70 @@
     return values.find((value) => value !== undefined && value !== null && value !== "");
   }
 
-  async function getLoginGuard(accessData) {
-    const guard = {
-      login_allowed: firstDefined(accessData?.login_allowed, accessData?.loginAllowed, true) !== false,
-      login_hours_enabled: firstDefined(accessData?.login_hours_enabled, accessData?.loginHoursEnabled, false) === true,
-      login_hour_from: firstDefined(accessData?.login_hour_from, accessData?.loginHourFrom, null),
-      login_hour_to: firstDefined(accessData?.login_hour_to, accessData?.loginHourTo, null),
-      timezone: firstDefined(accessData?.timezone, accessData?.company_timezone, accessData?.settings?.timezone, "Europe/Warsaw")
-    };
+  function asBool(value, fallback = false) {
+    if (value === true || value === false) return value;
+    if (typeof value === "string") {
+      const normalized = value.trim().toLowerCase();
+      if (["true", "t", "1", "yes", "tak"].includes(normalized)) return true;
+      if (["false", "f", "0", "no", "nie"].includes(normalized)) return false;
+    }
+    if (typeof value === "number") return value !== 0;
+    return fallback;
+  }
 
-    // Jeżeli get_my_access nie zwrócił pól godzinowych, dociągamy profil zalogowanego użytkownika.
-    if (window.cmSupabase && accessData?.user_id) {
+  function normalizeGuardPayload(payload) {
+    const data = payload || {};
+    return {
+      login_allowed: asBool(firstDefined(data.login_allowed, data.loginAllowed, true), true),
+      login_hours_enabled: asBool(firstDefined(data.login_hours_enabled, data.loginHoursEnabled, false), false),
+      login_hour_from: firstDefined(data.login_hour_from, data.loginHourFrom, data.login_from, data.from, null),
+      login_hour_to: firstDefined(data.login_hour_to, data.loginHourTo, data.login_to, data.to, null),
+      timezone: firstDefined(data.timezone, data.company_timezone, data.settings?.timezone, "Europe/Warsaw"),
+      server_allowed: firstDefined(data.allowed, data.server_allowed, null),
+      reason: firstDefined(data.reason, data.message, null)
+    };
+  }
+
+  async function getLoginGuard(accessData, signedUser) {
+    let guard = normalizeGuardPayload(accessData);
+
+    // 117: twarda walidacja po stronie Supabase. Front nie zgaduje godzin — RPC liczy je po stronie bazy
+    // z timezone firmy i zwraca gotowy wynik. To naprawia sytuację, gdy get_my_access nie zwraca pól godzinowych.
+    if (window.cmSupabase) {
+      try {
+        const { data, error } = await window.cmSupabase.rpc("cm_validate_login_window");
+        if (!error && data) {
+          const serverGuard = normalizeGuardPayload(data);
+          guard = { ...guard, ...serverGuard };
+          if (serverGuard.server_allowed === false || serverGuard.login_allowed === false) {
+            guard.login_allowed = false;
+            guard.reason = serverGuard.reason || "Logowanie do tego konta jest zablokowane.";
+          }
+          if (serverGuard.server_allowed === false && serverGuard.login_hours_enabled) {
+            guard.reason = serverGuard.reason || loginGuardErrorMessage(serverGuard);
+          }
+          return guard;
+        }
+      } catch (rpcError) {
+        console.warn("CompanyManager login guard RPC warning", rpcError);
+      }
+    }
+
+    // Fallback: dociągamy profil zalogowanego użytkownika po auth.uid / user.id, nie tylko po accessData.user_id.
+    const authUserId = firstDefined(accessData?.user_id, accessData?.profile_id, accessData?.id, signedUser?.id, null);
+    if (window.cmSupabase && authUserId) {
       try {
         const { data, error } = await window.cmSupabase
           .from("profiles")
-          .select("login_allowed,login_hours_enabled,login_hour_from,login_hour_to")
-          .eq("id", accessData.user_id)
+          .select("login_allowed,login_hours_enabled,login_hour_from,login_hour_to,company_id,companies(timezone)")
+          .eq("id", authUserId)
           .maybeSingle();
         if (!error && data) {
-          guard.login_allowed = data.login_allowed !== false;
-          guard.login_hours_enabled = data.login_hours_enabled === true;
-          guard.login_hour_from = data.login_hour_from || guard.login_hour_from;
-          guard.login_hour_to = data.login_hour_to || guard.login_hour_to;
+          const profileGuard = normalizeGuardPayload({
+            ...data,
+            timezone: data?.companies?.timezone || guard.timezone
+          });
+          guard = { ...guard, ...profileGuard };
         }
       } catch (profileError) {
         console.warn("CompanyManager login guard profile warning", profileError);
@@ -114,6 +156,7 @@
   }
 
   function loginGuardErrorMessage(guard) {
+    if (guard?.reason && (guard.server_allowed === false || guard.login_allowed === false)) return String(guard.reason);
     if (guard.login_allowed === false) return "Logowanie do tego konta jest zablokowane.";
     if (guard.login_hours_enabled && !isNowInsideLoginWindow(guard.login_hour_from || "04:00", guard.login_hour_to || "22:00", guard.timezone)) {
       const from = String(guard.login_hour_from || "04:00").slice(0, 5);
@@ -172,7 +215,7 @@
         return;
       }
 
-      const { error } = await window.cmSupabase.auth.signInWithPassword({ email, password });
+      const { data: signInData, error } = await window.cmSupabase.auth.signInWithPassword({ email, password });
 
       if (error) {
         await recordLoginLog({ email, status: "error", errorMessage: error.message });
@@ -200,7 +243,7 @@
         return;
       }
 
-      const loginGuard = await getLoginGuard(accessData);
+      const loginGuard = await getLoginGuard(accessData, signInData?.user || null);
       const loginGuardMessage = loginGuardErrorMessage(loginGuard);
       if (loginGuardMessage) {
         await window.cmSupabase.auth.signOut().catch(() => {});
