@@ -128,6 +128,75 @@ function applyVariables(template: string, data: Record<string, unknown>) {
   return out;
 }
 
+
+function boolSetting(value: unknown) {
+  return value === true || value === 1 || String(value || "").toLowerCase() === "true";
+}
+
+function pickJsonSettings(company: AnyRow, channel: "sms" | "email", type: string) {
+  const settings = company?.settings || {};
+  const group = settings?.[channel] || {};
+  return group?.[type] || {};
+}
+
+async function hydrateCompanyNotificationSettings(supabase: any, company: AnyRow) {
+  const { data, error } = await supabase
+    .from("company_notification_settings")
+    .select("settings")
+    .eq("company_id", company.id)
+    .maybeSingle();
+
+  if (error) {
+    console.error("company_notification_settings query failed", { company_id: company.id, message: error.message });
+    return { ...company, settings: {} };
+  }
+
+  const settings = data?.settings || {};
+  const sms = settings.sms || {};
+  const email = settings.email || {};
+
+  return {
+    ...company,
+    settings,
+
+    visit_sms_24: boolSetting(sms.visit_24?.enabled ?? company.visit_sms_24),
+    visit_sms_sender: sms.visit_24?.sender_name ?? company.visit_sms_sender,
+    visit_sms_template: sms.visit_24?.body ?? company.visit_sms_template,
+
+    birthday_sms: boolSetting(sms.birthday?.enabled ?? company.birthday_sms),
+    birthday_sms_sender: sms.birthday?.sender_name ?? company.birthday_sms_sender,
+    birthday_sms_template: sms.birthday?.body ?? company.birthday_sms_template,
+
+    after_add_sms: boolSetting(sms.after_add?.enabled ?? company.after_add_sms),
+    after_add_sms_sender: sms.after_add?.sender_name ?? company.after_add_sms_sender,
+    after_add_sms_template: sms.after_add?.body ?? company.after_add_sms_template,
+
+    after_visit_sms: boolSetting(sms.after_visit?.enabled ?? company.after_visit_sms),
+    after_visit_sms_sender: sms.after_visit?.sender_name ?? company.after_visit_sms_sender,
+    after_visit_sms_template: sms.after_visit?.body ?? company.after_visit_sms_template,
+
+    visit_email_24: boolSetting(email.visit_24?.enabled ?? company.visit_email_24),
+    visit_email_sender: email.visit_24?.sender_name ?? company.visit_email_sender,
+    visit_email_subject: email.visit_24?.subject ?? company.visit_email_subject,
+    visit_email_template: email.visit_24?.body ?? company.visit_email_template,
+
+    birthday_email: boolSetting(email.birthday?.enabled ?? company.birthday_email),
+    birthday_email_sender: email.birthday?.sender_name ?? company.birthday_email_sender,
+    birthday_email_subject: email.birthday?.subject ?? company.birthday_email_subject,
+    birthday_email_template: email.birthday?.body ?? company.birthday_email_template,
+
+    after_add_email: boolSetting(email.after_add?.enabled ?? company.after_add_email),
+    after_add_email_sender: email.after_add?.sender_name ?? company.after_add_email_sender,
+    after_add_email_subject: email.after_add?.subject ?? company.after_add_email_subject,
+    after_add_email_template: email.after_add?.body ?? company.after_add_email_template,
+
+    after_visit_email: boolSetting(email.after_visit?.enabled ?? company.after_visit_email),
+    after_visit_email_sender: email.after_visit?.sender_name ?? company.after_visit_email_sender,
+    after_visit_email_subject: email.after_visit?.subject ?? company.after_visit_email_subject,
+    after_visit_email_template: email.after_visit?.body ?? company.after_visit_email_template,
+  };
+}
+
 async function sendWithResend(input: { to: string; fromName: string; subject: string; body: string }) {
   const from = `${sanitizeSender(input.fromName)} <${FROM_EMAIL}>`;
   const text = stripTags(input.body || "");
@@ -445,8 +514,8 @@ async function fetchRelated(supabase: any, appointment: AnyRow) {
   const employeeId = appointment.employee_id;
   const serviceId = appointment.service_id;
   const [clientRes, employeeRes, serviceRes] = await Promise.all([
-    clientId ? supabase.from("clients").select("id,full_name,name,email,phone,phone_number,mobile,marketing_email,marketing_sms,date_of_birth,birth_date,birthday,active,deleted_at").eq("id", clientId).maybeSingle() : Promise.resolve({ data: null }),
-    employeeId ? supabase.from("employees").select("id,full_name,name,email").eq("id", employeeId).maybeSingle() : Promise.resolve({ data: null }),
+    clientId ? supabase.from("clients").select("id,full_name,email,phone,marketing_email,marketing_sms,date_of_birth,birth_date,birthday,active,deleted_at").eq("id", clientId).maybeSingle() : Promise.resolve({ data: null }),
+    employeeId ? supabase.from("employees").select("id,full_name,email").eq("id", employeeId).maybeSingle() : Promise.resolve({ data: null }),
     serviceId ? supabase.from("services").select("id,name").eq("id", serviceId).maybeSingle() : Promise.resolve({ data: null }),
   ]);
   return { client: clientRes.data, employee: employeeRes.data, service: serviceRes.data };
@@ -581,6 +650,20 @@ async function processAppointmentCreatedEvent(supabase: any, company: AnyRow, ap
     return;
   }
 
+  if (!company.after_add_email && !company.after_add_sms) {
+    await logNotification(supabase, {
+      company_id: company.id,
+      channel: "system",
+      type: "appointment_created_disabled",
+      status: "skipped",
+      appointment_id: appt.id,
+      error_message: "Powiadomienie po dodaniu wizyty jest wyłączone w settings jsonb.",
+      dedupe_key: `system:appointment_created_disabled:${appt.id}`,
+    });
+    summary.skipped += 1;
+    return;
+  }
+
   if (company.after_add_email) {
     const key = `email:after_add:${appt.id}`;
     const r = await sendAutomaticEmail(supabase, company, related.client, appt, "after_add", key, related);
@@ -601,7 +684,7 @@ async function processBirthdays(supabase: any, company: AnyRow, summary: AnyRow)
   const todayKey = isoDate(now);
   const { data: clients } = await supabase
     .from("clients")
-    .select("id,company_id,full_name,name,email,phone,phone_number,mobile,marketing_email,marketing_sms,date_of_birth,birth_date,birthday,active,deleted_at")
+    .select("id,company_id,full_name,email,phone,marketing_email,marketing_sms,date_of_birth,birth_date,birthday,active,deleted_at")
     .eq("company_id", company.id)
     .is("deleted_at", null)
     .limit(500);
@@ -657,7 +740,7 @@ Deno.serve(async (req) => {
     const eventType = normalizeText(body.event || body.type);
     const appointmentId = normalizeText(body.appointment_id || body.visit_id);
 
-    const companySelect = "id,name,message_sender,sms_sender,visit_email_24,visit_email_sender,visit_email_subject,visit_email_template,birthday_email,birthday_email_sender,birthday_email_subject,birthday_email_template,after_add_email,after_add_email_sender,after_add_email_subject,after_add_email_template,after_visit_email,after_visit_email_sender,after_visit_email_subject,after_visit_email_template,visit_sms_24,visit_sms_sender,visit_sms_template,birthday_sms,birthday_sms_sender,birthday_sms_template,after_add_sms,after_add_sms_sender,after_add_sms_template,after_visit_sms,after_visit_sms_sender,after_visit_sms_template,active,deleted_at";
+    const companySelect = "id,name,active,deleted_at";
 
     const summary = {
       companies: 0,
@@ -682,7 +765,8 @@ Deno.serve(async (req) => {
         return jsonResponse({ ok: true, event: eventType, companies: 0, sent: 0, failed: 0, skipped: 1 });
       }
       summary.companies = 1;
-      await processAppointmentCreatedEvent(supabase, company, appointmentId, summary);
+      const hydratedCompany = await hydrateCompanyNotificationSettings(supabase, company);
+      await processAppointmentCreatedEvent(supabase, hydratedCompany, appointmentId, summary);
       return jsonResponse({ ok: true, event: eventType, appointment_id: appointmentId, ...summary });
     }
 
@@ -702,9 +786,10 @@ Deno.serve(async (req) => {
 
     for (const company of companies || []) {
       if (company.deleted_at || company.active === false) continue;
+      const hydratedCompany = await hydrateCompanyNotificationSettings(supabase, company);
       summary.companies += 1;
-      await processAppointments(supabase, company, summary);
-      await processBirthdays(supabase, company, summary);
+      await processAppointments(supabase, hydratedCompany, summary);
+      await processBirthdays(supabase, hydratedCompany, summary);
     }
 
     return jsonResponse({ ok: true, ...summary });
