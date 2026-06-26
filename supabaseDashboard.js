@@ -245,6 +245,127 @@
   function serviceName(service) { return service?.name || "-"; }
   function productName(product) { return product?.name || "-"; }
 
+
+
+  function activeGenericItem(item) {
+    const status = String(item?.status || '').trim().toLowerCase();
+    return item?.deleted_at == null
+      && item?.deleted !== true
+      && item?.active !== false
+      && !['usunięty','usuniety','deleted','archived','zarchiwizowany','usunięte'].includes(status);
+  }
+
+  function entitySearchFieldHtml(config) {
+    const required = config.required ? 'required' : '';
+    return `
+      <label>${escapeHtml(config.label)}
+        <div class="cm-client-search cm-entity-search" data-entity-search-wrap>
+          <input type="search" id="${escapeHtml(config.prefix)}Search" class="cm-client-search-input" data-entity-search data-entity-type="${escapeHtml(config.type)}" data-entity-hidden="${escapeHtml(config.prefix)}Id" data-entity-name="${escapeHtml(config.name)}" placeholder="${escapeHtml(config.placeholder)}" autocomplete="off" ${required}>
+          <input type="hidden" id="${escapeHtml(config.prefix)}Id" name="${escapeHtml(config.name)}">
+          <div class="cm-client-search-results" data-entity-results hidden></div>
+        </div>
+        <small class="cm-muted">${escapeHtml(config.hint || 'Zacznij pisać, aby wyszukać z bazy.')}</small>
+      </label>`;
+  }
+
+  function entityConfigs(data) {
+    const employees = (data.users || []).filter(activeGenericItem).map((item) => ({
+      type: 'employee',
+      id: String(item.id || ''),
+      label: personName(item),
+      name: personName(item),
+      haystack: [personName(item), item.email || '', item.phone || ''].join(' ').toLowerCase()
+    })).filter((row) => row.id);
+    const services = (data.services || []).filter(activeGenericItem).map((item) => {
+      const price = servicePrice(item);
+      const name = item.name || 'Usługa';
+      return { type: 'service', id: String(item.id || ''), label: `${name}${price ? ` — ${price.toFixed(2).replace('.00','')} PLN` : ''}`, name, price, haystack: [name, item.category_name || '', price].join(' ').toLowerCase() };
+    }).filter((row) => row.id);
+    const products = (data.products || []).filter(activeGenericItem).map((item) => {
+      const price = productPrice(item);
+      const name = productName(item);
+      return { type: 'product', id: String(item.id || ''), label: `${name}${price ? ` — ${price.toFixed(2).replace('.00','')} PLN` : ''}`, name, price, haystack: [name, item.sku || '', item.barcode || '', price].join(' ').toLowerCase() };
+    }).filter((row) => row.id);
+    return { employee: employees, service: services, product: products };
+  }
+
+  function setupEntitySearchFields(data) {
+    const groups = entityConfigs(data);
+    document.querySelectorAll('[data-entity-search]').forEach((input) => {
+      if (input.dataset.cmEntitySearchReady === '1') return;
+      input.dataset.cmEntitySearchReady = '1';
+      const wrap = input.closest('[data-entity-search-wrap]');
+      const results = wrap?.querySelector('[data-entity-results]');
+      const hidden = document.getElementById(input.dataset.entityHidden || '');
+      if (!wrap || !results || !hidden) return;
+      const rows = groups[input.dataset.entityType] || [];
+      const byId = new Map(rows.map((row) => [String(row.id), row]));
+      const close = () => { results.hidden = true; };
+      const selectRow = (row) => {
+        input.value = row.label;
+        hidden.value = row.id;
+        hidden.dataset.label = row.label || '';
+        hidden.dataset.name = row.name || row.label || '';
+        hidden.dataset.price = row.price != null ? String(row.price) : '';
+        hidden.dispatchEvent(new Event('change', { bubbles: true }));
+        hidden.dispatchEvent(new Event('input', { bubbles: true }));
+        close();
+      };
+      const render = () => {
+        const q = String(input.value || '').trim().toLowerCase();
+        if (hidden.value) {
+          const current = byId.get(String(hidden.value));
+          if (!current || input.value !== current.label) {
+            hidden.value = '';
+            hidden.dataset.label = '';
+            hidden.dataset.name = '';
+            hidden.dataset.price = '';
+            hidden.dispatchEvent(new Event('change', { bubbles: true }));
+          }
+        }
+        const matches = rows.filter((row) => !q || row.haystack.includes(q)).slice(0, 12);
+        if (!matches.length) {
+          results.innerHTML = `<div class="cm-client-search-empty">Brak wyników dla tej frazy.</div>`;
+          results.hidden = false;
+          return;
+        }
+        results.innerHTML = matches.map((row) => `
+          <button type="button" class="cm-client-search-item" data-entity-id="${escapeHtml(row.id)}">
+            ${escapeHtml(row.label)}
+          </button>
+        `).join('');
+        results.hidden = false;
+      };
+      input.addEventListener('input', render);
+      input.addEventListener('focus', render);
+      results.addEventListener('mousedown', (event) => {
+        const button = event.target.closest('[data-entity-id]');
+        if (!button) return;
+        event.preventDefault();
+        const row = byId.get(String(button.dataset.entityId));
+        if (row) selectRow(row);
+      });
+      document.addEventListener('click', (event) => {
+        if (!wrap.contains(event.target)) close();
+      });
+    });
+  }
+
+  function setEntitySearchValue(form, fieldName, value, data) {
+    if (!form) return;
+    const hidden = form.elements[fieldName];
+    const input = form.querySelector(`[data-entity-name="${CSS.escape(fieldName)}"]`);
+    const groups = entityConfigs(data || {});
+    const type = input?.dataset.entityType || '';
+    const row = (groups[type] || []).find((item) => String(item.id) === String(value || '')) || null;
+    if (hidden) {
+      hidden.value = row ? row.id : (value || '');
+      hidden.dataset.label = row?.label || '';
+      hidden.dataset.name = row?.name || row?.label || '';
+      hidden.dataset.price = row?.price != null ? String(row.price) : '';
+    }
+    if (input) input.value = row ? row.label : '';
+  }
   function moneyNumber(value) {
     const n = Number(String(value ?? "").replace(",", "."));
     return Number.isFinite(n) ? n : 0;
@@ -287,12 +408,10 @@
     if (!totalInput) return;
 
     const calculate = () => {
-      const serviceOption = serviceSelect?.selectedOptions?.[0] || null;
-      const productOption = productSelect?.selectedOptions?.[0] || null;
       const service = lookups.servicesById[String(serviceSelect?.value || "")];
       const product = lookups.productsById[String(productSelect?.value || "")];
-      const serviceValue = firstPositiveMoney(serviceOption?.getAttribute("data-price"), servicePrice(service));
-      const productValue = firstPositiveMoney(productOption?.getAttribute("data-price"), productPrice(product));
+      const serviceValue = firstPositiveMoney(serviceSelect?.dataset?.price, servicePrice(service));
+      const productValue = firstPositiveMoney(productSelect?.dataset?.price, productPrice(product));
       const passId = String(passSelect?.value || "");
       const pass = lookups.passesById?.[passId];
       let serviceCharge = serviceValue;
@@ -700,10 +819,9 @@
     const serviceId = String(formData.get("serviceId") || "").trim();
     const productId = String(formData.get("productId") || "").trim();
     const currentForm = form;
-    const selectedProductOption = currentForm?.elements?.productId?.selectedOptions?.[0]
-      || Array.from(document.querySelectorAll('#dashboardAppointmentAddForm select[name="productId"], #dashboardEditVisitForm select[name="productId"]')).find((select) => select.value === productId)?.selectedOptions?.[0];
-    const selectedProductName = selectedProductOption?.getAttribute("data-name") || selectedProductOption?.textContent?.replace(/\s+—\s+.*$/, "").trim() || null;
-    const selectedProductPrice = firstPositiveMoney(selectedProductOption?.getAttribute("data-price"));
+    const productHidden = currentForm?.elements?.productId || null;
+    const selectedProductName = productHidden?.dataset?.name || null;
+    const selectedProductPrice = firstPositiveMoney(productHidden?.dataset?.price);
     const start = normalizeTime(formData.get("start"));
     const end = normalizeTime(formData.get("end"));
     const clientId = String(formData.get("customerId") || "").trim();
@@ -713,8 +831,8 @@
     const passId = String(formData.get("passId") || "").trim();
     const total = Number(String(formData.get("total") || "0").replace(",", ".")) || 0;
     const employeeId = String(formData.get("employeeId") || "").trim();
-    const employeeSelect = Array.from(document.querySelectorAll('#dashboardAppointmentAddForm select[name="employeeId"], #dashboardEditVisitForm select[name="employeeId"]')).find((select) => select.value === employeeId)?.selectedOptions?.[0];
-    const employeeName = employeeSelect?.textContent?.trim() || String(formData.get("employeeName") || "").trim() || null;
+    const employeeHidden = currentForm?.elements?.employeeId || null;
+    const employeeName = employeeHidden?.dataset?.name || String(formData.get("employeeName") || "").trim() || null;
     return {
       company_id: ctx.companyId,
       date,
@@ -759,14 +877,14 @@
     form.elements.start.value = appointmentStart(item) || "06:00";
     form.elements.end.value = appointmentEnd(item) || "06:30";
     setClientSearchValue(form, appointmentClientId(item) || "", lookups.clientsById || {});
-    form.elements.employeeId.value = item.employee_id || "";
-    if (!form.elements.employeeId.value && item.employee_name) {
-      const targetName = String(item.employee_name).trim().toLowerCase();
-      const option = Array.from(form.elements.employeeId.options || []).find((opt) => String(opt.textContent || "").trim().toLowerCase() === targetName);
-      if (option) form.elements.employeeId.value = option.value;
+    setEntitySearchValue(form, "employeeId", item.employee_id || "", { users: Object.values(lookups.usersById || {}) });
+    if (!form.elements.employeeId?.value && item.employee_name && form.elements.employeeId) {
+      form.elements.employeeId.dataset.name = item.employee_name;
+      const input = form.querySelector('[data-entity-name="employeeId"]');
+      if (input) input.value = item.employee_name;
     }
-    form.elements.serviceId.value = item.service_id || "";
-    form.elements.productId.value = item.product_id || "";
+    setEntitySearchValue(form, "serviceId", item.service_id || "", { services: Object.values(lookups.servicesById || {}) });
+    setEntitySearchValue(form, "productId", item.product_id || "", { products: Object.values(lookups.productsById || {}) });
     if (form.elements.passId) {
       form.elements.passId.innerHTML = passOptionsFor({ passes: Object.values(lookups.passesById || {}) }, appointmentClientId(item), item.service_id || "", item.pass_id || "");
       form.elements.passId.value = item.pass_id || "";
@@ -885,9 +1003,9 @@
           <label>Od<select name="start">${timeOptions(dashboardSettings(data).start)}</select></label>
           <label>Do<select name="end">${timeOptions(timeFromMinutes((minutesFromTime(dashboardSettings(data).start) || 480) + dashboardSettings(data).duration))}</select></label>
           ${clientSearchFieldHtml("dashAddClient")}
-          <label>Pracownik<select name="employeeId" required><option value="">Wybierz pracownika</option>${employeeOptions}</select></label>
-          <label>Usługi<select name="serviceId"><option value="">Wybierz usługę</option>${serviceOptions}</select></label>
-          <label>Zakup produktów<select name="productId"><option value="">Wybierz produkt</option>${productOptions}</select></label>
+          ${entitySearchFieldHtml({ prefix: "dashEmployee", type: "employee", name: "employeeId", label: "Pracownik", placeholder: "Szukaj pracownika", required: true, hint: "Wpisz imię, email lub telefon pracownika." })}
+          ${entitySearchFieldHtml({ prefix: "dashService", type: "service", name: "serviceId", label: "Usługi", placeholder: "Szukaj usługi", hint: "Wpisz nazwę usługi lub cenę." })}
+          ${entitySearchFieldHtml({ prefix: "dashProduct", type: "product", name: "productId", label: "Zakup produktów", placeholder: "Szukaj produktu", hint: "Wpisz nazwę produktu, SKU, kod lub cenę." })}
           <label class="bm-full">Karnet klienta<select name="passId"><option value="">Najpierw wybierz klienta</option></select><small class="bm-muted">Karnet pojawi się po wyborze klienta. Karnet usługowy rozlicza usługę, produkty zostają doliczone normalnie.</small></label>
           <label>Razem do zapłaty<input name="total" value="0.00" readonly></label>
           <label>Płatność<select name="payment">${paymentOptionsHtml}</select></label>
@@ -905,9 +1023,9 @@
           <label>Od<select name="start">${timeOptions()}</select></label>
           <label>Do<select name="end">${timeOptions()}</select></label>
           ${clientSearchFieldHtml("dashEditClient")}
-          <label>Pracownik<select name="employeeId" required><option value="">Wybierz pracownika</option>${employeeOptions}</select></label>
-          <label>Usługi<select name="serviceId"><option value="">Wybierz usługę</option>${serviceOptions}</select></label>
-          <label>Zakup produktów<select name="productId"><option value="">Wybierz produkt</option>${productOptions}</select></label>
+          ${entitySearchFieldHtml({ prefix: "dashEditEmployee", type: "employee", name: "employeeId", label: "Pracownik", placeholder: "Szukaj pracownika", required: true, hint: "Wpisz imię, email lub telefon pracownika." })}
+          ${entitySearchFieldHtml({ prefix: "dashEditService", type: "service", name: "serviceId", label: "Usługi", placeholder: "Szukaj usługi", hint: "Wpisz nazwę usługi lub cenę." })}
+          ${entitySearchFieldHtml({ prefix: "dashEditProduct", type: "product", name: "productId", label: "Zakup produktów", placeholder: "Szukaj produktu", hint: "Wpisz nazwę produktu, SKU, kod lub cenę." })}
           <label class="bm-full">Karnet klienta<select name="passId"><option value="">Najpierw wybierz klienta</option></select><small class="bm-muted">Karnet pojawi się po wyborze klienta. Karnet usługowy rozlicza usługę, produkty zostają doliczone normalnie.</small></label>
           <label>Razem do zapłaty<input name="total" value="0.00" readonly></label>
           <label>Płatność<select name="payment">${paymentOptionsHtml}</select></label>
@@ -1020,6 +1138,7 @@
     }, { once: false });
     updateWorkerVisibility(false);
     setupClientSearchFields(data.clients);
+    setupEntitySearchFields(data);
     function bindPassOptions(form) {
       if (!form || !form.elements.passId) return;
       const refresh = () => {
@@ -1059,7 +1178,7 @@
         const endValue = timeFromMinutes(endMin);
         form.elements.end.value = endValue;
       }
-      if (form.elements.employeeId) form.elements.employeeId.value = employeeId;
+      setEntitySearchValue(form, "employeeId", employeeId, { users: data.users || [] });
       if (form.elements.serviceId) form.elements.serviceId.dispatchEvent(new Event("change", { bubbles: true }));
       if (form.elements.customerId) form.elements.customerId.dispatchEvent(new Event("change", { bubbles: true }));
       if (form.elements.productId) form.elements.productId.dispatchEvent(new Event("change", { bubbles: true }));
