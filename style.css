@@ -6955,3 +6955,41 @@ html[data-cm-data-mode="supabase"] .cm-data-mode-banner[data-no-translate] {
   color: rgba(226, 232, 240, 0.68);
   font-size: 12px;
 }
+
+/* CompanyManager 134 — global focused modal blur */
+#cmGlobalFormOverlay {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 9998 !important;
+  background: rgba(2, 6, 23, .46) !important;
+  backdrop-filter: blur(7px) saturate(1.08) !important;
+  -webkit-backdrop-filter: blur(7px) saturate(1.08) !important;
+  transition: opacity .18s ease !important;
+}
+body.cm-modal-open .bm-shell,
+html.cm-modal-open body .bm-shell {
+  filter: blur(2px) saturate(.92) !important;
+}
+body.cm-modal-open .cm-as-modal,
+body.cm-modal-open .cm-modal-active {
+  filter: none !important;
+  z-index: 9999 !important;
+  position: fixed !important;
+  top: 50% !important;
+  left: 50% !important;
+  transform: translate(-50%, -50%) !important;
+  max-height: min(86vh, 920px) !important;
+  overflow: auto !important;
+  box-shadow: 0 36px 120px rgba(0,0,0,.48), 0 0 0 1px rgba(148,163,184,.22) !important;
+}
+body.cm-modal-open .cm-as-modal *,
+body.cm-modal-open .cm-modal-active * {
+  filter: none !important;
+}
+.cm-modal-actions {
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+  gap:10px;
+  margin-top:10px;
+}

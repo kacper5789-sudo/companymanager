@@ -1,5 +1,5 @@
 // CompanyManager — Supabase global forms bridge
-// 041F: brak blur/overlay, ale formularze znów otwierają się centralnie jako modal bez przyciemniania tła.
+// 042H: globalny focus formularzy — aktywny formularz wyraźny, tło zewnętrzne delikatnie przyciemnione i wyblurowane.
 (function () {
   'use strict';
 
@@ -8,19 +8,24 @@
   const BODY_OPEN = 'cm-modal-open';
   const OVERLAY_ID = 'cmGlobalFormOverlay';
 
+  function anyOpenModal() {
+    return !!document.querySelector('.' + MODAL_ACTIVE + ':not([hidden]), .' + MODAL_CLASS + ':not([hidden])');
+  }
+
+  function refreshBlurState() {
+    const isOpen = anyOpenModal();
+    document.body.classList.toggle(BODY_OPEN, isOpen);
+    document.documentElement.classList.toggle(BODY_OPEN, isOpen);
+    const overlay = ensureOverlay();
+    overlay.setAttribute('aria-hidden', isOpen ? 'false' : 'true');
+    overlay.hidden = !isOpen;
+    overlay.style.display = isOpen ? 'block' : 'none';
+    overlay.style.pointerEvents = isOpen ? 'auto' : 'none';
+    overlay.style.opacity = isOpen ? '1' : '0';
+  }
+
   function cleanupBlur() {
-    // 041F: wyłączamy tylko overlay/blur, ale NIE usuwamy klasy cm-as-modal.
-    // Dzięki temu formularz zostaje wycentrowany na ekranie bez przyciemniania tła.
-    document.body.classList.remove(BODY_OPEN);
-    document.documentElement.classList.remove(BODY_OPEN);
-    const overlay = document.getElementById(OVERLAY_ID);
-    if (overlay) {
-      overlay.setAttribute('aria-hidden', 'true');
-      overlay.hidden = true;
-      overlay.style.display = 'none';
-      overlay.style.pointerEvents = 'none';
-      overlay.style.opacity = '0';
-    }
+    refreshBlurState();
   }
 
   function reinitNativePickers(root) {
@@ -61,10 +66,10 @@
       overlay.setAttribute('aria-hidden', 'true');
       document.body.appendChild(overlay);
     }
-    overlay.hidden = true;
-    overlay.style.display = 'none';
-    overlay.style.pointerEvents = 'none';
-    overlay.style.opacity = '0';
+    overlay.hidden = !anyOpenModal();
+    overlay.style.display = anyOpenModal() ? 'block' : 'none';
+    overlay.style.pointerEvents = anyOpenModal() ? 'auto' : 'none';
+    overlay.style.opacity = anyOpenModal() ? '1' : '0';
     return overlay;
   }
 
@@ -78,6 +83,25 @@
     if (!panel) return;
     panel.hidden = true;
     panel.classList.remove(MODAL_ACTIVE, MODAL_CLASS);
+    cleanupBlur();
+  }
+
+  function returnToPanel(childPanel, parentPanel, panels) {
+    if (childPanel) {
+      childPanel.hidden = true;
+      childPanel.classList.remove(MODAL_ACTIVE, MODAL_CLASS);
+    }
+    if (parentPanel) {
+      (panels || []).forEach(function (panel) {
+        if (panel && panel !== parentPanel) {
+          panel.hidden = true;
+          panel.classList.remove(MODAL_ACTIVE, MODAL_CLASS);
+        }
+      });
+      parentPanel.hidden = false;
+      parentPanel.classList.add(MODAL_ACTIVE, MODAL_CLASS);
+      schedulePickerReinit(parentPanel);
+    }
     cleanupBlur();
   }
 
@@ -163,7 +187,10 @@
         const panel = target.closest('.' + MODAL_ACTIVE + ', .' + MODAL_CLASS);
         if (panel) {
           event.preventDefault();
-          closePanel(panel);
+          const parentSelector = panel.getAttribute('data-parent-panel');
+          const parentPanel = parentSelector ? document.querySelector(parentSelector) : null;
+          if (parentPanel) returnToPanel(panel, parentPanel, Array.from(document.querySelectorAll('.bm-page-card')));
+          else closePanel(panel);
         }
       }
       window.setTimeout(cleanupBlur, 0);
@@ -177,6 +204,7 @@
   window.cmShowOnlyModalPanel = showOnly;
   window.cmOpenModalPanel = open;
   window.cmCloseModalPanel = closePanel;
+  window.cmReturnToParentModalPanel = returnToPanel;
   window.cmCloseAllModalPanels = closeAll;
   window.cmHardCloseAllModalPanels = hardCloseAll;
   window.cmUpdateGlobalModalState = updateState;

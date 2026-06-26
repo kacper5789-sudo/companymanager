@@ -534,7 +534,7 @@
       <h2>Dodaj sprzedaż bez wizyty</h2>
       <form id="walkinForm" class="bm-form-grid bm-wide-form">
         ${entitySearchFieldHtml({ prefix: "walkinEmployee", type: "employee", name: "employeeId", label: "Pracownik", placeholder: "Szukaj pracownika", hint: "Wpisz imię, email lub telefon pracownika.", addLabel: "Dodaj pracownika", addTarget: "employees.html" })}
-        ${entitySearchFieldHtml({ prefix: "walkinClient", type: "client", name: "clientId", label: "Klient", placeholder: "Szukaj klienta z bazy", required: true, hint: "Wpisz imię, nazwisko, telefon lub email klienta.", addLabel: "Dodaj klienta", addTarget: "customers.html" })}
+        ${entitySearchFieldHtml({ prefix: "walkinClient", type: "client", name: "clientId", label: "Klient", placeholder: "Szukaj klienta z bazy", required: true, hint: "Wpisz imię, nazwisko, telefon lub email klienta.", addLabel: "Dodaj klienta", addTarget: "quick-client" })}
         <div class="bm-form-row-2 full">
           <label>Data sprzedaży<input name="saleDate" type="date" value="${isoToday()}" required></label>
           <label>Godzina<input name="saleTime" type="time" value="${currentTime()}" required></label>
@@ -549,7 +549,23 @@
       <p id="walkinFormMessage" class="panel-message"></p>
     </section>
 
-    <section class="bm-page-card" id="walkinQuickProductCard" hidden>
+    <section class="bm-page-card" id="walkinQuickClientCard" data-parent-panel="#walkinFormCard" hidden>
+      <h2>Dodaj klienta do bazy</h2>
+      <p class="bm-muted">Klient zapisze się w module Klienci i od razu będzie dostępny w Sprzedaży bez wizyty.</p>
+      <form id="walkinQuickClientForm" class="bm-form-grid bm-wide-form">
+        <label>Imię<input name="firstName" placeholder="Imię" required></label>
+        <label>Nazwisko<input name="lastName" placeholder="Nazwisko"></label>
+        <label>Telefon<input name="phone" placeholder="+48..." required></label>
+        <label>Email<input name="email" type="email" placeholder="email@firma.pl"></label>
+        <label>Płeć<select name="gender"><option value="">Nie wybrano</option><option value="female">Kobieta</option><option value="male">Mężczyzna</option></select></label>
+        <label>Data urodzenia<input name="birthDate" type="date"></label>
+        <label class="full">Notatka<textarea name="notes" placeholder="Notatka o kliencie"></textarea></label>
+        <div class="full cm-modal-actions"><button type="button" class="bm-secondary-btn" data-modal-cancel="true">Anuluj</button><button type="submit">Zapisz klienta</button></div>
+      </form>
+      <p id="walkinQuickClientMessage" class="panel-message"></p>
+    </section>
+
+    <section class="bm-page-card" id="walkinQuickProductCard" data-parent-panel="#walkinFormCard" hidden>
       <h2>Dodaj produkt do bazy</h2>
       <p class="bm-muted">Produkt zapisze się w module Produkty i od razu będzie dostępny w Sprzedaży bez wizyty.</p>
       <form id="walkinQuickProductForm" class="bm-form-grid bm-wide-form">
@@ -559,12 +575,12 @@
         <label>Ilość / stan<input name="unitStock" type="number" min="0" step="1" value="0"></label>
         <label>Dostawca<input name="supplier" placeholder="Dostawca"></label>
         <label class="full">Opis<textarea name="description" placeholder="Opis produktu"></textarea></label>
-        <div class="full"><button type="submit">Zapisz produkt</button></div>
+        <div class="full cm-modal-actions"><button type="button" class="bm-secondary-btn" data-modal-cancel="true">Anuluj</button><button type="submit">Zapisz produkt</button></div>
       </form>
       <p id="walkinQuickProductMessage" class="panel-message"></p>
     </section>
 
-    <section class="bm-page-card" id="walkinQuickServiceCard" hidden>
+    <section class="bm-page-card" id="walkinQuickServiceCard" data-parent-panel="#walkinFormCard" hidden>
       <h2>Dodaj usługę do bazy</h2>
       <p class="bm-muted">Usługa zapisze się w module Usługi i od razu będzie dostępna w Sprzedaży bez wizyty.</p>
       <form id="walkinQuickServiceForm" class="bm-form-grid bm-wide-form">
@@ -583,7 +599,7 @@
         </div>
         <label>Cena usługi<input name="price" type="number" min="0" step="0.01" placeholder="0.00" required></label>
         <label class="full">Opis<textarea name="description" placeholder="Opis usługi"></textarea></label>
-        <div class="full"><button type="submit">Zapisz usługę</button></div>
+        <div class="full cm-modal-actions"><button type="button" class="bm-secondary-btn" data-modal-cancel="true">Anuluj</button><button type="submit">Zapisz usługę</button></div>
       </form>
       <p id="walkinQuickServiceMessage" class="panel-message"></p>
     </section>
@@ -603,11 +619,13 @@
   function bindActions(ctx, data) {
     const formCard = document.querySelector("#walkinFormCard");
     const deleteCard = document.querySelector("#walkinDeleteCard");
+    const quickClientCard = document.querySelector("#walkinQuickClientCard");
     const quickProductCard = document.querySelector("#walkinQuickProductCard");
     const quickServiceCard = document.querySelector("#walkinQuickServiceCard");
-    const panels = [formCard, deleteCard, quickProductCard, quickServiceCard];
+    const panels = [formCard, deleteCard, quickClientCard, quickProductCard, quickServiceCard];
     document.querySelector("#showAddWalkin")?.addEventListener("click", () => showOnlyPanel(formCard, panels));
     document.querySelector("#showDeleteWalkin")?.addEventListener("click", () => showOnlyPanel(deleteCard, panels));
+    document.querySelectorAll('[data-open-related="quick-client"]').forEach((button) => button.addEventListener("click", () => showOnlyPanel(quickClientCard, panels)));
     document.querySelectorAll('[data-open-related="quick-product"]').forEach((button) => button.addEventListener("click", () => showOnlyPanel(quickProductCard, panels)));
     document.querySelectorAll('[data-open-related="quick-service"]').forEach((button) => button.addEventListener("click", () => showOnlyPanel(quickServiceCard, panels)));
     bindRelatedOpenButtons();
@@ -633,6 +651,57 @@
     document.querySelector("#walkinProductId")?.addEventListener("input", updateAmount);
     document.querySelector("#walkinServiceId")?.addEventListener("change", updateAmount);
     document.querySelector("#walkinServiceId")?.addEventListener("input", updateAmount);
+
+    document.querySelector("#walkinQuickClientForm")?.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const form = event.currentTarget;
+      if (form.dataset.saving === "1") return;
+      form.dataset.saving = "1";
+      const submit = form.querySelector('button[type="submit"]');
+      if (submit) submit.disabled = true;
+      try {
+        const fd = new FormData(form);
+        const firstName = String(fd.get("firstName") || "").trim();
+        const lastName = String(fd.get("lastName") || "").trim();
+        const phone = String(fd.get("phone") || "").trim();
+        const email = String(fd.get("email") || "").trim();
+        if (!firstName) throw new Error("Podaj imię klienta.");
+        if (!phone) throw new Error("Podaj telefon klienta.");
+        const fullName = [firstName, lastName].filter(Boolean).join(" ");
+        const payload = {
+          company_id: ctx.companyId,
+          first_name: firstName,
+          last_name: lastName,
+          full_name: fullName,
+          phone,
+          email: email || null,
+          gender: String(fd.get("gender") || "") || null,
+          birth_date: String(fd.get("birthDate") || "") || null,
+          notes: String(fd.get("notes") || "").trim() || null,
+          active: true,
+          updated_at: new Date().toISOString()
+        };
+        const { data: insertedClient, error } = await window.cmSupabase.from("clients").insert(payload).select("*").single();
+        if (error) throw error;
+        await window.cmUndo?.record({ module: "clients", actionType: "insert", targetTable: "clients", targetId: insertedClient?.id, afterData: insertedClient || payload, companyId: ctx.companyId });
+        const hidden = document.querySelector("#walkinClientId");
+        const input = hidden?.closest(".cm-client-search")?.querySelector("[data-walkin-entity-search]") || document.querySelector('[data-entity-hidden="walkinClientId"]');
+        if (hidden && insertedClient?.id) {
+          hidden.value = insertedClient.id;
+          hidden.dataset.label = clientSearchText(insertedClient);
+          hidden.dataset.name = clientName(insertedClient);
+          hidden.dispatchEvent(new Event("change", { bubbles: true }));
+        }
+        if (input) input.value = clientSearchText(insertedClient);
+        setMessage("#walkinQuickClientMessage", "Klient zapisany i wybrany w sprzedaży.", true);
+        window.cmReturnToParentModalPanel?.(document.querySelector("#walkinQuickClientCard"), formCard, panels);
+      } catch (error) {
+        setMessage("#walkinQuickClientMessage", "Błąd zapisu klienta: " + (error.message || JSON.stringify(error)), false);
+      } finally {
+        form.dataset.saving = "0";
+        if (submit) submit.disabled = false;
+      }
+    });
 
     document.querySelector("#walkinQuickProductForm")?.addEventListener("submit", async (event) => {
       event.preventDefault();
@@ -667,8 +736,23 @@
         const { data: insertedProduct, error } = await window.cmSupabase.from("products").insert(payload).select("*").single();
         if (error) throw error;
         await window.cmUndo?.record({ module: "products", actionType: "insert", targetTable: "products", targetId: insertedProduct?.id, afterData: insertedProduct || payload, companyId: ctx.companyId });
-        setMessage("#walkinQuickProductMessage", "Produkt zapisany. Odświeżam listę sprzedaży...", true);
-        setTimeout(renderWalkins, 450);
+        if (insertedProduct) data.products.push(insertedProduct);
+        const hidden = document.querySelector("#walkinProductId");
+        const input = hidden?.closest(".cm-entity-search")?.querySelector("[data-walkin-entity-search]") || document.querySelector('[data-entity-hidden="walkinProductId"]');
+        const label = `${productName(insertedProduct || payload)} — ${price.toFixed(2).replace('.00','')} PLN`;
+        if (hidden && insertedProduct?.id) {
+          hidden.value = insertedProduct.id;
+          hidden.dataset.label = label;
+          hidden.dataset.name = productName(insertedProduct || payload);
+          hidden.dataset.price = String(price);
+          hidden.dispatchEvent(new Event("change", { bubbles: true }));
+          hidden.dispatchEvent(new Event("input", { bubbles: true }));
+        }
+        if (input) input.value = label;
+        document.querySelector("#walkinAmount")?.dispatchEvent(new Event("input", { bubbles: true }));
+        setMessage("#walkinQuickProductMessage", "Produkt zapisany i wybrany w sprzedaży.", true);
+        form.reset();
+        window.cmReturnToParentModalPanel?.(document.querySelector("#walkinQuickProductCard"), formCard, panels);
       } catch (error) {
         setMessage("#walkinQuickProductMessage", "Błąd zapisu produktu: " + (error.message || JSON.stringify(error)), false);
         form.dataset.saving = "0";
@@ -727,8 +811,22 @@
         const { data: insertedService, error } = await window.cmSupabase.from("services").insert(payload).select("*").single();
         if (error) throw error;
         await window.cmUndo?.record({ module: "services", actionType: "insert", targetTable: "services", targetId: insertedService?.id, afterData: insertedService || payload, companyId: ctx.companyId });
-        setMessage("#walkinQuickServiceMessage", "Usługa zapisana. Odświeżam listę sprzedaży...", true);
-        setTimeout(renderWalkins, 450);
+        if (insertedService) data.services.push(insertedService);
+        const hidden = document.querySelector("#walkinServiceId");
+        const input = hidden?.closest(".cm-entity-search")?.querySelector("[data-walkin-entity-search]") || document.querySelector('[data-entity-hidden="walkinServiceId"]');
+        const label = `${insertedService?.name || name} — ${price.toFixed(2).replace('.00','')} PLN`;
+        if (hidden && insertedService?.id) {
+          hidden.value = insertedService.id;
+          hidden.dataset.label = label;
+          hidden.dataset.name = insertedService.name || name;
+          hidden.dataset.price = String(price);
+          hidden.dispatchEvent(new Event("change", { bubbles: true }));
+          hidden.dispatchEvent(new Event("input", { bubbles: true }));
+        }
+        if (input) input.value = label;
+        setMessage("#walkinQuickServiceMessage", "Usługa zapisana i wybrana w sprzedaży.", true);
+        form.reset();
+        window.cmReturnToParentModalPanel?.(document.querySelector("#walkinQuickServiceCard"), formCard, panels);
       } catch (error) {
         setMessage("#walkinQuickServiceMessage", "Błąd zapisu usługi: " + (error.message || JSON.stringify(error)), false);
         form.dataset.saving = "0";
