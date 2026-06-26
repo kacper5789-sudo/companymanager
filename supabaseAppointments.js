@@ -330,14 +330,17 @@
 
   function clientSearchFieldHtml(prefix) {
     return `
-      <label>Klient
-        <div class="cm-client-search" data-client-search-wrap>
-          <input type="search" id="${escapeHtml(prefix)}Search" class="cm-client-search-input" data-client-search data-client-hidden="${escapeHtml(prefix)}Id" placeholder="Szukaj klienta z bazy" autocomplete="off" required>
-          <input type="hidden" id="${escapeHtml(prefix)}Id" name="customerId">
-          <div class="cm-client-search-results" data-client-results hidden></div>
-        </div>
-        <small class="cm-muted">Wpisz imię, nazwisko, telefon lub email klienta.</small>
-      </label>`;
+      <div class="cm-connected-field cm-search-connected-field">
+        <label>Klient
+          <div class="cm-client-search" data-client-search-wrap>
+            <input type="search" id="${escapeHtml(prefix)}Search" class="cm-client-search-input" data-client-search data-client-hidden="${escapeHtml(prefix)}Id" placeholder="Szukaj klienta z bazy" autocomplete="off" required>
+            <input type="hidden" id="${escapeHtml(prefix)}Id" name="customerId">
+            <div class="cm-client-search-results" data-client-results hidden></div>
+          </div>
+          <small class="cm-muted">Wpisz imię, nazwisko, telefon lub email klienta.</small>
+        </label>
+        <button type="button" class="bm-secondary-btn cm-related-add-btn" data-open-related-module="customers.html">Dodaj klienta</button>
+      </div>`;
   }
 
   function setupClientSearchFields(clients) {
@@ -427,15 +430,21 @@
 
   function entitySearchFieldHtml(config) {
     const required = config.required ? 'required' : '';
+    const addTarget = config.addTarget || '';
+    const addLabel = config.addLabel || '';
+    const addHtml = addTarget && addLabel ? `<button type="button" class="bm-secondary-btn cm-related-add-btn" data-open-related-module="${escapeHtml(addTarget)}">${escapeHtml(addLabel)}</button>` : '';
     return `
-      <label>${escapeHtml(config.label)}
-        <div class="cm-client-search cm-entity-search" data-entity-search-wrap>
-          <input type="search" id="${escapeHtml(config.prefix)}Search" class="cm-client-search-input" data-entity-search data-entity-type="${escapeHtml(config.type)}" data-entity-hidden="${escapeHtml(config.prefix)}Id" data-entity-name="${escapeHtml(config.name)}" placeholder="${escapeHtml(config.placeholder)}" autocomplete="off" ${required}>
-          <input type="hidden" id="${escapeHtml(config.prefix)}Id" name="${escapeHtml(config.name)}">
-          <div class="cm-client-search-results" data-entity-results hidden></div>
-        </div>
-        <small class="cm-muted">${escapeHtml(config.hint || 'Zacznij pisać, aby wyszukać z bazy.')}</small>
-      </label>`;
+      <div class="cm-connected-field cm-search-connected-field">
+        <label>${escapeHtml(config.label)}
+          <div class="cm-client-search cm-entity-search" data-entity-search-wrap>
+            <input type="search" id="${escapeHtml(config.prefix)}Search" class="cm-client-search-input" data-entity-search data-entity-type="${escapeHtml(config.type)}" data-entity-hidden="${escapeHtml(config.prefix)}Id" data-entity-name="${escapeHtml(config.name)}" placeholder="${escapeHtml(config.placeholder)}" autocomplete="off" ${required}>
+            <input type="hidden" id="${escapeHtml(config.prefix)}Id" name="${escapeHtml(config.name)}">
+            <div class="cm-client-search-results" data-entity-results hidden></div>
+          </div>
+          <small class="cm-muted">${escapeHtml(config.hint || 'Zacznij pisać, aby wyszukać z bazy.')}</small>
+        </label>
+        ${addHtml}
+      </div>`;
   }
 
   function entityConfigs(data) {
@@ -878,9 +887,9 @@
           <label>Od<select name="start">${timeOptions("10:00")}</select></label>
           <label>Do<select name="end">${timeOptions("10:30")}</select></label>
           ${clientSearchFieldHtml("visitClient")}
-          ${entitySearchFieldHtml({ prefix: "visitEmployee", type: "employee", name: "employeeId", label: "Pracownik", placeholder: "Szukaj pracownika", required: true, hint: "Wpisz imię, email lub telefon pracownika." })}
-          ${entitySearchFieldHtml({ prefix: "visitService", type: "service", name: "serviceId", label: "Usługi", placeholder: "Szukaj usługi", hint: "Wpisz nazwę usługi lub cenę." })}
-          ${entitySearchFieldHtml({ prefix: "visitProduct", type: "product", name: "productId", label: "Zakup produktów", placeholder: "Szukaj produktu", hint: "Wpisz nazwę produktu, SKU, kod lub cenę." })}
+          ${entitySearchFieldHtml({ prefix: "visitEmployee", type: "employee", name: "employeeId", label: "Pracownik", placeholder: "Szukaj pracownika", required: true, hint: "Wpisz imię, email lub telefon pracownika.", addLabel: "Dodaj pracownika", addTarget: "employees.html" })}
+          ${entitySearchFieldHtml({ prefix: "visitService", type: "service", name: "serviceId", label: "Usługi", placeholder: "Szukaj usługi", hint: "Wpisz nazwę usługi lub cenę.", addLabel: "Dodaj usługę", addTarget: "services.html" })}
+          ${entitySearchFieldHtml({ prefix: "visitProduct", type: "product", name: "productId", label: "Zakup produktów", placeholder: "Szukaj produktu", hint: "Wpisz nazwę produktu, SKU, kod lub cenę.", addLabel: "Dodaj produkt", addTarget: "products.html" })}
           <label class="bm-full">Karnet klienta<select name="passId"><option value="">Najpierw wybierz klienta</option></select><small class="bm-muted">Karnet pojawi się po wyborze klienta. Karnet usługowy rozlicza usługę, produkty zostają doliczone normalnie.</small></label>
           <label>Razem do zapłaty<input name="total" value="0.00" readonly></label>
           <label>Płatność<select name="payment">${paymentOptionsHtml}</select></label>
@@ -900,9 +909,9 @@
           <label>Od<select name="start">${timeOptions()}</select></label>
           <label>Do<select name="end">${timeOptions()}</select></label>
           ${clientSearchFieldHtml("visitEditClient")}
-          ${entitySearchFieldHtml({ prefix: "visitEditEmployee", type: "employee", name: "employeeId", label: "Pracownik", placeholder: "Szukaj pracownika", required: true, hint: "Wpisz imię, email lub telefon pracownika." })}
-          ${entitySearchFieldHtml({ prefix: "visitEditService", type: "service", name: "serviceId", label: "Usługi", placeholder: "Szukaj usługi", hint: "Wpisz nazwę usługi lub cenę." })}
-          ${entitySearchFieldHtml({ prefix: "visitEditProduct", type: "product", name: "productId", label: "Zakup produktów", placeholder: "Szukaj produktu", hint: "Wpisz nazwę produktu, SKU, kod lub cenę." })}
+          ${entitySearchFieldHtml({ prefix: "visitEditEmployee", type: "employee", name: "employeeId", label: "Pracownik", placeholder: "Szukaj pracownika", required: true, hint: "Wpisz imię, email lub telefon pracownika.", addLabel: "Dodaj pracownika", addTarget: "employees.html" })}
+          ${entitySearchFieldHtml({ prefix: "visitEditService", type: "service", name: "serviceId", label: "Usługi", placeholder: "Szukaj usługi", hint: "Wpisz nazwę usługi lub cenę.", addLabel: "Dodaj usługę", addTarget: "services.html" })}
+          ${entitySearchFieldHtml({ prefix: "visitEditProduct", type: "product", name: "productId", label: "Zakup produktów", placeholder: "Szukaj produktu", hint: "Wpisz nazwę produktu, SKU, kod lub cenę.", addLabel: "Dodaj produkt", addTarget: "products.html" })}
           <label class="bm-full">Karnet klienta<select name="passId"><option value="">Najpierw wybierz klienta</option></select><small class="bm-muted">Karnet pojawi się po wyborze klienta. Karnet usługowy rozlicza usługę, produkty zostają doliczone normalnie.</small></label>
           <label>Razem do zapłaty<input name="total" value="0.00" readonly></label>
           <label>Płatność<select name="payment">${paymentOptionsHtml}</select></label>
@@ -924,6 +933,14 @@
     setupVisitNativeDatePickers();
     setupClientSearchFields(data.clients);
     setupEntitySearchFields(data);
+    document.querySelectorAll("[data-open-related-module]").forEach((button) => {
+      if (button.dataset.cmRelatedReady === "1") return;
+      button.dataset.cmRelatedReady = "1";
+      button.addEventListener("click", () => {
+        const target = button.dataset.openRelatedModule;
+        if (target) window.location.href = target;
+      });
+    });
 
     function bindPassOptions(form) {
       if (!form || !form.elements.passId) return;

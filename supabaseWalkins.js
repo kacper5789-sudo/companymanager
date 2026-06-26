@@ -162,6 +162,138 @@
     return [client.first_name, client.last_name].filter(Boolean).join(" ") || client.email || client.phone || "";
   }
 
+
+  function isActiveEntity(item) {
+    const status = String(item?.status || "").trim().toLowerCase();
+    return item?.deleted_at == null
+      && item?.deleted !== true
+      && item?.active !== false
+      && !["usunięty", "usuniety", "deleted", "archived", "zarchiwizowany", "usunięte"].includes(status);
+  }
+
+  function clientSearchText(client) {
+    return [clientName(client), client?.phone || "", client?.email || ""].filter(Boolean).join(" · ");
+  }
+
+  function entitySearchFieldHtml(config) {
+    const required = config.required ? "required" : "";
+    const addHtml = config.addLabel && config.addTarget ? `<button type="button" class="bm-secondary-btn cm-related-add-btn" data-open-related="${escapeHtml(config.addTarget)}">${escapeHtml(config.addLabel)}</button>` : "";
+    return `
+      <div class="cm-connected-field cm-search-connected-field">
+        <label>${escapeHtml(config.label)}
+          <div class="cm-client-search cm-entity-search" data-walkin-entity-search-wrap>
+            <input type="search" class="cm-client-search-input" data-walkin-entity-search data-entity-type="${escapeHtml(config.type)}" data-entity-hidden="${escapeHtml(config.prefix)}Id" data-entity-name="${escapeHtml(config.name)}" placeholder="${escapeHtml(config.placeholder)}" autocomplete="off" ${required}>
+            <input type="hidden" id="${escapeHtml(config.prefix)}Id" name="${escapeHtml(config.name)}">
+            <div class="cm-client-search-results" data-walkin-entity-results hidden></div>
+          </div>
+          <small class="cm-muted">${escapeHtml(config.hint || "Zacznij pisać, aby wyszukać z bazy.")}</small>
+        </label>
+        ${addHtml}
+      </div>`;
+  }
+
+  function productName(product) {
+    return product?.name || product?.product_name || "Produkt";
+  }
+
+  function walkinEntityGroups(data) {
+    const clients = (data.clients || []).filter(isActiveEntity).map((item) => ({
+      type: "client",
+      id: String(item.id || ""),
+      label: clientSearchText(item),
+      name: clientName(item),
+      haystack: clientSearchText(item).toLowerCase()
+    })).filter((row) => row.id);
+    const employees = (data.users || []).filter(isActiveEntity).map((item) => ({
+      type: "employee",
+      id: String(item.id || ""),
+      label: userName(item) || item.email || "Pracownik",
+      name: userName(item) || item.email || "Pracownik",
+      haystack: [userName(item), item.email || "", item.phone || ""].join(" ").toLowerCase()
+    })).filter((row) => row.id);
+    const services = (data.services || []).filter(isActiveEntity).map((item) => {
+      const price = servicePrice(item);
+      const name = item.name || "Usługa";
+      return { type: "service", id: String(item.id || ""), label: `${name}${price ? ` — ${price.toFixed(2).replace(".00", "")} PLN` : ""}`, name, price, haystack: [name, price].join(" ").toLowerCase() };
+    }).filter((row) => row.id);
+    const products = (data.products || []).filter(isActiveEntity).map((item) => {
+      const price = productPrice(item);
+      const name = productName(item);
+      return { type: "product", id: String(item.id || ""), label: `${name}${price ? ` — ${price.toFixed(2).replace(".00", "")} PLN` : ""}`, name, price, haystack: [name, item.sku || "", item.barcode || "", price].join(" ").toLowerCase() };
+    }).filter((row) => row.id);
+    return { client: clients, employee: employees, service: services, product: products };
+  }
+
+  function setupWalkinEntitySearchFields(data) {
+    const groups = walkinEntityGroups(data);
+    document.querySelectorAll("[data-walkin-entity-search]").forEach((input) => {
+      if (input.dataset.cmWalkinEntityReady === "1") return;
+      input.dataset.cmWalkinEntityReady = "1";
+      const wrap = input.closest("[data-walkin-entity-search-wrap]");
+      const results = wrap?.querySelector("[data-walkin-entity-results]");
+      const hidden = document.getElementById(input.dataset.entityHidden || "");
+      if (!wrap || !results || !hidden) return;
+      const rows = groups[input.dataset.entityType] || [];
+      const byId = new Map(rows.map((row) => [String(row.id), row]));
+      const close = () => { results.hidden = true; };
+      const selectRow = (row) => {
+        input.value = row.label;
+        hidden.value = row.id;
+        hidden.dataset.label = row.label || "";
+        hidden.dataset.name = row.name || row.label || "";
+        hidden.dataset.price = row.price != null ? String(row.price) : "";
+        hidden.dispatchEvent(new Event("change", { bubbles: true }));
+        hidden.dispatchEvent(new Event("input", { bubbles: true }));
+        close();
+      };
+      const render = () => {
+        const q = String(input.value || "").trim().toLowerCase();
+        if (hidden.value) {
+          const current = byId.get(String(hidden.value));
+          if (!current || input.value !== current.label) {
+            hidden.value = "";
+            hidden.dataset.label = "";
+            hidden.dataset.name = "";
+            hidden.dataset.price = "";
+            hidden.dispatchEvent(new Event("change", { bubbles: true }));
+          }
+        }
+        const matches = rows.filter((row) => !q || row.haystack.includes(q)).slice(0, 12);
+        if (!matches.length) {
+          results.innerHTML = `<div class="cm-client-search-empty">Brak wyników dla tej frazy.</div>`;
+          results.hidden = false;
+          return;
+        }
+        results.innerHTML = matches.map((row) => `<button type="button" class="cm-client-search-item" data-walkin-entity-id="${escapeHtml(row.id)}">${escapeHtml(row.label)}</button>`).join("");
+        results.hidden = false;
+      };
+      input.addEventListener("input", render);
+      input.addEventListener("focus", render);
+      results.addEventListener("mousedown", (event) => {
+        const button = event.target.closest("[data-walkin-entity-id]");
+        if (!button) return;
+        event.preventDefault();
+        const row = byId.get(String(button.dataset.walkinEntityId));
+        if (row) selectRow(row);
+      });
+      document.addEventListener("click", (event) => {
+        if (!wrap.contains(event.target)) close();
+      });
+    });
+  }
+
+  function bindRelatedOpenButtons() {
+    document.querySelectorAll("[data-open-related]").forEach((button) => {
+      if (button.dataset.cmRelatedReady === "1") return;
+      button.dataset.cmRelatedReady = "1";
+      button.addEventListener("click", () => {
+        const target = button.dataset.openRelated;
+        if (!target) return;
+        window.location.href = target;
+      });
+    });
+  }
+
   function userName(user) { return user?.full_name || user?.email || ""; }
 
   function productPrice(product) {
@@ -288,7 +420,7 @@
       sales: salesRes.data || [],
       items: itemsRes.data || [],
       payments: paymentsRes.data || [],
-      clients: clientsRes.data || [],
+      clients: (clientsRes.data || []).filter((item) => isActiveEntity(item)),
       users: usersRes.data || [],
       categories: categoriesRes.data || [],
       positions: (positionsRes.data || []).filter((p) => p.active !== false),
@@ -401,20 +533,14 @@
     <section class="bm-page-card" id="walkinFormCard" hidden>
       <h2>Dodaj sprzedaż bez wizyty</h2>
       <form id="walkinForm" class="bm-form-grid bm-wide-form">
-        <label>Pracownik<select name="employeeId"><option value="">Automatycznie / brak</option>${employeeOptions}</select></label>
-        <label>Klient<select name="clientId" required><option value="">Wybierz klienta</option>${customerOptions}</select></label>
+        ${entitySearchFieldHtml({ prefix: "walkinEmployee", type: "employee", name: "employeeId", label: "Pracownik", placeholder: "Szukaj pracownika", hint: "Wpisz imię, email lub telefon pracownika.", addLabel: "Dodaj pracownika", addTarget: "employees.html" })}
+        ${entitySearchFieldHtml({ prefix: "walkinClient", type: "client", name: "clientId", label: "Klient", placeholder: "Szukaj klienta z bazy", required: true, hint: "Wpisz imię, nazwisko, telefon lub email klienta.", addLabel: "Dodaj klienta", addTarget: "customers.html" })}
         <div class="bm-form-row-2 full">
           <label>Data sprzedaży<input name="saleDate" type="date" value="${isoToday()}" required></label>
           <label>Godzina<input name="saleTime" type="time" value="${currentTime()}" required></label>
         </div>
-        <div class="cm-connected-field">
-          <label>Produkt<select name="productId" id="walkinProductSelect"><option value="">Nie dodawaj produktu</option>${productOptions}</select></label>
-          <button type="button" id="walkinOpenQuickProduct" class="bm-secondary-btn">Dodaj nowy produkt</button>
-        </div>
-        <div class="cm-connected-field">
-          <label>Usługa<select name="serviceId" id="walkinServiceSelect"><option value="">Nie dodawaj usługi</option>${serviceOptions}</select></label>
-          <button type="button" id="walkinOpenQuickService" class="bm-secondary-btn">Dodaj nową usługę</button>
-        </div>
+        ${entitySearchFieldHtml({ prefix: "walkinProduct", type: "product", name: "productId", label: "Produkt", placeholder: "Szukaj produktu", hint: "Wpisz nazwę produktu, SKU, kod lub cenę.", addLabel: "Dodaj nowy produkt", addTarget: "quick-product" })}
+        ${entitySearchFieldHtml({ prefix: "walkinService", type: "service", name: "serviceId", label: "Usługa", placeholder: "Szukaj usługi", hint: "Wpisz nazwę usługi lub cenę.", addLabel: "Dodaj nową usługę", addTarget: "quick-service" })}
         <label>Razem do zapłaty<input name="amount" id="walkinAmount" type="number" min="0" step="0.01" value="0.00"></label>
         <label>Płatność<select name="paymentMethod" required>${paymentOptionsHtml}</select></label>
         <label class="full">Opis<textarea name="description" placeholder="Opis sprzedaży"></textarea></label>
@@ -482,9 +608,11 @@
     const panels = [formCard, deleteCard, quickProductCard, quickServiceCard];
     document.querySelector("#showAddWalkin")?.addEventListener("click", () => showOnlyPanel(formCard, panels));
     document.querySelector("#showDeleteWalkin")?.addEventListener("click", () => showOnlyPanel(deleteCard, panels));
-    document.querySelector("#walkinOpenQuickProduct")?.addEventListener("click", () => showOnlyPanel(quickProductCard, panels));
-    document.querySelector("#walkinOpenQuickService")?.addEventListener("click", () => showOnlyPanel(quickServiceCard, panels));
+    document.querySelectorAll('[data-open-related="quick-product"]').forEach((button) => button.addEventListener("click", () => showOnlyPanel(quickProductCard, panels)));
+    document.querySelectorAll('[data-open-related="quick-service"]').forEach((button) => button.addEventListener("click", () => showOnlyPanel(quickServiceCard, panels)));
+    bindRelatedOpenButtons();
     setupModuleLimitDropdowns(document);
+    setupWalkinEntitySearchFields(data);
 
     const apply = () => {
       const q = encodeURIComponent(document.querySelector("#walkinsSearch")?.value || "");
@@ -494,15 +622,17 @@
     document.querySelector("#walkinsSearch")?.addEventListener("keydown", (event) => { if (event.key === "Enter") apply(); });
 
     const updateAmount = () => {
-      const productSelect = document.querySelector("#walkinProductSelect");
-      const serviceSelect = document.querySelector("#walkinServiceSelect");
-      const productPrice = parseNumber(productSelect?.selectedOptions?.[0]?.dataset?.price, 0);
-      const servicePrice = parseNumber(serviceSelect?.selectedOptions?.[0]?.dataset?.price, 0);
+      const productSelect = document.querySelector("#walkinProductId");
+      const serviceSelect = document.querySelector("#walkinServiceId");
+      const productPrice = parseNumber(productSelect?.dataset?.price, 0);
+      const servicePrice = parseNumber(serviceSelect?.dataset?.price, 0);
       const amount = document.querySelector("#walkinAmount");
       if (amount) amount.value = (productPrice + servicePrice).toFixed(2);
     };
-    document.querySelector("#walkinProductSelect")?.addEventListener("change", updateAmount);
-    document.querySelector("#walkinServiceSelect")?.addEventListener("change", updateAmount);
+    document.querySelector("#walkinProductId")?.addEventListener("change", updateAmount);
+    document.querySelector("#walkinProductId")?.addEventListener("input", updateAmount);
+    document.querySelector("#walkinServiceId")?.addEventListener("change", updateAmount);
+    document.querySelector("#walkinServiceId")?.addEventListener("input", updateAmount);
 
     document.querySelector("#walkinQuickProductForm")?.addEventListener("submit", async (event) => {
       event.preventDefault();
