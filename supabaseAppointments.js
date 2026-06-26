@@ -214,6 +214,104 @@
     return [customer?.first_name, customer?.last_name].filter(Boolean).join(" ") || customer?.full_name || customer?.name || customer?.email || "-";
   }
 
+  function isActiveClient(client) {
+    const status = String(client?.status || "").trim().toLowerCase();
+    return client?.deleted_at == null
+      && client?.active !== false
+      && !["usunięty", "usuniety", "deleted", "archived", "zarchiwizowany"].includes(status);
+  }
+
+  function clientSearchText(client) {
+    return [
+      customerName(client),
+      client?.phone || "",
+      client?.email || ""
+    ].filter(Boolean).join(" · ");
+  }
+
+  function clientSearchFieldHtml(prefix) {
+    return `
+      <label>Klient
+        <div class="cm-client-search" data-client-search-wrap>
+          <input type="search" id="${escapeHtml(prefix)}Search" class="cm-client-search-input" data-client-search data-client-hidden="${escapeHtml(prefix)}Id" placeholder="Szukaj klienta z bazy" autocomplete="off" required>
+          <input type="hidden" id="${escapeHtml(prefix)}Id" name="customerId">
+          <div class="cm-client-search-results" data-client-results hidden></div>
+        </div>
+        <small class="cm-muted">Wpisz imię, nazwisko, telefon lub email klienta.</small>
+      </label>`;
+  }
+
+  function setupClientSearchFields(clients) {
+    const activeClients = (clients || []).filter(isActiveClient);
+    const byId = new Map(activeClients.map((client) => [String(client.id), client]));
+    const normalized = activeClients.map((client) => ({
+      client,
+      label: clientSearchText(client),
+      haystack: clientSearchText(client).toLowerCase()
+    }));
+
+    document.querySelectorAll("[data-client-search]").forEach((input) => {
+      if (input.dataset.cmClientSearchReady === "1") return;
+      input.dataset.cmClientSearchReady = "1";
+      const wrap = input.closest("[data-client-search-wrap]");
+      const results = wrap?.querySelector("[data-client-results]");
+      const hidden = document.getElementById(input.dataset.clientHidden || "");
+      if (!wrap || !results || !hidden) return;
+
+      const close = () => { results.hidden = true; };
+      const selectClient = (client) => {
+        input.value = clientSearchText(client);
+        hidden.value = client.id;
+        close();
+      };
+      const render = () => {
+        const q = String(input.value || "").trim().toLowerCase();
+        if (hidden.value) {
+          const current = byId.get(String(hidden.value));
+          if (!current || input.value !== clientSearchText(current)) hidden.value = "";
+        }
+        const matches = normalized
+          .filter((row) => !q || row.haystack.includes(q))
+          .slice(0, 12);
+        if (!matches.length) {
+          results.innerHTML = `<div class="cm-client-search-empty">Brak aktywnych klientów dla tej frazy.</div>`;
+          results.hidden = false;
+          return;
+        }
+        results.innerHTML = matches.map((row) => `
+          <button type="button" class="cm-client-search-item" data-client-id="${escapeHtml(row.client.id)}">
+            ${escapeHtml(row.label)}
+          </button>
+        `).join("");
+        results.hidden = false;
+      };
+
+      input.addEventListener("input", render);
+      input.addEventListener("focus", render);
+      results.addEventListener("mousedown", (event) => {
+        const button = event.target.closest("[data-client-id]");
+        if (!button) return;
+        event.preventDefault();
+        const client = byId.get(String(button.dataset.clientId));
+        if (client) selectClient(client);
+      });
+      document.addEventListener("click", (event) => {
+        if (!wrap.contains(event.target)) close();
+      });
+    });
+  }
+
+  function setClientSearchValue(form, clientId, clientsById) {
+    if (!form) return;
+    const hidden = form.elements.customerId;
+    const input = form.querySelector("[data-client-search]");
+    if (hidden) hidden.value = clientId || "";
+    if (input) {
+      const client = clientsById?.[clientId];
+      input.value = client ? clientSearchText(client) : "";
+    }
+  }
+
   function personName(person) {
     return person?.full_name || person?.email || person?.name || "-";
   }
@@ -228,7 +326,7 @@
         .order("time", { ascending: true }),
       window.cmSupabase
         .from("clients")
-        .select("id, company_id, first_name, last_name, email, phone, status")
+        .select("id, company_id, first_name, last_name, full_name, email, phone, status, active, deleted_at")
         .eq("company_id", ctx.companyId)
         .order("last_name", { ascending: true }),
       window.cmSupabase
@@ -252,7 +350,7 @@
 
     return {
       appointments: appointmentsRes.data || [],
-      clients: (clientsRes.data || []).filter((item) => item.status !== "usunięty"),
+      clients: (clientsRes.data || []).filter((item) => isActiveClient(item)),
       services: (servicesRes.data || []).filter((item) => item.active !== false),
       positions: (positionsRes.data || []).filter((item) => item.active !== false),
       users: usersRes.data || []
@@ -352,11 +450,11 @@
     return "";
   }
 
-  function fillEditForm(form, item) {
+  function fillEditForm(form, item, lookups) {
     if (!form || !item) return;
     form.elements.date.value = appointmentDate(item) || "";
     form.elements.time.value = appointmentTime(item) || "";
-    form.elements.customerId.value = appointmentClientId(item) || "";
+    setClientSearchValue(form, appointmentClientId(item) || "", lookups?.clientsById || {});
     form.elements.employeeId.value = item.employee_id || "";
     form.elements.serviceId.value = item.service_id || "";
     form.elements.positionId.value = item.position_id || "";
@@ -424,7 +522,6 @@
     });
 
     const statusTabs = statuses.map((status) => `<button type="button" class="bm-tab-btn ${status === currentFilter ? "active" : ""}" data-visit-filter="${escapeHtml(status)}">${escapeHtml(status)}</button>`).join("");
-    const customerOptions = options(data.clients, customerName, "Brak klientów");
     const employeeOptions = options(data.users, personName, "Brak pracowników/użytkowników");
     const serviceOptions = options(data.services, (s) => s.name || "Usługa", "Brak usług");
     const positionOptions = options(data.positions, (p) => p.name || "Stanowisko", "Brak stanowisk");
@@ -444,7 +541,7 @@
         <form id="visitForm" class="bm-form-grid">
           <label>Data<input name="date" type="date" value="${new Date().toISOString().slice(0, 10)}" required></label>
           <label>Godzina<input name="time" type="time" value="10:00" required></label>
-          <label>Klient<select name="customerId" required><option value="">Wybierz klienta</option>${customerOptions}</select></label>
+          ${clientSearchFieldHtml("visitClient")}
           <label>Pracownik<select name="employeeId" required><option value="">Wybierz pracownika</option>${employeeOptions}</select></label>
           <label>Usługa<select name="serviceId" required><option value="">Wybierz usługę</option>${serviceOptions}</select></label>
           <label>Stanowisko pracy<select name="positionId"><option value="">Wybierz stanowisko</option>${positionOptions}</select></label>
@@ -460,7 +557,7 @@
         <form id="visitEditForm" class="bm-form-grid" hidden>
           <label>Data<input name="date" type="date" required></label>
           <label>Godzina<input name="time" type="time" required></label>
-          <label>Klient<select name="customerId" required><option value="">Wybierz klienta</option>${customerOptions}</select></label>
+          ${clientSearchFieldHtml("visitEditClient")}
           <label>Pracownik<select name="employeeId" required><option value="">Wybierz pracownika</option>${employeeOptions}</select></label>
           <label>Usługa<select name="serviceId" required><option value="">Wybierz usługę</option>${serviceOptions}</select></label>
           <label>Stanowisko pracy<select name="positionId"><option value="">Wybierz stanowisko</option>${positionOptions}</select></label>
@@ -478,6 +575,7 @@
     `;
 
     setupVisitNativeDatePickers();
+    setupClientSearchFields(data.clients);
 
     document.querySelectorAll("[data-visit-filter]").forEach((button) => button.addEventListener("click", () => {
       window.location.href = `visits.html?status=${encodeURIComponent(button.dataset.visitFilter || "niezakończone")}`;
@@ -546,7 +644,7 @@
       const selected = data.appointments.find((item) => item.id === event.currentTarget.value);
       const form = document.querySelector("#visitEditForm");
       if (!form || !selected) { if (form) form.hidden = true; return; }
-      fillEditForm(form, selected);
+      fillEditForm(form, selected, lookups);
       form.hidden = false;
       setupVisitNativeDatePickers();
     });
