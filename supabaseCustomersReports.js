@@ -72,7 +72,9 @@
   }
 
   function appointmentValue(row, service) {
-    return Number(row?.total || row?.total_gross || row?.price || row?.paid_amount || service?.price || service?.price_from || service?.priceFrom || service?.price_to || service?.priceTo || 0);
+    // W raportach klientów wartość wizyty rozbijamy na usługę + produkty.
+    // Dlatego najpierw bierzemy cenę samej usługi, a dopiero awaryjnie total z wizyty.
+    return Number(row?.price || service?.price || service?.price_from || service?.priceFrom || service?.price_to || service?.priceTo || row?.total || row?.total_gross || row?.paid_amount || 0);
   }
 
   function saleValue(row) {
@@ -221,6 +223,7 @@
     });
 
     const salesInRange = (raw.sales || []).filter((sale) => inRange(sale.created_at || sale.sale_date || sale.paid_at, filters.from, filters.to));
+    const salesById = Object.fromEntries((raw.sales || []).map((sale) => [String(sale.id), sale]));
     const saleItemsBySale = new Map();
     (raw.saleItems || []).forEach((item) => {
       if (!item.sale_id) return;
@@ -229,6 +232,32 @@
       list.push(item);
       saleItemsBySale.set(key, list);
     });
+
+    const productMetaForAppointment = (appointment) => {
+      const appointmentId = String(appointment?.id || "");
+      const linkedSales = (raw.sales || []).filter((sale) => String(sale.appointment_id || sale.visit_id || "") === appointmentId);
+      let qty = 0;
+      let value = 0;
+      linkedSales.forEach((sale) => {
+        (saleItemsBySale.get(String(sale.id)) || []).forEach((item) => {
+          const type = String(item.item_type || item.type || "").toLowerCase();
+          if (!type.includes("product")) return;
+          const itemQty = Number(item.quantity || 1);
+          const itemValue = Number(item.total ?? item.total_price ?? 0) || (Number(item.unit_price || 0) * itemQty);
+          qty += itemQty;
+          value += itemValue;
+        });
+      });
+      if (qty > 0 || value > 0) return { qty, value };
+
+      // Starszy model Dashboardu zapisywał produkt bezpośrednio na wizycie.
+      const hasAppointmentProduct = !!(appointment?.product_id || appointment?.product_name);
+      if (!hasAppointmentProduct) return { qty: 0, value: 0 };
+      const appointmentQty = Number(appointment?.product_quantity || 1);
+      const appointmentValue = Number(appointment?.product_price || appointment?.product_total || 0) * appointmentQty;
+      return { qty: appointmentQty, value: appointmentValue };
+    };
+
     const salesByClient = new Map();
     salesInRange.forEach((sale) => {
       const cid = String(saleClientId(sale) || "");
@@ -259,14 +288,17 @@
           email: client?.email || "",
           visits: 0,
           services: 0,
+          products: 0,
           value: 0,
           avgVisit: 0,
           firstDate: "",
           lastDate: ""
         };
+        const productMeta = productMetaForAppointment(a);
         prev.visits += 1;
         if (appointmentServiceId(a)) prev.services += 1;
-        prev.value += appointmentValue(a, svc);
+        prev.products += Number(productMeta.qty || 0);
+        prev.value += appointmentValue(a, svc) + Number(productMeta.value || 0);
         const d = String(appointmentDate(a) || "").slice(0, 10);
         if (d && (!prev.firstDate || d < prev.firstDate)) prev.firstDate = d;
         if (d > prev.lastDate) prev.lastDate = d;
@@ -284,12 +316,14 @@
         const svc = servicesById[String(appointmentServiceId(a))];
         const catId = String(svc?.category_id || svc?.categoryId || "");
         const label = categoriesById[catId]?.name || svc?.category || "(bez kategorii)";
-        const prev = map.get(label) || { label, visits: 0, clients: new Set(), services: 0, value: 0 };
+        const prev = map.get(label) || { label, visits: 0, clients: new Set(), services: 0, products: 0, value: 0 };
+        const productMeta = productMetaForAppointment(a);
         prev.visits += 1;
         const cid = String(appointmentClientId(a) || "");
         if (cid) prev.clients.add(cid);
         if (appointmentServiceId(a)) prev.services += 1;
-        prev.value += appointmentValue(a, svc);
+        prev.products += Number(productMeta.qty || 0);
+        prev.value += appointmentValue(a, svc) + Number(productMeta.value || 0);
         map.set(label, prev);
       });
       return [...map.values()].map((row) => ({
@@ -297,6 +331,7 @@
         visits: row.visits,
         clients: row.clients.size,
         services: row.services,
+        products: row.products,
         value: row.value
       })).sort((a, b) => b.visits - a.visits || b.value - a.value);
     };
@@ -306,13 +341,15 @@
       const employee = profilesById[String(appointmentEmployeeId(a))];
       const svc = servicesById[String(appointmentServiceId(a))];
       const cat = categoriesById[String(svc?.category_id || svc?.categoryId || "")];
+      const productMeta = productMetaForAppointment(a);
       return {
         date: String(appointmentDate(a) || "").slice(0, 10),
         client: clientName(client, a.client_name || a.clientName || "(brak)"),
         employee: employeeName(employee, a.employee_name || a.employeeName || "(brak)"),
         category: cat?.name || svc?.category || "(bez kategorii)",
         service: serviceName(svc, a.service_name || a.serviceName),
-        value: appointmentValue(a, svc),
+        products: Number(productMeta.qty || 0),
+        value: appointmentValue(a, svc) + Number(productMeta.value || 0),
         status: a.status || ""
       };
     }).sort((a, b) => String(b.date).localeCompare(String(a.date)) || b.value - a.value);
@@ -321,26 +358,28 @@
     let rowsData;
     let reportRowsForStats;
     if (filters.mode === "plannedCategories") {
-      headers = ["Kategoria usług", "Planowane wizyty", "Klienci", "Usługi", "Wartość"];
+      headers = ["Kategoria usług", "Planowane wizyty", "Klienci", "Usługi", "Produkty", "Wartość"];
       reportRowsForStats = byCategory();
-      rowsData = reportRowsForStats.map((r) => [esc(r.label), String(r.visits), String(r.clients), String(r.services), money(r.value)]);
+      rowsData = reportRowsForStats.map((r) => [esc(r.label), String(r.visits), String(r.clients), String(r.services), String(r.products || 0), money(r.value)]);
     } else if (filters.mode === "finishedVisits") {
-      headers = ["Klient", "Zakończone wizyty", "Usługi", "Ostatnia zakończona wizyta", "Wartość"];
+      headers = ["Klient", "Zakończone wizyty", "Usługi", "Produkty", "Ostatnia zakończona wizyta", "Wartość"];
       reportRowsForStats = byCustomer();
       rowsData = reportRowsForStats.map((r) => [
         esc(r.label),
         String(r.visits),
         String(r.services),
+        String(r.products || 0),
         esc(r.lastDate ? dateLabel(r.lastDate) : "-"),
         money(r.value)
       ]);
     } else {
-      headers = ["Klient", "Planowane wizyty", "Usługi", "Najbliższa wizyta", "Ostatnia planowana", "Wartość"];
+      headers = ["Klient", "Planowane wizyty", "Usługi", "Produkty", "Najbliższa wizyta", "Ostatnia planowana", "Wartość"];
       reportRowsForStats = byCustomer();
       rowsData = reportRowsForStats.map((r) => [
         esc(r.label),
         String(r.visits),
         String(r.services),
+        String(r.products || 0),
         esc(r.firstDate ? dateLabel(r.firstDate) : "-"),
         esc(r.lastDate ? dateLabel(r.lastDate) : "-"),
         money(r.value)
@@ -353,11 +392,13 @@
     const shownRows = rowsData.slice(0, limit);
     const totals = visits.reduce((acc, a) => {
       const svc = servicesById[String(appointmentServiceId(a))];
+      const productMeta = productMetaForAppointment(a);
       acc.visits += 1;
       if (appointmentServiceId(a)) acc.services += 1;
-      acc.value += appointmentValue(a, svc);
+      acc.products += Number(productMeta.qty || 0);
+      acc.value += appointmentValue(a, svc) + Number(productMeta.value || 0);
       return acc;
-    }, { visits: 0, services: 0, value: 0 });
+    }, { visits: 0, services: 0, products: 0, value: 0 });
     const customerRows = byCustomer();
     const categoryRows = byCategory();
     const clientsInTable = filters.mode === "plannedCategories"
@@ -391,8 +432,8 @@
       <div class="cm-period-kpis cm-customers-report-kpis">
         <div><span>Liczba wizyt</span><b>${esc(totals.visits)}</b></div>
         <div><span>Liczba usług</span><b>${esc(totals.services)}</b></div>
+        <div><span>Liczba produktów</span><b>${esc(totals.products || 0)}</b></div>
         <div><span>Wartość wizyt</span><b>${esc(money(totals.value))}</b></div>
-        <div><span>Klienci w tabeli</span><b>${esc(clientsInTable)}</b></div>
         <div><span>Pozycje w tabeli</span><b>${esc(rowsData.length)}</b></div>
       </div>
       <div class="bm-table-toolbar"><label>${limitSelect(filters.limit)}</label><label>Szukaj: <input id="crSearch" type="search" value="${esc(filters.search)}" placeholder="Szukaj"></label></div>

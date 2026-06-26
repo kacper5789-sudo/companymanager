@@ -1,5 +1,5 @@
 // CompanyManager — Sales Reports powered by Supabase
-// 155: Historia sprzedaży jako pełny widok usług, produktów i karnetów.
+// 157: Sprzedaż — pełna historia usług, produktów, karnetów i spójne płatności.
 
 (function () {
   function isSalesPage() {
@@ -554,7 +554,6 @@
     const inactivePassStatuses = ["void", "deleted", "usunięte", "usuniete", "cancelled", "canceled", "anulowane", "anulowana"];
     const passItemsRaw = (data.passes || [])
       .filter((pass) => pass.active !== false && !inactivePassStatuses.includes(String(pass.status || "").toLowerCase()))
-      .filter((pass) => !pass.sale_id || !!salesById[pass.sale_id])
       .map((pass) => {
       const employeeId = pass.employee_id || "";
       const clientId = pass.beneficiary_client_id || pass.customer_id || "";
@@ -572,38 +571,27 @@
       };
     }).filter((row) => passesFilter("employees", selectedEmployees, row.employeeId));
 
-    const paymentRowsRaw = data.payments
-      .filter((payment) => String(payment.status || "").toLowerCase() !== "void")
-      .map((payment) => {
-        // Jeżeli płatność ma sale_id, ale sprzedaż jest usunięta/void albo poza aktywnym zbiorem,
-        // nie pokazujemy jej jako osobnej płatności z (brak). To był efekt po usuwaniu sprzedaży.
-        const sale = payment.sale_id ? salesById[payment.sale_id] : {};
-        const hasVoidedOrDeletedSale = !!payment.sale_id && !sale?.id;
-        const appointment = appointmentById[sale?.appointment_id || payment.appointment_id] || {};
-        const employeeId = sale?.employee_id || appointment.employee_id || "";
-        const clientId = sale?.client_id || appointment.client_id || "";
-        return {
-          date: payment.paid_at || payment.created_at,
-          employeeId,
-          employee: employeeDisplayName(userById, employeeId, appointment, sale || {}),
-          customer: clientName(clientById[clientId]) || appointment.client_name || "(brak)",
-          type: payment.method || appointment.payment_method || "gotówka",
-          value: isAppointmentCompleted(appointment) ? Number(payment.amount || sale?.total_gross || appointment.total || appointment.price || 0) : 0,
-          isPendingAppointment: !!appointment.id && !isAppointmentCompleted(appointment),
-          isVoidedOrDeletedSale: hasVoidedOrDeletedSale
-        };
-      }).filter((row) => !row.isVoidedOrDeletedSale && !row.isPendingAppointment && passesFilter("employees", selectedEmployees, row.employeeId) && passesFilter("paymentTypes", selectedPaymentTypes, row.type));
+    // 157: Płatności liczymy z faktycznych pozycji sprzedaży widocznych w module,
+    // żeby suma typów płatności zgadzała się z Historią sprzedaży.
+    // Wcześniej część karnetów z sale_id wypadała z płatności, a widok Karnety
+    // potrafił wyglądać jak raport wyłącznie według pracowników.
+    const makePaymentRow = (row, fallbackType = "gotówka") => ({
+      date: row.date,
+      time: row.time || "",
+      employeeId: row.employeeId || "",
+      employee: row.employee || "(brak)",
+      customer: row.customer || "(brak)",
+      type: row.paymentMethod || fallbackType || "gotówka",
+      value: Number((row.revenueValue ?? row.value) || 0)
+    });
 
-    const passPaymentRowsRaw = passItemsRaw.filter((pass) => !pass.saleId).map((pass) => ({
-      date: pass.date,
-      time: pass.time,
-      employeeId: pass.employeeId,
-      employee: pass.employee,
-      customer: pass.customer,
-      type: pass.paymentMethod || "gotówka",
-      value: pass.value
-    })).filter((row) => passesFilter("paymentTypes", selectedPaymentTypes, row.type));
-    const allPaymentRowsRaw = paymentRowsRaw.concat(passPaymentRowsRaw);
+    const allPaymentRowsRaw = serviceItemsRaw
+      .map((row) => makePaymentRow(row, row.paymentMethod))
+      .concat(productItemsRaw.map((row) => makePaymentRow(row, row.paymentMethod)))
+      .concat(passItemsRaw.map((row) => makePaymentRow(row, row.paymentMethod)))
+      .filter((row) => row.value > 0)
+      .filter((row) => passesFilter("employees", selectedEmployees, row.employeeId))
+      .filter((row) => passesFilter("paymentTypes", selectedPaymentTypes, row.type));
 
     const groupRows = (rows, keyFn) => {
       const grouped = new Map();
