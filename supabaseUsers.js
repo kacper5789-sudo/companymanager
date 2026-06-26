@@ -466,9 +466,43 @@
     return /^\+?\d{7,15}$/.test(String(phone || "").replace(/\s/g, ""));
   }
 
+  async function restoreAdminSession(currentSession) {
+    if (currentSession?.access_token && currentSession?.refresh_token) {
+      try {
+        await window.cmSupabase.auth.setSession({
+          access_token: currentSession.access_token,
+          refresh_token: currentSession.refresh_token
+        });
+      } catch (restoreError) {
+        console.warn("CompanyManager: nie udało się automatycznie przywrócić sesji po operacji Auth", restoreError);
+      }
+    }
+  }
+
   async function createAuthUser(email, password, fullName) {
     const { data: currentSessionData } = await window.cmSupabase.auth.getSession();
     const currentSession = currentSessionData?.session || null;
+
+    // 124: Supabase Auth zwraca 409, jeśli email istnieje nawet po usunięciu profilu.
+    // Najpierw próbujemy bezpiecznie odzyskać/reaktywować stare konto Auth przez RPC.
+    try {
+      const { data: reusedUserId, error: reuseError } = await window.cmSupabase.rpc("admin_reuse_deleted_auth_user", {
+        p_email: email,
+        p_password: password,
+        p_full_name: fullName
+      });
+      if (reuseError) {
+        const msg = String(reuseError.message || reuseError || "");
+        if (!msg.toLowerCase().includes("no reusable auth user")) throw reuseError;
+      }
+      if (reusedUserId) {
+        await restoreAdminSession(currentSession);
+        return reusedUserId;
+      }
+    } catch (reuseCatch) {
+      const msg = String(reuseCatch.message || reuseCatch || "");
+      if (!msg.toLowerCase().includes("no reusable auth user")) throw reuseCatch;
+    }
 
     const { data, error } = await window.cmSupabase.auth.signUp({
       email,
@@ -479,16 +513,7 @@
     // Supabase signUp wykonany z panelu ADMIN może chwilowo przełączyć sesję
     // na nowo tworzonego użytkownika. Zanim odpalimy RPC admin_create_company_user,
     // zawsze przywracamy sesję aktualnego ADMINA/OWNERA.
-    if (currentSession?.access_token && currentSession?.refresh_token) {
-      try {
-        await window.cmSupabase.auth.setSession({
-          access_token: currentSession.access_token,
-          refresh_token: currentSession.refresh_token
-        });
-      } catch (restoreError) {
-        console.warn("CompanyManager: nie udało się automatycznie przywrócić sesji po signUp", restoreError);
-      }
-    }
+    await restoreAdminSession(currentSession);
 
     if (error) throw error;
     if (!data?.user?.id) throw new Error("Nie udało się utworzyć użytkownika Auth.");
