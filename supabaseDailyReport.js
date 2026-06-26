@@ -46,6 +46,22 @@
     return keys.some((key) => permissions[key] === true || permissions[key] === "true" || permissions[key] === 1 || permissions[key] === "1");
   }
 
+  function hasExplicitPermission(ctx, key) {
+    const role = normalizeRole(ctx?.access?.role || ctx?.context?.role);
+    if (role === "OWNER" || role === "ADMIN") return true;
+    const permissions = normalizePermissions(ctx?.access?.permissions || ctx?.context?.permissions);
+    if (permissions.all === true || permissions.admin === true) return true;
+    return permissions[key] === true || permissions[key] === "true" || permissions[key] === 1 || permissions[key] === "1";
+  }
+
+  function canViewToday(ctx) {
+    return hasExplicitPermission(ctx, "daily_report_today") || hasExplicitPermission(ctx, "daily_report_other_days");
+  }
+
+  function canViewOtherDays(ctx) {
+    return hasExplicitPermission(ctx, "daily_report_other_days");
+  }
+
   async function getContext() {
     if (!window.cmSupabase) return { ok: false, message: "Nie załadowano połączenia z Supabase." };
     const [{ data: access, error: accessError }, { data: context, error: contextError }] = await Promise.all([
@@ -57,8 +73,11 @@
     if (!access || access.allowed !== true) return { ok: false, message: access?.reason || "Brak dostępu." };
     if (!context || context.allowed !== true || !context.company_id) return { ok: false, message: context?.reason || "Brak kontekstu firmy." };
     const ctx = { ok: true, access, context, companyId: context.company_id };
-    if (!hasAnyPermission(ctx, ["open_daily_report", "reports_access", "daily_report_today", "daily_report_other_days", "open_stats"])) {
+    if (!hasAnyPermission(ctx, ["open_daily_report", "daily_report_today", "daily_report_other_days"])) {
       return { ok: false, message: "Brak uprawnienia do raportu dziennego." };
+    }
+    if (!canViewToday(ctx) && !canViewOtherDays(ctx)) {
+      return { ok: false, message: "Brak uprawnienia do przeglądania raportu dziennego." };
     }
     return ctx;
   }
@@ -333,7 +352,7 @@
   }
 
   function render(ctx, day, report) {
-    const canBrowse = hasAnyPermission(ctx, ["daily_report_other_days", "reports_access", "open_stats"]);
+    const canBrowse = canViewOtherDays(ctx);
     const today = isoDate(new Date());
     const currentIso = isoDate(day);
     const headerDate = displayDate(day);
@@ -388,13 +407,14 @@
           <button type="button" class="bm-light-btn" id="dailyExportExcel">Export - Excel</button>
         </div>
 
-        <div class="cm-daily-date-row">
-          <button type="button" id="dailyPrevDay" class="bm-light-btn cm-daily-arrow" aria-label="Poprzedni dzień">‹</button>
-          <label class="cm-daily-date-field" id="dailyDateField" title="Wybierz datę">
+        <div class="cm-daily-date-row ${canBrowse ? "" : "cm-daily-date-row-locked"}">
+          <button type="button" id="dailyPrevDay" class="bm-light-btn cm-daily-arrow" aria-label="Poprzedni dzień" ${canBrowse ? "" : "disabled"}>‹</button>
+          <label class="cm-daily-date-field" id="dailyDateField" title="${canBrowse ? "Wybierz datę" : "Brak uprawnienia do innych dni"}">
             <span>${esc(headerDate)}</span>
-            <input id="dailyReportDate" type="date" value="${esc(currentIso)}" aria-label="Wybierz datę raportu dziennego">
+            <input id="dailyReportDate" type="date" value="${esc(currentIso)}" aria-label="Wybierz datę raportu dziennego" ${canBrowse ? "" : "disabled"}>
           </label>
-          <button type="button" id="dailyNextDay" class="bm-light-btn cm-daily-arrow" aria-label="Następny dzień">›</button>
+          <button type="button" id="dailyNextDay" class="bm-light-btn cm-daily-arrow" aria-label="Następny dzień" ${canBrowse ? "" : "disabled"}>›</button>
+          ${canBrowse ? "" : `<small class="cm-permission-note">Masz dostęp tylko do raportu z dzisiaj.</small>`}
         </div>
 
         <div class="cm-period-kpis cm-daily-main-kpis">
@@ -424,12 +444,11 @@
       url.searchParams.set("date", isoDate(next));
       window.location.href = url.toString();
     };
-    $("#dailyPrevDay")?.addEventListener("click", () => move(-1));
-    $("#dailyNextDay")?.addEventListener("click", () => move(1));
+    $("#dailyPrevDay")?.addEventListener("click", () => { if (canBrowse) move(-1); });
+    $("#dailyNextDay")?.addEventListener("click", () => { if (canBrowse) move(1); });
     const dateInput = $("#dailyReportDate");
-    if (dateInput && !canBrowse) dateInput.min = today;
     $("#dailyDateField")?.addEventListener("click", (event) => {
-      if (!dateInput) return;
+      if (!dateInput || !canBrowse) return;
       if (event.target !== dateInput) event.preventDefault();
       if (typeof dateInput.showPicker === "function") dateInput.showPicker(); else dateInput.focus();
     });
@@ -487,7 +506,17 @@
       const ctx = await getContext();
       if (!ctx.ok) return renderError(ctx.message);
       const params = new URLSearchParams(window.location.search || "");
-      const picked = parseLocalDate(params.get("date")) || new Date();
+      const requested = parseLocalDate(params.get("date")) || new Date();
+      const todayDate = new Date();
+      const todayIso = isoDate(todayDate);
+      let picked = requested;
+      const requestedIso = isoDate(requested);
+      if (!canViewOtherDays(ctx) && requestedIso !== todayIso) {
+        picked = todayDate;
+        const url = new URL(window.location.href);
+        url.searchParams.set("date", todayIso);
+        window.history.replaceState({}, "", url.toString());
+      }
       const day = new Date(picked.getFullYear(), picked.getMonth(), picked.getDate());
       const data = await fetchDailyData(ctx, day);
       render(ctx, day, buildReport(data));

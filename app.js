@@ -7281,15 +7281,18 @@ document.addEventListener('DOMContentLoaded', () => {
       const d = new Date(dayStart); d.setDate(d.getDate() + offset);
       const url = new URL(window.location.href); url.searchParams.set('date', toIso(d)); window.location.href = url.toString();
     };
+    const currentPanelUser = getCurrentContext().user;
+    const canBrowsePastDailyReports = hasSystemPermission(currentPanelUser, 'raport dzienny wczorajszy, jutrzejszy (przeglądanie)') || hasSystemPermission(currentPanelUser, 'raport dzienny — inne dni');
     const content = `<section class="bm-page-card cm-period-report-card cm-daily-report-card">
       <div class="bm-page-head cm-period-head"><h2>Raport dzienny</h2></div>
-      <div class="cm-daily-date-row">
-        <button type="button" id="dailyPrevDay" class="bm-light-btn cm-daily-arrow" aria-label="Poprzedni dzień">‹</button>
-        <label class="cm-daily-date-field" id="dailyDateField" title="Wybierz datę">
+      <div class="cm-daily-date-row ${canBrowsePastDailyReports ? '' : 'cm-daily-date-row-locked'}">
+        <button type="button" id="dailyPrevDay" class="bm-light-btn cm-daily-arrow" aria-label="Poprzedni dzień" ${canBrowsePastDailyReports ? '' : 'disabled'}>‹</button>
+        <label class="cm-daily-date-field" id="dailyDateField" title="${canBrowsePastDailyReports ? 'Wybierz datę' : 'Brak uprawnienia do innych dni'}">
           <span>${escapeHtml(dailyDateLabel)}</span>
-          <input id="dailyReportDate" type="date" value="${toIso(dayStart)}" aria-label="Wybierz datę raportu dziennego">
+          <input id="dailyReportDate" type="date" value="${toIso(dayStart)}" aria-label="Wybierz datę raportu dziennego" ${canBrowsePastDailyReports ? '' : 'disabled'}>
         </label>
-        <button type="button" id="dailyNextDay" class="bm-light-btn cm-daily-arrow" aria-label="Następny dzień">›</button>
+        <button type="button" id="dailyNextDay" class="bm-light-btn cm-daily-arrow" aria-label="Następny dzień" ${canBrowsePastDailyReports ? '' : 'disabled'}>›</button>
+        ${canBrowsePastDailyReports ? '' : '<small class="cm-permission-note">Masz dostęp tylko do raportu z dzisiaj.</small>'}
       </div>
       <div class="cm-period-kpis">
         <div><span>Liczba zaplanowanych wizyt</span><b>${plannedVisits}</b></div>
@@ -7305,8 +7308,6 @@ document.addEventListener('DOMContentLoaded', () => {
       <section class="cm-period-section cm-comm-grid"><div><h3>SMS</h3><p>Wysłane SMS</p><b>${smsCount}</b></div><div><h3>Email</h3><p>Wysłane EMAIL</p><b>${emailCount}</b></div></section>
     </section>`;
     renderPanelFrame(ctx, 'dailyReport', content, '', '');
-    const currentPanelUser = getCurrentContext().user;
-    const canBrowsePastDailyReports = hasSystemPermission(currentPanelUser, 'raport dzienny wczorajszy, jutrzejszy (przeglądanie)');
     const todayIso = toIso(new Date());
     if (!canBrowsePastDailyReports) {
       const pickedIso = toIso(dayStart);
@@ -7318,17 +7319,19 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
     addReportExportButton('.cm-daily-report-card .cm-period-head', 'raport-dzienny', '.cm-daily-report-card');
-    document.querySelector('#dailyPrevDay')?.addEventListener('click', () => moveDateUrl(-1));
-    document.querySelector('#dailyNextDay')?.addEventListener('click', () => moveDateUrl(1));
+    document.querySelector('#dailyPrevDay')?.addEventListener('click', () => { if (canBrowsePastDailyReports) moveDateUrl(-1); });
+    document.querySelector('#dailyNextDay')?.addEventListener('click', () => { if (canBrowsePastDailyReports) moveDateUrl(1); });
     const dailyReportDateInput = document.querySelector('#dailyReportDate');
-    if (dailyReportDateInput && !canBrowsePastDailyReports) dailyReportDateInput.min = todayIso;
+    if (dailyReportDateInput && !canBrowsePastDailyReports) dailyReportDateInput.disabled = true;
     if (!canBrowsePastDailyReports) {
-      const prevBtn = document.querySelector('#dailyPrevDay');
-      if (prevBtn) { prevBtn.disabled = true; prevBtn.classList.add('cm-permission-disabled'); prevBtn.title = 'Brak uprawnienia: raport dzienny wczorajszy i wcześniejszy (przeglądanie)'; }
+      ['#dailyPrevDay', '#dailyNextDay'].forEach((selector) => {
+        const btn = document.querySelector(selector);
+        if (btn) { btn.disabled = true; btn.classList.add('cm-permission-disabled'); btn.title = 'Brak uprawnienia do raportu dziennego z innych dni'; }
+      });
     }
     const dailyDateField = document.querySelector('#dailyDateField');
     dailyDateField?.addEventListener('click', (event) => {
-      if (!dailyReportDateInput) return;
+      if (!dailyReportDateInput || !canBrowsePastDailyReports) return;
       if (event.target !== dailyReportDateInput) event.preventDefault();
       if (typeof dailyReportDateInput.showPicker === 'function') dailyReportDateInput.showPicker();
       else dailyReportDateInput.focus();
