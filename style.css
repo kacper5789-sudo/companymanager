@@ -7172,3 +7172,107 @@ table tfoot .cm-table-total-row td{
   color:#fde68a !important;
   letter-spacing:.04em;
 }
+
+
+/* 238 — Work schedule no horizontal scroll + payments wording polish */
+body[data-panel-page="workSchedule"]{
+  overflow-x:hidden !important;
+}
+body[data-panel-page="workSchedule"] .dashboard-shell,
+body[data-panel-page="workSchedule"] #dashboardRoot,
+body[data-panel-page="workSchedule"] .bm-page-card.cm-supabase-work-schedule{
+  max-width:100% !important;
+  width:100% !important;
+  box-sizing:border-box !important;
+}
+body[data-panel-page="workSchedule"] .cm-supabase-work-schedule{
+  margin-left:0 !important;
+  margin-right:0 !important;
+}
+body[data-panel-page="workSchedule"] .cm-work-schedule-editor-wrap,
+body[data-panel-page="workSchedule"] .cm-work-summary-wrap{
+  width:100% !important;
+  max-width:100% !important;
+  overflow-x:hidden !important;
+}
+body[data-panel-page="workSchedule"] .cm-work-schedule-editor,
+body[data-panel-page="workSchedule"] .cm-work-schedule-summary{
+  width:100% !important;
+  min-width:0 !important;
+  table-layout:fixed !important;
+}
+body[data-panel-page="workSchedule"] .cm-work-schedule-editor th,
+body[data-panel-page="workSchedule"] .cm-work-schedule-editor td,
+body[data-panel-page="workSchedule"] .cm-work-schedule-summary th,
+body[data-panel-page="workSchedule"] .cm-work-schedule-summary td{
+  padding:8px 6px !important;
+  font-size:.78rem !important;
+  line-height:1.2 !important;
+  white-space:normal !important;
+  word-break:normal !important;
+}
+body[data-panel-page="workSchedule"] .cm-work-schedule-editor th:first-child,
+body[data-panel-page="workSchedule"] .cm-work-schedule-editor td:first-child{
+  width:14% !important;
+  padding-left:10px !important;
+}
+body[data-panel-page="workSchedule"] .cm-work-schedule-editor th:nth-child(2),
+body[data-panel-page="workSchedule"] .cm-work-schedule-editor td:nth-child(2){
+  width:14% !important;
+}
+body[data-panel-page="workSchedule"] .cm-work-schedule-editor th:nth-child(3),
+body[data-panel-page="workSchedule"] .cm-work-schedule-editor td:nth-child(3),
+body[data-panel-page="workSchedule"] .cm-work-schedule-editor th:nth-child(4),
+body[data-panel-page="workSchedule"] .cm-work-schedule-editor td:nth-child(4),
+body[data-panel-page="workSchedule"] .cm-work-schedule-editor th:nth-child(5),
+body[data-panel-page="workSchedule"] .cm-work-schedule-editor td:nth-child(5),
+body[data-panel-page="workSchedule"] .cm-work-schedule-editor th:nth-child(6),
+body[data-panel-page="workSchedule"] .cm-work-schedule-editor td:nth-child(6){
+  width:12% !important;
+}
+body[data-panel-page="workSchedule"] .cm-work-schedule-editor th:nth-child(7),
+body[data-panel-page="workSchedule"] .cm-work-schedule-editor td:nth-child(7){
+  width:10% !important;
+}
+body[data-panel-page="workSchedule"] .cm-work-schedule-editor input[type="time"]{
+  width:82px !important;
+  min-width:0 !important;
+  max-width:82px !important;
+  padding:0 6px !important;
+  font-size:.78rem !important;
+}
+body[data-panel-page="workSchedule"] .cm-work-toggle{
+  min-width:0 !important;
+  width:100% !important;
+  max-width:92px !important;
+  padding:0 6px !important;
+  font-size:.76rem !important;
+}
+body[data-panel-page="workSchedule"] .cm-work-schedule-summary th:first-child,
+body[data-panel-page="workSchedule"] .cm-work-schedule-summary td:first-child{
+  width:18% !important;
+  padding-left:10px !important;
+}
+body[data-panel-page="workSchedule"] .cm-work-schedule-summary th:last-child,
+body[data-panel-page="workSchedule"] .cm-work-schedule-summary td:last-child{
+  width:14% !important;
+}
+body[data-panel-page="workSchedule"] .cm-work-actions{
+  gap:5px !important;
+  flex-wrap:wrap !important;
+}
+body[data-panel-page="workSchedule"] .cm-work-actions button{
+  min-width:50px !important;
+  padding:0 7px !important;
+  font-size:.74rem !important;
+}
+@media(max-width:900px){
+  body[data-panel-page="workSchedule"] .cm-work-schedule-editor-wrap,
+  body[data-panel-page="workSchedule"] .cm-work-summary-wrap{
+    overflow-x:auto !important;
+  }
+  body[data-panel-page="workSchedule"] .cm-work-schedule-editor,
+  body[data-panel-page="workSchedule"] .cm-work-schedule-summary{
+    min-width:720px !important;
+  }
+}

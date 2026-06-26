@@ -1,0 +1,5 @@
+-- 238_payments_label_work_schedule_no_horizontal_scroll.sql
+-- UI-only patch.
+-- 1) Sprzedaż -> Płatności: label 'Liczba płatności' changed to 'Opłacone pozycje'.
+-- 2) Grafik pracy: CSS adjusted to fit the content width without unwanted horizontal page scroll.
+-- No database changes required.

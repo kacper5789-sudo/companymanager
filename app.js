@@ -1634,6 +1634,7 @@ document.addEventListener('DOMContentLoaded', () => {
       'Liczba':'Count',
       'Wartość PLN':'Value PLN',
       'Typ płatności':'Payment type',
+      'Opłacone pozycje':'Paid items',
       'Procent':'Percentage',
       'Nie znaleziono żadnych danych':'No data found',
       'Brak dostępu':'No access',
@@ -1645,7 +1646,8 @@ document.addEventListener('DOMContentLoaded', () => {
       'Wartość produktów':'Products value',
       'Liczba szt.':'Number of items',
       'Wartość płatności':'Payment value',
-      'Liczba płatności':'Number of payments',
+      'Liczba płatności':'Paid items',
+      'Opłacone pozycje':'Paid items',
       'Data urodzenia':'Date of birth',
       'Płeć':'Gender',
       'Aktualizacja':'Updated',
@@ -1700,7 +1702,8 @@ document.addEventListener('DOMContentLoaded', () => {
     'Wartość produktów:':'Products value:',
     'Liczba szt.:':'Number of items:',
     'Wartość:':'Value:',
-    'Liczba płatności:':'Number of payments:',
+    'Liczba płatności:':'Paid items:',
+    'Opłacone pozycje:':'Paid items:',
     'Wartość płatności:':'Payments value:',
     'L. godzin':'Hours total',
     'Ilość':'Quantity',
@@ -8434,8 +8437,8 @@ document.addEventListener('DOMContentLoaded', () => {
       productsByEmployee: `<h2>Sprzedaż produktów według pracowników</h2>${dateFilters(employeeFilter + productCategoryFilter + productNameFilter)}${summary('Liczba produktów', productRowsRaw.reduce((sum,r)=>sum+r.qty,0), 'Wartość produktów', productRowsRaw.reduce((sum,r)=>sum+r.value,0))}${listTools()}${sectionTable(['Pracownik','Liczba','Wartość PLN'], groupRows(productRowsRaw, r => r.employee))}`,
       passes: `<h2>Sprzedaż - karnety</h2>${dateFilters(employeeFilter)}${summary('Liczba szt.', passRowsRaw.length, 'Wartość', passRowsRaw.reduce((sum,r)=>sum+r.value,0))}${listTools()}${sectionTable(['Data sprzedaży','Pracownik','Klient','Wartość','Notatka'], passRows)}`,
       passesByEmployee: `<h2>Sprzedaż - karnety według pracowników</h2>${dateFilters(employeeFilter)}${summary('Liczba szt.', passRowsRaw.length, 'Wartość', passRowsRaw.reduce((sum,r)=>sum+r.value,0))}${listTools()}${sectionTable(['Pracownik','Liczba','Wartość PLN'], groupRows(passRowsRaw, r => r.employee))}`,
-      payments: `<h2>Płatności</h2>${dateFilters(employeeFilter + paymentTypeFilter)}${summary('Liczba płatności', paymentRowsRaw.length, 'Wartość płatności', paymentRowsRaw.reduce((sum,r)=>sum+r.value,0))}${listTools()}${sectionTable(['Data sprzedaży','Pracownik','Klient','Typ płatności','Wartość (PLN)'], paymentRows)}`,
-      paymentsByType: `<h2>Płatności według typów</h2>${dateFilters(employeeFilter + paymentTypeFilter)}${summary('Liczba płatności', paymentRowsRaw.length, 'Wartość płatności', paymentRowsRaw.reduce((sum,r)=>sum+r.value,0))}${listTools()}${sectionTable(['Typ płatności','Liczba','Procent','Wartość PLN'], paymentByTypeRows)}`
+      payments: `<h2>Płatności</h2>${dateFilters(employeeFilter + paymentTypeFilter)}${summary('Opłacone pozycje', paymentRowsRaw.length, 'Wartość płatności', paymentRowsRaw.reduce((sum,r)=>sum+r.value,0))}${listTools()}${sectionTable(['Data sprzedaży','Pracownik','Klient','Typ płatności','Wartość (PLN)'], paymentRows)}`,
+      paymentsByType: `<h2>Płatności według typów</h2>${dateFilters(employeeFilter + paymentTypeFilter)}${summary('Opłacone pozycje', paymentRowsRaw.length, 'Wartość płatności', paymentRowsRaw.reduce((sum,r)=>sum+r.value,0))}${listTools()}${sectionTable(['Typ płatności','Opłacone pozycje','Procent','Wartość PLN'], paymentByTypeRows)}`
     };
 
     const content = `<section class="bm-page-card cm-sales-page">${subnav}<div class="cm-sales-view"><div class="cm-sales-view-actions"><button id="salesExportBtn" class="cm-sales-export-btn" type="button">Export</button></div>${sections[currentView] || sections.services}</div></section>`;
