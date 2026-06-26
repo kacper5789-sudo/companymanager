@@ -485,24 +485,7 @@
 
     // 124: Supabase Auth zwraca 409, jeśli email istnieje nawet po usunięciu profilu.
     // Najpierw próbujemy bezpiecznie odzyskać/reaktywować stare konto Auth przez RPC.
-    try {
-      const { data: reusedUserId, error: reuseError } = await window.cmSupabase.rpc("admin_reuse_deleted_auth_user", {
-        p_email: email,
-        p_password: password,
-        p_full_name: fullName
-      });
-      if (reuseError) {
-        const msg = String(reuseError.message || reuseError || "");
-        if (!msg.toLowerCase().includes("no reusable auth user")) throw reuseError;
-      }
-      if (reusedUserId) {
-        await restoreAdminSession(currentSession);
-        return reusedUserId;
-      }
-    } catch (reuseCatch) {
-      const msg = String(reuseCatch.message || reuseCatch || "");
-      if (!msg.toLowerCase().includes("no reusable auth user")) throw reuseCatch;
-    }
+    
 
     const { data, error } = await window.cmSupabase.auth.signUp({
       email,
