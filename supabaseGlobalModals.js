@@ -1,5 +1,5 @@
 // CompanyManager — Supabase global forms bridge
-// 138: globalny stos formularzy — blur zostaje aktywny dopóki otwarty jest jakikolwiek formularz; formularz nadrzędny wraca po zamknięciu pomocniczego.
+// 142: globalny blur formularzy — wykrywa wszystkie otwarte panele formularzy i wymusza overlay/blur do zamknięcia ostatniego formularza.
 (function () {
   'use strict';
 
@@ -37,7 +37,15 @@
     '#visitEditCard',
     '#visitDeleteCard',
     '#walkinFormCard',
-    '#walkinDeleteCard'
+    '#walkinDeleteCard',
+    '.bm-page-card',
+    '.bm-card',
+    '.panel-card',
+    '.form-card',
+    '.cm-form-card',
+    '.modal',
+    '.bm-modal',
+    '.cm-modal'
   ].join(',');
   const modalStack = [];
 
@@ -50,16 +58,33 @@
     if (panel.hidden) return false;
     if (panel.getAttribute('aria-hidden') === 'true') return false;
     const style = window.getComputedStyle ? window.getComputedStyle(panel) : null;
-    if (style && (style.display === 'none' || style.visibility === 'hidden')) return false;
+    if (style && (style.display === 'none' || style.visibility === 'hidden' || style.opacity === '0')) return false;
     return true;
+  }
+
+  function looksLikeFormPanel(panel) {
+    if (!panel || panel.nodeType !== 1) return false;
+    const id = panel.id || '';
+    const cls = panel.className ? String(panel.className) : '';
+    const signature = `${id} ${cls}`;
+    if (/FormCard|FormPanel|EditCard|EditPanel|DeleteCard|DeletePanel|Quick[A-Za-z]+Card|Modal|modal|payment-method|work-schedule/i.test(signature)) return true;
+    if (panel.matches && panel.matches('.cm-as-modal,.cm-modal-active,.bm-nested-modal,.bm-appointment-form')) return true;
+    return false;
+  }
+
+  function hasRealFormControls(panel) {
+    if (!panel || panel.nodeType !== 1) return false;
+    if (panel.matches && panel.matches('.cm-modal-backdrop')) return true;
+    return !!panel.querySelector('form, input:not([type="hidden"]), select, textarea');
   }
 
   function shouldPromoteAsModal(panel) {
     if (!panel || panel.nodeType !== 1) return false;
     if (!panel.matches || !panel.matches(FORM_PANEL_SELECTOR)) return false;
     if (!isActuallyOpen(panel)) return false;
-    if (panel.closest && panel.closest('.cm-client-search-results, .cm-limit-menu, .cm-cr-dropdown-menu, .bm-workers-popover')) return false;
-    return !!(panel.querySelector('form, input, select, textarea, button') || panel.matches('.cm-modal-backdrop'));
+    if (panel.closest && panel.closest('.cm-client-search-results, .cm-limit-menu, .cm-cr-dropdown-menu, .bm-workers-popover, #cmGlobalFormOverlay')) return false;
+    if (!looksLikeFormPanel(panel)) return false;
+    return hasRealFormControls(panel);
   }
 
   function promoteOpenFormPanels() {
@@ -110,7 +135,9 @@
         modalStack.splice(i, 1);
       }
     }
-    return !!document.querySelector('.' + MODAL_ACTIVE + ':not([hidden]), .' + MODAL_CLASS + ':not([hidden])');
+    const active = Array.from(document.querySelectorAll('.' + MODAL_ACTIVE + ', .' + MODAL_CLASS))
+      .some(function (panel) { return isActuallyOpen(panel); });
+    return active || modalStack.length > 0;
   }
 
   function refreshBlurState() {
@@ -119,6 +146,8 @@
     const isOpen = anyOpenModal();
     document.body.classList.toggle(BODY_OPEN, isOpen);
     document.documentElement.classList.toggle(BODY_OPEN, isOpen);
+    document.body.setAttribute('data-cm-modal-open', isOpen ? 'true' : 'false');
+    document.documentElement.setAttribute('data-cm-modal-open', isOpen ? 'true' : 'false');
     const overlay = ensureOverlay();
     overlay.setAttribute('aria-hidden', isOpen ? 'false' : 'true');
     overlay.hidden = !isOpen;
@@ -169,10 +198,6 @@
       overlay.setAttribute('aria-hidden', 'true');
       document.body.appendChild(overlay);
     }
-    overlay.hidden = !anyOpenModal();
-    overlay.style.display = anyOpenModal() ? 'block' : 'none';
-    overlay.style.pointerEvents = anyOpenModal() ? 'auto' : 'none';
-    overlay.style.opacity = anyOpenModal() ? '1' : '0';
     return overlay;
   }
 
