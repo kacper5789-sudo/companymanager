@@ -98,10 +98,10 @@
 
 
 
-  /* CompanyManager 161 — global table totals row
+  /* CompanyManager 162 — global table totals row
      Adds one SUMA row at the end of every data table with numeric totals.
      It intentionally skips dates, status/text/action columns and existing SUMA rows. */
-  const TOTAL_VERSION = '161';
+  const TOTAL_VERSION = '162';
   const moneySuffixRe = /(zł|pln|eur|usd|€|\$)\s*$/i;
   const timeMinRe = /^-?\d+(?:[\s,.]\d+)?\s*min$/i;
   const percentRe = /%\s*$/;
@@ -158,9 +158,17 @@
     if (!firstRow) return [];
     return Array.from(firstRow.children).map(cell => (cell.textContent || '').trim());
   }
+  function isSumaRow(row){
+    return /^\s*suma\s*$/i.test((row?.cells?.[0]?.textContent || '').trim());
+  }
+  function hasManualTotalRow(table){
+    // Some report modules, especially Employees reports, already render their own SUMA row.
+    // In those cases the global totalizer must not add a second footer row.
+    return Array.from(table.querySelectorAll('tbody tr, tfoot tr')).some((row) => !row.classList.contains('cm-table-total-row') && isSumaRow(row));
+  }
   function getDataRows(table){
     const bodyRows = table.tBodies && table.tBodies.length ? Array.from(table.tBodies).flatMap(tb => Array.from(tb.rows)) : Array.from(table.rows).slice(1);
-    return bodyRows.filter(row => !row.classList.contains('cm-table-total-row') && !/^\s*suma\s*$/i.test((row.cells[0]?.textContent || '').trim()));
+    return bodyRows.filter(row => !row.classList.contains('cm-table-total-row') && !isSumaRow(row));
   }
   function ensureTfoot(table){
     let foot = table.tFoot;
@@ -169,6 +177,10 @@
   }
   function addOrUpdateTableTotal(table){
     if (!table || table.closest('.bm-month')) return;
+    if (hasManualTotalRow(table)) {
+      table.querySelectorAll('tr.cm-table-total-row').forEach(r => r.remove());
+      return;
+    }
     const headers = getTableHeaderTexts(table);
     const rows = getDataRows(table);
     const colCount = Math.max(headers.length, ...rows.map(r => r.cells.length), 0);
