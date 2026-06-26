@@ -159,18 +159,50 @@
     return row?.starts_at || row?.appointment_datetime || row?.date || row?.created_at;
   }
 
+  function statusText(row) {
+    return String(row?.status || row?.visit_status || row?.appointment_status || row?.payment_status || "").toLowerCase();
+  }
+
   function isFinishedAppointment(row) {
-    const status = String(row?.status || "").toLowerCase();
-    return row?.finished === true || ["zakończone", "zakończona", "completed"].includes(status);
+    const status = statusText(row);
+    return row?.finished === true
+      || row?.is_finished === true
+      || row?.completed === true
+      || ["zakończone", "zakończona", "zakonczone", "zakonczona", "completed", "finished", "done"].includes(status)
+      || String(row?.visit_status || "").toLowerCase() === "completed"
+      || String(row?.visit_status || "").toLowerCase() === "finished";
   }
 
   function isCancelledAppointment(row) {
-    const status = String(row?.status || "").toLowerCase();
-    return row?.is_cancelled === true || row?.cancelled === true || ["odwołane", "odwołana", "cancelled", "usunięte", "deleted"].includes(status);
+    const status = statusText(row);
+    return row?.is_cancelled === true || row?.cancelled === true || ["odwołane", "odwołana", "odwolane", "odwolana", "cancelled", "canceled", "usunięte", "usuniete", "deleted"].includes(status);
   }
 
   function itemValue(item, sale) {
-    return Number(item?.total_price ?? item?.total ?? 0) || (Number(item?.quantity || 1) * Number(item?.unit_price || 0)) || Number(sale?.total_gross || sale?.total_net || 0) || 0;
+    return Number(item?.total_price ?? item?.total ?? item?.total_gross ?? item?.gross ?? 0)
+      || (Number(item?.quantity || 1) * Number(item?.unit_price ?? item?.price ?? 0))
+      || Number(sale?.total_gross || sale?.total_net || sale?.total || sale?.amount || 0)
+      || 0;
+  }
+
+  function itemType(item) {
+    const raw = String(item?.item_type || item?.type || item?.kind || item?.category_type || item?.source || "service").toLowerCase();
+    if (raw.includes("product") || raw.includes("produkt")) return "product";
+    if (raw.includes("pass") || raw.includes("karnet")) return "pass";
+    return "service";
+  }
+
+  function appointmentServiceValue(row) {
+    return Number(row?.service_price || row?.price || row?.total_gross || row?.total_net || row?.total || row?.paid_amount || 0) || 0;
+  }
+
+  function appointmentProductQty(row) {
+    return Number(row?.product_quantity || row?.product_qty || 0) || (row?.product_id || row?.product_name ? 1 : 0);
+  }
+
+  function appointmentProductValue(row) {
+    const qty = appointmentProductQty(row) || 1;
+    return Number(row?.product_total || row?.product_value || 0) || (qty * Number(row?.product_price || 0)) || 0;
   }
 
   function itemQty(item) {
@@ -187,6 +219,9 @@
     if (start && end && !Number.isNaN(start.getTime()) && !Number.isNaN(end.getTime()) && end > start) {
       return Math.round((end - start) / 60000);
     }
+    const startMin = timeToMinutes(row?.start_time || row?.time);
+    const endMin = timeToMinutes(row?.end_time);
+    if (startMin !== null && endMin !== null && endMin > startMin) return endMin - startMin;
     return 0;
   }
 
@@ -298,13 +333,14 @@
 
   async function fetchData(companyId, from, to) {
     const sb = window.cmSupabase;
-    const [profiles, positions, clients, appointments, sales, saleItems, daysOff, workSchedules, workScheduleTemplates, employeeWorkSchedules] = await Promise.all([
+    const [profiles, positions, clients, appointments, sales, saleItems, passes, daysOff, workSchedules, workScheduleTemplates, employeeWorkSchedules] = await Promise.all([
       safeSelect("profiles", sb.from("profiles").select("*").eq("company_id", companyId)),
       safeSelect("positions", sb.from("positions").select("*").eq("company_id", companyId)),
       safeSelect("clients", sb.from("clients").select("*").eq("company_id", companyId)),
       safeSelect("appointments", sb.from("appointments").select("*").eq("company_id", companyId)),
       safeSelect("sales", sb.from("sales").select("*").eq("company_id", companyId)),
       safeSelect("sale_items", sb.from("sale_items").select("*").eq("company_id", companyId)),
+      safeSelect("passes", sb.from("passes").select("*").eq("company_id", companyId)),
       safeSelect("days_off", sb.from("days_off").select("*").eq("company_id", companyId)),
       safeSelect("work_schedule", sb.from("work_schedule").select("*").eq("company_id", companyId)),
       safeSelect("work_schedule_templates", sb.from("work_schedule_templates").select("*").eq("company_id", companyId)),
@@ -320,10 +356,15 @@
     });
     const saleIds = new Set(filteredSales.map((row) => row.id));
     const filteredItems = saleItems.filter((item) => saleIds.has(item.sale_id));
+    const filteredPasses = passes.filter((row) => {
+      const status = String(row.status || "").toLowerCase();
+      if (row.active === false || ["void","deleted","usunięte","usuniete","cancelled","canceled","anulowane"].includes(status)) return false;
+      return inRange(row.sale_date || row.created_at || row.updated_at, from, to);
+    });
     const filteredDaysOff = daysOff.filter((row) => inRange(row.date || row.start_date || row.date_from || row.from_date || row.created_at, from, to));
     const filteredWorkSchedules = workSchedules.filter((row) => inRange(row.date || row.work_date || row.day || row.created_at, from, to));
 
-    return { profiles, positions, clients, appointments: filteredAppointments, sales: filteredSales, saleItems: filteredItems, daysOff: filteredDaysOff, workSchedules: filteredWorkSchedules, workScheduleTemplates, employeeWorkSchedules, from, to };
+    return { profiles, positions, clients, appointments: filteredAppointments, sales: filteredSales, saleItems: filteredItems, passes: filteredPasses, daysOff: filteredDaysOff, workSchedules: filteredWorkSchedules, workScheduleTemplates, employeeWorkSchedules, from, to };
   }
 
   function calcStats(data) {
@@ -355,6 +396,14 @@
     const clientById = new Map((data.clients || []).map((c) => [c.id, c]));
     const saleById = new Map(data.sales.map((s) => [s.id, s]));
     const appointmentById = new Map(data.appointments.map((a) => [a.id, a]));
+    const appointmentItemTypes = new Map();
+    data.saleItems.forEach((item) => {
+      const sale = saleById.get(item.sale_id) || {};
+      const appointmentId = sale.appointment_id || item.appointment_id || item.visit_id || "";
+      if (!appointmentId) return;
+      if (!appointmentItemTypes.has(appointmentId)) appointmentItemTypes.set(appointmentId, new Set());
+      appointmentItemTypes.get(appointmentId).add(itemType(item));
+    });
 
     const base = new Map();
     employees.forEach((e) => {
@@ -434,15 +483,36 @@
     data.appointments.forEach((a) => {
       const emp = ensure(a.employee_id || a.employeeId, rowEmployeeName(a, employeeById));
       if (!emp) return;
+      const cancelled = isCancelledAppointment(a);
+      const finished = isFinishedAppointment(a);
       emp.visits += 1;
-      if (isFinishedAppointment(a)) emp.finishedVisits += 1;
-      if (isCancelledAppointment(a)) emp.cancelledVisits += 1;
-      if (!isCancelledAppointment(a)) {
+      if (finished) emp.finishedVisits += 1;
+      if (cancelled) emp.cancelledVisits += 1;
+      if (!cancelled) {
         const mins = appointmentMinutes(a);
         emp.visitMinutes += mins;
         emp.workMinutes += mins;
       }
-      touchClient(emp, a.client_id || a.customer_id || a.clientId || a.customerId || "");
+      const clientId = a.client_id || a.customer_id || a.clientId || a.customerId || "";
+      touchClient(emp, clientId);
+
+      // Zakończona wizyta sama w sobie jest sprzedażą usługi.
+      // Jeżeli ta sama wizyta ma już pozycję service w sale_items, nie dublujemy wartości.
+      const itemTypes = appointmentItemTypes.get(a.id) || new Set();
+      if (finished && !cancelled && (a.service_id || a.service_name || a.name || a.title) && !itemTypes.has("service")) {
+        emp.services += 1;
+        const value = appointmentServiceValue(a);
+        emp.serviceValue += value;
+        emp.revenue += value;
+      }
+      // Produkt dodany bezpośrednio na wizycie też musi wejść do raportu pracownika.
+      if (!cancelled && (a.product_id || a.product_name) && !itemTypes.has("product")) {
+        const qty = appointmentProductQty(a);
+        const value = appointmentProductValue(a);
+        emp.products += qty;
+        emp.productValue += value;
+        emp.revenue += value;
+      }
     });
 
     data.saleItems.forEach((item) => {
@@ -452,14 +522,24 @@
       const empName = sale.employee_name || appointment.employee_name || item.employee_name || item.employeeName || "";
       const emp = ensure(employeeId, empName);
       if (!emp) return;
-      const type = String(item.item_type || "service").toLowerCase();
+      const type = itemType(item);
       const qty = itemQty(item);
       const value = itemValue(item, sale);
       emp.revenue += value;
-      touchClient(emp, sale.client_id || appointment.client_id || appointment.customer_id || "");
-      if (type.includes("product")) { emp.products += qty; emp.productValue += value; }
-      else if (type.includes("pass") || type.includes("karnet")) { emp.passes += qty; emp.passValue += value; }
+      touchClient(emp, sale.client_id || sale.customer_id || appointment.client_id || appointment.customer_id || "");
+      if (type === "product") { emp.products += qty; emp.productValue += value; }
+      else if (type === "pass") { emp.passes += qty; emp.passValue += value; }
       else { emp.services += qty; emp.serviceValue += value; }
+    });
+
+    (data.passes || []).forEach((pass) => {
+      const emp = ensure(pass.employee_id || pass.employeeId, pass.employee_name || pass.employeeName || "");
+      if (!emp) return;
+      const value = Number(pass.value || pass.total || pass.price || 0) || 0;
+      emp.passes += 1;
+      emp.passValue += value;
+      emp.revenue += value;
+      touchClient(emp, pass.customer_id || pass.client_id || pass.buyer_client_id || pass.beneficiary_client_id || "");
     });
 
     data.daysOff.forEach((d) => {
