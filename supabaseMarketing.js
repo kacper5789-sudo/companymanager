@@ -60,7 +60,7 @@
   async function fetchClients(companyId) {
     const { data, error } = await window.cmSupabase
       .from("clients")
-      .select("id, company_id, first_name, last_name, email, phone, gender, marketing_email, marketing_sms, active, created_at, updated_at")
+      .select("id, company_id, first_name, last_name, email, phone, gender, marketing_email, marketing_sms, active, created_at, updated_at, tags, group_ids")
       .eq("company_id", companyId)
       .order("created_at", { ascending: false });
     if (error) throw error;
@@ -69,6 +69,25 @@
 
   function clientName(client) {
     return [client.first_name, client.last_name].filter(Boolean).join(" ").trim() || client.email || client.phone || "Klient";
+  }
+
+
+  function normalizeClientGroups(client) {
+    const raw = [];
+    const add = (value) => {
+      if (Array.isArray(value)) value.forEach(add);
+      else if (value != null && String(value).trim()) raw.push(String(value).trim());
+    };
+    add(client?.tags);
+    add(client?.group_ids);
+    add(client?.group);
+    return Array.from(new Set(raw));
+  }
+
+  function marketingGroupOptions(clients) {
+    const values = new Set();
+    (clients || []).forEach((client) => normalizeClientGroups(client).forEach((g) => values.add(g)));
+    return Array.from(values).sort((a, b) => a.localeCompare(b, "pl")).map((g) => `<option value="${escapeHtml(g)}">${escapeHtml(g)}</option>`).join("");
   }
 
   function campaignStatusLabel(status) {
@@ -140,6 +159,8 @@
       allCustomers: form.querySelector('[name="allCustomers"]')?.checked === true,
       selectedCustomers: form.querySelector('[name="selectedCustomers"]')?.checked === true,
       clientIds: Array.from(form.querySelector('[name="customers"]')?.selectedOptions || []).map((o) => o.value).filter(Boolean),
+      selectedGroups: form.querySelector('[name="selectedGroups"]')?.checked === true,
+      groups: Array.from(form.querySelector('[name="groups"]')?.selectedOptions || []).map((o) => o.value).filter(Boolean),
       allWomen: form.querySelector('[name="allWomen"]')?.checked === true,
       allMen: form.querySelector('[name="allMen"]')?.checked === true,
       updatedRange: form.querySelector('[name="updatedRange"]')?.checked === true,
@@ -165,10 +186,15 @@
         if (!client.marketing_sms || !String(client.phone || "").trim()) return false;
       }
 
-      const anyFilter = filters.allCustomers || filters.selectedCustomers || filters.allWomen || filters.allMen || filters.updatedRange || filters.addedRange;
+      const anyFilter = filters.allCustomers || filters.selectedCustomers || filters.selectedGroups || filters.allWomen || filters.allMen || filters.updatedRange || filters.addedRange;
       if (!anyFilter) return true;
       if (filters.allCustomers) return true;
       if (filters.selectedCustomers && filters.clientIds.includes(client.id)) return true;
+      if (filters.selectedGroups && Array.isArray(filters.groups) && filters.groups.length) {
+        const clientGroups = normalizeClientGroups(client).map(normalizeText);
+        const wantedGroups = filters.groups.map(normalizeText);
+        if (clientGroups.some((g) => wantedGroups.includes(g))) return true;
+      }
 
       const gender = normalizeText(client.gender || "");
       if (filters.allWomen && ["kobieta", "female", "woman"].includes(gender)) return true;
@@ -199,11 +225,12 @@
     }
   }
 
-  function recipientsHtml(customerOptions, prefix) {
+  function recipientsHtml(customerOptions, groupOptions, prefix) {
     const now = todayIso();
     return `<fieldset class="full marketing-recipients"><legend>Wyślij do</legend>
       <label class="bm-checkbox-line"><input type="checkbox" name="allCustomers" checked> wszystkich klientów ze zgodą marketingową</label>
-      <label class="bm-checkbox-line"><input type="checkbox" name="selectedGroups" disabled> wybranych grup klientów <span class="bm-muted">— grupy klientów podepniemy w kolejnym etapie</span></label>
+      <label class="bm-checkbox-line"><input type="checkbox" name="selectedGroups" class="marketing-mode-checkbox" data-panel="${prefix}GroupPanel"> wybranych grup klientów</label>
+      <div id="${prefix}GroupPanel" class="marketing-extra-panel" hidden><label>Wybierz grupy klientów<select name="groups" multiple>${groupOptions || '<option value="">Brak grup klientów</option>'}</select></label></div>
       <label class="bm-checkbox-line"><input type="checkbox" name="selectedCustomers" class="marketing-mode-checkbox" data-panel="${prefix}CustomersPanel"> wybranych klientów</label>
       <div id="${prefix}CustomersPanel" class="marketing-extra-panel" hidden><label>Wybierz klientów<select name="customers" multiple>${customerOptions}</select></label></div>
       <label class="bm-checkbox-line"><input type="checkbox" name="allWomen"> wszystkich kobiet ze zgodą</label>
@@ -228,6 +255,7 @@
       c.subject, c.sender_name, c.body, c.channel, c.status, c.created_at
     ].join(" ")).includes(q));
 
+    const groupOptions = marketingGroupOptions(clients);
     const customerOptions = clients.map((c) => {
       const label = `${clientName(c)}${c.email ? " — " + c.email : ""}${c.phone ? " — " + c.phone : ""}`;
       return `<option value="${escapeHtml(c.id)}">${escapeHtml(label)}</option>`;
@@ -259,7 +287,7 @@
         <div class="full marketing-preview"><strong>Podgląd:</strong><p id="smsPreview">Wiadomość pojawi się tutaj.</p></div>
         <label>Liczba znaków<input id="smsCharCount" type="text" value="0" readonly></label>
         <div class="bm-form-row-2 full"><label>Test wiadomości<input name="smsTestPhone" placeholder="+48123123123"></label><button type="button" id="sendSmsTest">Wyślij test</button></div>
-        ${recipientsHtml(customerOptions, "sms")}
+        ${recipientsHtml(customerOptions, groupOptions, "sms")}
         <label>Liczba znalezionych telefonów<input id="smsFoundCount" type="text" value="0" readonly></label>
         <div class="bm-form-row-2 full"><button type="button" id="saveSmsCampaign">Zapisz</button><button type="button" id="sendSmsCampaign">Wyślij</button></div>
       </form>
@@ -274,7 +302,7 @@
         ${subjectHint()}
         <label class="full">Treść<textarea name="emailContent" id="emailContent" placeholder="Wpisz treść wiadomości"></textarea></label>
         <div class="bm-form-row-2 full"><label>Testuj Email<input name="emailTest" placeholder="test@firma.pl"></label><button type="button" id="sendEmailTest">Wyślij test</button></div>
-        ${recipientsHtml(customerOptions, "email")}
+        ${recipientsHtml(customerOptions, groupOptions, "email")}
         <label>Liczba znalezionych email<input id="emailFoundCount" type="text" value="0" readonly></label>
         <div class="bm-form-row-2 full"><button type="button" id="saveEmailCampaign">Zapisz</button><button type="button" id="sendEmailCampaign">Wyślij</button></div>
       </form>

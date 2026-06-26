@@ -293,23 +293,60 @@
     return `KARNET-${String(fallbackCount + 1).padStart(4, "0")}`;
   }
 
-  async function insertInlineClient(ctx, form) {
-    const fullName = String(form?.newCustomerName?.value || "").trim();
-    if (!form || !fullName) throw new Error("Uzupełnij imię i nazwisko klienta.");
-    const parts = fullName.split(/\s+/);
-    const firstName = parts.shift() || fullName;
-    const lastName = parts.join(" ");
-    const payload = {
+  function cmYesNoOptions(selected) {
+    return ["tak", "nie"].map((v) => `<option value="${v}" ${String(selected || "nie") === v ? "selected" : ""}>${v}</option>`).join("");
+  }
+
+  function cmQuickCustomerFields() {
+    return `
+      <label>Imię<input name="firstName" placeholder="Imię" required></label>
+      <label>Nazwisko<input name="lastName" placeholder="Nazwisko" required></label>
+      <label>Płeć<select name="gender" required><option value="kobieta">kobieta</option><option value="mężczyzna">mężczyzna</option></select></label>
+      <label>Telefon<input name="phone" placeholder="Telefon" required></label>
+      <label>Email<input name="email" type="email" placeholder="email@firma.pl"></label>
+      <label>Adres<input name="address" placeholder="Adres"></label>
+      <label>Kod pocztowy<input name="postalCode" placeholder="XX-XXX"></label>
+      <label>Miejscowość<input name="city" placeholder="Miejscowość"></label>
+      <label>Status<select name="status"><option value="aktywny">aktywny</option><option value="nieaktywny">nieaktywny</option></select></label>
+      <label>Skąd klient wie o firmie<input name="source" placeholder="np. Google, Facebook, polecenie"></label>
+      <label>Zgoda na reklamę SMS<select name="marketingSms">${cmYesNoOptions("nie")}</select></label>
+      <label>Zgoda na reklamę Email<select name="marketingEmail">${cmYesNoOptions("nie")}</select></label>
+      <label>Dzień, miesiąc i rok urodzin<input name="birthDate" type="date" aria-label="Dzień, miesiąc i rok urodzin"></label>
+      <label class="bm-full full">Ważna informacja<textarea name="importantInfo" placeholder="Ważna informacja"></textarea></label>
+    `;
+  }
+
+  function cmQuickCustomerPayload(ctx, fd) {
+    const firstName = String(fd.get("firstName") || "").trim();
+    const lastName = String(fd.get("lastName") || "").trim();
+    return {
       company_id: ctx.companyId,
       first_name: firstName,
       last_name: lastName,
-      phone: String(form.newCustomerPhone?.value || "").trim(),
-      email: String(form.newCustomerEmail?.value || "").trim(),
-      notes: String(form.newCustomerDescription?.value || "").trim(),
-      status: "aktywny",
+      full_name: [firstName, lastName].filter(Boolean).join(" "),
+      gender: String(fd.get("gender") || "").trim() || null,
+      phone: String(fd.get("phone") || "").trim(),
+      email: String(fd.get("email") || "").trim() || null,
+      address: String(fd.get("address") || "").trim() || null,
+      postal_code: String(fd.get("postalCode") || "").trim() || null,
+      city: String(fd.get("city") || "").trim() || null,
+      source: String(fd.get("source") || "").trim() || null,
+      birth_date: String(fd.get("birthDate") || "").trim() || null,
+      notes: String(fd.get("importantInfo") || "").trim() || null,
+      marketing_sms: String(fd.get("marketingSms") || "nie") === "tak",
+      marketing_email: String(fd.get("marketingEmail") || "nie") === "tak",
+      active: String(fd.get("status") || "aktywny") !== "nieaktywny",
+      status: String(fd.get("status") || "aktywny"),
       updated_at: new Date().toISOString()
     };
-    const { data, error } = await window.cmSupabase.from("clients").insert(payload).select("id, first_name, last_name, email, phone").single();
+  }
+
+  async function insertInlineClient(ctx, form) {
+    if (!form) throw new Error("Brak formularza klienta.");
+    const fd = new FormData(form);
+    const payload = cmQuickCustomerPayload(ctx, fd);
+    if (!payload.first_name || !payload.last_name || !payload.phone) throw new Error("Uzupełnij imię, nazwisko i telefon klienta.");
+    const { data, error } = await window.cmSupabase.from("clients").insert(payload).select("id, first_name, last_name, full_name, email, phone").single();
     if (error) throw error;
     await window.cmUndo?.record({ module: "clients", actionType: "insert", targetTable: "clients", targetId: data?.id, afterData: data || payload, companyId: ctx.companyId });
     return data;
@@ -508,10 +545,7 @@
           <div id="inlinePassCustomerPanel" class="bm-page-card bm-inner-card full bm-nested-modal" hidden>
             <h3>Dodaj nowego klienta</h3>
             <div class="bm-form-grid">
-              <label>Imię i nazwisko*<input name="newCustomerName" placeholder="Imię i nazwisko"></label>
-              <label>Nr telefonu<input name="newCustomerPhone" placeholder="Nr telefonu"></label>
-              <label>Adres email<input name="newCustomerEmail" type="email" placeholder="Adres email"></label>
-              <label class="full">Opis<textarea name="newCustomerDescription" placeholder="Opis"></textarea></label>
+              ${cmQuickCustomerFields()}
               <div class="full bm-action-row"><button type="button" id="addInlinePassCustomer">Zatwierdź</button><button type="button" id="cancelInlinePassCustomer" class="bm-light-btn">Anuluj</button></div>
             </div>
           </div>
@@ -707,7 +741,7 @@
             select.appendChild(option);
           });
         }
-        ["newCustomerName", "newCustomerPhone", "newCustomerEmail", "newCustomerDescription"].forEach((name) => { if (form?.[name]) form[name].value = ""; });
+        ["firstName", "lastName", "gender", "phone", "email", "address", "postalCode", "city", "status", "source", "marketingSms", "marketingEmail", "birthDate", "importantInfo"].forEach((name) => { if (form?.[name]) form[name].value = ""; });
         const panel = document.querySelector("#inlinePassCustomerPanel");
         if (panel) panel.hidden = true;
         if (window.updateGlobalModalState) window.updateGlobalModalState();
