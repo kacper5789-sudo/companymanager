@@ -996,6 +996,14 @@
       (p) => `data-price="${escapeHtml(String(productPrice(p)))}" data-name="${escapeHtml(productName(p))}"`
     );
     const paymentOptionsHtml = paymentMethodOptions(data.company);
+    const quickServiceCategoryOptions = (data.categories || [])
+      .filter(activeGenericItem)
+      .map((c) => `<option value="${escapeHtml(c.id)}">${escapeHtml(c.name || "Kategoria")}</option>`)
+      .join("");
+    const quickServicePositionOptions = (data.positions || [])
+      .filter(activeGenericItem)
+      .map((p) => `<option value="${escapeHtml(p.id)}">${escapeHtml(p.name || p.title || "Stanowisko")}</option>`)
+      .join("");
     const allPassOptions = passOptionsFor(data);
     const visibleVisits = data.appointments.filter((item) => item.deleted !== true && !["odwołana", "odwołane", "usunięte"].includes(String(item.status || "").toLowerCase()));
     const visitOptions = visibleVisits.map((item) => `<option value="${escapeHtml(item.id)}">${escapeHtml(appointmentLabel(item, lookups))}</option>`).join("");

@@ -1,0 +1,3 @@
+-- 217_dashboard_quick_service_category_options_fix
+-- Informational migration only.
+-- Fixes Dashboard render regression caused by missing quick service category/position option variables.
