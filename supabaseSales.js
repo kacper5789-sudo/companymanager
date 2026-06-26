@@ -1,5 +1,5 @@
 // CompanyManager — Sales Reports powered by Supabase
-// 157: Sprzedaż — pełna historia usług, produktów, karnetów i spójne płatności.
+// 158: Sprzedaż — karnety w Historii sprzedaży i poprawne typy płatności.
 
 (function () {
   function isSalesPage() {
@@ -14,6 +14,25 @@
 
   function normalizeText(value) {
     return String(value || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  }
+
+  function normalizePaymentMethod(value) {
+    const raw = String(value || "").trim();
+    const normalized = normalizeText(raw);
+    if (!raw) return "gotówka";
+    if (["paid", "pay", "complete", "completed", "success", "succeeded", "opłacone", "oplacone", "settled"].includes(normalized)) return "gotówka";
+    if (["cash", "gotowka", "gotówka"].includes(normalized)) return "gotówka";
+    if (["card", "karta", "karta platnicza", "karta płatnicza"].includes(normalized)) return "karta";
+    if (["transfer", "przelew", "bank transfer"].includes(normalized)) return "przelew";
+    if (["blik"].includes(normalized)) return "BLIK";
+    if (["unpaid", "pending", "oczekuje", "nieoplacone", "nieopłacone"].includes(normalized)) return "nieopłacone";
+    return raw;
+  }
+
+  function inDateRange(rawDate, fromDate, toDate) {
+    const day = String(rawDate || "").slice(0, 10);
+    if (!day) return false;
+    return day >= fromDate && day <= toDate;
   }
 
   function money(value) {
@@ -237,7 +256,7 @@
       window.cmSupabase.from("service_categories").select("id, name, active").eq("company_id", ctx.companyId).eq("active", true),
       window.cmSupabase.rpc("company_users_for_dropdown", { target_company_id: ctx.companyId }),
       window.cmSupabase.from("appointments").select("id, client_id, client_name, service_id, service_name, product_id, product_name, employee_id, employee_name, payment_method, payment_status, status, finished, total, price, starts_at, appointment_datetime, date, start_time, created_at").eq("company_id", ctx.companyId),
-      window.cmSupabase.from("passes").select("id, company_id, customer_id, buyer_client_id, beneficiary_client_id, employee_id, service_id, service_name, pass_type, sale_id, name, number, sale_date, sale_time, valid_until, payment_method, buyer, customer_name, employee_name, value, remaining, total_units, remaining_units, description, status, active, created_at").eq("company_id", ctx.companyId).eq("active", true).gte("sale_date", fromDate).lte("sale_date", toDate).order("sale_date", { ascending: false })
+      window.cmSupabase.from("passes").select("id, company_id, customer_id, buyer_client_id, beneficiary_client_id, employee_id, service_id, service_name, pass_type, sale_id, name, number, sale_date, sale_time, valid_until, payment_method, buyer, customer_name, employee_name, value, remaining, total_units, remaining_units, description, status, active, created_at").eq("company_id", ctx.companyId).order("created_at", { ascending: false })
     ]);
     const errors = [salesRes, itemsRes, paymentsRes, clientsRes, servicesRes, productsRes, categoriesRes, usersRes, appointmentsRes, passesRes].map((res) => res.error).filter(Boolean);
     if (errors.length) throw errors[0];
@@ -278,9 +297,9 @@
     return appointment.finished === true || String(appointment.status || "").toLowerCase() === "zakończone";
   }
 
-  function paymentLabelForSale(sale, appointment) {
+  function paymentLabelForSale(sale, appointment, payment) {
     if (!isAppointmentCompleted(appointment)) return "usługa jeszcze nie opłacona";
-    return appointment?.payment_method || sale?.payment_status || "paid";
+    return normalizePaymentMethod(payment?.method || appointment?.payment_method || sale?.payment_method || sale?.payment_status || "gotówka");
   }
 
   function countedRevenue(value, sale, appointment) {
@@ -461,6 +480,13 @@
       return !isCancelledAppointmentForSales(linkedAppointment);
     });
     const salesById = Object.fromEntries(activeSales.map((sale) => [sale.id, sale]));
+    const paymentBySaleId = {};
+    const paymentByAppointmentId = {};
+    (data.payments || []).forEach((payment) => {
+      if (payment.sale_id && !paymentBySaleId[payment.sale_id]) paymentBySaleId[payment.sale_id] = payment;
+      if (payment.appointment_id && !paymentByAppointmentId[payment.appointment_id]) paymentByAppointmentId[payment.appointment_id] = payment;
+    });
+    const paymentFor = (sale, appointment) => paymentBySaleId[sale?.id] || paymentByAppointmentId[appointment?.id] || null;
     const clientById = Object.fromEntries(data.clients.map((client) => [client.id, client]));
     const userById = Object.fromEntries(data.users.map((user) => [user.id, user]));
     const serviceById = Object.fromEntries(data.services.map((service) => [service.id, service]));
@@ -472,7 +498,7 @@
     const productOptions = data.products.map((p) => ({ value: p.id, label: p.name || "-" }));
     const serviceCategoryOptions = data.serviceCategories.map((c) => ({ value: c.id, label: c.name || "-" }));
     const productCategories = uniq(data.products.map((p) => p.category || "(brak)"));
-    const paymentTypes = uniq(data.payments.map((p) => p.method || "gotówka").concat(["gotówka"]));
+    const paymentTypes = uniq(data.payments.map((p) => normalizePaymentMethod(p.method)).concat(["gotówka"]));
 
     const selectedEmployees = getSelected(params, "employees", employeeOptions.map((o) => o.value));
     const selectedServiceCategories = getSelected(params, "serviceCategories", serviceCategoryOptions.map((o) => o.value));
@@ -521,7 +547,7 @@
           name: item.name || item.name_snapshot || service.name || appointment.service_name || "Usługa",
           value,
           revenueValue,
-          paymentMethod: paymentLabelForSale(sale, appointment)
+          paymentMethod: paymentLabelForSale(sale, appointment, paymentFor(sale, appointment))
         };
       })
       .filter((row) => passesFilter("employees", selectedEmployees, row.employeeId) && passesFilter("serviceCategories", selectedServiceCategories, row.serviceCategoryId) && passesFilter("serviceNames", selectedServiceNames, row.serviceId));
@@ -546,32 +572,70 @@
           qty: Number(item.quantity || 1),
           value: Number(item.total ?? item.total_price ?? 0),
           revenueValue: countedRevenue(Number(item.total ?? item.total_price ?? 0), sale, appointment),
-          paymentMethod: paymentLabelForSale(sale, appointment)
+          paymentMethod: paymentLabelForSale(sale, appointment, paymentFor(sale, appointment))
         };
       })
       .filter((row) => passesFilter("employees", selectedEmployees, row.employeeId) && passesFilter("productCategories", selectedProductCategories, row.productCategory) && passesFilter("productNames", selectedProductNames, row.productId));
 
     const inactivePassStatuses = ["void", "deleted", "usunięte", "usuniete", "cancelled", "canceled", "anulowane", "anulowana"];
-    const passItemsRaw = (data.passes || [])
+    const passRowsFromPasses = (data.passes || [])
       .filter((pass) => pass.active !== false && !inactivePassStatuses.includes(String(pass.status || "").toLowerCase()))
+      .filter((pass) => inDateRange(pass.sale_date || pass.created_at, fromDate, toDate))
       .map((pass) => {
-      const employeeId = pass.employee_id || "";
-      const clientId = pass.beneficiary_client_id || pass.customer_id || "";
-      return {
-        date: pass.sale_date || pass.created_at,
-        time: pass.sale_time || "",
-        employeeId,
-        clientId,
-        employee: userNameOrEmpty(userById[employeeId]) || pass.employee_name || pass.buyer || "(brak)",
-        customer: clientName(clientById[clientId]) || pass.customer_name || "(brak)",
-        value: Number(pass.value || 0),
-        note: [pass.name || "Karnet", pass.number || "", pass.service_name || "", pass.description || ""].filter(Boolean).join(" — "),
-        saleId: pass.sale_id || "",
-        paymentMethod: pass.payment_method || "gotówka"
-      };
-    }).filter((row) => passesFilter("employees", selectedEmployees, row.employeeId));
+        const linkedSale = pass.sale_id ? salesById[pass.sale_id] : null;
+        const linkedAppointment = linkedSale?.appointment_id ? appointmentById[linkedSale.appointment_id] : null;
+        const employeeId = pass.employee_id || linkedSale?.employee_id || linkedAppointment?.employee_id || "";
+        const clientId = pass.beneficiary_client_id || pass.buyer_client_id || pass.customer_id || linkedSale?.client_id || linkedAppointment?.client_id || "";
+        return {
+          sourceKey: pass.id || pass.sale_id || `${pass.number || ""}:${pass.created_at || ""}`,
+          date: pass.sale_date || linkedSale?.created_at || pass.created_at,
+          time: pass.sale_time || "",
+          employeeId,
+          clientId,
+          employee: userNameOrEmpty(userById[employeeId]) || pass.employee_name || linkedSale?.employee_name || linkedAppointment?.employee_name || "(brak)",
+          customer: clientName(clientById[clientId]) || pass.customer_name || linkedAppointment?.client_name || "(brak)",
+          value: Number(pass.value || linkedSale?.total_gross || 0),
+          note: [pass.name || "Karnet", pass.number || "", pass.service_name || "", pass.description || ""].filter(Boolean).join(" — "),
+          saleId: pass.sale_id || "",
+          paymentMethod: normalizePaymentMethod(pass.payment_method || linkedSale?.payment_status || "gotówka")
+        };
+      });
 
-    // 157: Płatności liczymy z faktycznych pozycji sprzedaży widocznych w module,
+    const passRowsFromSaleItems = data.items
+      .filter((item) => ["pass", "passes", "karnet"].includes(String(item.item_type || "").toLowerCase()) && salesById[item.sale_id])
+      .map((item) => {
+        const sale = salesById[item.sale_id] || {};
+        const appointment = appointmentById[sale.appointment_id] || {};
+        const employeeId = sale.employee_id || appointment.employee_id || "";
+        const clientId = sale.client_id || appointment.client_id || "";
+        const payment = paymentFor(sale, appointment);
+        return {
+          sourceKey: `sale_item:${item.id || item.sale_id}`,
+          date: sale.created_at || item.created_at || appointment.starts_at || appointment.created_at,
+          time: "",
+          employeeId,
+          clientId,
+          employee: employeeDisplayName(userById, employeeId, appointment, sale),
+          customer: clientName(clientById[clientId]) || appointment.client_name || "(brak)",
+          value: Number(item.total ?? item.total_price ?? item.unit_price ?? sale.total_gross ?? 0),
+          note: item.name || item.name_snapshot || sale.note || "Karnet",
+          saleId: item.sale_id || "",
+          paymentMethod: paymentLabelForSale(sale, appointment, payment)
+        };
+      })
+      .filter((row) => inDateRange(row.date, fromDate, toDate));
+
+    const passSeen = new Set();
+    const passItemsRaw = passRowsFromPasses.concat(passRowsFromSaleItems)
+      .filter((row) => {
+        const key = row.saleId ? `sale:${row.saleId}` : `row:${row.sourceKey}`;
+        if (passSeen.has(key)) return false;
+        passSeen.add(key);
+        return true;
+      })
+      .filter((row) => passesFilter("employees", selectedEmployees, row.employeeId));
+
+    // 158: Płatności liczymy z faktycznych pozycji sprzedaży widocznych w module,
     // żeby suma typów płatności zgadzała się z Historią sprzedaży.
     // Wcześniej część karnetów z sale_id wypadała z płatności, a widok Karnety
     // potrafił wyglądać jak raport wyłącznie według pracowników.
@@ -581,7 +645,7 @@
       employeeId: row.employeeId || "",
       employee: row.employee || "(brak)",
       customer: row.customer || "(brak)",
-      type: row.paymentMethod || fallbackType || "gotówka",
+      type: normalizePaymentMethod(row.paymentMethod || fallbackType || "gotówka"),
       value: Number((row.revenueValue ?? row.value) || 0)
     });
 
