@@ -4019,14 +4019,30 @@ document.addEventListener('DOMContentLoaded', () => {
   const cleanupLegacyPagination = (root = document) => {
     const scope = root instanceof Element ? root : document;
     scope.querySelectorAll('.cm-sales-pager').forEach(node => node.remove());
-    scope.querySelectorAll('p.bm-muted, p.cm-table-count, .cm-table-count, p.cm-table-footer, .cm-table-footer').forEach(node => {
+
+    const isInsideModernPager = (node) => Boolean(node.closest('.cm-table-pagination, .cm-audit-pagination, #auditPagination'));
+    const isOnlyPaginationText = (node) => {
+      if (!node || isInsideModernPager(node)) return false;
       const text = normalizeText(node.textContent || '');
-      if (/^pozycje od /.test(text) || /^pozycji \d+ z \d+/.test(text) || /^pozycji 0 z 0/.test(text)) node.remove();
+      return (
+        /^pozycje od \d+ do \d+ z \d+(?: \S+)?$/.test(text) ||
+        /^pozycje od \d+ do \d+ z \d+ łącznie$/.test(text) ||
+        /^pozycji \d+ z \d+/.test(text) ||
+        /^pozycji 0 z 0/.test(text) ||
+        /^strona\s*\d+\s*z\s*\d+$/.test(text) ||
+        /^poprzednia strona$/.test(text) ||
+        /^następna strona$/.test(text)
+      );
+    };
+
+    scope.querySelectorAll('p.bm-muted, p.cm-table-count, .cm-table-count, p.cm-table-footer, .cm-table-footer, span, div, p').forEach(node => {
+      if (isOnlyPaginationText(node)) node.remove();
     });
-    scope.querySelectorAll('span, div, p').forEach(node => {
-      if (node.closest('.cm-table-pagination')) return;
-      const text = normalizeText(node.textContent || '');
-      if (/^strona\s*\d+\s*z\s*\d+$/.test(text)) node.remove();
+
+    scope.querySelectorAll('button, a').forEach(node => {
+      if (isInsideModernPager(node)) return;
+      const text = normalizeText(node.textContent || node.getAttribute('aria-label') || node.title || '');
+      if (/^(poprzednia strona|następna strona)$/.test(text)) node.remove();
     });
   };
 
@@ -4174,6 +4190,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const root = document.querySelector('.bm-panel-area') || document;
         cleanupLegacyPagination(root);
         setupGlobalTablePagination(root);
+        cleanupLegacyPagination(root);
       }, 80);
     };
     const observer = new MutationObserver(run);
