@@ -718,12 +718,16 @@
       const msg = "#deleteAdminUserMessage";
       if (!userId) return setMessage(msg, "Wybierz pracownika.", false);
       try {
-        const { error } = await window.cmSupabase.rpc("admin_disable_company_user", { p_user_id: userId });
+        const { data, error } = await window.cmSupabase.rpc("admin_delete_company_user", { p_user_id: userId });
         if (error) throw error;
-        setMessage(msg, "Pracownik zablokowany — logowanie wyłączone.", true);
+        const mode = String(data || "removed");
+        const info = mode === "hard_deleted"
+          ? "Pracownik usunięty całkowicie z bazy."
+          : "Pracownik usunięty z aktywnych użytkowników. Dane historyczne zostały zachowane anonimowo.";
+        setMessage(msg, info, true);
         rerenderUsersAfterSuccess(600);
       } catch (error) {
-        setMessage(msg, "Błąd usuwania/blokady pracownika: " + (error.message || error), false);
+        setMessage(msg, "Błąd usuwania pracownika: " + (error.message || error), false);
       }
     });
   }
