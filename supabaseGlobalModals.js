@@ -1,5 +1,5 @@
 // CompanyManager — Supabase global forms bridge
-// 042H: globalny focus formularzy — aktywny formularz wyraźny, tło zewnętrzne delikatnie przyciemnione i wyblurowane.
+// 138: globalny stos formularzy — blur zostaje aktywny dopóki otwarty jest jakikolwiek formularz; formularz nadrzędny wraca po zamknięciu pomocniczego.
 (function () {
   'use strict';
 
@@ -7,12 +7,50 @@
   const MODAL_CLASS = 'cm-as-modal';
   const BODY_OPEN = 'cm-modal-open';
   const OVERLAY_ID = 'cmGlobalFormOverlay';
+  const MODAL_DEPTH_ATTR = 'data-cm-modal-depth';
+  const modalStack = [];
+
+  function normalizePanel(panel) {
+    return panel && panel.nodeType === 1 ? panel : null;
+  }
+
+  function removeFromStack(panel) {
+    const p = normalizePanel(panel);
+    if (!p) return;
+    for (let i = modalStack.length - 1; i >= 0; i -= 1) {
+      if (modalStack[i] === p) modalStack.splice(i, 1);
+    }
+  }
+
+  function pushModal(panel) {
+    const p = normalizePanel(panel);
+    if (!p) return;
+    removeFromStack(p);
+    modalStack.push(p);
+    syncModalDepths();
+  }
+
+  function syncModalDepths() {
+    modalStack.forEach(function (panel, index) {
+      if (!panel || panel.hidden) return;
+      panel.setAttribute(MODAL_DEPTH_ATTR, String(index + 1));
+      panel.style.zIndex = String(10000 + index);
+    });
+  }
+
 
   function anyOpenModal() {
+    for (let i = modalStack.length - 1; i >= 0; i -= 1) {
+      const panel = modalStack[i];
+      if (!panel || panel.hidden || !document.documentElement.contains(panel)) {
+        modalStack.splice(i, 1);
+      }
+    }
     return !!document.querySelector('.' + MODAL_ACTIVE + ':not([hidden]), .' + MODAL_CLASS + ':not([hidden])');
   }
 
   function refreshBlurState() {
+    syncModalDepths();
     const isOpen = anyOpenModal();
     document.body.classList.toggle(BODY_OPEN, isOpen);
     document.documentElement.classList.toggle(BODY_OPEN, isOpen);
@@ -83,6 +121,9 @@
     if (!panel) return;
     panel.hidden = true;
     panel.classList.remove(MODAL_ACTIVE, MODAL_CLASS);
+    panel.removeAttribute(MODAL_DEPTH_ATTR);
+    panel.style.removeProperty('z-index');
+    removeFromStack(panel);
     cleanupBlur();
   }
 
@@ -90,6 +131,9 @@
     if (childPanel) {
       childPanel.hidden = true;
       childPanel.classList.remove(MODAL_ACTIVE, MODAL_CLASS);
+      childPanel.removeAttribute(MODAL_DEPTH_ATTR);
+      childPanel.style.removeProperty('z-index');
+      removeFromStack(childPanel);
     }
     if (parentPanel) {
       (panels || []).forEach(function (panel) {
@@ -100,6 +144,7 @@
       });
       parentPanel.hidden = false;
       parentPanel.classList.add(MODAL_ACTIVE, MODAL_CLASS);
+      pushModal(parentPanel);
       schedulePickerReinit(parentPanel);
     }
     cleanupBlur();
@@ -110,7 +155,11 @@
       if (!panel) return;
       panel.hidden = true;
       panel.classList.remove(MODAL_ACTIVE, MODAL_CLASS);
+      panel.removeAttribute(MODAL_DEPTH_ATTR);
+      panel.style.removeProperty('z-index');
+      removeFromStack(panel);
     });
+    modalStack.length = 0;
     cleanupBlur();
   }
 
@@ -127,11 +176,15 @@
     list.forEach(function (panel) {
       panel.hidden = true;
       panel.classList.remove(MODAL_ACTIVE, MODAL_CLASS);
+      panel.removeAttribute(MODAL_DEPTH_ATTR);
+      panel.style.removeProperty('z-index');
+      removeFromStack(panel);
     });
 
     if (targetPanel && shouldOpen) {
       targetPanel.hidden = false;
       targetPanel.classList.add(MODAL_ACTIVE, MODAL_CLASS);
+      pushModal(targetPanel);
     }
 
     cleanupBlur();
@@ -144,11 +197,15 @@
       if (panel !== targetPanel) {
         panel.hidden = true;
         panel.classList.remove(MODAL_ACTIVE, MODAL_CLASS);
+        panel.removeAttribute(MODAL_DEPTH_ATTR);
+        panel.style.removeProperty('z-index');
+        removeFromStack(panel);
       }
     });
     if (targetPanel) {
       targetPanel.hidden = false;
       targetPanel.classList.add(MODAL_ACTIVE, MODAL_CLASS);
+      pushModal(targetPanel);
     }
     cleanupBlur();
     schedulePickerReinit(targetPanel || document);

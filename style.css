@@ -6993,3 +6993,63 @@ body.cm-modal-open .cm-modal-active * {
   gap:10px;
   margin-top:10px;
 }
+
+
+/* CompanyManager 138 — global modal stack blur fix
+   Blur ma działać globalnie na całej platformie, ale nie może rozmywać aktywnego formularza.
+   Tło rozmywa overlay przez backdrop-filter. Shell nie dostaje już filter, bo CSS filter rozmywa też dzieci formularza. */
+html body #cmGlobalFormOverlay{
+  position:fixed!important;
+  inset:0!important;
+  z-index:9998!important;
+  display:none;
+  background:rgba(2,6,23,.50)!important;
+  backdrop-filter:blur(9px) saturate(1.08)!important;
+  -webkit-backdrop-filter:blur(9px) saturate(1.08)!important;
+  opacity:0;
+  transition:opacity .18s ease!important;
+}
+html.cm-modal-open body #cmGlobalFormOverlay,
+body.cm-modal-open #cmGlobalFormOverlay{
+  display:block!important;
+  opacity:1!important;
+  pointer-events:auto!important;
+}
+html.cm-modal-open body .bm-shell,
+body.cm-modal-open .bm-shell,
+html.cm-modal-open body .bm-main,
+body.cm-modal-open .bm-main{
+  filter:none!important;
+}
+html.cm-modal-open body .cm-as-modal,
+html.cm-modal-open body .cm-modal-active,
+body.cm-modal-open .cm-as-modal,
+body.cm-modal-open .cm-modal-active{
+  position:fixed!important;
+  top:50%!important;
+  left:50%!important;
+  transform:translate(-50%,-50%)!important;
+  z-index:10000!important;
+  width:min(980px, calc(100vw - 34px))!important;
+  max-height:min(88vh, 920px)!important;
+  overflow:auto!important;
+  filter:none!important;
+  opacity:1!important;
+  background:linear-gradient(180deg, rgba(15,23,42,.985), rgba(2,6,23,.965))!important;
+  border:1px solid rgba(148,163,184,.28)!important;
+  box-shadow:0 42px 140px rgba(0,0,0,.58), 0 0 0 1px rgba(96,165,250,.10) inset!important;
+  isolation:isolate!important;
+}
+html.cm-modal-open body .cm-as-modal[data-cm-modal-depth="2"],
+html.cm-modal-open body .cm-modal-active[data-cm-modal-depth="2"],
+body.cm-modal-open .cm-as-modal[data-cm-modal-depth="2"],
+body.cm-modal-open .cm-modal-active[data-cm-modal-depth="2"]{
+  z-index:10001!important;
+  width:min(860px, calc(100vw - 42px))!important;
+}
+html.cm-modal-open body .cm-as-modal *,
+html.cm-modal-open body .cm-modal-active *,
+body.cm-modal-open .cm-as-modal *,
+body.cm-modal-open .cm-modal-active *{
+  filter:none!important;
+}
