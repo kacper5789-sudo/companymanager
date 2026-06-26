@@ -6,7 +6,7 @@
   const $ = (selector, root = document) => root.querySelector(selector);
   const $$ = (selector, root = document) => Array.from(root.querySelectorAll(selector));
   const esc = (value) => String(value ?? "").replace(/[&<>'"]/g, (c) => ({"&":"&amp;","<":"&lt;",">":"&gt;","'":"&#39;",'"':"&quot;"}[c]));
-  const money = (value) => `${Number(value || 0).toFixed(2)} PLN`;
+  const money = (value) => window.cmFormatMoney ? window.cmFormatMoney(value) : `${Number(value || 0).toFixed(2)} PLN`;
   const normalize = (value) => String(value || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 
   function getRoot() {
@@ -72,7 +72,19 @@
   }
 
   function appointmentValue(row, service) {
-    return Number(row?.total || row?.price || row?.paid_amount || service?.price || service?.price_from || service?.priceFrom || service?.price_to || service?.priceTo || 0);
+    return Number(row?.total || row?.total_gross || row?.price || row?.paid_amount || service?.price || service?.price_from || service?.priceFrom || service?.price_to || service?.priceTo || 0);
+  }
+
+  function saleValue(row) {
+    return Number(row?.total_gross || row?.total || row?.amount || row?.paid_amount || 0);
+  }
+
+  function saleClientId(row) {
+    return row?.client_id || row?.customer_id || row?.buyer_client_id || row?.beneficiary_client_id || "";
+  }
+
+  function isDeletedOrInactive(row) {
+    return row?.deleted_at || row?.deleted === true || row?.active === false || String(row?.status || "").toLowerCase() === "deleted";
   }
 
   function isCancelled(row) {
@@ -123,14 +135,26 @@
   }
 
   async function loadData(companyId) {
-    const [clients, appointments, services, categories, profiles] = await Promise.all([
+    const [clients, appointments, services, categories, profiles, sales, saleItems, passes] = await Promise.all([
       safeSelect("clients", window.cmSupabase.from("clients").select("*").eq("company_id", companyId).limit(5000)),
       safeSelect("appointments", window.cmSupabase.from("appointments").select("*").eq("company_id", companyId).limit(5000)),
       safeSelect("services", window.cmSupabase.from("services").select("*").eq("company_id", companyId).limit(3000)),
       safeSelect("service_categories", window.cmSupabase.from("service_categories").select("*").eq("company_id", companyId).limit(1000)),
-      safeSelect("profiles", window.cmSupabase.from("profiles").select("*").eq("company_id", companyId).limit(1000))
+      safeSelect("profiles", window.cmSupabase.from("profiles").select("*").eq("company_id", companyId).limit(1000)),
+      safeSelect("sales", window.cmSupabase.from("sales").select("*").eq("company_id", companyId).limit(5000)),
+      safeSelect("sale_items", window.cmSupabase.from("sale_items").select("*").eq("company_id", companyId).limit(8000)),
+      safeSelect("passes", window.cmSupabase.from("passes").select("*").eq("company_id", companyId).limit(3000))
     ]);
-    return { clients, appointments, services, categories, profiles };
+    return {
+      clients: clients.filter((c) => !isDeletedOrInactive(c)),
+      appointments: appointments.filter((a) => !isDeletedOrInactive(a)),
+      services: services.filter((s) => !isDeletedOrInactive(s)),
+      categories: categories.filter((c) => !isDeletedOrInactive(c)),
+      profiles: profiles.filter((p) => !isDeletedOrInactive(p)),
+      sales: sales.filter((sale) => !isDeletedOrInactive(sale)),
+      saleItems,
+      passes: passes.filter((pass) => !isDeletedOrInactive(pass))
+    };
   }
 
   function optionList(items, selected) {
@@ -196,6 +220,32 @@
       return selectedCategories.includes(String(svc?.category_id || svc?.categoryId || ""));
     });
 
+    const salesInRange = (raw.sales || []).filter((sale) => inRange(sale.created_at || sale.sale_date || sale.paid_at, filters.from, filters.to));
+    const saleItemsBySale = new Map();
+    (raw.saleItems || []).forEach((item) => {
+      if (!item.sale_id) return;
+      const key = String(item.sale_id);
+      const list = saleItemsBySale.get(key) || [];
+      list.push(item);
+      saleItemsBySale.set(key, list);
+    });
+    const salesByClient = new Map();
+    salesInRange.forEach((sale) => {
+      const cid = String(saleClientId(sale) || "");
+      if (!cid) return;
+      const items = saleItemsBySale.get(String(sale.id)) || [];
+      const prev = salesByClient.get(cid) || { count: 0, value: 0, products: 0, passes: 0, services: 0 };
+      prev.count += 1;
+      prev.value += saleValue(sale);
+      items.forEach((item) => {
+        const type = String(item.item_type || "").toLowerCase();
+        if (type.includes("product")) prev.products += Number(item.quantity || 1);
+        else if (type.includes("pass")) prev.passes += Number(item.quantity || 1);
+        else if (type.includes("service")) prev.services += Number(item.quantity || 1);
+      });
+      salesByClient.set(cid, prev);
+    });
+
     const byCustomer = () => {
       const map = new Map();
       visits.forEach((a) => {
@@ -203,15 +253,50 @@
         const client = clientsById[cid];
         const svc = servicesById[String(appointmentServiceId(a))];
         const label = clientName(client, a.client_name || a.clientName || "(brak)");
-        const prev = map.get(cid) || { label, visits: 0, services: 0, value: 0, lastDate: "" };
+        const prev = map.get(cid) || {
+          label,
+          phone: client?.phone || a.client_phone || "",
+          email: client?.email || "",
+          visits: 0,
+          services: 0,
+          visitValue: 0,
+          salesCount: 0,
+          salesValue: 0,
+          totalValue: 0,
+          avgVisit: 0,
+          lastDate: ""
+        };
         prev.visits += 1;
         if (appointmentServiceId(a)) prev.services += 1;
-        prev.value += appointmentValue(a, svc);
+        prev.visitValue += appointmentValue(a, svc);
         const d = String(appointmentDate(a) || "").slice(0, 10);
         if (d > prev.lastDate) prev.lastDate = d;
         map.set(cid, prev);
       });
-      return [...map.values()].sort((a, b) => b.visits - a.visits || b.value - a.value);
+      salesByClient.forEach((saleStats, cid) => {
+        const client = clientsById[cid];
+        const prev = map.get(cid) || {
+          label: clientName(client, "(brak)"),
+          phone: client?.phone || "",
+          email: client?.email || "",
+          visits: 0,
+          services: 0,
+          visitValue: 0,
+          salesCount: 0,
+          salesValue: 0,
+          totalValue: 0,
+          avgVisit: 0,
+          lastDate: ""
+        };
+        prev.salesCount = saleStats.count;
+        prev.salesValue = saleStats.value;
+        map.set(cid, prev);
+      });
+      return [...map.values()].map((row) => ({
+        ...row,
+        totalValue: row.visitValue + row.salesValue,
+        avgVisit: row.visits ? row.visitValue / row.visits : 0
+      })).sort((a, b) => b.totalValue - a.totalValue || b.visits - a.visits || String(a.label).localeCompare(String(b.label), "pl"));
     };
 
     const byCategory = () => {
@@ -254,8 +339,19 @@
       headers = ["Data", "Klient", "Pracownik", "Kategoria", "Usługa", "Wartość", "Status"];
       rowsData = byVisit().map((r) => [esc(dateLabel(r.date)), esc(r.client), esc(r.employee), esc(r.category), esc(r.service), money(r.value), esc(r.status || "zakończone")]);
     } else {
-      headers = ["Klient", "L. wizyt", "L. usług", "Wartość", "Ostatnia wizyta"];
-      rowsData = byCustomer().map((r) => [esc(r.label), String(r.visits), String(r.services), money(r.value), esc(r.lastDate ? dateLabel(r.lastDate) : "-")]);
+      headers = ["Klient", "Telefon", "Email", "L. wizyt", "L. usług", "Sprzedaż", "Wartość wizyt", "Razem", "Śr. wizyta", "Ostatnia wizyta"];
+      rowsData = byCustomer().map((r) => [
+        esc(r.label),
+        esc(r.phone || "-"),
+        esc(r.email || "-"),
+        String(r.visits),
+        String(r.services),
+        `${r.salesCount} / ${money(r.salesValue)}`,
+        money(r.visitValue),
+        money(r.totalValue),
+        money(r.avgVisit),
+        esc(r.lastDate ? dateLabel(r.lastDate) : "-")
+      ]);
     }
 
     const needle = normalize(filters.search);
@@ -269,6 +365,13 @@
       acc.value += appointmentValue(a, svc);
       return acc;
     }, { visits: 0, services: 0, value: 0 });
+    const customerRows = byCustomer();
+    const salesTotals = customerRows.reduce((acc, row) => {
+      acc.salesCount += Number(row.salesCount || 0);
+      acc.salesValue += Number(row.salesValue || 0);
+      acc.totalValue += Number(row.totalValue || 0);
+      return acc;
+    }, { salesCount: 0, salesValue: 0, totalValue: 0 });
 
     const titles = {
       plannedClients: "Planowane wizyty według klientów",
@@ -297,7 +400,9 @@
       <div class="cm-period-kpis cm-customers-report-kpis">
         <div><span>Liczba wizyt</span><b>${esc(totals.visits)}</b></div>
         <div><span>Liczba usług</span><b>${esc(totals.services)}</b></div>
-        <div><span>Wartość usług</span><b>${esc(money(totals.value))}</b></div>
+        <div><span>Wartość wizyt</span><b>${esc(money(totals.value))}</b></div>
+        <div><span>Sprzedaż dodatkowa</span><b>${esc(money(salesTotals.salesValue))}</b></div>
+        <div><span>Razem od klientów</span><b>${esc(money(salesTotals.totalValue || totals.value))}</b></div>
         <div><span>Klienci w tabeli</span><b>${esc(rowsData.length)}</b></div>
       </div>
       <div class="bm-table-toolbar"><label>${limitSelect(filters.limit)}</label><label>Szukaj: <input id="crSearch" type="search" value="${esc(filters.search)}" placeholder="Szukaj"></label></div>

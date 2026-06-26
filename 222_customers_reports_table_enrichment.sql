@@ -1,0 +1,3 @@
+-- CompanyManager 152 — customers reports table enrichment
+-- Frontend-only report layout update.
+-- No database schema changes required.
