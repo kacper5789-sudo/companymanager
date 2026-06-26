@@ -338,11 +338,13 @@
   window.cmScheduleDatePickerReinit = schedulePickerReinit;
   window.cmReinitNativePickers = reinitNativePickers;
   window.cmScheduleNativePickerReinit = schedulePickerReinit;
-  // 139: Safety net — quick-add pseudo targets are modal actions, never navigation targets.
+  // 141: Safety net — quick-add pseudo targets are modal actions, never navigation targets.
+  // Do not call stopImmediatePropagation here, because module-level handlers still need to open inline forms.
   document.addEventListener("click", function(event) {
     const button = event.target && event.target.closest ? event.target.closest('[data-open-related^="quick-"]') : null;
     if (!button) return;
     event.preventDefault();
+    if (button.tagName === "A") button.removeAttribute("href");
   }, true);
 
 })();

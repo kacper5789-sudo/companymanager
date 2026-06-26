@@ -283,15 +283,16 @@
   }
 
   function bindRelatedOpenButtons() {
-    // 139: related quick-add buttons must open inline panels, not navigate to pseudo URLs like "quick-client".
+    // 141: related quick-add buttons are handled by inline panel handlers below.
+    // This guard only blocks accidental href/navigation for pseudo targets.
     document.querySelectorAll("[data-open-related]").forEach((button) => {
       if (button.dataset.cmRelatedReady === "1") return;
       const target = String(button.dataset.openRelated || "");
       if (target.startsWith("quick-")) {
         button.dataset.cmRelatedReady = "1";
+        if (button.tagName === "A") button.removeAttribute("href");
         button.addEventListener("click", (event) => {
           event.preventDefault();
-          event.stopPropagation();
         });
         return;
       }

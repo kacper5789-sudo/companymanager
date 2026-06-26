@@ -959,11 +959,16 @@
       return;
     }
 
-    await autoMarkUnfinishedAppointments(ctx);
+    // 141: Dashboard must never hang on background RPC. If Supabase/RPC stalls, continue to data load or show an error.
+    try {
+      await withTimeout(autoMarkUnfinishedAppointments(ctx), 4500, "Automatyczne porządkowanie wizyt trwa zbyt długo.");
+    } catch (error) {
+      console.warn("Dashboard auto-mark skipped by timeout", error);
+    }
 
     let data;
     try {
-      data = await fetchDashboardData(ctx);
+      data = await withTimeout(fetchDashboardData(ctx), 16000, "Supabase nie odpowiedział przy pobieraniu danych Dashboardu. Odśwież stronę albo sprawdź logi Supabase.");
     } catch (error) {
       console.error("CompanyManager dashboard Supabase error", error);
       const details = error?.message || error?.details || error?.hint || error?.code || String(error);
@@ -1264,9 +1269,9 @@
       if (input) input.value = row.label || row.name || "";
       bindDashboardTotalCalculator(form, lookups);
     }
-    document.querySelectorAll('[data-open-related="quick-client"]').forEach((button) => button.addEventListener("click", () => openRelatedPanel(quickClientPanel, button)));
-    document.querySelectorAll('[data-open-related="quick-product"]').forEach((button) => button.addEventListener("click", () => openRelatedPanel(quickProductPanel, button)));
-    document.querySelectorAll('[data-open-related="quick-service"]').forEach((button) => button.addEventListener("click", () => openRelatedPanel(quickServicePanel, button)));
+    document.querySelectorAll('[data-open-related="quick-client"]').forEach((button) => button.addEventListener("click", (event) => { event.preventDefault(); event.stopPropagation(); openRelatedPanel(quickClientPanel, button); }));
+    document.querySelectorAll('[data-open-related="quick-product"]').forEach((button) => button.addEventListener("click", (event) => { event.preventDefault(); event.stopPropagation(); openRelatedPanel(quickProductPanel, button); }));
+    document.querySelectorAll('[data-open-related="quick-service"]').forEach((button) => button.addEventListener("click", (event) => { event.preventDefault(); event.stopPropagation(); openRelatedPanel(quickServicePanel, button); }));
     document.querySelectorAll('[data-dashboard-modal-cancel="true"]').forEach((button) => button.addEventListener("click", (event) => { event.preventDefault(); returnToRelatedParent(button.closest("section.bm-page-card")); }));
 
     document.querySelector("#dashboardQuickClientForm")?.addEventListener("submit", async (event) => {
