@@ -1,0 +1,5 @@
+-- 234_sales_history_pass_dedup_fix.sql
+-- Informacyjnie: poprawka frontendu Historii sprzedaży.
+-- Karnety nie mogą być liczone jednocześnie z public.passes i public.sale_items.
+-- Źródłem przychodu dla sprzedanych karnetów jest sale_items item_type='pass'.
+-- Tabela passes zostaje stanem karnetu i fallbackiem tylko dla starych rekordów bez sale_items.pass_id.

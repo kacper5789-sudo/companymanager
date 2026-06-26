@@ -248,7 +248,7 @@
   async function fetchData(ctx, fromDate, toDate) {
     const [salesRes, itemsRes, paymentsRes, clientsRes, servicesRes, productsRes, categoriesRes, usersRes, appointmentsRes, passesRes] = await Promise.all([
       window.cmSupabase.from("sales").select("id, company_id, client_id, appointment_id, employee_id, employee_name, sale_number, status, total_net, total_tax, total_gross, discount_value, payment_status, payment_method, note, created_at, updated_at").eq("company_id", ctx.companyId).gte("created_at", `${fromDate}T00:00:00`).lte("created_at", `${toDate}T23:59:59`).order("created_at", { ascending: false }),
-      window.cmSupabase.from("sale_items").select("id, company_id, sale_id, item_type, service_id, product_id, name, name_snapshot, quantity, unit_price, discount, total, total_price, created_at").eq("company_id", ctx.companyId),
+      window.cmSupabase.from("sale_items").select("id, company_id, sale_id, item_type, service_id, product_id, pass_id, name, name_snapshot, quantity, unit_price, discount, total, total_price, created_at").eq("company_id", ctx.companyId),
       window.cmSupabase.from("payments").select("id, company_id, sale_id, appointment_id, amount, method, status, paid_at, created_at").eq("company_id", ctx.companyId).gte("paid_at", `${fromDate}T00:00:00`).lte("paid_at", `${toDate}T23:59:59`).order("paid_at", { ascending: false }),
       window.cmSupabase.from("clients").select("id, first_name, last_name, email, phone, status, active").eq("company_id", ctx.companyId).eq("active", true),
       window.cmSupabase.from("services").select("id, name, category_id, category, price, price_from, active").eq("company_id", ctx.companyId).eq("active", true),
@@ -580,7 +580,19 @@
       .filter((row) => passesFilter("employees", selectedEmployees, row.employeeId) && passesFilter("productCategories", selectedProductCategories, row.productCategory) && passesFilter("productNames", selectedProductNames, row.productId));
 
     const inactivePassStatuses = ["void", "deleted", "usunięte", "usuniete", "cancelled", "canceled", "anulowane", "anulowana"];
+    // 234: Karnety są sprzedażą wtedy, gdy istnieją jako sale_items item_type='pass'.
+    // Tabela passes opisuje stan karnetu, nie jest drugim źródłem przychodu.
+    // Jeżeli pass.id występuje w sale_items.pass_id, pomijamy rekord z passes,
+    // żeby Historia sprzedaży nie liczyła karnetów podwójnie.
+    const passIdsRepresentedBySaleItems = new Set(
+      data.items
+        .filter((item) => ["pass", "passes", "karnet"].includes(String(item.item_type || "").toLowerCase()))
+        .map((item) => item.pass_id)
+        .filter(Boolean)
+        .map(String)
+    );
     const passRowsFromPasses = (data.passes || [])
+      .filter((pass) => !passIdsRepresentedBySaleItems.has(String(pass.id || "")))
       .filter((pass) => pass.active !== false && !inactivePassStatuses.includes(String(pass.status || "").toLowerCase()))
       .filter((pass) => inDateRange(pass.sale_date || pass.created_at, fromDate, toDate))
       .map((pass) => {
@@ -612,7 +624,7 @@
         const clientId = sale.client_id || appointment.client_id || "";
         const payment = paymentFor(sale, appointment);
         return {
-          sourceKey: `sale_item:${item.id || item.sale_id}`,
+          sourceKey: item.pass_id ? `pass:${item.pass_id}` : `sale_item:${item.id || item.sale_id}`,
           date: sale.created_at || item.created_at || appointment.starts_at || appointment.created_at,
           time: "",
           employeeId,
@@ -622,6 +634,7 @@
           value: Number(item.total ?? item.total_price ?? item.unit_price ?? sale.total_gross ?? 0),
           note: item.name || item.name_snapshot || sale.note || "Karnet",
           saleId: item.sale_id || "",
+          passId: item.pass_id || "",
           paymentMethod: paymentLabelForSale(sale, appointment, payment)
         };
       })
