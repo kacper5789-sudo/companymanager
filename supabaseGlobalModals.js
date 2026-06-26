@@ -8,10 +8,74 @@
   const BODY_OPEN = 'cm-modal-open';
   const OVERLAY_ID = 'cmGlobalFormOverlay';
   const MODAL_DEPTH_ATTR = 'data-cm-modal-depth';
+  const FORM_PANEL_SELECTOR = [
+    '.bm-appointment-form',
+    '.bm-nested-modal',
+    '.bm-nested-form',
+    '.cm-admin-user-modal',
+    '.cm-work-schedule-modal',
+    '.cm-payment-method-modal',
+    '.cm-modal-backdrop',
+    '[id$=\"FormCard\"]',
+    '[id$=\"FormPanel\"]',
+    '[id$=\"EditCard\"]',
+    '[id$=\"EditPanel\"]',
+    '[id$=\"DeleteCard\"]',
+    '[id$=\"DeletePanel\"]',
+    '#marketingSmsCard',
+    '#marketingEmailCard',
+    '#addPassPanel',
+    '#deletePassPanel',
+    '#addWorkSchedulePanel',
+    '#editWorkSchedulePanel',
+    '#deleteWorkSchedulePanel',
+    '#addPaymentMethodPanel',
+    '#dashboardAppointmentForm',
+    '#dashboardEditVisitPanel',
+    '#dashboardCancelVisitPanel',
+    '#visitFormCard',
+    '#visitEditCard',
+    '#visitDeleteCard',
+    '#walkinFormCard',
+    '#walkinDeleteCard'
+  ].join(',');
   const modalStack = [];
 
   function normalizePanel(panel) {
     return panel && panel.nodeType === 1 ? panel : null;
+  }
+
+  function isActuallyOpen(panel) {
+    if (!panel || panel.nodeType !== 1) return false;
+    if (panel.hidden) return false;
+    if (panel.getAttribute('aria-hidden') === 'true') return false;
+    const style = window.getComputedStyle ? window.getComputedStyle(panel) : null;
+    if (style && (style.display === 'none' || style.visibility === 'hidden')) return false;
+    return true;
+  }
+
+  function shouldPromoteAsModal(panel) {
+    if (!panel || panel.nodeType !== 1) return false;
+    if (!panel.matches || !panel.matches(FORM_PANEL_SELECTOR)) return false;
+    if (!isActuallyOpen(panel)) return false;
+    if (panel.closest && panel.closest('.cm-client-search-results, .cm-limit-menu, .cm-cr-dropdown-menu, .bm-workers-popover')) return false;
+    return !!(panel.querySelector('form, input, select, textarea, button') || panel.matches('.cm-modal-backdrop'));
+  }
+
+  function promoteOpenFormPanels() {
+    const candidates = Array.from(document.querySelectorAll(FORM_PANEL_SELECTOR));
+    candidates.forEach(function (panel) {
+      if (shouldPromoteAsModal(panel)) {
+        if (!panel.classList.contains(MODAL_ACTIVE)) panel.classList.add(MODAL_ACTIVE);
+        if (!panel.classList.contains(MODAL_CLASS)) panel.classList.add(MODAL_CLASS);
+        pushModal(panel);
+      } else if (panel.classList && (panel.classList.contains(MODAL_ACTIVE) || panel.classList.contains(MODAL_CLASS)) && !isActuallyOpen(panel)) {
+        panel.classList.remove(MODAL_ACTIVE, MODAL_CLASS);
+        panel.removeAttribute(MODAL_DEPTH_ATTR);
+        panel.style.removeProperty('z-index');
+        removeFromStack(panel);
+      }
+    });
   }
 
   function removeFromStack(panel) {
@@ -42,7 +106,7 @@
   function anyOpenModal() {
     for (let i = modalStack.length - 1; i >= 0; i -= 1) {
       const panel = modalStack[i];
-      if (!panel || panel.hidden || !document.documentElement.contains(panel)) {
+      if (!panel || !isActuallyOpen(panel) || !document.documentElement.contains(panel)) {
         modalStack.splice(i, 1);
       }
     }
@@ -50,6 +114,7 @@
   }
 
   function refreshBlurState() {
+    promoteOpenFormPanels();
     syncModalDepths();
     const isOpen = anyOpenModal();
     document.body.classList.toggle(BODY_OPEN, isOpen);
@@ -222,10 +287,11 @@
       const observer = new MutationObserver(function (mutations) {
         let shouldRun = false;
         mutations.forEach(function (mutation) {
+          if (mutation.type === 'attributes') shouldRun = true;
           mutation.addedNodes.forEach(function (node) {
             if (!(node instanceof HTMLElement)) return;
-            if (node.matches && node.matches('input[type="date"], input[type="time"], .' + MODAL_CLASS + ', .' + MODAL_ACTIVE)) shouldRun = true;
-            if (node.querySelector && node.querySelector('input[type="date"], input[type="time"], .' + MODAL_CLASS + ', .' + MODAL_ACTIVE)) shouldRun = true;
+            if (node.matches && node.matches('input[type="date"], input[type="time"], ' + FORM_PANEL_SELECTOR + ', .' + MODAL_CLASS + ', .' + MODAL_ACTIVE)) shouldRun = true;
+            if (node.querySelector && node.querySelector('input[type="date"], input[type="time"], ' + FORM_PANEL_SELECTOR + ', .' + MODAL_CLASS + ', .' + MODAL_ACTIVE)) shouldRun = true;
           });
         });
         window.clearTimeout(timer);
@@ -236,6 +302,8 @@
       });
       observer.observe(document.documentElement, { childList: true, subtree: true, attributes: true, attributeFilter: ['class', 'hidden', 'style'] });
     }
+
+    window.setInterval(function () { cleanupBlur(); }, 350);
 
     document.addEventListener('click', function (event) {
       const target = event.target;

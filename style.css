@@ -7053,3 +7053,46 @@ body.cm-modal-open .cm-as-modal *,
 body.cm-modal-open .cm-modal-active *{
   filter:none!important;
 }
+
+/* CompanyManager 140 — global forced modal blur for every form panel */
+html body #cmGlobalFormOverlay{
+  position:fixed!important;
+  inset:0!important;
+  z-index:9998!important;
+  background:rgba(2,6,23,.58)!important;
+  backdrop-filter:blur(12px) saturate(1.08)!important;
+  -webkit-backdrop-filter:blur(12px) saturate(1.08)!important;
+  transition:opacity .16s ease!important;
+}
+html.cm-modal-open body #cmGlobalFormOverlay,
+body.cm-modal-open #cmGlobalFormOverlay{
+  display:block!important;
+  opacity:1!important;
+  pointer-events:auto!important;
+}
+html.cm-modal-open body .cm-as-modal,
+html.cm-modal-open body .cm-modal-active,
+body.cm-modal-open .cm-as-modal,
+body.cm-modal-open .cm-modal-active{
+  position:fixed!important;
+  top:50%!important;
+  left:50%!important;
+  transform:translate(-50%,-50%)!important;
+  z-index:10000!important;
+  width:min(980px, calc(100vw - 34px))!important;
+  max-height:min(88vh, 920px)!important;
+  overflow:auto!important;
+  filter:none!important;
+  opacity:1!important;
+  background:linear-gradient(180deg, rgba(15,23,42,.99), rgba(2,6,23,.97))!important;
+  border:1px solid rgba(148,163,184,.30)!important;
+  box-shadow:0 42px 150px rgba(0,0,0,.66), 0 0 0 1px rgba(96,165,250,.12) inset!important;
+  isolation:isolate!important;
+}
+html.cm-modal-open body .cm-as-modal[data-cm-modal-depth="2"],
+html.cm-modal-open body .cm-modal-active[data-cm-modal-depth="2"],
+body.cm-modal-open .cm-as-modal[data-cm-modal-depth="2"],
+body.cm-modal-open .cm-modal-active[data-cm-modal-depth="2"]{
+  z-index:10001!important;
+  width:min(860px, calc(100vw - 42px))!important;
+}
