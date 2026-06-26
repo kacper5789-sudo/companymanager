@@ -667,9 +667,12 @@
         rerenderUsersAfterSuccess(700);
       } catch (error) {
         const rawMessage = String(error.message || error || "");
-        const friendlyMessage = rawMessage.includes("429") || rawMessage.toLowerCase().includes("rate")
+        const lowerMessage = rawMessage.toLowerCase();
+        const friendlyMessage = rawMessage.includes("429") || lowerMessage.includes("rate")
           ? "Supabase Auth chwilowo zablokował tworzenie kont po zbyt wielu próbach. Odczekaj kilka minut i kliknij tylko raz."
-          : rawMessage;
+          : (rawMessage.includes("409") || lowerMessage.includes("duplicate") || lowerMessage.includes("conflict") || lowerMessage.includes("already exists"))
+            ? "Ten e-mail był już użyty przez konto w systemie. Jeśli konto było usunięte, odpal migrację 198 i spróbuj ponownie."
+            : rawMessage;
         setMessage(msg, "Błąd dodawania użytkownika: " + friendlyMessage, false);
         addUserSubmitting = false;
         if (addButton) addButton.disabled = false;
