@@ -148,6 +148,99 @@
     return [customer?.first_name, customer?.last_name].filter(Boolean).join(" ") || customer?.full_name || customer?.name || customer?.email || "-";
   }
 
+
+  function isActiveClient(client) {
+    const status = String(client?.status || "").trim().toLowerCase();
+    return client?.deleted_at == null
+      && client?.active !== false
+      && !["usunięty", "usuniety", "deleted", "archived", "zarchiwizowany"].includes(status);
+  }
+
+  function clientSearchText(client) {
+    return [customerName(client), client?.phone || "", client?.email || ""].filter(Boolean).join(" · ");
+  }
+
+  function clientSearchFieldHtml(prefix) {
+    return `
+      <label>Klient
+        <div class="cm-client-search" data-client-search-wrap>
+          <input type="search" id="${escapeHtml(prefix)}Search" class="cm-client-search-input" data-client-search data-client-hidden="${escapeHtml(prefix)}Id" placeholder="Szukaj klienta z bazy" autocomplete="off" required>
+          <input type="hidden" id="${escapeHtml(prefix)}Id" name="customerId">
+          <div class="cm-client-search-results" data-client-results hidden></div>
+        </div>
+        <small class="cm-muted">Wpisz imię, nazwisko, telefon lub email klienta.</small>
+      </label>`;
+  }
+
+  function setupClientSearchFields(clients) {
+    const activeClients = (clients || []).filter(isActiveClient);
+    const byId = new Map(activeClients.map((client) => [String(client.id), client]));
+    const normalized = activeClients.map((client) => ({ client, label: clientSearchText(client), haystack: clientSearchText(client).toLowerCase() }));
+
+    document.querySelectorAll("[data-client-search]").forEach((input) => {
+      if (input.dataset.cmClientSearchReady === "1") return;
+      input.dataset.cmClientSearchReady = "1";
+      const wrap = input.closest("[data-client-search-wrap]");
+      const results = wrap?.querySelector("[data-client-results]");
+      const hidden = document.getElementById(input.dataset.clientHidden || "");
+      if (!wrap || !results || !hidden) return;
+
+      const close = () => { results.hidden = true; };
+      const selectClient = (client) => {
+        input.value = clientSearchText(client);
+        hidden.value = client.id;
+        hidden.dispatchEvent(new Event("change", { bubbles: true }));
+        close();
+      };
+      const render = () => {
+        const q = String(input.value || "").trim().toLowerCase();
+        if (hidden.value) {
+          const current = byId.get(String(hidden.value));
+          if (!current || input.value !== clientSearchText(current)) {
+            hidden.value = "";
+            hidden.dispatchEvent(new Event("change", { bubbles: true }));
+          }
+        }
+        const matches = normalized.filter((row) => !q || row.haystack.includes(q)).slice(0, 12);
+        if (!matches.length) {
+          results.innerHTML = `<div class="cm-client-search-empty">Brak aktywnych klientów dla tej frazy.</div>`;
+          results.hidden = false;
+          return;
+        }
+        results.innerHTML = matches.map((row) => `
+          <button type="button" class="cm-client-search-item" data-client-id="${escapeHtml(row.client.id)}">
+            ${escapeHtml(row.label)}
+          </button>
+        `).join("");
+        results.hidden = false;
+      };
+
+      input.addEventListener("input", render);
+      input.addEventListener("focus", render);
+      results.addEventListener("mousedown", (event) => {
+        const button = event.target.closest("[data-client-id]");
+        if (!button) return;
+        event.preventDefault();
+        const client = byId.get(String(button.dataset.clientId));
+        if (client) selectClient(client);
+      });
+      document.addEventListener("click", (event) => {
+        if (!wrap.contains(event.target)) close();
+      });
+    });
+  }
+
+  function setClientSearchValue(form, clientId, clientsById) {
+    if (!form) return;
+    const hidden = form.elements.customerId;
+    const input = form.querySelector("[data-client-search]");
+    if (hidden) hidden.value = clientId || "";
+    if (input) {
+      const client = clientsById?.[clientId];
+      input.value = client ? clientSearchText(client) : "";
+    }
+  }
+
   function personName(person) { return person?.full_name || person?.email || person?.name || "-"; }
   function serviceName(service) { return service?.name || "-"; }
   function productName(product) { return product?.name || "-"; }
@@ -319,7 +412,7 @@
         .order("start_time", { ascending: true }),
       window.cmSupabase
         .from("clients")
-        .select("id, company_id, first_name, last_name, email, phone, status")
+        .select("id, company_id, first_name, last_name, full_name, email, phone, status, active, deleted_at")
         .eq("company_id", ctx.companyId)
         .order("last_name", { ascending: true }),
       window.cmSupabase
@@ -370,7 +463,7 @@
       workSchedules: workSchedulesRes.data || [],
       daysOff: daysOffRes.data || [],
       appointments: appointmentsRes.data || [],
-      clients: (clientsRes.data || []).filter((item) => item.status !== "usunięty"),
+      clients: (clientsRes.data || []).filter(isActiveClient),
       services: (servicesRes.data || []).filter((item) => item.active !== false),
       products: (productsRes.data || []).filter((item) => item.active !== false),
       users: uniqueUsers(safeUsersData),
@@ -665,7 +758,7 @@
     form.elements.date.value = appointmentDate(item) || iso(new Date());
     form.elements.start.value = appointmentStart(item) || "06:00";
     form.elements.end.value = appointmentEnd(item) || "06:30";
-    form.elements.customerId.value = appointmentClientId(item) || "";
+    setClientSearchValue(form, appointmentClientId(item) || "", lookups.clientsById || {});
     form.elements.employeeId.value = item.employee_id || "";
     if (!form.elements.employeeId.value && item.employee_name) {
       const targetName = String(item.employee_name).trim().toLowerCase();
@@ -791,7 +884,7 @@
           <label>Data<input type="date" name="date" value="${escapeHtml(selectedDate)}" required></label>
           <label>Od<select name="start">${timeOptions(dashboardSettings(data).start)}</select></label>
           <label>Do<select name="end">${timeOptions(timeFromMinutes((minutesFromTime(dashboardSettings(data).start) || 480) + dashboardSettings(data).duration))}</select></label>
-          <label>Klient<select name="customerId" required><option value="">Wybierz klienta</option>${customerOptions}</select></label>
+          ${clientSearchFieldHtml("dashAddClient")}
           <label>Pracownik<select name="employeeId" required><option value="">Wybierz pracownika</option>${employeeOptions}</select></label>
           <label>Usługi<select name="serviceId"><option value="">Wybierz usługę</option>${serviceOptions}</select></label>
           <label>Zakup produktów<select name="productId"><option value="">Wybierz produkt</option>${productOptions}</select></label>
@@ -811,7 +904,7 @@
           <label>Data<input type="date" name="date" value="${escapeHtml(selectedDate)}" required></label>
           <label>Od<select name="start">${timeOptions()}</select></label>
           <label>Do<select name="end">${timeOptions()}</select></label>
-          <label>Klient<select name="customerId" required><option value="">Wybierz klienta</option>${customerOptions}</select></label>
+          ${clientSearchFieldHtml("dashEditClient")}
           <label>Pracownik<select name="employeeId" required><option value="">Wybierz pracownika</option>${employeeOptions}</select></label>
           <label>Usługi<select name="serviceId"><option value="">Wybierz usługę</option>${serviceOptions}</select></label>
           <label>Zakup produktów<select name="productId"><option value="">Wybierz produkt</option>${productOptions}</select></label>
@@ -926,6 +1019,7 @@
       workersPopover.hidden = true;
     }, { once: false });
     updateWorkerVisibility(false);
+    setupClientSearchFields(data.clients);
     function bindPassOptions(form) {
       if (!form || !form.elements.passId) return;
       const refresh = () => {
@@ -969,7 +1063,7 @@
       if (form.elements.serviceId) form.elements.serviceId.dispatchEvent(new Event("change", { bubbles: true }));
       if (form.elements.customerId) form.elements.customerId.dispatchEvent(new Event("change", { bubbles: true }));
       if (form.elements.productId) form.elements.productId.dispatchEvent(new Event("change", { bubbles: true }));
-      const firstInput = form.querySelector('select[name="customerId"], input, select, textarea');
+      const firstInput = form.querySelector('[data-client-search], input, select, textarea');
       if (firstInput) window.setTimeout(() => firstInput.focus(), 50);
       if (typeof window.cmRefreshGlobalModalState === "function") window.cmRefreshGlobalModalState();
     }

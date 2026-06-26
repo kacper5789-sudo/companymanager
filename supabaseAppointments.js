@@ -188,6 +188,105 @@
     return String(value).slice(0, 5);
   }
 
+
+  function minutesFromTime(value) {
+    const normalized = normalizeTime(value);
+    const match = normalized.match(/^(\d{1,2}):(\d{2})$/);
+    if (!match) return null;
+    return Number(match[1]) * 60 + Number(match[2]);
+  }
+
+  function timeFromMinutes(total) {
+    const safe = Math.max(0, Math.min(23 * 60 + 59, Number(total) || 0));
+    const h = Math.floor(safe / 60);
+    const m = safe % 60;
+    return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+  }
+
+  function timeOptions(selected = "") {
+    const rows = [];
+    for (let h = 0; h < 24; h += 1) {
+      for (let m = 0; m < 60; m += 5) {
+        const value = `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+        rows.push(`<option value="${value}" ${value === selected ? "selected" : ""}>${value}</option>`);
+      }
+    }
+    return rows.join("");
+  }
+
+  function combineDateTimeIso(date, time) {
+    if (!date || !time) return null;
+    const localDate = new Date(`${date}T${time}:00`);
+    if (Number.isNaN(localDate.getTime())) return `${date}T${time}:00`;
+    return localDate.toISOString();
+  }
+
+  function moneyNumber(value) {
+    const n = Number(String(value ?? "").replace(",", "."));
+    return Number.isFinite(n) ? n : 0;
+  }
+
+  function firstPositiveMoney(...values) {
+    for (const value of values) {
+      const n = moneyNumber(value);
+      if (n > 0) return n;
+    }
+    return 0;
+  }
+
+  function servicePrice(service) {
+    if (!service) return 0;
+    return firstPositiveMoney(service.price_from, service.price, service.price_to);
+  }
+
+  function productName(product) { return product?.name || "-"; }
+
+  function productPrice(product) {
+    if (!product) return 0;
+    return firstPositiveMoney(product.sale_price, product.price, product.gross_price, product.net_price, product.retail_price, product.selling_price, product.sale_gross_price, product.unit_price, product.last_purchase_price);
+  }
+
+  function optionList(items, labelFn, empty = "Brak danych", attrsFn = null) {
+    if (!items.length) return `<option value="">${escapeHtml(empty)}</option>`;
+    return items.map((item) => {
+      const attrs = typeof attrsFn === "function" ? ` ${attrsFn(item)}` : "";
+      return `<option value="${escapeHtml(item.id)}"${attrs}>${escapeHtml(labelFn(item))}</option>`;
+    }).join("");
+  }
+
+  function paymentMethodOptions(company = {}) {
+    let methods = [];
+    try {
+      const raw = company?.payment_methods;
+      if (Array.isArray(raw)) methods = raw;
+      else if (typeof raw === "string" && raw.trim()) methods = JSON.parse(raw);
+    } catch (_) { methods = []; }
+    if (!Array.isArray(methods) || !methods.length) methods = [{ name: "gotówka" }, { name: "karta" }, { name: "przelew" }, { name: "blik" }, { name: "karnet" }];
+    return methods.map((method) => {
+      const name = String(method?.name || method || "gotówka");
+      return `<option value="${escapeHtml(name)}">${escapeHtml(name)}</option>`;
+    }).join("");
+  }
+
+  function passOptionsFor(data, clientId = "", serviceId = "", selected = "") {
+    const passes = (data?.passes || []).filter((pass) => {
+      const passClient = pass.customer_id || pass.beneficiary_client_id || pass.buyer_client_id;
+      if (clientId && String(passClient) !== String(clientId)) return false;
+      if (serviceId && pass.service_id && String(pass.service_id) !== String(serviceId)) return false;
+      const remaining = Number(pass.remaining_units ?? pass.remaining ?? 0);
+      return pass.active !== false && !["zrealizowane", "po terminie", "usunięte", "deleted"].includes(String(pass.status || "").toLowerCase()) && remaining !== 0;
+    });
+    if (!clientId) return `<option value="">Najpierw wybierz klienta</option>`;
+    if (!passes.length) return `<option value="">Brak aktywnych karnetów</option>`;
+    return `<option value="">Bez karnetu</option>` + passes.map((pass) => {
+      const left = pass.remaining_units != null || pass.total_units != null
+        ? `${Number(pass.remaining_units || 0)}/${Number(pass.total_units || 0)} wejść`
+        : `${Number(pass.remaining || 0)} pozostało`;
+      const label = `${pass.name || pass.number || "Karnet"} — ${left}`;
+      return `<option value="${escapeHtml(pass.id)}" ${String(pass.id) === String(selected) ? "selected" : ""}>${escapeHtml(label)}</option>`;
+    }).join("");
+  }
+
   function table(headers, rows, emptyText) {
     if (!rows.length) return `<div class="bm-empty-state">${escapeHtml(emptyText || "Brak danych.")}</div>`;
     return `
@@ -262,13 +361,17 @@
       const selectClient = (client) => {
         input.value = clientSearchText(client);
         hidden.value = client.id;
+        hidden.dispatchEvent(new Event("change", { bubbles: true }));
         close();
       };
       const render = () => {
         const q = String(input.value || "").trim().toLowerCase();
         if (hidden.value) {
           const current = byId.get(String(hidden.value));
-          if (!current || input.value !== clientSearchText(current)) hidden.value = "";
+          if (!current || input.value !== clientSearchText(current)) {
+            hidden.value = "";
+            hidden.dispatchEvent(new Event("change", { bubbles: true }));
+          }
         }
         const matches = normalized
           .filter((row) => !q || row.haystack.includes(q))
@@ -317,10 +420,10 @@
   }
 
   async function fetchAll(ctx) {
-    const [appointmentsRes, clientsRes, servicesRes, positionsRes, usersRes] = await Promise.all([
+    const [appointmentsRes, clientsRes, servicesRes, positionsRes, productsRes, passesRes, companyRes, usersRes] = await Promise.all([
       window.cmSupabase
         .from("appointments")
-        .select("id, company_id, date, time, start_time, end_time, customer_id, client_id, employee_id, service_id, position_id, status, deleted, note, price, created_at, updated_at")
+        .select("id, company_id, date, time, start_time, end_time, starts_at, ends_at, appointment_datetime, customer_id, client_id, employee_id, employee_name, service_id, service_name, position_id, product_id, product_name, product_price, product_quantity, pass_id, pass_name, status, deleted, note, price, total, payment_method, created_at, updated_at")
         .eq("company_id", ctx.companyId)
         .order("date", { ascending: false })
         .order("time", { ascending: true }),
@@ -331,7 +434,7 @@
         .order("last_name", { ascending: true }),
       window.cmSupabase
         .from("services")
-        .select("id, company_id, name, position_id, active")
+        .select("id, company_id, name, price_from, price_to, price, position_id, active")
         .eq("company_id", ctx.companyId)
         .order("name", { ascending: true }),
       window.cmSupabase
@@ -339,6 +442,21 @@
         .select("id, company_id, name, active")
         .eq("company_id", ctx.companyId)
         .order("name", { ascending: true }),
+      window.cmSupabase
+        .from("products")
+        .select("id, company_id, name, price, sale_price, gross_price, net_price, retail_price, selling_price, sale_gross_price, unit_price, last_purchase_price, active")
+        .eq("company_id", ctx.companyId)
+        .order("name", { ascending: true }),
+      window.cmSupabase
+        .from("passes")
+        .select("id, company_id, customer_id, beneficiary_client_id, buyer_client_id, service_id, service_name, name, number, pass_type, value, remaining, total_units, remaining_units, valid_until, status, active")
+        .eq("company_id", ctx.companyId)
+        .eq("active", true),
+      window.cmSupabase
+        .from("companies")
+        .select("id, payment_methods")
+        .eq("id", ctx.companyId)
+        .maybeSingle(),
       window.cmSupabase.rpc("company_users_for_dropdown", { target_company_id: ctx.companyId })
     ]);
 
@@ -346,13 +464,19 @@
     if (clientsRes.error) throw clientsRes.error;
     if (servicesRes.error) throw servicesRes.error;
     if (positionsRes.error) throw positionsRes.error;
+    if (productsRes.error) throw productsRes.error;
+    if (passesRes.error) throw passesRes.error;
+    if (companyRes.error) throw companyRes.error;
     if (usersRes.error) throw usersRes.error;
 
     return {
+      company: companyRes.data || {},
       appointments: appointmentsRes.data || [],
       clients: (clientsRes.data || []).filter((item) => isActiveClient(item)),
       services: (servicesRes.data || []).filter((item) => item.active !== false),
       positions: (positionsRes.data || []).filter((item) => item.active !== false),
+      products: (productsRes.data || []).filter((item) => item.active !== false),
+      passes: (passesRes.data || []).filter((item) => item.status !== "usunięte" && item.status !== "zrealizowane"),
       users: usersRes.data || []
     };
   }
@@ -421,44 +545,124 @@
     });
   }
 
-  function payloadFromForm(ctx, formData) {
-    const date = String(formData.get("date") || "").trim();
-    const time = String(formData.get("time") || "").trim();
-    const clientId = String(formData.get("customerId") || "").trim();
+  function payloadFromForm(ctx, formData, form = null) {
     const serviceId = String(formData.get("serviceId") || "").trim();
+    const productId = String(formData.get("productId") || "").trim();
+    const currentForm = form;
+    const selectedProductOption = currentForm?.elements?.productId?.selectedOptions?.[0]
+      || Array.from(document.querySelectorAll('#visitForm select[name="productId"], #visitEditForm select[name="productId"]')).find((select) => select.value === productId)?.selectedOptions?.[0];
+    const selectedProductName = selectedProductOption?.getAttribute("data-name") || selectedProductOption?.textContent?.replace(/\s+—\s+.*$/, "").trim() || null;
+    const selectedProductPrice = firstPositiveMoney(selectedProductOption?.getAttribute("data-price"));
+    const start = normalizeTime(formData.get("start") || formData.get("time"));
+    const end = normalizeTime(formData.get("end"));
+    const clientId = String(formData.get("customerId") || "").trim();
+    const date = String(formData.get("date") || "").trim();
+    const startsAt = combineDateTimeIso(date, start);
+    const endsAt = combineDateTimeIso(date, end);
+    const passId = String(formData.get("passId") || "").trim();
+    const total = Number(String(formData.get("total") || "0").replace(",", ".")) || 0;
     const employeeId = String(formData.get("employeeId") || "").trim();
-    const positionId = String(formData.get("positionId") || "").trim();
-    const status = String(formData.get("status") || "niezakończone").trim();
+    const employeeOption = currentForm?.elements?.employeeId?.selectedOptions?.[0]
+      || Array.from(document.querySelectorAll('#visitForm select[name="employeeId"], #visitEditForm select[name="employeeId"]')).find((select) => select.value === employeeId)?.selectedOptions?.[0];
+    const employeeName = employeeOption?.textContent?.trim() || String(formData.get("employeeName") || "").trim() || null;
+    const status = String(formData.get("status") || "zaplanowane").trim() || "zaplanowane";
     return {
       company_id: ctx.companyId,
       date,
-      time,
-      start_time: time || null,
+      time: start || null,
+      start_time: start || null,
+      end_time: end || null,
+      starts_at: startsAt,
+      ends_at: endsAt,
+      appointment_datetime: startsAt,
       customer_id: clientId || null,
       client_id: clientId || null,
       employee_id: employeeId || null,
+      employee_name: employeeName,
       service_id: serviceId || null,
-      position_id: positionId || null,
+      position_id: String(formData.get("positionId") || "").trim() || null,
+      product_id: productId || null,
+      product_name: productId ? selectedProductName : null,
+      product_price: productId ? selectedProductPrice : null,
+      product_quantity: productId ? 1 : null,
+      pass_id: passId || null,
+      pass_name: passId ? (currentForm?.elements?.passId?.selectedOptions?.[0]?.textContent || "Karnet") : null,
       status,
       deleted: status === "usunięte",
+      note: String(formData.get("note") || "").trim() || null,
+      price: total,
+      total,
+      payment_method: String(formData.get("payment") || "gotówka").trim(),
       updated_at: new Date().toISOString()
     };
   }
 
   function validatePayload(payload) {
-    if (!payload.date || !payload.time || !payload.customer_id || !payload.employee_id || !payload.service_id) return "Uzupełnij datę, godzinę, klienta, pracownika i usługę.";
+    if (!payload.date || !payload.start_time || !payload.end_time || !payload.customer_id || !payload.employee_id) return "Uzupełnij datę, godzinę, klienta i pracownika.";
+    if (!payload.service_id && !payload.product_id) return "Wybierz usługę albo produkt.";
     return "";
+  }
+
+  function bindAppointmentTotalCalculator(form, lookups) {
+    if (!form) return;
+    const serviceSelect = form.elements.serviceId;
+    const productSelect = form.elements.productId;
+    const passSelect = form.elements.passId;
+    const totalInput = form.elements.total;
+    if (!totalInput) return;
+
+    const calculate = () => {
+      const serviceOption = serviceSelect?.selectedOptions?.[0] || null;
+      const productOption = productSelect?.selectedOptions?.[0] || null;
+      const service = lookups.servicesById[String(serviceSelect?.value || "")];
+      const product = lookups.productsById[String(productSelect?.value || "")];
+      const serviceValue = firstPositiveMoney(serviceOption?.getAttribute("data-price"), servicePrice(service));
+      const productValue = firstPositiveMoney(productOption?.getAttribute("data-price"), productPrice(product));
+      const passId = String(passSelect?.value || "");
+      const pass = lookups.passesById?.[passId];
+      let serviceCharge = serviceValue;
+      if (passId && pass) {
+        if (pass.pass_type === "service" || pass.pass_type === "units") serviceCharge = 0;
+        else serviceCharge = Math.max(0, serviceValue - Number(pass.remaining || 0));
+      }
+      totalInput.value = (serviceCharge + productValue).toFixed(2);
+    };
+
+    serviceSelect?.addEventListener("change", calculate);
+    serviceSelect?.addEventListener("input", calculate);
+    productSelect?.addEventListener("change", calculate);
+    productSelect?.addEventListener("input", calculate);
+    passSelect?.addEventListener("change", calculate);
+    form.addEventListener("change", (event) => {
+      const name = event.target?.name;
+      if (["serviceId", "productId", "passId"].includes(name)) calculate();
+    });
+    calculate();
   }
 
   function fillEditForm(form, item, lookups) {
     if (!form || !item) return;
     form.elements.date.value = appointmentDate(item) || "";
-    form.elements.time.value = appointmentTime(item) || "";
+    form.elements.start.value = normalizeTime(item.start_time || item.time) || "10:00";
+    form.elements.end.value = normalizeTime(item.end_time) || timeFromMinutes((minutesFromTime(form.elements.start.value) || 600) + 30);
     setClientSearchValue(form, appointmentClientId(item) || "", lookups?.clientsById || {});
     form.elements.employeeId.value = item.employee_id || "";
+    if (!form.elements.employeeId.value && item.employee_name) {
+      const targetName = String(item.employee_name).trim().toLowerCase();
+      const option = Array.from(form.elements.employeeId.options || []).find((opt) => String(opt.textContent || "").trim().toLowerCase() === targetName);
+      if (option) form.elements.employeeId.value = option.value;
+    }
     form.elements.serviceId.value = item.service_id || "";
-    form.elements.positionId.value = item.position_id || "";
-    form.elements.status.value = item.status || "niezakończone";
+    if (form.elements.positionId) form.elements.positionId.value = item.position_id || "";
+    if (form.elements.productId) form.elements.productId.value = item.product_id || "";
+    if (form.elements.passId) {
+      form.elements.passId.innerHTML = passOptionsFor({ passes: Object.values(lookups.passesById || {}) }, appointmentClientId(item), item.service_id || "", item.pass_id || "");
+      form.elements.passId.value = item.pass_id || "";
+    }
+    if (form.elements.total) form.elements.total.value = firstPositiveMoney(item.total, item.price).toFixed(2);
+    if (form.elements.payment) form.elements.payment.value = item.payment_method || "gotówka";
+    if (form.elements.note) form.elements.note.value = item.note || "";
+    form.elements.status.value = item.status || "zaplanowane";
   }
 
   async function renderAppointments() {
@@ -498,6 +702,8 @@
       clientsById: Object.fromEntries(data.clients.map((item) => [item.id, item])),
       servicesById: Object.fromEntries(data.services.map((item) => [item.id, item])),
       positionsById: Object.fromEntries(data.positions.map((item) => [item.id, item])),
+      productsById: Object.fromEntries((data.products || []).map((item) => [item.id, item])),
+      passesById: Object.fromEntries((data.passes || []).map((item) => [item.id, item])),
       usersById: Object.fromEntries(data.users.map((item) => [item.id, item]))
     };
 
@@ -523,8 +729,20 @@
 
     const statusTabs = statuses.map((status) => `<button type="button" class="bm-tab-btn ${status === currentFilter ? "active" : ""}" data-visit-filter="${escapeHtml(status)}">${escapeHtml(status)}</button>`).join("");
     const employeeOptions = options(data.users, personName, "Brak pracowników/użytkowników");
-    const serviceOptions = options(data.services, (s) => s.name || "Usługa", "Brak usług");
+    const serviceOptions = optionList(
+      data.services,
+      (s) => `${s.name || "Usługa"}${servicePrice(s) ? ` — ${servicePrice(s).toFixed(2).replace(".00", "")} PLN` : ""}`,
+      "Brak usług",
+      (s) => `data-price="${escapeHtml(String(servicePrice(s)))}" data-name="${escapeHtml(s.name || "Usługa")}"`
+    );
+    const productOptions = optionList(
+      data.products || [],
+      (product) => `${productName(product)}${productPrice(product) ? ` — ${productPrice(product).toFixed(2).replace(".00", "")} PLN` : ""}`,
+      "Brak produktów",
+      (product) => `data-price="${escapeHtml(String(productPrice(product)))}" data-name="${escapeHtml(productName(product))}"`
+    );
     const positionOptions = options(data.positions, (p) => p.name || "Stanowisko", "Brak stanowisk");
+    const paymentOptionsHtml = paymentMethodOptions(data.company);
     const visitOptions = editable.map((item) => `<option value="${escapeHtml(item.id)}">${escapeHtml(visitLabel(item, lookups))}</option>`).join("");
 
     area.innerHTML = `
@@ -539,13 +757,19 @@
       <section class="bm-page-card" id="visitFormCard" hidden>
         <h2>Dodaj wizytę</h2>
         <form id="visitForm" class="bm-form-grid">
-          <label>Data<input name="date" type="date" value="${new Date().toISOString().slice(0, 10)}" required></label>
-          <label>Godzina<input name="time" type="time" value="10:00" required></label>
+          <label>Data<input type="date" name="date" value="${new Date().toISOString().slice(0, 10)}" required></label>
+          <label>Od<select name="start">${timeOptions("10:00")}</select></label>
+          <label>Do<select name="end">${timeOptions("10:30")}</select></label>
           ${clientSearchFieldHtml("visitClient")}
           <label>Pracownik<select name="employeeId" required><option value="">Wybierz pracownika</option>${employeeOptions}</select></label>
-          <label>Usługa<select name="serviceId" required><option value="">Wybierz usługę</option>${serviceOptions}</select></label>
+          <label>Usługi<select name="serviceId"><option value="">Wybierz usługę</option>${serviceOptions}</select></label>
+          <label>Zakup produktów<select name="productId"><option value="">Wybierz produkt</option>${productOptions}</select></label>
+          <label class="bm-full">Karnet klienta<select name="passId"><option value="">Najpierw wybierz klienta</option></select><small class="bm-muted">Karnet pojawi się po wyborze klienta. Karnet usługowy rozlicza usługę, produkty zostają doliczone normalnie.</small></label>
+          <label>Razem do zapłaty<input name="total" value="0.00" readonly></label>
+          <label>Płatność<select name="payment">${paymentOptionsHtml}</select></label>
           <label>Stanowisko pracy<select name="positionId"><option value="">Wybierz stanowisko</option>${positionOptions}</select></label>
           <label>Status<select name="status">${statuses.filter((s) => s !== "usunięte").map((s) => `<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`).join("")}</select></label>
+          <label class="bm-full">Opis<textarea name="note" placeholder="Notatka"></textarea></label>
           <button type="submit">Zapisz wizytę</button>
         </form>
         <p id="visitMessage" class="panel-message"></p>
@@ -555,13 +779,19 @@
         <h2>Edytuj wizytę</h2>
         <form id="visitEditSelectForm" class="bm-form-grid"><label>Wybierz wizytę<select name="visitId" id="editVisitSelect" required><option value="">Wybierz wizytę</option>${visitOptions}</select></label></form>
         <form id="visitEditForm" class="bm-form-grid" hidden>
-          <label>Data<input name="date" type="date" required></label>
-          <label>Godzina<input name="time" type="time" required></label>
+          <label>Data<input type="date" name="date" required></label>
+          <label>Od<select name="start">${timeOptions()}</select></label>
+          <label>Do<select name="end">${timeOptions()}</select></label>
           ${clientSearchFieldHtml("visitEditClient")}
           <label>Pracownik<select name="employeeId" required><option value="">Wybierz pracownika</option>${employeeOptions}</select></label>
-          <label>Usługa<select name="serviceId" required><option value="">Wybierz usługę</option>${serviceOptions}</select></label>
+          <label>Usługi<select name="serviceId"><option value="">Wybierz usługę</option>${serviceOptions}</select></label>
+          <label>Zakup produktów<select name="productId"><option value="">Wybierz produkt</option>${productOptions}</select></label>
+          <label class="bm-full">Karnet klienta<select name="passId"><option value="">Najpierw wybierz klienta</option></select><small class="bm-muted">Karnet pojawi się po wyborze klienta. Karnet usługowy rozlicza usługę, produkty zostają doliczone normalnie.</small></label>
+          <label>Razem do zapłaty<input name="total" value="0.00" readonly></label>
+          <label>Płatność<select name="payment">${paymentOptionsHtml}</select></label>
           <label>Stanowisko pracy<select name="positionId"><option value="">Wybierz stanowisko</option>${positionOptions}</select></label>
           <label>Status<select name="status">${statuses.map((s) => `<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`).join("")}</select></label>
+          <label class="bm-full">Opis<textarea name="note" placeholder="Notatka"></textarea></label>
           <button type="submit">Zapisz zmiany</button>
         </form>
         <p id="visitEditMessage" class="panel-message"></p>
@@ -576,6 +806,24 @@
 
     setupVisitNativeDatePickers();
     setupClientSearchFields(data.clients);
+
+    function bindPassOptions(form) {
+      if (!form || !form.elements.passId) return;
+      const refresh = () => {
+        const selected = form.elements.passId.value || "";
+        form.elements.passId.innerHTML = passOptionsFor(data, form.elements.customerId?.value || "", form.elements.serviceId?.value || "", selected);
+        if (selected && Array.from(form.elements.passId.options).some((opt) => opt.value === selected)) form.elements.passId.value = selected;
+        if (form.elements.payment && form.elements.passId.value) form.elements.payment.value = "karnet";
+        form.elements.passId.dispatchEvent(new Event("change", { bubbles: true }));
+      };
+      form.elements.customerId?.addEventListener("change", refresh);
+      form.elements.serviceId?.addEventListener("change", refresh);
+      refresh();
+    }
+    bindPassOptions(document.querySelector("#visitForm"));
+    bindPassOptions(document.querySelector("#visitEditForm"));
+    bindAppointmentTotalCalculator(document.querySelector("#visitForm"), lookups);
+    bindAppointmentTotalCalculator(document.querySelector("#visitEditForm"), lookups);
 
     document.querySelectorAll("[data-visit-filter]").forEach((button) => button.addEventListener("click", () => {
       window.location.href = `visits.html?status=${encodeURIComponent(button.dataset.visitFilter || "niezakończone")}`;
@@ -599,7 +847,7 @@
     document.querySelector("#visitForm")?.addEventListener("submit", async (event) => {
       event.preventDefault();
       if (!allowAdd) { setMessage("#visitMessage", "Brak uprawnienia do dodawania wizyt.", false); return; }
-      const payload = payloadFromForm(ctx, new FormData(event.currentTarget));
+      const payload = payloadFromForm(ctx, new FormData(event.currentTarget), event.currentTarget);
       const validation = validatePayload(payload);
       if (validation) { setMessage("#visitMessage", validation, false); return; }
       const { data: insertedAppointment, error } = await window.cmSupabase.from("appointments").insert(payload).select("*").single();
@@ -654,7 +902,7 @@
       if (!allowEdit) { setMessage("#visitEditMessage", "Brak uprawnienia do edycji wizyt.", false); return; }
       const visitId = document.querySelector("#editVisitSelect")?.value;
       if (!visitId) { setMessage("#visitEditMessage", "Wybierz wizytę do edycji.", false); return; }
-      const payload = payloadFromForm(ctx, new FormData(event.currentTarget));
+      const payload = payloadFromForm(ctx, new FormData(event.currentTarget), event.currentTarget);
       const validation = validatePayload(payload);
       if (validation) { setMessage("#visitEditMessage", validation, false); return; }
       delete payload.company_id;
