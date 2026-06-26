@@ -1,5 +1,5 @@
 // CompanyManager — Sales Reports powered by Supabase
-// 158: Sprzedaż — karnety w Historii sprzedaży i poprawne typy płatności.
+// 159: Historia sprzedaży — pełna wartość sprzedaży zgodna z Raportem z okresu.
 
 (function () {
   function isSalesPage() {
@@ -247,7 +247,7 @@
 
   async function fetchData(ctx, fromDate, toDate) {
     const [salesRes, itemsRes, paymentsRes, clientsRes, servicesRes, productsRes, categoriesRes, usersRes, appointmentsRes, passesRes] = await Promise.all([
-      window.cmSupabase.from("sales").select("id, company_id, client_id, appointment_id, employee_id, employee_name, sale_number, status, total_net, total_tax, total_gross, discount_value, payment_status, note, created_at, updated_at").eq("company_id", ctx.companyId).gte("created_at", `${fromDate}T00:00:00`).lte("created_at", `${toDate}T23:59:59`).order("created_at", { ascending: false }),
+      window.cmSupabase.from("sales").select("id, company_id, client_id, appointment_id, employee_id, employee_name, sale_number, status, total_net, total_tax, total_gross, discount_value, payment_status, payment_method, note, created_at, updated_at").eq("company_id", ctx.companyId).gte("created_at", `${fromDate}T00:00:00`).lte("created_at", `${toDate}T23:59:59`).order("created_at", { ascending: false }),
       window.cmSupabase.from("sale_items").select("id, company_id, sale_id, item_type, service_id, product_id, name, name_snapshot, quantity, unit_price, discount, total, total_price, created_at").eq("company_id", ctx.companyId),
       window.cmSupabase.from("payments").select("id, company_id, sale_id, appointment_id, amount, method, status, paid_at, created_at").eq("company_id", ctx.companyId).gte("paid_at", `${fromDate}T00:00:00`).lte("paid_at", `${toDate}T23:59:59`).order("paid_at", { ascending: false }),
       window.cmSupabase.from("clients").select("id, first_name, last_name, email, phone, status, active").eq("company_id", ctx.companyId).eq("active", true),
@@ -547,14 +547,15 @@
           name: item.name || item.name_snapshot || service.name || appointment.service_name || "Usługa",
           value,
           revenueValue,
-          paymentMethod: paymentLabelForSale(sale, appointment, paymentFor(sale, appointment))
+          paymentMethod: paymentLabelForSale(sale, appointment, paymentFor(sale, appointment)),
+          saleId: item.sale_id || ""
         };
       })
       .filter((row) => passesFilter("employees", selectedEmployees, row.employeeId) && passesFilter("serviceCategories", selectedServiceCategories, row.serviceCategoryId) && passesFilter("serviceNames", selectedServiceNames, row.serviceId));
 
     serviceItemsRaw = preferResolvedEmployeeRows(serviceItemsRaw);
 
-    const productItemsRaw = data.items
+    let productItemsRaw = data.items
       .filter((item) => String(item.item_type || "").toLowerCase() === "product" && salesById[item.sale_id])
       .map((item) => {
         const sale = salesById[item.sale_id] || {};
@@ -572,7 +573,8 @@
           qty: Number(item.quantity || 1),
           value: Number(item.total ?? item.total_price ?? 0),
           revenueValue: countedRevenue(Number(item.total ?? item.total_price ?? 0), sale, appointment),
-          paymentMethod: paymentLabelForSale(sale, appointment, paymentFor(sale, appointment))
+          paymentMethod: paymentLabelForSale(sale, appointment, paymentFor(sale, appointment)),
+          saleId: item.sale_id || ""
         };
       })
       .filter((row) => passesFilter("employees", selectedEmployees, row.employeeId) && passesFilter("productCategories", selectedProductCategories, row.productCategory) && passesFilter("productNames", selectedProductNames, row.productId));
@@ -597,7 +599,7 @@
           value: Number(pass.value || linkedSale?.total_gross || 0),
           note: [pass.name || "Karnet", pass.number || "", pass.service_name || "", pass.description || ""].filter(Boolean).join(" — "),
           saleId: pass.sale_id || "",
-          paymentMethod: normalizePaymentMethod(pass.payment_method || linkedSale?.payment_status || "gotówka")
+          paymentMethod: normalizePaymentMethod(pass.payment_method || linkedSale?.payment_method || linkedSale?.payment_status || "gotówka")
         };
       });
 
@@ -626,7 +628,7 @@
       .filter((row) => inDateRange(row.date, fromDate, toDate));
 
     const passSeen = new Set();
-    const passItemsRaw = passRowsFromPasses.concat(passRowsFromSaleItems)
+    let passItemsRaw = passRowsFromPasses.concat(passRowsFromSaleItems)
       .filter((row) => {
         const key = row.saleId ? `sale:${row.saleId}` : `row:${row.sourceKey}`;
         if (passSeen.has(key)) return false;
@@ -634,6 +636,54 @@
         return true;
       })
       .filter((row) => passesFilter("employees", selectedEmployees, row.employeeId));
+
+    // 159: Historia sprzedaży musi pokazywać pełny przychód z tabeli sales.
+    // Raport z okresu liczy przychód z sales.total_gross, więc tutaj dokładamy
+    // brakującą wartość sprzedaży, gdy sale_items nie istnieją albo nie sumują się
+    // do total_gross. Dzięki temu budżet nie znika z Historii sprzedaży.
+    const itemRevenueBySaleId = new Map();
+    serviceItemsRaw.concat(productItemsRaw, passItemsRaw).forEach((row) => {
+      if (!row.saleId) return;
+      itemRevenueBySaleId.set(row.saleId, Number(itemRevenueBySaleId.get(row.saleId) || 0) + Number((row.revenueValue ?? row.value) || 0));
+    });
+    let fallbackSaleRowsRaw = activeSales
+      .map((sale) => {
+        const appointment = sale.appointment_id ? appointmentById[sale.appointment_id] : null;
+        const employeeId = sale.employee_id || appointment?.employee_id || "";
+        const clientId = sale.client_id || appointment?.client_id || "";
+        const saleTotal = Number(sale.total_gross ?? sale.total_net ?? 0) || 0;
+        const represented = Number(itemRevenueBySaleId.get(sale.id) || 0);
+        const missingValue = Number((saleTotal - represented).toFixed(2));
+        if (missingValue <= 0.009) return null;
+        const payment = paymentFor(sale, appointment);
+        return {
+          sourceKey: `sale:${sale.id}:missing`,
+          saleId: sale.id,
+          date: sale.created_at || appointment?.starts_at || appointment?.appointment_datetime || appointment?.created_at,
+          time: "",
+          employeeId,
+          clientId,
+          employee: employeeDisplayName(userById, employeeId, appointment, sale),
+          customer: clientName(clientById[clientId]) || appointment?.client_name || "(brak)",
+          category: "Sprzedaż",
+          name: represented > 0 ? "Pozostała wartość sprzedaży" : (sale.note || sale.sale_number || "Sprzedaż"),
+          qty: 1,
+          value: missingValue,
+          revenueValue: missingValue,
+          paymentMethod: paymentLabelForSale(sale, appointment, payment)
+        };
+      })
+      .filter(Boolean)
+      .filter((row) => inDateRange(row.date, fromDate, toDate))
+      .filter((row) => passesFilter("employees", selectedEmployees, row.employeeId));
+
+    if (filterActive("paymentTypes")) {
+      const paymentOk = (row) => selectedPaymentTypes.includes(String(normalizePaymentMethod(row.paymentMethod || "gotówka")));
+      serviceItemsRaw = serviceItemsRaw.filter(paymentOk);
+      productItemsRaw = productItemsRaw.filter(paymentOk);
+      passItemsRaw = passItemsRaw.filter(paymentOk);
+      fallbackSaleRowsRaw = fallbackSaleRowsRaw.filter(paymentOk);
+    }
 
     // 158: Płatności liczymy z faktycznych pozycji sprzedaży widocznych w module,
     // żeby suma typów płatności zgadzała się z Historią sprzedaży.
@@ -676,10 +726,11 @@
     const serviceTransactions = serviceItemsRaw.map((r) => toTransactionRow(r, "Usługa", r.category, r.name, 1, r.value, r.paymentMethod));
     const productTransactions = productItemsRaw.map((r) => toTransactionRow(r, "Produkt", r.productCategory, r.name, r.qty, r.value, r.paymentMethod));
     const passTransactions = passItemsRaw.map((r) => toTransactionRow(r, "Karnet", "Karnet", r.note || "Karnet", 1, r.value, r.paymentMethod));
+    const fallbackSaleTransactions = fallbackSaleRowsRaw.map((r) => toTransactionRow(r, "Sprzedaż", r.category, r.name, r.qty, r.value, r.paymentMethod));
     const serviceRows = serviceTransactions.map((item) => item.row);
     const productRows = productTransactions.map((item) => item.row);
     const passRows = passTransactions.map((item) => item.row);
-    const allSalesRows = serviceTransactions.concat(productTransactions, passTransactions)
+    const allSalesRows = serviceTransactions.concat(productTransactions, passTransactions, fallbackSaleTransactions)
       .sort((a, b) => String(b.rawDate || "").localeCompare(String(a.rawDate || "")))
       .map((item) => item.row);
     const paymentRows = allPaymentRowsRaw.map((r) => [displayDateTime(r.date, r.time), r.employee, r.customer, r.type, money(r.value)]);
@@ -711,8 +762,8 @@
     const productNameFilter = dropdown("productNames", "Nazwa produktu", productOptions, selectedProductNames);
     const paymentTypeFilter = dropdown("paymentTypes", "Typ płatności", paymentTypes.map((p) => ({ value: p, label: p })), selectedPaymentTypes);
 
-    const totalSalesCount = serviceItemsRaw.length + productItemsRaw.reduce((s, r) => s + Number(r.qty || 0), 0) + passItemsRaw.length;
-    const totalSalesValue = serviceItemsRaw.reduce((s, r) => s + (r.revenueValue ?? r.value), 0) + productItemsRaw.reduce((s, r) => s + (r.revenueValue ?? r.value), 0) + passItemsRaw.reduce((s, r) => s + r.value, 0);
+    const totalSalesCount = serviceItemsRaw.length + productItemsRaw.reduce((s, r) => s + Number(r.qty || 0), 0) + passItemsRaw.length + fallbackSaleRowsRaw.length;
+    const totalSalesValue = serviceItemsRaw.reduce((s, r) => s + (r.revenueValue ?? r.value), 0) + productItemsRaw.reduce((s, r) => s + (r.revenueValue ?? r.value), 0) + passItemsRaw.reduce((s, r) => s + r.value, 0) + fallbackSaleRowsRaw.reduce((s, r) => s + r.value, 0);
     const transactionHeaders = ["Data i godzina", "Typ", "Pracownik", "Klient", "Kategoria", "Nazwa", "Ilość", "Płatność", "Wartość"];
 
     const sections = {

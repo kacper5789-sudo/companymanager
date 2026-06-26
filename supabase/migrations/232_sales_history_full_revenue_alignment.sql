@@ -1,0 +1,4 @@
+-- CompanyManager 232 — Sales history full revenue alignment
+-- Informacyjnie: Historia sprzedaży ma prezentować pełną wartość przychodu z tabeli sales,
+-- a brakujące wartości względem sale_items są pokazywane jako osobna pozycja sprzedaży.
+-- SQL nie zmienia schematu bazy.
