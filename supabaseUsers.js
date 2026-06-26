@@ -515,7 +515,12 @@
     // zawsze przywracamy sesję aktualnego ADMINA/OWNERA.
     await restoreAdminSession(currentSession);
 
-    if (error) throw error;
+    if (error) {
+      if (Number(error.status) === 409 || String(error.message || "").toLowerCase().includes("already")) {
+        throw new Error("Ten email nadal istnieje w Supabase Auth. Odpal SQL 200 i spróbuj ponownie.");
+      }
+      throw error;
+    }
     if (!data?.user?.id) throw new Error("Nie udało się utworzyć użytkownika Auth.");
     return data.user.id;
   }
