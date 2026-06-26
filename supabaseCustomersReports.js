@@ -319,33 +319,31 @@
 
     let headers;
     let rowsData;
+    let reportRowsForStats;
     if (filters.mode === "plannedCategories") {
-      headers = ["Kategoria usług", "Planowane wizyty", "Klienci", "Usługi", "Wartość planowana"];
-      rowsData = byCategory().map((r) => [esc(r.label), String(r.visits), String(r.clients), String(r.services), money(r.value)]);
+      headers = ["Kategoria usług", "Planowane wizyty", "Klienci", "Usługi", "Wartość"];
+      reportRowsForStats = byCategory();
+      rowsData = reportRowsForStats.map((r) => [esc(r.label), String(r.visits), String(r.clients), String(r.services), money(r.value)]);
     } else if (filters.mode === "finishedVisits") {
-      headers = ["Klient", "Telefon", "Email", "Zakończone wizyty", "Usługi", "Wartość", "Śr. wizyta", "Ostatnia zakończona wizyta"];
-      rowsData = byCustomer().map((r) => [
+      headers = ["Klient", "Zakończone wizyty", "Usługi", "Ostatnia zakończona wizyta", "Wartość"];
+      reportRowsForStats = byCustomer();
+      rowsData = reportRowsForStats.map((r) => [
         esc(r.label),
-        esc(r.phone || "-"),
-        esc(r.email || "-"),
         String(r.visits),
         String(r.services),
-        money(r.value),
-        money(r.avgVisit),
-        esc(r.lastDate ? dateLabel(r.lastDate) : "-")
+        esc(r.lastDate ? dateLabel(r.lastDate) : "-"),
+        money(r.value)
       ]);
     } else {
-      headers = ["Klient", "Telefon", "Email", "Planowane wizyty", "Usługi", "Wartość planowana", "Śr. wizyta", "Najbliższa wizyta", "Ostatnia planowana"];
-      rowsData = byCustomer().map((r) => [
+      headers = ["Klient", "Planowane wizyty", "Usługi", "Najbliższa wizyta", "Ostatnia planowana", "Wartość"];
+      reportRowsForStats = byCustomer();
+      rowsData = reportRowsForStats.map((r) => [
         esc(r.label),
-        esc(r.phone || "-"),
-        esc(r.email || "-"),
         String(r.visits),
         String(r.services),
-        money(r.value),
-        money(r.avgVisit),
         esc(r.firstDate ? dateLabel(r.firstDate) : "-"),
-        esc(r.lastDate ? dateLabel(r.lastDate) : "-")
+        esc(r.lastDate ? dateLabel(r.lastDate) : "-"),
+        money(r.value)
       ]);
     }
 
@@ -362,6 +360,9 @@
     }, { visits: 0, services: 0, value: 0 });
     const customerRows = byCustomer();
     const categoryRows = byCategory();
+    const clientsInTable = filters.mode === "plannedCategories"
+      ? categoryRows.reduce((sum, row) => sum + Number(row.clients || 0), 0)
+      : customerRows.length;
 
     const titles = {
       plannedClients: "Planowane wizyty według klientów",
@@ -391,7 +392,7 @@
         <div><span>Liczba wizyt</span><b>${esc(totals.visits)}</b></div>
         <div><span>Liczba usług</span><b>${esc(totals.services)}</b></div>
         <div><span>Wartość wizyt</span><b>${esc(money(totals.value))}</b></div>
-        <div><span>Klienci w tabeli</span><b>${esc(filters.mode === "plannedCategories" ? categoryRows.reduce((sum, row) => sum + Number(row.clients || 0), 0) : customerRows.length)}</b></div>
+        <div><span>Klienci w tabeli</span><b>${esc(clientsInTable)}</b></div>
         <div><span>Pozycje w tabeli</span><b>${esc(rowsData.length)}</b></div>
       </div>
       <div class="bm-table-toolbar"><label>${limitSelect(filters.limit)}</label><label>Szukaj: <input id="crSearch" type="search" value="${esc(filters.search)}" placeholder="Szukaj"></label></div>
