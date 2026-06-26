@@ -1,0 +1,7 @@
+-- CompanyManager 235 — Employees reports employee mapping + pass dedup fix
+-- Informacyjnie: poprawka frontendu raportu Pracownicy.
+-- Zakres:
+-- 1) Raport Pracownicy mapuje appointments.employee_id z tabeli employees na profiles/profile_id/nazwę pracownika.
+-- 2) Czas wizyt i liczba wizyt są liczone z wizyt przypisanych do właściwego pracownika.
+-- 3) Karnety nie są liczone podwójnie: sale_items item_type='pass' jest źródłem sprzedaży,
+--    passes jest tylko fallbackiem dla starszych danych bez sale_item.pass_id.

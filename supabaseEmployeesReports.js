@@ -1,4 +1,4 @@
-// CompanyManager — 048G Employees reports remove unassigned duplicates fix
+// CompanyManager — 235 Employees reports employee mapping + pass dedup fix
 // employeesraports.html: realne dane z profiles / clients / appointments / sales / sale_items / days_off.
 (function () {
   if (document.body?.dataset?.panelPage !== "employeesReports") return;
@@ -333,8 +333,9 @@
 
   async function fetchData(companyId, from, to) {
     const sb = window.cmSupabase;
-    const [profiles, positions, clients, appointments, sales, saleItems, passes, daysOff, workSchedules, workScheduleTemplates, employeeWorkSchedules] = await Promise.all([
+    const [profiles, employeesTable, positions, clients, appointments, sales, saleItems, passes, daysOff, workSchedules, workScheduleTemplates, employeeWorkSchedules] = await Promise.all([
       safeSelect("profiles", sb.from("profiles").select("*").eq("company_id", companyId)),
+      safeSelect("employees", sb.from("employees").select("*").eq("company_id", companyId)),
       safeSelect("positions", sb.from("positions").select("*").eq("company_id", companyId)),
       safeSelect("clients", sb.from("clients").select("*").eq("company_id", companyId)),
       safeSelect("appointments", sb.from("appointments").select("*").eq("company_id", companyId)),
@@ -364,7 +365,7 @@
     const filteredDaysOff = daysOff.filter((row) => inRange(row.date || row.start_date || row.date_from || row.from_date || row.created_at, from, to));
     const filteredWorkSchedules = workSchedules.filter((row) => inRange(row.date || row.work_date || row.day || row.created_at, from, to));
 
-    return { profiles, positions, clients, appointments: filteredAppointments, sales: filteredSales, saleItems: filteredItems, passes: filteredPasses, daysOff: filteredDaysOff, workSchedules: filteredWorkSchedules, workScheduleTemplates, employeeWorkSchedules, from, to };
+    return { profiles, employeesTable, positions, clients, appointments: filteredAppointments, sales: filteredSales, saleItems: filteredItems, passes: filteredPasses, daysOff: filteredDaysOff, workSchedules: filteredWorkSchedules, workScheduleTemplates, employeeWorkSchedules, from, to };
   }
 
   function calcStats(data) {
@@ -373,23 +374,53 @@
       .filter((p) => normalizeRole(p.role) !== "OWNER")
       .sort((a, b) => employeeName(a).localeCompare(employeeName(b), "pl"));
     const employeeById = new Map(employees.map((e) => [e.id, e]));
+    const profileById = new Map(employees.map((e) => [e.id, e]));
+    const operationalEmployees = Array.isArray(data.employeesTable) ? data.employeesTable : [];
+    const operationalEmployeeById = new Map(operationalEmployees.map((e) => [e.id, e]));
+    const operationalEmployeeToProfileId = new Map();
     const employeeAliasToId = new Map();
     const addEmployeeAlias = (value, id) => {
       const key = employeeKeyByName(value);
       if (key && key !== "brak" && id && !employeeAliasToId.has(key)) employeeAliasToId.set(key, id);
     };
+    const operationalEmployeeName = (employee) => employee?.full_name || employee?.fullName || employee?.name || employee?.employee_name || employee?.email || "";
+    const operationalEmployeeProfileId = (employee) => employee?.profile_id || employee?.profileId || employee?.user_id || employee?.userId || employee?.profile || "";
     employees.forEach((e) => {
       addEmployeeAlias(e.full_name || e.fullName || e.name, e.id);
       addEmployeeAlias(e.email, e.id);
     });
+    operationalEmployees.forEach((employee) => {
+      const profileId = operationalEmployeeProfileId(employee);
+      const opName = operationalEmployeeName(employee);
+      const mappedProfileId = profileId && profileById.has(profileId)
+        ? profileId
+        : (employeeAliasToId.get(employeeKeyByName(opName)) || employeeAliasToId.get(employeeKeyByName(employee?.email)) || "");
+      if (employee?.id && mappedProfileId) operationalEmployeeToProfileId.set(employee.id, mappedProfileId);
+      if (mappedProfileId) {
+        addEmployeeAlias(opName, mappedProfileId);
+        addEmployeeAlias(employee?.email, mappedProfileId);
+      }
+    });
     const resolveEmployeeId = (id, fallback) => {
       if (id && employeeById.has(id)) return id;
+      if (id && operationalEmployeeToProfileId.has(id)) return operationalEmployeeToProfileId.get(id);
+      if (id && operationalEmployeeById.has(id)) {
+        const operational = operationalEmployeeById.get(id);
+        const profileId = operationalEmployeeProfileId(operational);
+        if (profileId && employeeById.has(profileId)) return profileId;
+        const byName = employeeAliasToId.get(employeeKeyByName(operationalEmployeeName(operational))) || employeeAliasToId.get(employeeKeyByName(operational?.email));
+        if (byName) return byName;
+      }
       const key = employeeKeyByName(fallback);
       return employeeAliasToId.get(key) || "";
     };
     const resolveEmployeeName = (id, fallback) => {
       const resolvedId = resolveEmployeeId(id, fallback);
       if (resolvedId && employeeById.has(resolvedId)) return employeeName(employeeById.get(resolvedId), fallback);
+      if (id && operationalEmployeeById.has(id)) {
+        const opName = operationalEmployeeName(operationalEmployeeById.get(id));
+        if (opName) return opName;
+      }
       const cleaned = String(fallback || "").trim();
       return cleaned && cleaned !== "(brak)" ? cleaned : "";
     };
@@ -397,6 +428,8 @@
     const saleById = new Map(data.sales.map((s) => [s.id, s]));
     const appointmentById = new Map(data.appointments.map((a) => [a.id, a]));
     const appointmentItemTypes = new Map();
+    const passSaleItemIds = new Set(data.saleItems.filter((item) => itemType(item) === "pass").map((item) => item.pass_id || item.passId || "").filter(Boolean));
+
     data.saleItems.forEach((item) => {
       const sale = saleById.get(item.sale_id) || {};
       const appointmentId = sale.appointment_id || item.appointment_id || item.visit_id || "";
@@ -481,7 +514,7 @@
     };
 
     data.appointments.forEach((a) => {
-      const emp = ensure(a.employee_id || a.employeeId, rowEmployeeName(a, employeeById));
+      const emp = ensure(a.employee_id || a.employeeId, rowEmployeeName(a, new Map([...employeeById, ...operationalEmployeeById])));
       if (!emp) return;
       const cancelled = isCancelledAppointment(a);
       const finished = isFinishedAppointment(a);
@@ -533,6 +566,7 @@
     });
 
     (data.passes || []).forEach((pass) => {
+      if (pass?.id && passSaleItemIds.has(pass.id)) return;
       const emp = ensure(pass.employee_id || pass.employeeId, pass.employee_name || pass.employeeName || "");
       if (!emp) return;
       const value = Number(pass.value || pass.total || pass.price || 0) || 0;
