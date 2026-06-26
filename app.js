@@ -236,9 +236,6 @@ document.addEventListener('DOMContentLoaded', () => {
       durationMinutes: Number(service.durationMinutes || 0),
       priceFrom: service.priceFrom ?? '',
       priceTo: service.priceTo ?? '',
-      showOnline: service.showOnline === true,
-      preventOverlap: service.preventOverlap === true,
-      deposit: service.deposit ?? '',
       positionId: service.positionId || '',
       description: service.description || '',
       code: service.code || '',
@@ -266,7 +263,6 @@ document.addEventListener('DOMContentLoaded', () => {
       unitStock: product.unitStock ?? '',
       unitsPerPackage: product.unitsPerPackage ?? '',
       companyName: product.companyName || product.company || '',
-      saleOnly: product.saleOnly === true,
       price: product.price ?? '',
       lastPurchasePrice: product.lastPurchasePrice ?? '',
       supplier: product.supplier || '',
@@ -1188,7 +1184,7 @@ document.addEventListener('DOMContentLoaded', () => {
     ['produkty — dodawanie', ['#showAddProduct', '#productForm button[type="submit"]']],
     ['produkty — edycja', ['#showEditProduct', '#productEditForm button[type="submit"]', '.edit-product-btn']],
     ['produkty — usuwanie', ['#showDeleteProduct', '#deleteProductBtn', '#productDeleteForm button[type="submit"]']],
-    ['produkty — magazyn', ['[data-product-filter="low"]', '[data-product-filter="high"]', '[data-product-filter="saleOnly"]', 'input[name="packageStock"]', 'input[name="lowPackageStock"]', 'input[name="unitStock"]', 'input[name="unitsPerPackage"]']],
+    ['produkty — magazyn', ['[data-product-filter="low"]', '[data-product-filter="high"]', 'input[name="packageStock"]', 'input[name="lowPackageStock"]', 'input[name="unitStock"]', 'input[name="unitsPerPackage"]']],
     ['wizyty — dodawanie', ['#showAddVisit', '#addVisitForm button[type="submit"]', '#dashAddVisitBtn']],
     ['wizyty — edycja', ['#showEditVisit', '#editVisitForm button[type="submit"]', '#dashEditVisitBtn']],
     ['wizyty — zakończenie', ['#finishVisitBtn', '.finish-visit-btn', '#dashFinishVisitBtn']],
@@ -1229,7 +1225,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!panelUser || panelUser.role === 'owner' || panelUser.role === 'admin') return;
     cmPermissionRules.forEach(([permissionLabel, selectors]) => disableElementsForPermission(permissionLabel, selectors, panelUser));
     if (!hasSystemPermission(panelUser, 'produkty (magazyn)')) {
-      document.querySelectorAll('[data-product-filter="low"], [data-product-filter="high"], [data-product-filter="saleOnly"]').forEach(element => {
+      document.querySelectorAll('[data-product-filter="low"], [data-product-filter="high"]').forEach(element => {
         element.hidden = true;
         element.style.display = 'none';
       });
@@ -1793,7 +1789,6 @@ document.addEventListener('DOMContentLoaded', () => {
     'Dostawy':'Deliveries',
     'Mało na magazynie':'Low stock',
     'Dużo na magazynie':'High stock',
-    'Tylko do sprzedaży':'Sale only',
     'Dodaj produkt':'Add product',
     'Edytuj produkt':'Edit product',
     'Usuń produkt':'Delete product',
@@ -2232,7 +2227,6 @@ document.addEventListener('DOMContentLoaded', () => {
     'Lista usług':'Service list',
     'mało na magazynie':'low stock',
     'dużo na magazynie':'high stock',
-    'tylko do sprzedaży':'sale only',
     'Date i godzina':'Date and time',
     'Email/SMS podłączone do Supabase. Kampanie zostają w historii i nie są usuwane, żeby statystyki oraz rozliczenia SMS/Email były spójne.':'Email/SMS connected to Supabase. Campaigns remain in history and are not deleted so SMS/Email statistics and billing stay consistent.',
     'Aktualne = można używać. Zrealizowane = wykorzystane do zera. Po terminie = minęła data ważności.':'Current = can be used. Completed = used to zero. Expired = validity date has passed.',
@@ -4882,8 +4876,6 @@ document.addEventListener('DOMContentLoaded', () => {
             </label>
           </div>
 
-          <label class="bm-check-row"><input type="checkbox" name="showOnline" value="true"> <span>Pokazuj usługę przy rezerwacji online</span></label>
-          <label class="bm-check-row"><input type="checkbox" name="preventOverlap" value="true"> <span>Usługa nie może powtarzać się w tym samym czasie</span></label>
 
           <label>Wysokość zaliczki przy zapisie online (PLN)
             <input name="deposit" type="number" min="0" step="0.01" placeholder="0.00">
@@ -4933,12 +4925,12 @@ document.addEventListener('DOMContentLoaded', () => {
     document.querySelector('#exportServicesBtn')?.addEventListener('click', () => {
       const currentDb = loadDatabase();
       const data = (currentDb.services || []).filter(service => service.companyId === company.id);
-      const headers = ['Kategoria','Nazwa','Czas godziny','Czas minuty','Cena od (PLN)','Cena do (PLN)','Zaliczka (PLN)','Stanowisko pracy','Opis','Kod usługi','Rezerwacja online','Blokada nakładania','Wliczaj do prowizji','Uwzględniaj przy rabacie'];
+      const headers = ['Kategoria','Nazwa','Czas godziny','Czas minuty','Cena od (PLN)','Cena do (PLN)','Stanowisko pracy','Opis','Kod usługi','Wliczaj do prowizji','Uwzględniaj przy rabacie'];
       const lines = [headers.join('\t'), ...data.map(service => {
         const category = getServiceCategoryById(currentDb, service.categoryId);
         const position = getPositionById(currentDb, service.positionId);
         return [
-          category?.name || '', service.name || '', service.durationHours || '0', service.durationMinutes || '0', service.priceFrom || '', service.priceTo || '', service.deposit || '', position?.name || '', service.description || '', service.code || '', service.showOnline ? 'tak' : 'nie', service.preventOverlap ? 'tak' : 'nie', service.includeCommission ? 'tak' : 'nie', service.includeDiscount ? 'tak' : 'nie'
+          category?.name || '', service.name || '', service.durationHours || '0', service.durationMinutes || '0', service.priceFrom || '', service.priceTo || '', position?.name || '', service.description || '', service.code || '', service.includeCommission ? 'tak' : 'nie', service.includeDiscount ? 'tak' : 'nie'
         ].map(value => String(value).replace(/\t/g,' ').replace(/\n/g,' ')).join('\t');
       })];
       const blob = new Blob([lines.join('\n')], { type: 'application/vnd.ms-excel;charset=utf-8;' });
@@ -4970,7 +4962,7 @@ document.addEventListener('DOMContentLoaded', () => {
         let imported = 0;
         lines.slice(1).forEach(line => {
           const cols = line.split('\t');
-          const [categoryName, name, durationHours, durationMinutes, priceFrom, priceTo, deposit, positionName, description, code, showOnline, preventOverlap, includeCommission, includeDiscount] = cols.map(value => String(value || '').trim());
+          const [categoryName, name, durationHours, durationMinutes, priceFrom, priceTo, positionName, description, code, includeCommission, includeDiscount] = cols.map(value => String(value || '').trim());
           if (!name) return;
           let categoryId = '';
           if (categoryName) {
@@ -4983,7 +4975,7 @@ document.addEventListener('DOMContentLoaded', () => {
           }
           const position = (currentDb.positions || []).find(item => item.companyId === company.id && normalizeText(item.name) === normalizeText(positionName));
           currentDb.services.push({
-            id:createId('service'), companyId:company.id, categoryId, name, durationHours:durationHours || '0', durationMinutes:durationMinutes || '0', priceFrom, priceTo, deposit, positionId:position?.id || '', description, code, showOnline:normalizeText(showOnline)==='tak', preventOverlap:normalizeText(preventOverlap)==='tak', includeCommission:normalizeText(includeCommission)==='tak', includeDiscount:normalizeText(includeDiscount)==='tak'
+            id:createId('service'), companyId:company.id, categoryId, name, durationHours:durationHours || '0', durationMinutes:durationMinutes || '0', priceFrom, priceTo, positionId:position?.id || '', description, code, includeCommission:normalizeText(includeCommission)==='tak', includeDiscount:normalizeText(includeDiscount)==='tak'
           });
           imported += 1;
         });
@@ -5067,10 +5059,7 @@ document.addEventListener('DOMContentLoaded', () => {
         durationMinutes,
         priceFrom:String(data.priceFrom||'').trim(),
         priceTo:String(data.priceTo||'').trim(),
-        showOnline:data.showOnline === 'true',
-        preventOverlap:data.preventOverlap === 'true',
-        deposit:String(data.deposit||'').trim(),
-        positionId:String(data.positionId),
+                positionId:String(data.positionId),
         description:String(data.description||'').trim(),
         code:String(data.code||'').trim(),
         includeCommission:data.includeCommission === 'true',
@@ -5286,7 +5275,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const rows = products.filter(product => {
       if (filter === 'low') return productStockStatus(product) === 'mało';
       if (filter === 'high') return productStockStatus(product) === 'dużo';
-      if (filter === 'saleOnly') return product.saleOnly === true;
       return true;
     }).map(product => [
       escapeHtml(product.name || '-'),
@@ -5301,7 +5289,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const filterButtons = [
       ['low','mało na magazynie'],
       ['high','dużo na magazynie'],
-      ['saleOnly','tylko do sprzedaży']
     ].map(([value,label]) => `<button type="button" class="bm-tab-btn ${filter === value ? 'active' : ''}" data-product-filter="${value}">${label}</button>`).join('');
 
     const categoryOptions = categories.map(name => `<option value="${escapeHtml(name)}">${escapeHtml(name)}</option>`).join('');
@@ -5349,7 +5336,6 @@ document.addEventListener('DOMContentLoaded', () => {
         </div>
         <label>Firma<select name="companySelect" id="productCompanySelect"><option value="">---------</option>${companyOptions}<option value="__new">dodaj nową firmę</option></select></label>
         <label id="productNewCompanyLabel" hidden>Nowa firma<input name="newCompany" placeholder="Nazwa firmy"></label>
-        <label class="checkbox-row"><input name="saleOnly" type="checkbox"> do sprzedaży</label>
         <label>Cena (PLN)<input name="price" type="number" min="0" step="0.01"></label>
         <label>Ostatnia cena zakupu (PLN)<input name="lastPurchasePrice" type="number" min="0" step="0.01"></label>
         <label>Dostawca<input name="supplier" placeholder="Dostawca"></label>
@@ -5368,9 +5354,9 @@ document.addEventListener('DOMContentLoaded', () => {
     document.querySelector('#exportProductsBtn')?.addEventListener('click', () => {
       const currentDb = loadDatabase();
       const data = (currentDb.products || []).filter(product => product.companyId === company.id);
-      const headers = ['Nazwa','Kategoria','Stan L.op.','Niski stan L.op.','L. jednostek','L. jednostek w 1 op.','Stan magazynowy','Firma','Do sprzedaży','Cena (PLN)','Ostatnia cena zakupu (PLN)','Dostawca','Opis','Kod produktu','Wliczaj do prowizji','Uwzględniaj przy rabacie'];
+      const headers = ['Nazwa','Kategoria','Stan L.op.','Niski stan L.op.','L. jednostek','L. jednostek w 1 op.','Stan magazynowy','Firma','Cena (PLN)','Ostatnia cena zakupu (PLN)','Dostawca','Opis','Kod produktu','Wliczaj do prowizji','Uwzględniaj przy rabacie'];
       const lines = [headers.join('\t'), ...data.map(product => [
-        product.name || '', product.category || '', product.packageStock || '', product.lowPackageStock || '', product.unitStock || '', product.unitsPerPackage || '', productStockStatus(product), product.companyName || '', product.saleOnly ? 'tak' : 'nie', product.price || '', product.lastPurchasePrice || '', product.supplier || '', product.description || '', product.code || '', product.includeCommission ? 'tak' : 'nie', product.includeDiscount ? 'tak' : 'nie'
+        product.name || '', product.category || '', product.packageStock || '', product.lowPackageStock || '', product.unitStock || '', product.unitsPerPackage || '', productStockStatus(product), product.companyName || '', product.price || '', product.lastPurchasePrice || '', product.supplier || '', product.description || '', product.code || '', product.includeCommission ? 'tak' : 'nie', product.includeDiscount ? 'tak' : 'nie'
       ].map(value => String(value).replace(/\t/g,' ').replace(/\n/g,' ')).join('\t'))];
       const blob = new Blob([lines.join('\n')], { type: 'application/vnd.ms-excel;charset=utf-8;' });
       const url = URL.createObjectURL(blob);
@@ -5420,7 +5406,6 @@ document.addEventListener('DOMContentLoaded', () => {
       const filtered = products.filter(product => {
         if (filter === 'low' && productStockStatus(product) !== 'mało') return false;
         if (filter === 'high' && productStockStatus(product) !== 'dużo') return false;
-        if (filter === 'saleOnly' && product.saleOnly !== true) return false;
         if (nameQ && !normalizeText(product.name || '').includes(nameQ)) return false;
         if (categoryQ && !normalizeText(product.category || '').includes(categoryQ)) return false;
         if (companyQ && !normalizeText(product.companyName || '').includes(companyQ)) return false;
@@ -5447,7 +5432,7 @@ document.addEventListener('DOMContentLoaded', () => {
       currentDb.products = currentDb.products || [];
       currentDb.products.push({
         id:createId('product'), companyId:company.id, name, category, packageStock:String(data.packageStock || ''), lowPackageStock:String(data.lowPackageStock || ''),
-        unitStock:String(data.unitStock || ''), unitsPerPackage:String(data.unitsPerPackage || ''), companyName, saleOnly:data.saleOnly === 'on', price:String(data.price || ''),
+        unitStock:String(data.unitStock || ''), unitsPerPackage:String(data.unitsPerPackage || ''), companyName, price:String(data.price || ''),
         lastPurchasePrice:String(data.lastPurchasePrice || ''), supplier:String(data.supplier || '').trim(), description:String(data.description || '').trim(), code:String(data.code || '').trim(),
         includeCommission:data.includeCommission === 'on', includeDiscount:data.includeDiscount === 'on', createdAt:new Date().toISOString()
       });
@@ -8797,7 +8782,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     const p = page();
     if (p === 'products' && !has('warehouse_manage')) {
-      document.querySelectorAll('[data-product-filter="low"],[data-product-filter="high"],[data-product-filter="saleOnly"]').forEach((el)=>{ el.hidden=true; el.style.display='none'; });
+      document.querySelectorAll('[data-product-filter="low"],[data-product-filter="high"]').forEach((el)=>{ el.hidden=true; el.style.display='none'; });
     }
     if (p === 'marketing') {
       if (!has('marketing_sms')) document.querySelectorAll('#showMarketingSms,#marketingSmsCard').forEach((el)=>{ el.hidden=true; el.style.display='none'; });

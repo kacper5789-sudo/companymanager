@@ -196,7 +196,7 @@
   async function fetchProducts(ctx) {
     const res = await window.cmSupabase
       .from("products")
-      .select("id, company_id, name, category, package_stock, low_package_stock, unit_stock, units_per_package, company_name, sale_only, price, last_purchase_price, supplier, description, code, include_commission, include_discount, active, created_at, updated_at")
+      .select("id, company_id, name, category, package_stock, low_package_stock, unit_stock, units_per_package, company_name, price, last_purchase_price, supplier, description, code, include_commission, include_discount, active, created_at, updated_at")
       .eq("company_id", ctx.companyId)
       .eq("active", true)
       .order("created_at", { ascending: false });
@@ -208,7 +208,6 @@
     return products.filter((product) => {
       if (filter === "low") return productStockStatus(product) === "mało";
       if (filter === "high") return productStockStatus(product) === "dużo";
-      if (filter === "saleOnly") return product.sale_only === true;
       return true;
     }).map((product) => [
       escapeHtml(product.name || "-"),
@@ -217,6 +216,8 @@
       escapeHtml(productStockStatus(product)),
       escapeHtml(product.company_name || "-"),
       escapeHtml(money(product.price)),
+      product.include_commission ? "✓" : "—",
+      product.include_discount ? "✓" : "—",
       escapeHtml(product.code || "")
     ]);
   }
@@ -233,7 +234,6 @@
       unit_stock: parseIntValue(formData.get("unitStock"), 0),
       units_per_package: parseIntValue(formData.get("unitsPerPackage"), 0),
       company_name: companyName,
-      sale_only: formData.get("saleOnly") === "on",
       price: parseNumber(formData.get("price"), 0),
       last_purchase_price: parseNumber(formData.get("lastPurchasePrice"), 0),
       supplier: String(formData.get("supplier") || "").trim(),
@@ -272,9 +272,9 @@
   }
 
   function downloadProducts(products) {
-    const headers = ["Nazwa", "Kategoria", "Stan L.op.", "Niski stan L.op.", "L. jednostek", "L. jednostek w 1 op.", "Stan magazynowy", "Firma", "Do sprzedaży", "Cena (PLN)", "Ostatnia cena zakupu (PLN)", "Dostawca", "Opis", "Kod produktu", "Wliczaj do prowizji", "Uwzględniaj przy rabacie"];
+    const headers = ["Nazwa", "Kategoria", "Stan L.op.", "Niski stan L.op.", "L. jednostek", "L. jednostek w 1 op.", "Stan magazynowy", "Firma", "Cena (PLN)", "Ostatnia cena zakupu (PLN)", "Dostawca", "Opis", "Kod produktu", "Wliczaj do prowizji", "Uwzględniaj przy rabacie"];
     const lines = [headers.join("\t"), ...products.map((product) => [
-      product.name || "", product.category || "", product.package_stock ?? "", product.low_package_stock ?? "", product.unit_stock ?? "", product.units_per_package ?? "", productStockStatus(product), product.company_name || "", product.sale_only ? "tak" : "nie", product.price ?? "", product.last_purchase_price ?? "", product.supplier || "", product.description || "", product.code || "", product.include_commission ? "tak" : "nie", product.include_discount ? "tak" : "nie"
+      product.name || "", product.category || "", product.package_stock ?? "", product.low_package_stock ?? "", product.unit_stock ?? "", product.units_per_package ?? "", productStockStatus(product), product.company_name || "", product.price ?? "", product.last_purchase_price ?? "", product.supplier || "", product.description || "", product.code || "", product.include_commission ? "tak" : "nie", product.include_discount ? "tak" : "nie"
     ].map((value) => String(value).replace(/\t/g, " ").replace(/\n/g, " ")).join("\t"))];
     const blob = new Blob([lines.join("\n")], { type: "application/vnd.ms-excel;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
@@ -319,7 +319,7 @@
     const companyOptions = companies.map((name) => `<option value="${escapeHtml(name)}">${escapeHtml(name)}</option>`).join("");
     const deleteOptions = products.map((product) => `<option value="${escapeHtml(product.id)}">${escapeHtml(productLabel(product) || product.name || "Produkt")}</option>`).join("");
 
-    const filterButtons = [["low", "mało na magazynie"], ["high", "dużo na magazynie"], ["saleOnly", "tylko do sprzedaży"]]
+    const filterButtons = [["low", "mało na magazynie"], ["high", "dużo na magazynie"]]
       .map(([value, label]) => `<button type="button" class="bm-tab-btn ${filter === value ? "active" : ""}" data-product-filter="${value}">${label}</button>`).join("");
 
     area.innerHTML = `<section class="bm-page-card products-module">
@@ -331,7 +331,7 @@
         <label>Kategoria<input id="productCategorySearch" type="search" placeholder="szukaj..."></label>
         <label>Firma<input id="productCompanySearch" type="search" placeholder="szukaj..."></label>
       </div>
-      <div id="productsTableWrap">${table(["Nazwa", "Kategoria", "Stan", "Stan magazynowy", "Firma", "Cena (PLN)", "Kod produktu"], rowsFor(products, filter), "Nie znaleziono żadnych danych")}</div>
+      <div id="productsTableWrap">${table(["Nazwa", "Kategoria", "Stan", "Stan magazynowy", "Firma", "Cena (PLN)", "Prowizja", "Rabat", "Kod produktu"], rowsFor(products, filter), "Nie znaleziono żadnych danych")}</div>
       ${pagination(products.length)}
       <p id="productsMessage" class="panel-message"></p>
     </section>
@@ -355,7 +355,6 @@
         <div class="bm-form-row-2"><label>L. jednostek<input name="unitStock" type="number" min="0" step="1" placeholder="L. jednostek"></label><label>L. jednostek w 1 op.<input name="unitsPerPackage" type="number" min="0" step="1" placeholder="L. jednostek w 1 op."></label></div>
         <label>Firma<select name="companySelect" id="productCompanySelect"><option value="">---------</option>${companyOptions}<option value="__new">dodaj nową firmę</option></select></label>
         <label id="productNewCompanyLabel" hidden>Nowa firma<input name="newCompany" placeholder="Nazwa firmy"></label>
-        <label class="checkbox-row"><input name="saleOnly" type="checkbox"> do sprzedaży</label>
         <label>Cena (PLN)<input name="price" type="number" min="0" step="0.01"></label>
         <label>Ostatnia cena zakupu (PLN)<input name="lastPurchasePrice" type="number" min="0" step="0.01"></label>
         <label>Dostawca<input name="supplier" placeholder="Dostawca"></label>
@@ -397,7 +396,6 @@
       const filtered = products.filter((product) => {
         if (filter === "low" && productStockStatus(product) !== "mało") return false;
         if (filter === "high" && productStockStatus(product) !== "dużo") return false;
-        if (filter === "saleOnly" && product.sale_only !== true) return false;
         if (nameQ && !normalizeText(product.name || "").includes(nameQ)) return false;
         if (categoryQ && !normalizeText(product.category || "").includes(categoryQ)) return false;
         if (companyQ && !normalizeText(product.company_name || "").includes(companyQ)) return false;

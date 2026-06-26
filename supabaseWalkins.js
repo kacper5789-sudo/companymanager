@@ -232,7 +232,6 @@
       <div class="bm-form-row-2 bm-full full"><label>L. jednostek<input name="unitStock" type="number" min="0" step="1" placeholder="L. jednostek"></label><label>L. jednostek w 1 op.<input name="unitsPerPackage" type="number" min="0" step="1" placeholder="L. jednostek w 1 op."></label></div>
       <label>Firma<select name="companySelect"><option value="">---------</option>${companyOptions}<option value="__new">dodaj nową firmę</option></select></label>
       <label>Nowa firma<input name="newCompany" placeholder="Nazwa firmy"></label>
-      <label class="checkbox-row"><input name="saleOnly" type="checkbox" checked> do sprzedaży</label>
       <label>Cena (PLN)<input name="price" type="number" min="0" step="0.01"></label>
       <label>Ostatnia cena zakupu (PLN)<input name="lastPurchasePrice" type="number" min="0" step="0.01"></label>
       <label>Dostawca<input name="supplier" placeholder="Dostawca"></label>
@@ -255,7 +254,6 @@
       unit_stock: Number(fd.get("unitStock") || 0),
       units_per_package: Number(fd.get("unitsPerPackage") || 0),
       company_name: companyName,
-      sale_only: fd.get("saleOnly") === "on",
       price: Number(fd.get("price") || 0),
       last_purchase_price: Number(fd.get("lastPurchasePrice") || 0),
       supplier: String(fd.get("supplier") || "").trim(),
@@ -277,11 +275,8 @@
       <div class="bm-form-row-2 bm-full full"><label>Czas — godziny<input name="durationHours" type="number" min="0" step="1" value="0" required></label><label>Czas — minuty<input name="durationMinutes" type="number" min="0" max="59" step="1" value="30" required></label></div>
       <label>Cena od (PLN)<input name="priceFrom" type="number" min="0" step="0.01" placeholder="0.00" required></label>
       <label>Cena do (PLN)<input name="priceTo" type="number" min="0" step="0.01" placeholder="0.00"></label>
-      <label>Zaliczka (PLN)<input name="deposit" type="number" min="0" step="0.01" placeholder="0.00"></label>
       <label>Kod usługi<input name="code" placeholder="Kod usługi"></label>
       <label class="bm-full full">Opis<textarea name="description" placeholder="Opis usługi"></textarea></label>
-      <label class="checkbox-row"><input name="showOnline" type="checkbox"> pokaż w rezerwacji online</label>
-      <label class="checkbox-row"><input name="preventOverlap" type="checkbox"> blokuj nakładanie wizyt</label>
       <label class="checkbox-row"><input name="includeCommission" type="checkbox"> wliczaj do prowizji pracownika</label>
       <label class="checkbox-row"><input name="includeDiscount" type="checkbox"> uwzględniaj przy rabacie</label>
     `;
@@ -299,12 +294,9 @@
       duration_minutes: Number(fd.get("durationMinutes") || 0),
       price_from: priceFrom,
       price_to: priceTo,
-      deposit: Number(fd.get("deposit") || 0),
       position_id: String(fd.get("positionId") || "").trim() || null,
       description: String(fd.get("description") || "").trim() || null,
       code: String(fd.get("code") || "").trim() || null,
-      show_online: fd.get("showOnline") === "on",
-      prevent_overlap: fd.get("preventOverlap") === "on",
       include_commission: fd.get("includeCommission") === "on",
       include_discount: fd.get("includeDiscount") === "on",
       active: true,

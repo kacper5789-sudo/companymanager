@@ -227,7 +227,7 @@
     const [servicesRes, categoriesRes, positionsRes] = await Promise.all([
       window.cmSupabase
         .from("services")
-        .select("id, company_id, category_id, name, duration_hours, duration_minutes, price_from, price_to, show_online, prevent_overlap, deposit, position_id, description, code, include_commission, include_discount, active, created_at, updated_at")
+        .select("id, company_id, category_id, name, duration_hours, duration_minutes, price_from, price_to, position_id, description, code, include_commission, include_discount, active, created_at, updated_at")
         .eq("company_id", ctx.companyId)
         .eq("active", true)
         .order("created_at", { ascending: false }),
@@ -271,6 +271,8 @@
         escapeHtml(formatDuration(service.duration_hours, service.duration_minutes)),
         escapeHtml(formatPriceRange(service.price_from, service.price_to)),
         escapeHtml(position?.name || "-"),
+        service.include_commission ? "✓" : "—",
+        service.include_discount ? "✓" : "—",
         escapeHtml(service.code || "")
       ];
     });
@@ -298,9 +300,6 @@
       duration_minutes: Number(formData.get("durationMinutes") || 0),
       price_from: parseMoney(formData.get("priceFrom")),
       price_to: parseMoney(formData.get("priceTo")),
-      show_online: boolValue(formData, "showOnline"),
-      prevent_overlap: boolValue(formData, "preventOverlap"),
-      deposit: parseMoney(formData.get("deposit")),
       position_id: String(formData.get("positionId") || "") || null,
       description: String(formData.get("description") || "").trim() || null,
       code: String(formData.get("code") || "").trim() || null,
@@ -358,12 +357,7 @@
         </label>
       </div>
 
-      <label class="bm-check-row"><input type="checkbox" name="showOnline" value="true" ${service.show_online ? "checked" : ""}> <span>Pokazuj usługę przy rezerwacji online</span></label>
-      <label class="bm-check-row"><input type="checkbox" name="preventOverlap" value="true" ${service.prevent_overlap ? "checked" : ""}> <span>Usługa nie może powtarzać się w tym samym czasie</span></label>
 
-      <label>Wysokość zaliczki przy zapisie online (PLN)
-        <input name="deposit" type="number" min="0" step="0.01" placeholder="0.00" value="${escapeHtml(service.deposit ?? "")}">
-      </label>
 
       <label>Stanowisko pracy
         <select name="positionId" required>
@@ -393,9 +387,6 @@
     form.durationMinutes.value = service.duration_minutes ?? 0;
     form.priceFrom.value = service.price_from ?? "";
     form.priceTo.value = service.price_to ?? "";
-    form.showOnline.checked = !!service.show_online;
-    form.preventOverlap.checked = !!service.prevent_overlap;
-    form.deposit.value = service.deposit ?? "";
     form.positionId.value = service.position_id || "";
     form.description.value = service.description || "";
     form.code.value = service.code || "";
@@ -455,7 +446,7 @@
           </div>
         </div>
         <div class="bm-table-toolbar cm-limit-toolbar">${moduleLimitDropdownHtml("servicesLimit")}</div>
-        ${table(["Kategoria", "Nazwa", "Czas trwania", "Cena", "Stanowisko pracy", "Kod usługi"], renderRows(services, categories, positions), "Brak usług w Supabase.")}
+        ${table(["Kategoria", "Nazwa", "Czas trwania", "Cena", "Stanowisko pracy", "Prowizja", "Rabat", "Kod usługi"], renderRows(services, categories, positions), "Brak usług w Supabase.")}
         ${pagination(services.length)}
         <p id="servicesMessage" class="panel-message"></p>
       </section>
@@ -522,12 +513,12 @@
   }
 
   function downloadServices(services, categories, positions) {
-    const headers = ["Kategoria", "Nazwa", "Czas godziny", "Czas minuty", "Cena od (PLN)", "Cena do (PLN)", "Zaliczka (PLN)", "Stanowisko pracy", "Opis", "Kod usługi", "Rezerwacja online", "Blokada nakładania", "Wliczaj do prowizji", "Uwzględniaj przy rabacie"];
+    const headers = ["Kategoria", "Nazwa", "Czas godziny", "Czas minuty", "Cena od (PLN)", "Cena do (PLN)", "Stanowisko pracy", "Opis", "Kod usługi", "Wliczaj do prowizji", "Uwzględniaj przy rabacie"];
     const lines = [headers.join("\t"), ...services.map((service) => {
       const category = categories.find((item) => item.id === service.category_id);
       const position = positions.find((item) => item.id === service.position_id);
       return [
-        category?.name || "", service.name || "", service.duration_hours || "0", service.duration_minutes || "0", service.price_from || "", service.price_to || "", service.deposit || "", position?.name || "", service.description || "", service.code || "", service.show_online ? "tak" : "nie", service.prevent_overlap ? "tak" : "nie", service.include_commission ? "tak" : "nie", service.include_discount ? "tak" : "nie"
+        category?.name || "", service.name || "", service.duration_hours || "0", service.duration_minutes || "0", service.price_from || "", service.price_to || "", position?.name || "", service.description || "", service.code || "", service.include_commission ? "tak" : "nie", service.include_discount ? "tak" : "nie"
       ].map((value) => String(value).replace(/\t/g, " ").replace(/\n/g, " ")).join("\t");
     })];
     const blob = new Blob([lines.join("\n")], { type: "application/vnd.ms-excel;charset=utf-8;" });
