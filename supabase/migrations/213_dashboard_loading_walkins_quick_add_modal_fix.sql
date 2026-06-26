@@ -1,0 +1,2 @@
+-- 213_dashboard_loading_walkins_quick_add_modal_fix
+-- Informational migration only. Fix is in frontend JS: dashboard loading timeout and walkins quick-add modal navigation guard.

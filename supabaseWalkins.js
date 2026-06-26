@@ -283,13 +283,23 @@
   }
 
   function bindRelatedOpenButtons() {
+    // 139: related quick-add buttons must open inline panels, not navigate to pseudo URLs like "quick-client".
     document.querySelectorAll("[data-open-related]").forEach((button) => {
       if (button.dataset.cmRelatedReady === "1") return;
+      const target = String(button.dataset.openRelated || "");
+      if (target.startsWith("quick-")) {
+        button.dataset.cmRelatedReady = "1";
+        button.addEventListener("click", (event) => {
+          event.preventDefault();
+          event.stopPropagation();
+        });
+        return;
+      }
       button.dataset.cmRelatedReady = "1";
-      button.addEventListener("click", () => {
-        const target = button.dataset.openRelated;
-        if (!target) return;
-        window.location.href = target;
+      button.addEventListener("click", (event) => {
+        const url = String(button.dataset.openRelated || "");
+        if (!url || url.startsWith("quick-")) { event.preventDefault(); return; }
+        window.location.href = url;
       });
     });
   }
@@ -625,9 +635,9 @@
     const panels = [formCard, deleteCard, quickClientCard, quickProductCard, quickServiceCard];
     document.querySelector("#showAddWalkin")?.addEventListener("click", () => showOnlyPanel(formCard, panels));
     document.querySelector("#showDeleteWalkin")?.addEventListener("click", () => showOnlyPanel(deleteCard, panels));
-    document.querySelectorAll('[data-open-related="quick-client"]').forEach((button) => button.addEventListener("click", () => showOnlyPanel(quickClientCard, panels)));
-    document.querySelectorAll('[data-open-related="quick-product"]').forEach((button) => button.addEventListener("click", () => showOnlyPanel(quickProductCard, panels)));
-    document.querySelectorAll('[data-open-related="quick-service"]').forEach((button) => button.addEventListener("click", () => showOnlyPanel(quickServiceCard, panels)));
+    document.querySelectorAll('[data-open-related="quick-client"]').forEach((button) => button.addEventListener("click", (event) => { event.preventDefault(); event.stopPropagation(); showOnlyPanel(quickClientCard, panels); }));
+    document.querySelectorAll('[data-open-related="quick-product"]').forEach((button) => button.addEventListener("click", (event) => { event.preventDefault(); event.stopPropagation(); showOnlyPanel(quickProductCard, panels); }));
+    document.querySelectorAll('[data-open-related="quick-service"]').forEach((button) => button.addEventListener("click", (event) => { event.preventDefault(); event.stopPropagation(); showOnlyPanel(quickServiceCard, panels); }));
     bindRelatedOpenButtons();
     setupModuleLimitDropdowns(document);
     setupWalkinEntitySearchFields(data);

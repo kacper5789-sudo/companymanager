@@ -493,12 +493,38 @@
     return rows.join("");
   }
 
+  function withTimeout(promise, ms, label) {
+    let timer;
+    const timeout = new Promise((_, reject) => {
+      timer = setTimeout(() => reject(new Error(label || "Przekroczono czas oczekiwania na Supabase.")), ms);
+    });
+    return Promise.race([promise, timeout]).finally(() => clearTimeout(timer));
+  }
+
+  function readCachedJson(key) {
+    try { return JSON.parse(localStorage.getItem(key) || "null"); } catch (_) { return null; }
+  }
+
   async function getContext() {
     if (!window.cmSupabase) return { ok: false, message: "Nie załadowano połączenia z Supabase." };
-    const [{ data: access, error: accessError }, { data: context, error: contextError }] = await Promise.all([
-      window.cmSupabase.rpc("get_my_access"),
-      window.cmSupabase.rpc("get_effective_company_context")
-    ]);
+    let accessResult;
+    let contextResult;
+    try {
+      [accessResult, contextResult] = await withTimeout(Promise.all([
+        window.cmSupabase.rpc("get_my_access"),
+        window.cmSupabase.rpc("get_effective_company_context")
+      ]), 9000, "Supabase nie odpowiedział przy ładowaniu Dashboardu. Odśwież stronę lub sprawdź połączenie.");
+    } catch (error) {
+      const cachedAccess = readCachedJson("cm_access");
+      const cachedContext = readCachedJson("cm_effective_company");
+      if (cachedAccess?.allowed === true && cachedContext?.company_id) {
+        const cachedCtx = { ok: true, access: cachedAccess, context: cachedContext, companyId: cachedContext.company_id, cached: true };
+        if (canOpenDashboard(cachedCtx)) return cachedCtx;
+      }
+      return { ok: false, message: error.message || "Nie udało się pobrać kontekstu Supabase." };
+    }
+    const { data: access, error: accessError } = accessResult || {};
+    const { data: context, error: contextError } = contextResult || {};
     if (accessError) return { ok: false, message: accessError.message };
     if (contextError) return { ok: false, message: contextError.message };
     if (!access || access.allowed !== true) return { ok: false, message: access?.reason || "Brak dostępu." };
