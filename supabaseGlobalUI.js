@@ -96,6 +96,129 @@
     root.querySelectorAll('.bm-admin-dropdown-toggle').forEach((el) => el.classList.add('cm-admin-action'));
   }
 
+
+
+  /* CompanyManager 161 — global table totals row
+     Adds one SUMA row at the end of every data table with numeric totals.
+     It intentionally skips dates, status/text/action columns and existing SUMA rows. */
+  const TOTAL_VERSION = '161';
+  const moneySuffixRe = /(zł|pln|eur|usd|€|\$)\s*$/i;
+  const timeMinRe = /^-?\d+(?:[\s,.]\d+)?\s*min$/i;
+  const percentRe = /%\s*$/;
+  const dateLikeRe = /^(\d{1,2}[.\/-]\d{1,2}[.\/-]\d{2,4}|\d{4}-\d{2}-\d{2})(\s|$)/;
+  const phoneLikeRe = /^\+?\d[\d\s-]{6,}$/;
+
+  function normalizeNumberText(text){
+    let v = String(text || '').trim();
+    if (!v) return '';
+    v = v.replace(/\u00a0/g, ' ');
+    v = v.replace(/\s+/g, '');
+    v = v.replace(/[zł€$]|PLN|EUR|USD/gi, '');
+    v = v.replace(/min/gi, '');
+    v = v.replace(/%/g, '');
+    // Polish decimal comma support; remove thousands separators conservatively.
+    if (/,\d{1,4}$/.test(v)) v = v.replace(/\./g, '').replace(',', '.');
+    else v = v.replace(/,/g, '');
+    return v;
+  }
+  function parseTotalCell(text, headerText){
+    const raw = String(text || '').trim();
+    const header = String(headerText || '').toLowerCase();
+    if (!raw || raw === '—' || raw === '-' || raw === '✓') return null;
+    if (dateLikeRe.test(raw)) return null;
+    if (/@/.test(raw) || /^https?:/i.test(raw)) return null;
+    if (phoneLikeRe.test(raw) && !/(ilość|ilosc|liczba|l\.|count|suma|wartość|wartosc|czas|dni|wizyt|usług|uslug|produkt|karnet|przychód|przychod)/i.test(header)) return null;
+    if (/akcje|status|metoda|płatność|platnosc|typ|nazwa|klient|pracownik|kategoria|email|telefon|data|ostatnia|najbliższa|najblizsza|dzień|dzien/i.test(header)) return null;
+    if (percentRe.test(raw) || /%/.test(header)) return null;
+    const isMoney = moneySuffixRe.test(raw) || /(wartość|wartosc|przychód|przychod|cena|razem|netto|brutto|sprzedaż|sprzedaz)/i.test(header);
+    const isTime = timeMinRe.test(raw) || /(czas|min)/i.test(header);
+    const n = Number(normalizeNumberText(raw));
+    if (!Number.isFinite(n)) return null;
+    if (!isMoney && !isTime && !/(ilość|ilosc|liczba|l\.|count|dni|wizyt|usług|uslug|produkt|karnet|pozycje|klienci|nowi|urlop|zwolnienie|inne|stan)/i.test(header)) {
+      return null;
+    }
+    return { value:n, kind:isTime ? 'time' : (isMoney ? 'money' : 'number') };
+  }
+  function formatTotalValue(value, kind, samples){
+    if (kind === 'time') return `${Math.round(value)}min`;
+    if (kind === 'money') {
+      const sample = (samples || []).find(Boolean) || '';
+      const currency = /eur|€/i.test(sample) ? 'EUR' : (/usd|\$/i.test(sample) ? 'USD' : 'PLN');
+      try {
+        if (window.CompanyManagerFormat && typeof window.CompanyManagerFormat.money === 'function') return window.CompanyManagerFormat.money(value);
+      } catch(_){ }
+      return `${value.toFixed(2)} ${currency}`;
+    }
+    return Number.isInteger(value) ? String(value) : value.toFixed(2).replace(/\.00$/, '');
+  }
+  function getTableHeaderTexts(table){
+    const ths = Array.from(table.querySelectorAll('thead th'));
+    if (ths.length) return ths.map(th => (th.textContent || '').trim());
+    const firstRow = table.querySelector('tr');
+    if (!firstRow) return [];
+    return Array.from(firstRow.children).map(cell => (cell.textContent || '').trim());
+  }
+  function getDataRows(table){
+    const bodyRows = table.tBodies && table.tBodies.length ? Array.from(table.tBodies).flatMap(tb => Array.from(tb.rows)) : Array.from(table.rows).slice(1);
+    return bodyRows.filter(row => !row.classList.contains('cm-table-total-row') && !/^\s*suma\s*$/i.test((row.cells[0]?.textContent || '').trim()));
+  }
+  function ensureTfoot(table){
+    let foot = table.tFoot;
+    if (!foot) foot = table.createTFoot();
+    return foot;
+  }
+  function addOrUpdateTableTotal(table){
+    if (!table || table.closest('.bm-month')) return;
+    const headers = getTableHeaderTexts(table);
+    const rows = getDataRows(table);
+    const colCount = Math.max(headers.length, ...rows.map(r => r.cells.length), 0);
+    if (!colCount || !rows.length) {
+      table.querySelectorAll('tr.cm-table-total-row').forEach(r => r.remove());
+      return;
+    }
+    const totals = Array.from({length:colCount}, () => ({sum:0, kind:null, count:0, samples:[]}));
+    rows.forEach(row => {
+      Array.from({length:colCount}).forEach((_, idx) => {
+        const cell = row.cells[idx];
+        if (!cell) return;
+        const txt = (cell.textContent || '').trim();
+        const parsed = parseTotalCell(txt, headers[idx] || '');
+        if (!parsed) return;
+        totals[idx].sum += parsed.value;
+        totals[idx].kind = totals[idx].kind === 'money' || parsed.kind === 'money' ? 'money' : (totals[idx].kind === 'time' || parsed.kind === 'time' ? 'time' : 'number');
+        totals[idx].count += 1;
+        totals[idx].samples.push(txt);
+      });
+    });
+    const hasAny = totals.some(t => t.count > 0);
+    if (!hasAny) {
+      table.querySelectorAll('tr.cm-table-total-row').forEach(r => r.remove());
+      return;
+    }
+    const foot = ensureTfoot(table);
+    let totalRow = foot.querySelector('tr.cm-table-total-row');
+    if (!totalRow) {
+      totalRow = document.createElement('tr');
+      totalRow.className = 'cm-table-total-row';
+      foot.appendChild(totalRow);
+    }
+    totalRow.innerHTML = '';
+    const firstTotalIdx = totals.findIndex(t => t.count > 0);
+    for (let i=0;i<colCount;i++) {
+      const td = document.createElement('td');
+      if (i === 0) td.textContent = 'SUMA';
+      else if (totals[i].count > 0) td.textContent = formatTotalValue(totals[i].sum, totals[i].kind, totals[i].samples);
+      else if (i < firstTotalIdx && i !== 0) td.textContent = '';
+      else td.textContent = '';
+      totalRow.appendChild(td);
+    }
+  }
+  function addTableTotals(root=document){
+    root.querySelectorAll('table').forEach((table) => {
+      try { addOrUpdateTableTotal(table); } catch(err) { console.warn('CompanyManager table total skipped', err); }
+    });
+  }
+
   function normalizeAll(root=document){
     document.documentElement.dataset.cmUi = VERSION;
     enhanceDateInputs(root);
@@ -103,6 +226,7 @@
     normalizeInputs(root);
     normalizeButtons(root);
     normalizeTables(root);
+    addTableTotals(root);
     normalizeMenus(root);
     markSpecialActions(root);
   }
@@ -116,7 +240,7 @@
       }
     });
     obs.observe(document.documentElement, {childList:true, subtree:true});
-    window.CompanyManagerUI = Object.assign(window.CompanyManagerUI || {}, { normalizeAll, enhanceDateInputs, version: VERSION, todayIso });
+    window.CompanyManagerUI = Object.assign(window.CompanyManagerUI || {}, { normalizeAll, enhanceDateInputs, addTableTotals, version: VERSION, todayIso });
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot, {once:true});
   else boot();
