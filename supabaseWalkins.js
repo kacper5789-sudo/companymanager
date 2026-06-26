@@ -175,6 +175,143 @@
     return [clientName(client), client?.phone || "", client?.email || ""].filter(Boolean).join(" · ");
   }
 
+
+  function cmYesNoOptions(selected) {
+    return ["tak", "nie"].map((v) => `<option value="${v}" ${String(selected || "nie") === v ? "selected" : ""}>${v}</option>`).join("");
+  }
+
+  function cmQuickCustomerFields() {
+    return `
+      <label>Imię<input name="firstName" placeholder="Imię" required></label>
+      <label>Nazwisko<input name="lastName" placeholder="Nazwisko" required></label>
+      <label>Płeć<select name="gender" required><option value="kobieta">kobieta</option><option value="mężczyzna">mężczyzna</option></select></label>
+      <label>Telefon<input name="phone" placeholder="Telefon" required></label>
+      <label>Email<input name="email" type="email" placeholder="email@firma.pl"></label>
+      <label>Adres<input name="address" placeholder="Adres"></label>
+      <label>Kod pocztowy<input name="postalCode" placeholder="XX-XXX"></label>
+      <label>Miejscowość<input name="city" placeholder="Miejscowość"></label>
+      <label>Status<select name="status"><option value="aktywny">aktywny</option><option value="nieaktywny">nieaktywny</option></select></label>
+      <label>Skąd klient wie o firmie<input name="source" placeholder="np. Google, Facebook, polecenie"></label>
+      <label>Zgoda na reklamę SMS<select name="marketingSms">${cmYesNoOptions("nie")}</select></label>
+      <label>Zgoda na reklamę Email<select name="marketingEmail">${cmYesNoOptions("nie")}</select></label>
+      <label>Dzień, miesiąc i rok urodzin<input name="birthDate" type="date" aria-label="Dzień, miesiąc i rok urodzin"></label>
+      <label class="bm-full full">Ważna informacja<textarea name="importantInfo" placeholder="Ważna informacja"></textarea></label>
+    `;
+  }
+
+  function cmQuickCustomerPayload(ctx, fd) {
+    const firstName = String(fd.get("firstName") || "").trim();
+    const lastName = String(fd.get("lastName") || "").trim();
+    return {
+      company_id: ctx.companyId,
+      first_name: firstName,
+      last_name: lastName,
+      full_name: [firstName, lastName].filter(Boolean).join(" "),
+      gender: String(fd.get("gender") || "").trim() || null,
+      phone: String(fd.get("phone") || "").trim(),
+      email: String(fd.get("email") || "").trim() || null,
+      address: String(fd.get("address") || "").trim() || null,
+      postal_code: String(fd.get("postalCode") || "").trim() || null,
+      city: String(fd.get("city") || "").trim() || null,
+      source: String(fd.get("source") || "").trim() || null,
+      birth_date: String(fd.get("birthDate") || "").trim() || null,
+      notes: String(fd.get("importantInfo") || "").trim() || null,
+      marketing_sms: String(fd.get("marketingSms") || "nie") === "tak",
+      marketing_email: String(fd.get("marketingEmail") || "nie") === "tak",
+      active: String(fd.get("status") || "aktywny") !== "nieaktywny",
+      updated_at: new Date().toISOString()
+    };
+  }
+
+  function cmQuickProductFields(categoryOptions = "", companyOptions = "") {
+    return `
+      <label>Nazwa*<input name="name" placeholder="Nazwa" required></label>
+      <label>Kategoria<select name="categorySelect"><option value="">---------</option>${categoryOptions}<option value="__new">dodaj nową kategorię</option></select></label>
+      <label>Nowa kategoria<input name="newCategory" placeholder="Nazwa kategorii"></label>
+      <div class="bm-form-row-2 bm-full full"><label>Stan magazynowy — L.op.<input name="packageStock" type="number" min="0" step="1" placeholder="L.op."></label><label>Niski stan (l.op.)<input name="lowPackageStock" type="number" min="0" step="1" placeholder="Niski stan (l.op.)"></label></div>
+      <div class="bm-form-row-2 bm-full full"><label>L. jednostek<input name="unitStock" type="number" min="0" step="1" placeholder="L. jednostek"></label><label>L. jednostek w 1 op.<input name="unitsPerPackage" type="number" min="0" step="1" placeholder="L. jednostek w 1 op."></label></div>
+      <label>Firma<select name="companySelect"><option value="">---------</option>${companyOptions}<option value="__new">dodaj nową firmę</option></select></label>
+      <label>Nowa firma<input name="newCompany" placeholder="Nazwa firmy"></label>
+      <label class="checkbox-row"><input name="saleOnly" type="checkbox" checked> do sprzedaży</label>
+      <label>Cena (PLN)<input name="price" type="number" min="0" step="0.01"></label>
+      <label>Ostatnia cena zakupu (PLN)<input name="lastPurchasePrice" type="number" min="0" step="0.01"></label>
+      <label>Dostawca<input name="supplier" placeholder="Dostawca"></label>
+      <label class="bm-full full">Opis<textarea name="description" placeholder="Opis"></textarea></label>
+      <label>Kod produktu<input name="code" placeholder="Kod produktu"></label>
+      <label class="checkbox-row"><input name="includeCommission" type="checkbox"> wliczaj do prowizji pracownika</label>
+      <label class="checkbox-row"><input name="includeDiscount" type="checkbox"> uwzględniaj przy rabacie</label>
+    `;
+  }
+
+  function cmQuickProductPayload(ctx, fd) {
+    const category = fd.get("categorySelect") === "__new" ? String(fd.get("newCategory") || "").trim() : String(fd.get("categorySelect") || "").trim();
+    const companyName = fd.get("companySelect") === "__new" ? String(fd.get("newCompany") || "").trim() : String(fd.get("companySelect") || "").trim();
+    return {
+      company_id: ctx.companyId,
+      name: String(fd.get("name") || "").trim(),
+      category,
+      package_stock: Number(fd.get("packageStock") || 0),
+      low_package_stock: Number(fd.get("lowPackageStock") || 0),
+      unit_stock: Number(fd.get("unitStock") || 0),
+      units_per_package: Number(fd.get("unitsPerPackage") || 0),
+      company_name: companyName,
+      sale_only: fd.get("saleOnly") === "on",
+      price: Number(fd.get("price") || 0),
+      last_purchase_price: Number(fd.get("lastPurchasePrice") || 0),
+      supplier: String(fd.get("supplier") || "").trim(),
+      description: String(fd.get("description") || "").trim(),
+      code: String(fd.get("code") || "").trim(),
+      include_commission: fd.get("includeCommission") === "on",
+      include_discount: fd.get("includeDiscount") === "on",
+      active: true,
+      updated_at: new Date().toISOString()
+    };
+  }
+
+  function cmQuickServiceFields(categoryOptions = "", positionOptions = "") {
+    return `
+      <label>Kategoria usług<select name="categoryId"><option value="">Wybierz kategorię</option>${categoryOptions}</select></label>
+      <label>Lub nowa kategoria<input name="newCategory" placeholder="np. Strzyżenie"></label>
+      <label>Nazwa usługi<input name="name" placeholder="Nazwa usługi" required></label>
+      <label>Stanowisko pracy<select name="positionId" required><option value="">Wybierz stanowisko</option>${positionOptions}</select></label>
+      <div class="bm-form-row-2 bm-full full"><label>Czas — godziny<input name="durationHours" type="number" min="0" step="1" value="0" required></label><label>Czas — minuty<input name="durationMinutes" type="number" min="0" max="59" step="1" value="30" required></label></div>
+      <label>Cena od (PLN)<input name="priceFrom" type="number" min="0" step="0.01" placeholder="0.00" required></label>
+      <label>Cena do (PLN)<input name="priceTo" type="number" min="0" step="0.01" placeholder="0.00"></label>
+      <label>Zaliczka (PLN)<input name="deposit" type="number" min="0" step="0.01" placeholder="0.00"></label>
+      <label>Kod usługi<input name="code" placeholder="Kod usługi"></label>
+      <label class="bm-full full">Opis<textarea name="description" placeholder="Opis usługi"></textarea></label>
+      <label class="checkbox-row"><input name="showOnline" type="checkbox"> pokaż w rezerwacji online</label>
+      <label class="checkbox-row"><input name="preventOverlap" type="checkbox"> blokuj nakładanie wizyt</label>
+      <label class="checkbox-row"><input name="includeCommission" type="checkbox"> wliczaj do prowizji pracownika</label>
+      <label class="checkbox-row"><input name="includeDiscount" type="checkbox"> uwzględniaj przy rabacie</label>
+    `;
+  }
+
+  function cmQuickServicePayload(ctx, fd, categoryId) {
+    const priceFrom = Number(fd.get("priceFrom") || fd.get("price") || 0);
+    const priceToRaw = fd.get("priceTo");
+    const priceTo = priceToRaw === null || String(priceToRaw || "").trim() === "" ? priceFrom : Number(priceToRaw || 0);
+    return {
+      company_id: ctx.companyId,
+      category_id: categoryId,
+      name: String(fd.get("name") || "").trim(),
+      duration_hours: Number(fd.get("durationHours") || 0),
+      duration_minutes: Number(fd.get("durationMinutes") || 0),
+      price_from: priceFrom,
+      price_to: priceTo,
+      deposit: Number(fd.get("deposit") || 0),
+      position_id: String(fd.get("positionId") || "").trim() || null,
+      description: String(fd.get("description") || "").trim() || null,
+      code: String(fd.get("code") || "").trim() || null,
+      show_online: fd.get("showOnline") === "on",
+      prevent_overlap: fd.get("preventOverlap") === "on",
+      include_commission: fd.get("includeCommission") === "on",
+      include_discount: fd.get("includeDiscount") === "on",
+      active: true,
+      updated_at: new Date().toISOString()
+    };
+  }
+
   function entitySearchFieldHtml(config) {
     const required = config.required ? "required" : "";
     const addHtml = config.addLabel && config.addTarget ? `<button type="button" class="bm-secondary-btn cm-related-add-btn" data-open-related="${escapeHtml(config.addTarget)}">${escapeHtml(config.addLabel)}</button>` : "";
@@ -493,6 +630,8 @@
     const customerOptions = data.clients.map((c) => `<option value="${escapeHtml(c.id)}">${escapeHtml(clientName(c) || "-")}</option>`).join("");
     const employeeOptions = data.users.map((u) => `<option value="${escapeHtml(u.id)}">${escapeHtml(userName(u) || "-")}</option>`).join("");
     const quickServiceCategoryOptions = (data.categories || []).map((c) => `<option value="${escapeHtml(c.id)}">${escapeHtml(c.name || "Kategoria")}</option>`).join("");
+    const quickProductCategoryOptions = [...new Set((data.products || []).map((p) => p.category).filter(Boolean))].map((name) => `<option value="${escapeHtml(name)}">${escapeHtml(name)}</option>`).join("");
+    const quickProductCompanyOptions = [...new Set((data.products || []).map((p) => p.company_name).filter(Boolean))].map((name) => `<option value="${escapeHtml(name)}">${escapeHtml(name)}</option>`).join("");
     const quickServicePositionOptions = (data.positions || []).map((p) => `<option value="${escapeHtml(p.id)}">${escapeHtml(p.name || "Stanowisko")}</option>`).join("");
 
     const paymentBySale = Object.fromEntries(data.payments.map((p) => [p.sale_id, p]));
@@ -564,14 +703,8 @@
       <h2>Dodaj klienta do bazy</h2>
       <p class="bm-muted">Klient zapisze się w module Klienci i od razu będzie dostępny w Sprzedaży bez wizyty.</p>
       <form id="walkinQuickClientForm" class="bm-form-grid bm-wide-form">
-        <label>Imię<input name="firstName" placeholder="Imię" required></label>
-        <label>Nazwisko<input name="lastName" placeholder="Nazwisko"></label>
-        <label>Telefon<input name="phone" placeholder="+48..." required></label>
-        <label>Email<input name="email" type="email" placeholder="email@firma.pl"></label>
-        <label>Płeć<select name="gender"><option value="">Nie wybrano</option><option value="female">Kobieta</option><option value="male">Mężczyzna</option></select></label>
-        <label>Data urodzenia<input name="birthDate" type="date"></label>
-        <label class="full">Notatka<textarea name="notes" placeholder="Notatka o kliencie"></textarea></label>
-        <div class="full cm-modal-actions"><button type="button" class="bm-secondary-btn" data-modal-cancel="true">Anuluj</button><button type="submit">Zapisz klienta</button></div>
+          ${cmQuickCustomerFields()}
+          <div class="full cm-modal-actions"><button type="button" class="bm-secondary-btn" data-modal-cancel="true">Anuluj</button><button type="submit">Zapisz klienta</button></div>
       </form>
       <p id="walkinQuickClientMessage" class="panel-message"></p>
     </section>
@@ -580,13 +713,8 @@
       <h2>Dodaj produkt do bazy</h2>
       <p class="bm-muted">Produkt zapisze się w module Produkty i od razu będzie dostępny w Sprzedaży bez wizyty.</p>
       <form id="walkinQuickProductForm" class="bm-form-grid bm-wide-form">
-        <label>Nazwa produktu<input name="name" placeholder="Nazwa produktu" required></label>
-        <label>Kategoria<input name="category" placeholder="np. Kosmetyki"></label>
-        <label>Cena sprzedaży<input name="price" type="number" min="0" step="0.01" placeholder="0.00" required></label>
-        <label>Ilość / stan<input name="unitStock" type="number" min="0" step="1" value="0"></label>
-        <label>Dostawca<input name="supplier" placeholder="Dostawca"></label>
-        <label class="full">Opis<textarea name="description" placeholder="Opis produktu"></textarea></label>
-        <div class="full cm-modal-actions"><button type="button" class="bm-secondary-btn" data-modal-cancel="true">Anuluj</button><button type="submit">Zapisz produkt</button></div>
+          ${cmQuickProductFields(quickProductCategoryOptions, quickProductCompanyOptions)}
+          <div class="full cm-modal-actions"><button type="button" class="bm-secondary-btn" data-modal-cancel="true">Anuluj</button><button type="submit">Zapisz produkt</button></div>
       </form>
       <p id="walkinQuickProductMessage" class="panel-message"></p>
     </section>
@@ -595,22 +723,8 @@
       <h2>Dodaj usługę do bazy</h2>
       <p class="bm-muted">Usługa zapisze się w module Usługi i od razu będzie dostępna w Sprzedaży bez wizyty.</p>
       <form id="walkinQuickServiceForm" class="bm-form-grid bm-wide-form">
-        <label>Kategoria usług
-          <select name="categoryId">
-            <option value="">Wybierz kategorię</option>
-            ${quickServiceCategoryOptions}
-          </select>
-        </label>
-        <label>Lub nowa kategoria<input name="newCategory" placeholder="np. Strzyżenie"></label>
-        <label>Nazwa usługi<input name="name" placeholder="Nazwa usługi" required></label>
-        <label>Stanowisko pracy<select name="positionId" required><option value="">Wybierz stanowisko</option>${quickServicePositionOptions}</select></label>
-        <div class="bm-form-row-2 full">
-          <label>Czas — godziny<input name="durationHours" type="number" min="0" step="1" value="0" required></label>
-          <label>Czas — minuty<input name="durationMinutes" type="number" min="0" max="59" step="1" value="30" required></label>
-        </div>
-        <label>Cena usługi<input name="price" type="number" min="0" step="0.01" placeholder="0.00" required></label>
-        <label class="full">Opis<textarea name="description" placeholder="Opis usługi"></textarea></label>
-        <div class="full cm-modal-actions"><button type="button" class="bm-secondary-btn" data-modal-cancel="true">Anuluj</button><button type="submit">Zapisz usługę</button></div>
+          ${cmQuickServiceFields(quickServiceCategoryOptions, quickServicePositionOptions)}
+          <div class="full cm-modal-actions"><button type="button" class="bm-secondary-btn" data-modal-cancel="true">Anuluj</button><button type="submit">Zapisz usługę</button></div>
       </form>
       <p id="walkinQuickServiceMessage" class="panel-message"></p>
     </section>
@@ -672,26 +786,10 @@
       if (submit) submit.disabled = true;
       try {
         const fd = new FormData(form);
-        const firstName = String(fd.get("firstName") || "").trim();
-        const lastName = String(fd.get("lastName") || "").trim();
-        const phone = String(fd.get("phone") || "").trim();
-        const email = String(fd.get("email") || "").trim();
-        if (!firstName) throw new Error("Podaj imię klienta.");
-        if (!phone) throw new Error("Podaj telefon klienta.");
-        const fullName = [firstName, lastName].filter(Boolean).join(" ");
-        const payload = {
-          company_id: ctx.companyId,
-          first_name: firstName,
-          last_name: lastName,
-          full_name: fullName,
-          phone,
-          email: email || null,
-          gender: String(fd.get("gender") || "") || null,
-          birth_date: String(fd.get("birthDate") || "") || null,
-          notes: String(fd.get("notes") || "").trim() || null,
-          active: true,
-          updated_at: new Date().toISOString()
-        };
+        const payload = cmQuickCustomerPayload(ctx, fd);
+        if (!payload.first_name) throw new Error("Podaj imię klienta.");
+        if (!payload.last_name) throw new Error("Podaj nazwisko klienta.");
+        if (!payload.phone) throw new Error("Podaj telefon klienta.");
         const { data: insertedClient, error } = await window.cmSupabase.from("clients").insert(payload).select("*").single();
         if (error) throw error;
         await window.cmUndo?.record({ module: "clients", actionType: "insert", targetTable: "clients", targetId: insertedClient?.id, afterData: insertedClient || payload, companyId: ctx.companyId });
@@ -723,27 +821,11 @@
       if (submit) submit.disabled = true;
       try {
         const fd = new FormData(form);
-        const name = String(fd.get("name") || "").trim();
-        const price = parseNumber(fd.get("price"), 0);
+        const payload = cmQuickProductPayload(ctx, fd);
+        const name = payload.name;
+        const price = Number(payload.price || 0);
         if (!name) throw new Error("Podaj nazwę produktu.");
         if (price <= 0) throw new Error("Podaj cenę produktu większą od 0.");
-        const payload = {
-          company_id: ctx.companyId,
-          name,
-          category: String(fd.get("category") || "").trim(),
-          price,
-          unit_stock: parseNumber(fd.get("unitStock"), 0),
-          package_stock: 0,
-          low_package_stock: 0,
-          units_per_package: 0,
-          sale_only: true,
-          supplier: String(fd.get("supplier") || "").trim(),
-          description: String(fd.get("description") || "").trim(),
-          include_commission: false,
-          include_discount: false,
-          active: true,
-          updated_at: new Date().toISOString()
-        };
         const { data: insertedProduct, error } = await window.cmSupabase.from("products").insert(payload).select("*").single();
         if (error) throw error;
         await window.cmUndo?.record({ module: "products", actionType: "insert", targetTable: "products", targetId: insertedProduct?.id, afterData: insertedProduct || payload, companyId: ctx.companyId });
@@ -786,39 +868,19 @@
         const positionId = String(fd.get("positionId") || "").trim();
         const durationHours = Number(fd.get("durationHours") || 0);
         const durationMinutes = Number(fd.get("durationMinutes") || 0);
-        const price = parseNumber(fd.get("price"), 0);
+        const price = Number(fd.get("priceFrom") || fd.get("price") || 0);
         if (!name) throw new Error("Podaj nazwę usługi.");
         if (!categoryId && !newCategory) throw new Error("Wybierz kategorię albo wpisz nową.");
         if (!positionId) throw new Error("Wybierz stanowisko pracy.");
         if (durationHours <= 0 && durationMinutes <= 0) throw new Error("Czas usługi musi być większy niż 0.");
         if (price <= 0) throw new Error("Podaj cenę usługi większą od 0.");
         if (!categoryId && newCategory) {
-          const { data: category, error: categoryError } = await window.cmSupabase
-            .from("service_categories")
-            .insert({ company_id: ctx.companyId, name: newCategory, updated_at: new Date().toISOString() })
-            .select("*")
-            .single();
+          const { data: category, error: categoryError } = await window.cmSupabase.from("service_categories").insert({ company_id: ctx.companyId, name: newCategory, active: true, updated_at: new Date().toISOString() }).select("*").single();
           if (categoryError) throw categoryError;
           categoryId = category?.id || "";
+          if (category) data.categories.push(category);
         }
-        const payload = {
-          company_id: ctx.companyId,
-          category_id: categoryId,
-          name,
-          duration_hours: durationHours,
-          duration_minutes: durationMinutes,
-          price_from: price,
-          price_to: price,
-          position_id: positionId,
-          description: String(fd.get("description") || "").trim() || null,
-          show_online: false,
-          prevent_overlap: false,
-          deposit: 0,
-          include_commission: false,
-          include_discount: false,
-          active: true,
-          updated_at: new Date().toISOString()
-        };
+        const payload = cmQuickServicePayload(ctx, fd, categoryId);
         const { data: insertedService, error } = await window.cmSupabase.from("services").insert(payload).select("*").single();
         if (error) throw error;
         await window.cmUndo?.record({ module: "services", actionType: "insert", targetTable: "services", targetId: insertedService?.id, afterData: insertedService || payload, companyId: ctx.companyId });
