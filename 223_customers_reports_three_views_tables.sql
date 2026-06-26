@@ -1,0 +1,3 @@
+-- 223_customers_reports_three_views_tables
+-- UI-only patch: separates Customers reports tables by report mode:
+-- planned visits by clients, planned visits by service categories, finished visits by clients.

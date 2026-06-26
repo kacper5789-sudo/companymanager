@@ -259,44 +259,23 @@
           email: client?.email || "",
           visits: 0,
           services: 0,
-          visitValue: 0,
-          salesCount: 0,
-          salesValue: 0,
-          totalValue: 0,
+          value: 0,
           avgVisit: 0,
+          firstDate: "",
           lastDate: ""
         };
         prev.visits += 1;
         if (appointmentServiceId(a)) prev.services += 1;
-        prev.visitValue += appointmentValue(a, svc);
+        prev.value += appointmentValue(a, svc);
         const d = String(appointmentDate(a) || "").slice(0, 10);
+        if (d && (!prev.firstDate || d < prev.firstDate)) prev.firstDate = d;
         if (d > prev.lastDate) prev.lastDate = d;
-        map.set(cid, prev);
-      });
-      salesByClient.forEach((saleStats, cid) => {
-        const client = clientsById[cid];
-        const prev = map.get(cid) || {
-          label: clientName(client, "(brak)"),
-          phone: client?.phone || "",
-          email: client?.email || "",
-          visits: 0,
-          services: 0,
-          visitValue: 0,
-          salesCount: 0,
-          salesValue: 0,
-          totalValue: 0,
-          avgVisit: 0,
-          lastDate: ""
-        };
-        prev.salesCount = saleStats.count;
-        prev.salesValue = saleStats.value;
         map.set(cid, prev);
       });
       return [...map.values()].map((row) => ({
         ...row,
-        totalValue: row.visitValue + row.salesValue,
-        avgVisit: row.visits ? row.visitValue / row.visits : 0
-      })).sort((a, b) => b.totalValue - a.totalValue || b.visits - a.visits || String(a.label).localeCompare(String(b.label), "pl"));
+        avgVisit: row.visits ? row.value / row.visits : 0
+      })).sort((a, b) => b.value - a.value || b.visits - a.visits || String(a.label).localeCompare(String(b.label), "pl"));
     };
 
     const byCategory = () => {
@@ -305,13 +284,21 @@
         const svc = servicesById[String(appointmentServiceId(a))];
         const catId = String(svc?.category_id || svc?.categoryId || "");
         const label = categoriesById[catId]?.name || svc?.category || "(bez kategorii)";
-        const prev = map.get(label) || { label, visits: 0, services: 0, value: 0 };
+        const prev = map.get(label) || { label, visits: 0, clients: new Set(), services: 0, value: 0 };
         prev.visits += 1;
+        const cid = String(appointmentClientId(a) || "");
+        if (cid) prev.clients.add(cid);
         if (appointmentServiceId(a)) prev.services += 1;
         prev.value += appointmentValue(a, svc);
         map.set(label, prev);
       });
-      return [...map.values()].sort((a, b) => b.visits - a.visits || b.value - a.value);
+      return [...map.values()].map((row) => ({
+        label: row.label,
+        visits: row.visits,
+        clients: row.clients.size,
+        services: row.services,
+        value: row.value
+      })).sort((a, b) => b.visits - a.visits || b.value - a.value);
     };
 
     const byVisit = () => visits.map((a) => {
@@ -333,23 +320,31 @@
     let headers;
     let rowsData;
     if (filters.mode === "plannedCategories") {
-      headers = ["Kategoria usług", "L. wizyt", "L. usług", "Wartość"];
-      rowsData = byCategory().map((r) => [esc(r.label), String(r.visits), String(r.services), money(r.value)]);
+      headers = ["Kategoria usług", "Planowane wizyty", "Klienci", "Usługi", "Wartość planowana"];
+      rowsData = byCategory().map((r) => [esc(r.label), String(r.visits), String(r.clients), String(r.services), money(r.value)]);
     } else if (filters.mode === "finishedVisits") {
-      headers = ["Data", "Klient", "Pracownik", "Kategoria", "Usługa", "Wartość", "Status"];
-      rowsData = byVisit().map((r) => [esc(dateLabel(r.date)), esc(r.client), esc(r.employee), esc(r.category), esc(r.service), money(r.value), esc(r.status || "zakończone")]);
-    } else {
-      headers = ["Klient", "Telefon", "Email", "L. wizyt", "L. usług", "Sprzedaż", "Wartość wizyt", "Razem", "Śr. wizyta", "Ostatnia wizyta"];
+      headers = ["Klient", "Telefon", "Email", "Zakończone wizyty", "Usługi", "Wartość", "Śr. wizyta", "Ostatnia zakończona wizyta"];
       rowsData = byCustomer().map((r) => [
         esc(r.label),
         esc(r.phone || "-"),
         esc(r.email || "-"),
         String(r.visits),
         String(r.services),
-        `${r.salesCount} / ${money(r.salesValue)}`,
-        money(r.visitValue),
-        money(r.totalValue),
+        money(r.value),
         money(r.avgVisit),
+        esc(r.lastDate ? dateLabel(r.lastDate) : "-")
+      ]);
+    } else {
+      headers = ["Klient", "Telefon", "Email", "Planowane wizyty", "Usługi", "Wartość planowana", "Śr. wizyta", "Najbliższa wizyta", "Ostatnia planowana"];
+      rowsData = byCustomer().map((r) => [
+        esc(r.label),
+        esc(r.phone || "-"),
+        esc(r.email || "-"),
+        String(r.visits),
+        String(r.services),
+        money(r.value),
+        money(r.avgVisit),
+        esc(r.firstDate ? dateLabel(r.firstDate) : "-"),
         esc(r.lastDate ? dateLabel(r.lastDate) : "-")
       ]);
     }
@@ -366,12 +361,7 @@
       return acc;
     }, { visits: 0, services: 0, value: 0 });
     const customerRows = byCustomer();
-    const salesTotals = customerRows.reduce((acc, row) => {
-      acc.salesCount += Number(row.salesCount || 0);
-      acc.salesValue += Number(row.salesValue || 0);
-      acc.totalValue += Number(row.totalValue || 0);
-      return acc;
-    }, { salesCount: 0, salesValue: 0, totalValue: 0 });
+    const categoryRows = byCategory();
 
     const titles = {
       plannedClients: "Planowane wizyty według klientów",
@@ -401,9 +391,8 @@
         <div><span>Liczba wizyt</span><b>${esc(totals.visits)}</b></div>
         <div><span>Liczba usług</span><b>${esc(totals.services)}</b></div>
         <div><span>Wartość wizyt</span><b>${esc(money(totals.value))}</b></div>
-        <div><span>Sprzedaż dodatkowa</span><b>${esc(money(salesTotals.salesValue))}</b></div>
-        <div><span>Razem od klientów</span><b>${esc(money(salesTotals.totalValue || totals.value))}</b></div>
-        <div><span>Klienci w tabeli</span><b>${esc(rowsData.length)}</b></div>
+        <div><span>Klienci w tabeli</span><b>${esc(filters.mode === "plannedCategories" ? categoryRows.reduce((sum, row) => sum + Number(row.clients || 0), 0) : customerRows.length)}</b></div>
+        <div><span>Pozycje w tabeli</span><b>${esc(rowsData.length)}</b></div>
       </div>
       <div class="bm-table-toolbar"><label>${limitSelect(filters.limit)}</label><label>Szukaj: <input id="crSearch" type="search" value="${esc(filters.search)}" placeholder="Szukaj"></label></div>
       <div id="crTableWrap">${table(headers, shownRows)}<p class="cm-table-footer">Pozycje od ${shownRows.length ? 1 : 0} do ${shownRows.length} z ${rowsData.length}</p></div>
