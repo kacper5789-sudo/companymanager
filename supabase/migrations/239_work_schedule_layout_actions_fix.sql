@@ -1,0 +1,6 @@
+-- CompanyManager 239 — Work schedule layout/actions fix
+-- Informacyjnie: poprawka frontendu.
+-- Zakres:
+-- - Grafik pracy nie rozciąga się poza obszar panelu i nie przykrywa lewego menu.
+-- - Przyciski Edytuj/Usuń w tabeli podsumowania są układane pionowo i nie nachodzą na siebie.
+-- - Tabele grafiku pozostają w obszarze karty bez poziomego scrolla strony.
