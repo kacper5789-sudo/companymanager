@@ -66,7 +66,7 @@
     if (!access || access.allowed !== true) return { ok: false, message: access?.reason || "Brak dostępu." };
     if (!context || context.allowed !== true || !context.company_id) return { ok: false, message: context?.reason || "Brak kontekstu firmy." };
     const ctx = { ok: true, access, context, companyId: context.company_id };
-    if (!hasAnyPermission(ctx, ["open_period_report", "reports_access", "open_stats", "daily_report_other_days", "period_report_access"])) {
+    if (!hasAnyPermission(ctx, ["open_period_report", "open_stats", "daily_report_other_days", "period_report_access"])) {
       return { ok: false, message: "Brak uprawnienia do raportu z okresu." };
     }
     return ctx;

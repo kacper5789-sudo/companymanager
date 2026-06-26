@@ -102,7 +102,7 @@
   function canOpenWalkins(ctx) { return hasAnyPermission(ctx, ["open_sales_without_visit", "open_walkins", "sprzedaż bez wizyty"]); }
   function canAddWalkins(ctx) { return hasAnyPermission(ctx, ["sales_without_visit_add", "sprzedaż bez wizyt (dodawanie, edycja, usuwanie)"]); }
   function canDeleteWalkins(ctx) { return hasAnyPermission(ctx, ["sales_without_visit_delete", "sprzedaż bez wizyt (dodawanie, edycja, usuwanie)"]); }
-  function canHistoryWalkins(ctx) { return hasAnyPermission(ctx, ["sales_without_visit_history", "sprzedaż bez wizyt (dostęp do historii - tabeli poniżej)"]); }
+  function canHistoryWalkins(ctx) { return canOpenWalkins(ctx); }
 
   function getPanelArea() { return document.querySelector(".bm-panel-area") || document.getElementById("dashboardRoot"); }
 

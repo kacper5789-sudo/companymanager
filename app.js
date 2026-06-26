@@ -978,24 +978,18 @@ document.addEventListener('DOMContentLoaded', () => {
     appointments_finish: ['wizyty — zakończenie', 'wizyty (dodawanie, edycja, zakończenie, usuwanie)'],
     appointments_delete: ['wizyty — usuwanie', 'wizyty (dodawanie, edycja, zakończenie, usuwanie)', 'wizyty niezakończone (dodawanie, edycja, usuwanie / odwołanie)'],
     appointments_unfinished_history: ['wizyty niezakończone — historia', 'wizyty (niezakończone) - dostęp do historii'],
-    appointments_unfinished_manage: ['wizyty niezakończone — zarządzanie', 'wizyty niezakończone (dodawanie, edycja, usuwanie / odwołanie)'],
     appointments_history: ['wizyty — historia', 'wizyty - historia (przeglądanie historii wizyt)', 'wizyty (zakończone, zaplanowane, odwołane, usunięte) - dostęp do historii (tabeli poniżej)'],
     sales_without_visit_add: ['sprzedaż bez wizyty — dodawanie', 'sprzedaż bez wizyt (dodawanie, edycja, usuwanie)'],
-    sales_without_visit_edit: ['sprzedaż bez wizyty — edycja', 'sprzedaż bez wizyt (dodawanie, edycja, usuwanie)'],
     sales_without_visit_delete: ['sprzedaż bez wizyty — usuwanie', 'sprzedaż bez wizyt (dodawanie, edycja, usuwanie)'],
-    sales_without_visit_history: ['sprzedaż bez wizyty — historia', 'sprzedaż bez wizyt (dostęp do historii - tabeli poniżej)'],
     marketing_sms: ['marketing — SMS', 'marketing (wysyłka reklamy sms/email)', 'marketing (wysyłka reklamy sms/email/usuń)'],
     marketing_email: ['marketing — Email', 'marketing (wysyłka reklamy sms/email)', 'marketing (wysyłka reklamy sms/email/usuń)'],
-    marketing_delete: ['marketing — usuwanie', 'marketing (wysyłka reklamy sms/email)'],
     passes_add: ['karnety — dodawanie', 'karnety (dodawanie, edycja, usuwanie)'],
     passes_edit: ['karnety — edycja', 'karnety (dodawanie, edycja, usuwanie)'],
     passes_delete: ['karnety — usuwanie', 'karnety (dodawanie, edycja, usuwanie)'],
     daily_report_today: ['raport dzienny — dziś', 'raport dzienny dzisiejszy (przeglądanie)'],
     daily_report_other_days: ['raport dzienny — inne dni', 'raport dzienny wczorajszy, jutrzejszy (przeglądanie)'],
-    work_schedule_add: ['grafik pracy — dodawanie', 'grafik pracy (dodawanie)', 'grafik pracy (dodawanie,edycja,usuwanie)'],
     work_schedule_edit: ['grafik pracy — edycja', 'grafik pracy (edycja, usuwanie)', 'grafik pracy (dodawanie,edycja,usuwanie)'],
     work_schedule_delete: ['grafik pracy — usuwanie', 'grafik pracy (edycja, usuwanie)', 'grafik pracy (dodawanie,edycja,usuwanie)'],
-    reports_access: ['dostęp do raportów'],
     export_data: ['export danych z całej platformy', 'export/import danych'],
     import_data: ['import danych do całej platformy', 'export/import danych']
   };
@@ -1157,7 +1151,6 @@ document.addEventListener('DOMContentLoaded', () => {
       const viewParam = new URLSearchParams(window.location.search || '').get('view') || '';
       const isWorkScheduleView = page === 'workSchedule';
       if (page === 'dailyReport' && !hasSystemPermission(subject, 'raport dzienny dzisiejszy (przeglądanie)') && !hasSystemPermission(subject, 'raport dzienny wczorajszy, jutrzejszy (przeglądanie)')) return false;
-      if (reportPermissionPages.includes(page) && page !== 'dailyReport' && !isWorkScheduleView && !hasSystemPermission(subject, 'dostęp do raportów')) return false;
       return true;
     }
     if (role === 'admin') return true;
@@ -1190,24 +1183,18 @@ document.addEventListener('DOMContentLoaded', () => {
     ['wizyty — zakończenie', ['#finishVisitBtn', '.finish-visit-btn', '#dashFinishVisitBtn']],
     ['wizyty — usuwanie', ['#showDeleteVisit', '#deleteVisitBtn', '#dashCancelVisitBtn', '.cancel-visit-btn', '.delete-visit-btn']],
     ['wizyty niezakończone — historia', ['[data-visit-history="unfinished"]', '#showUnfinishedVisitHistory', '.visit-unfinished-history-btn']],
-    ['wizyty niezakończone — zarządzanie', ['#dashEditVisitBtn', '#dashCancelVisitBtn']],
     ['wizyty — historia', ['[data-visit-history="all"]', '#showVisitHistory', '.visit-history-btn', 'a[href*="history"]']],
     ['sprzedaż bez wizyty — dodawanie', ['#showAddWalkin', '#walkinForm button[type="submit"]']],
-    ['sprzedaż bez wizyty — edycja', ['#showEditWalkin', '#walkinEditForm button[type="submit"]', '.edit-walkin-btn']],
     ['sprzedaż bez wizyty — usuwanie', ['#showDeleteWalkin', '#walkinDeleteForm button[type="submit"]', '#deleteWalkinBtn']],
-    ['sprzedaż bez wizyty — historia', ['[data-walkin-history]', '#showWalkinHistory', '.walkin-history-btn']],
     ['marketing — SMS', ['#showMarketingSms', '#sendSmsTest', '#saveSmsCampaign', '#sendSmsCampaign']],
     ['marketing — Email', ['#showMarketingEmail', '#sendEmailTest', '#saveEmailCampaign', '#sendEmailCampaign']],
-    ['marketing — usuwanie', ['#deleteMarketingCampaign', '.delete-marketing-campaign-btn']],
     ['karnety — dodawanie', ['#showAddPass', '#addPassForm button[type="submit"]', '#showAddPassTemplate']],
     ['karnety — edycja', ['#showEditPass', '#editPassForm button[type="submit"]', '.edit-pass-btn']],
     ['karnety — usuwanie', ['#showDeletePass', '#deletePassBtn', '.delete-pass-btn']],
     ['raport dzienny — dziś', ['#dailyReportTodayBtn']],
     ['raport dzienny — inne dni', ['#dailyReportDate', '#dailyPrevDay', '#dailyNextDay']],
-    ['grafik pracy — dodawanie', ['#showAddWorkScheduleBtn', '[data-add-schedule]']],
     ['grafik pracy — edycja', ['#showEditWorkScheduleBtn', '#saveWorkScheduleBtn', '#saveWorkScheduleBottomBtn', '#copyCompanyHoursBtn', '#applyAllDaysBtn', '.cm-save-schedule-btn', '[data-edit-employee]']],
     ['grafik pracy — usuwanie', ['#showDeleteWorkScheduleBtn', '#clearScheduleBtn', '[data-delete-employee]']],
-    ['dostęp do raportów', ['[data-report-export]', '[data-chart-export]', '.cm-sales-export-btn', '.cm-report-export-btn']]
   ];
 
   const disableElementsForPermission = (permissionLabel, selectors, panelUser) => {
@@ -1853,9 +1840,7 @@ document.addEventListener('DOMContentLoaded', () => {
     'karnety (dodawanie, edycja, usuwanie)':'passes (add, edit, delete)',
     'raport dzienny dzisiejszy (przeglądanie)':'today’s daily report (view)',
     'raport dzienny wczorajszy, jutrzejszy (przeglądanie)':'yesterday’s/tomorrow’s daily report (view)',
-    'grafik pracy (dodawanie)':'work schedule (add)',
     'grafik pracy (edycja, usuwanie)':'work schedule (edit, delete)',
-    'dostęp do raportów':'access to reports',
     'export danych z całej platformy':'export data from entire platform',
     'import danych do całej platformy':'import data to entire platform',
     'brak dostępu do historii klientów':'no access to customer history',
@@ -3655,17 +3640,13 @@ document.addEventListener('DOMContentLoaded', () => {
     'produkty (magazyn)',
     'wizyty (dodawanie, edycja, zakończenie, usuwanie)',
     'wizyty (niezakończone) - dostęp do historii',
-    'wizyty niezakończone (dodawanie, edycja, usuwanie / odwołanie)',
     'wizyty (zakończone, zaplanowane, odwołane, usunięte) - dostęp do historii (tabeli poniżej)',
     'sprzedaż bez wizyt (dodawanie, edycja, usuwanie)',
-    'sprzedaż bez wizyt (dostęp do historii - tabeli poniżej)',
-    'marketing (wysyłka reklamy sms/email/usuń)',
+    'marketing (wysyłka reklamy sms/email)',
     'karnety (dodawanie, edycja, usuwanie)',
     'raport dzienny dzisiejszy (przeglądanie)',
     'raport dzienny wczorajszy, jutrzejszy (przeglądanie)',
-    'grafik pracy (dodawanie)',
     'grafik pracy (edycja, usuwanie)',
-    'dostęp do raportów',
     'export danych z całej platformy',
     'import danych do całej platformy'
   ];
@@ -8733,10 +8714,10 @@ document.addEventListener('DOMContentLoaded', () => {
     services: { add:'services_add', edit:'services_edit', del:'services_delete' },
     products: { add:'products_add', edit:'products_edit', del:'products_delete', warehouse:'warehouse_manage' },
     visits: { add:'appointments_add', edit:'appointments_edit', finish:'appointments_finish', del:'appointments_delete', history:'appointments_history' },
-    walkins: { add:'sales_without_visit_add', edit:'sales_without_visit_edit', del:'sales_without_visit_delete', history:'sales_without_visit_history' },
+    walkins: { add:'sales_without_visit_add', del:'sales_without_visit_delete' },
     passes: { add:'passes_add', edit:'passes_edit', del:'passes_delete' },
-    workSchedule: { add:'work_schedule_add', edit:'work_schedule_edit', del:'work_schedule_delete' },
-    marketing: { sms:'marketing_sms', email:'marketing_email', del:'marketing_delete' }
+    workSchedule: { edit:'work_schedule_edit', del:'work_schedule_delete' },
+    marketing: { sms:'marketing_sms', email:'marketing_email' }
   };
   const textMap = [
     [/^(dodaj|add|utwórz|utworz)/i, 'add'],

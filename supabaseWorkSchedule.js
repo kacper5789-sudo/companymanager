@@ -75,7 +75,7 @@
   }
 
   function hasAccess(ctx) { return hasAnyPermission(ctx, ["open_work_schedule", "work_schedule"]); }
-  function canAdd(ctx) { return hasAnyPermission(ctx, ["work_schedule_add"]); }
+  function canAdd(ctx) { return hasAnyPermission(ctx, ["work_schedule_edit", "work_schedule_delete", "open_work_schedule", "work_schedule"]); }
   function canEdit(ctx) { return hasAnyPermission(ctx, ["work_schedule_edit"]); }
   function canDelete(ctx) { return hasAnyPermission(ctx, ["work_schedule_delete"]); }
 

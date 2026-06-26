@@ -344,7 +344,7 @@
     const role = normalizeRole(access?.role || context?.role);
     if (role === "OWNER" || role === "ADMIN") return true;
     const permissions = normalizePermissions(access?.permissions || context?.permissions);
-    return permissions.all === true || permissions.admin === true || permissions.open_stats === true || permissions.reports_access === true;
+    return permissions.all === true || permissions.admin === true || permissions.open_stats === true;
   }
 
   async function getContext() {
