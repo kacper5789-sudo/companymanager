@@ -1,0 +1,5 @@
+-- CompanyManager 237 — Period report sales items counter fix
+-- Informacyjnie: poprawka frontendowa.
+-- Karta "Pozycje sprzedaży" w Raporcie z okresu ma liczyć realnie sprzedane sztuki/pozycje:
+-- SUMA L.szt. usług + SUMA L.szt. produktów + SUMA L.szt. karnetów,
+-- a nie liczbę unikalnych nazw w tabelach usług/produktów/karnetów.

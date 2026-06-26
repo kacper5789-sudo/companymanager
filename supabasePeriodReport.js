@@ -464,11 +464,17 @@
       else { row.passes += qty; row.passValue += value; }
     });
 
+    const groupedServices = groupItems(services);
+    const groupedProducts = groupItems(products);
+    const groupedPasses = groupItems(passes);
+    const salesItemsCount = [...groupedServices, ...groupedProducts, ...groupedPasses]
+      .reduce((sum, row) => sum + Number(row.qty || 0), 0);
+
     return {
-      kpis: { revenue, sales: data.sales.length, newClients: newClients.length, finished: finished.length, planned: planned.length, cancelled: cancelled.length },
-      services: groupItems(services),
-      products: groupItems(products),
-      passes: groupItems(passes),
+      kpis: { revenue, sales: data.sales.length, newClients: newClients.length, finished: finished.length, planned: planned.length, cancelled: cancelled.length, salesItems: salesItemsCount },
+      services: groupedServices,
+      products: groupedProducts,
+      passes: groupedPasses,
       payments: Array.from(paymentMap.values()).sort((a, b) => b.value - a.value),
       employees: Array.from(employeeRowsMap.values()).filter((r) => String(r.name || "").trim() !== "(brak)").sort((a, b) => b.revenue - a.revenue)
     };
@@ -500,7 +506,7 @@
           <div class="cm-period-kpi"><span>Wizyty zakończone</span><b>${report.kpis.finished}</b></div>
           <div class="cm-period-kpi"><span>Wizyty zaplanowane</span><b>${report.kpis.planned}</b></div>
           <div class="cm-period-kpi"><span>Wizyty odwołane</span><b>${report.kpis.cancelled}</b></div>
-          <div class="cm-period-kpi"><span>Pozycje sprzedaży</span><b>${report.services.length + report.products.length + report.passes.length}</b></div>
+          <div class="cm-period-kpi"><span>Pozycje sprzedaży</span><b>${report.kpis.salesItems}</b></div>
         </div>
         <div class="cm-period-grid">
           <section class="cm-period-section"><div class="cm-period-section-head"><div><h3>Usługi</h3><p>Sprzedane usługi w okresie: <b>${report.services.reduce((s,r)=>s+Number(r.qty||0),0)}</b></p></div></div>${table(['Nazwa usługi','L.szt.','Wartość PLN'], rowsForItems(report.services), footerForItems('SUMA', report.services))}</section>
