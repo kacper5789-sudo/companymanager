@@ -646,7 +646,7 @@
         sale.note
       ].join(" "));
       return !q || text.includes(q);
-    }).slice(0, limit);
+    });
 
     const rows = allowHistory ? filtered.map((sale) => {
       const payment = paymentBySale[sale.id] || {};

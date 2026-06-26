@@ -389,7 +389,7 @@
     const needle = normalize(filters.search);
     if (needle) rowsData = rowsData.filter((row) => normalize(row.join(" ")).includes(needle));
     const limit = Number(filters.limit) || 50;
-    const shownRows = rowsData.slice(0, limit);
+    const shownRows = rowsData;
     const totals = visits.reduce((acc, a) => {
       const svc = servicesById[String(appointmentServiceId(a))];
       const productMeta = productMetaForAppointment(a);
@@ -437,7 +437,7 @@
         <div><span>Pozycje w tabeli</span><b>${esc(rowsData.length)}</b></div>
       </div>
       <div class="bm-table-toolbar"><label>${limitSelect(filters.limit)}</label><label>Szukaj: <input id="crSearch" type="search" value="${esc(filters.search)}" placeholder="Szukaj"></label></div>
-      <div id="crTableWrap">${table(headers, shownRows)}<p class="cm-table-footer">Pozycje od ${shownRows.length ? 1 : 0} do ${shownRows.length} z ${rowsData.length}</p></div>
+      <div id="crTableWrap">${table(headers, shownRows)}</div>
     </section>`;
 
     function apply(overrides = {}) {

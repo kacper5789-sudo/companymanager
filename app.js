@@ -4119,13 +4119,14 @@ document.addEventListener('DOMContentLoaded', () => {
         const prev = controls.querySelector('.cm-page-prev');
         const next = controls.querySelector('.cm-page-next');
         const jumpInput = controls.querySelector('.cm-page-jump-input');
-        const displayTotal = totalRows ? Math.max(totalRows, limit) : 0;
+        const displayTotal = totalRows;
         if (info) info.textContent = totalRows ? `Pozycje od ${start + 1} do ${end} z ${displayTotal} łącznie` : 'Pozycje od 0 do 0 z 0 łącznie';
         renderPaginationButtons(numbers, currentPage, totalPages);
         if (prev) prev.disabled = currentPage <= 1;
         if (next) next.disabled = currentPage >= totalPages;
         if (jumpInput) {
           jumpInput.max = String(totalPages);
+          jumpInput.value = String(currentPage);
           jumpInput.placeholder = String(currentPage);
         }
         controls.hidden = totalPages <= 1;
@@ -4152,7 +4153,7 @@ document.addEventListener('DOMContentLoaded', () => {
           const totalPages = Math.max(1, Math.ceil(totalRows / limit));
           currentPage = Math.min(Math.max(1, value), totalPages);
           renderPage();
-          if (input) input.value = '';
+          if (input) input.value = String(currentPage);
         }
       });
       document.addEventListener('change', (event) => {
@@ -7958,7 +7959,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const list = document.querySelector('#companyPaymentMethods');
       if (!value || !list) return;
       list.insertAdjacentHTML('beforeend', `<div class="cm-payment-method-row"><input type="text" name="paymentMethodName" value="${escapeHtml(value)}" aria-label="Metoda płatności"><label class="cm-check-line"><input type="checkbox" name="paymentMethodTurnover" checked> obrót</label><label class="cm-check-line"><input type="checkbox" name="paymentMethodCommission"> prowizja</label><button class="bm-danger-btn cm-remove-payment-method" type="button">usuń</button></div>`);
-      if (input) input.value = '';
+      if (input) input.value = String(currentPage);
       if (addPanel) addPanel.hidden = true;
       bindRemoveButtons();
       save(true);

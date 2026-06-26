@@ -475,7 +475,7 @@
       const text = normalizeText([pass.name, pass.number, pass.valid_until, pass.description, pass.buyer, pass.customer_name, pass.employee_name, pass.service_name, clientName(clientsById[pass.buyer_client_id]), clientName(clientsById[pass.beneficiary_client_id || pass.customer_id]), userName(usersById[pass.employee_id]), pass.value, pass.remaining, pass.remaining_units, pass.status].join(" "));
       return statusOk && (!q || text.includes(q));
     });
-    const visible = filtered.slice(0, limit);
+    const visible = filtered;
     const newestPass = data.passes[0]?.number || "XXXX";
 
     const rows = visible.map((pass) => [

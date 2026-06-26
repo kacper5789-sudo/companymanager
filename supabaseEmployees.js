@@ -200,7 +200,7 @@
     const filtered = filterEmployees();
     state.filtered = filtered;
     const limit = Number(getModulePageLimit("50")) || 50;
-    const visible = filtered.slice(0, limit);
+    const visible = filtered;
     tbody.innerHTML = visible.length
       ? employeeRows(visible)
       : `<tr><td colspan="6" class="bm-muted">Brak pracowników w zespole.</td></tr>`;
@@ -208,7 +208,7 @@
     if (count) count.textContent = `Liczba pracowników: ${filtered.length}`;
     if (pagination) {
       pagination.textContent = filtered.length
-        ? `Pozycje od 1 do ${Math.min(limit, filtered.length)} z ${filtered.length} łącznie`
+        ? `Pozycje od 1 do ${filtered.length} z ${filtered.length} łącznie`
         : "Pozycji 0 z 0 dostępnych";
     }
   }

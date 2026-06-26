@@ -516,11 +516,10 @@
     const searchNeedle = normalizeText(searchValue);
     const filterBySearch = (rows) => !searchNeedle ? rows : rows.filter((row) => normalizeText(row.join(" ")).includes(searchNeedle));
     const limit = Number(limitValue) || 50;
-    const limited = (rows) => filterBySearch(rows).slice(0, limit);
-    const summary = (left, count, right, value) => `<div class="cm-sales-summary"><b>${escapeHtml(left)}: ${count}</b><b>${escapeHtml(right)}: ${money(value)} PLN</b></div>`;
+        const summary = (left, count, right, value) => `<div class="cm-sales-summary"><b>${escapeHtml(left)}: ${count}</b><b>${escapeHtml(right)}: ${money(value)} PLN</b></div>`;
     const sectionTable = (headers, rows) => {
       const filtered = filterBySearch(rows);
-      return `${table(headers, filtered.slice(0, limit))}${pager(filtered.length ? 1 : 0, Math.min(limit, filtered.length), filtered.length, 1, Math.ceil(filtered.length / limit))}`;
+      return `${table(headers, filtered)}`;
     };
 
     let serviceItemsRaw = data.items
