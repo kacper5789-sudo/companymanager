@@ -163,7 +163,7 @@
     const toDefault = iso(new Date(now.getFullYear(), now.getMonth() + 1, 0));
     return {
       params,
-      currentView: params.get("view") || "services",
+      currentView: params.get("view") || "all",
       fromDate: params.get("from") || fromDefault,
       toDate: params.get("to") || toDefault,
       limitValue: getModulePageLimit(params.get("limit") || "50"),
@@ -441,6 +441,7 @@
     }
 
     const views = [
+      ["all", "Cała sprzedaż"],
       ["services", "Usługi"], ["servicesByName", "Usługi według nazw"], ["servicesByCategory", "Usługi według kategorii"], ["servicesByEmployee", "Usługi według pracowników"],
       ["products", "Produkty"], ["productsByName", "Produkty według nazw"], ["productsByCategory", "Produkty według kategorii"], ["productsByEmployee", "Produkty według pracowników"],
       ["passes", "Karnety"], ["passesByEmployee", "Karnety według pracowników"], ["payments", "Płatności"], ["paymentsByType", "Płatności według typów"]
@@ -616,9 +617,10 @@
       return [...grouped.entries()].map(([key, val]) => [key, String(val.count), money(val.value)]).sort((a, b) => Number(b[2]) - Number(a[2]));
     };
 
-    const serviceRows = serviceItemsRaw.map((r) => [displayDateTime(r.date), r.employee, r.customer, r.category, r.name, money(r.value), r.paymentMethod]);
-    const productRows = productItemsRaw.map((r) => [displayDateTime(r.date), r.employee, r.customer, r.productCategory, r.name, String(r.qty), money(r.value)]);
-    const passRows = passItemsRaw.map((r) => [displayDateTime(r.date, r.time), r.employee, r.customer, money(r.value), r.note]);
+    const serviceRows = serviceItemsRaw.map((r) => [displayDateTime(r.date), "Usługa", r.employee, r.customer, r.category, r.name, "1", money(r.value), r.paymentMethod]);
+    const productRows = productItemsRaw.map((r) => [displayDateTime(r.date), "Produkt", r.employee, r.customer, r.productCategory, r.name, String(r.qty), money(r.value), r.paymentMethod]);
+    const passRows = passItemsRaw.map((r) => [displayDateTime(r.date, r.time), "Karnet", r.employee, r.customer, "Karnet", r.note || "Karnet", "1", money(r.value), r.paymentMethod]);
+    const allSalesRows = serviceRows.concat(productRows, passRows).sort((a, b) => String(b[0] || "").localeCompare(String(a[0] || "")));
     const paymentRows = allPaymentRowsRaw.map((r) => [displayDateTime(r.date, r.time), r.employee, r.customer, r.type, money(r.value)]);
     const paymentByTypeRows = groupRows(allPaymentRowsRaw, (r) => r.type).map((row) => {
       const totalCount = allPaymentRowsRaw.length || 1;
@@ -648,23 +650,28 @@
     const productNameFilter = dropdown("productNames", "Nazwa produktu", productOptions, selectedProductNames);
     const paymentTypeFilter = dropdown("paymentTypes", "Typ płatności", paymentTypes.map((p) => ({ value: p, label: p })), selectedPaymentTypes);
 
+    const totalSalesCount = serviceItemsRaw.length + productItemsRaw.reduce((s, r) => s + Number(r.qty || 0), 0) + passItemsRaw.length;
+    const totalSalesValue = serviceItemsRaw.reduce((s, r) => s + (r.revenueValue ?? r.value), 0) + productItemsRaw.reduce((s, r) => s + (r.revenueValue ?? r.value), 0) + passItemsRaw.reduce((s, r) => s + r.value, 0);
+    const transactionHeaders = ["Data i godzina", "Typ", "Pracownik", "Klient", "Kategoria", "Nazwa", "Ilość", "Wartość", "Płatność"];
+
     const sections = {
-      services: `<h2>Sprzedaż usług</h2>${dateFilters(employeeFilter + serviceCategoryFilter + serviceNameFilter)}${summary("Liczba usług", serviceItemsRaw.length, "Wartość usług", serviceItemsRaw.reduce((s, r) => s + (r.revenueValue ?? r.value), 0))}${listTools()}${sectionTable(["Data i godzina", "Pracownik", "Klient", "Kategoria usługi", "Nazwa usługi", "Wartość", "Płatność"], serviceRows)}`,
+      all: `<h2>Cała sprzedaż</h2>${dateFilters(employeeFilter)}${summary("Pozycje sprzedaży", totalSalesCount, "Wartość sprzedaży", totalSalesValue)}${listTools()}${sectionTable(transactionHeaders, allSalesRows)}`,
+      services: `<h2>Sprzedaż usług</h2>${dateFilters(employeeFilter + serviceCategoryFilter + serviceNameFilter)}${summary("Liczba usług", serviceItemsRaw.length, "Wartość usług", serviceItemsRaw.reduce((s, r) => s + (r.revenueValue ?? r.value), 0))}${listTools()}${sectionTable(transactionHeaders, serviceRows)}`,
       servicesByName: `<h2>Sprzedaż usług według nazw</h2>${dateFilters(employeeFilter + serviceCategoryFilter + serviceNameFilter)}${summary("Liczba usług", serviceItemsRaw.length, "Wartość usług", serviceItemsRaw.reduce((s, r) => s + (r.revenueValue ?? r.value), 0))}${listTools()}${sectionTable(["Nazwa", "Liczba", "Wartość PLN"], groupRows(serviceItemsRaw, (r) => r.name))}`,
       servicesByCategory: `<h2>Sprzedaż usług według kategorii</h2>${dateFilters(employeeFilter + serviceCategoryFilter + serviceNameFilter)}${summary("Liczba usług", serviceItemsRaw.length, "Wartość usług", serviceItemsRaw.reduce((s, r) => s + (r.revenueValue ?? r.value), 0))}${listTools()}${sectionTable(["Kategoria", "Liczba", "Wartość PLN"], groupRows(serviceItemsRaw, (r) => r.category))}`,
       servicesByEmployee: `<h2>Sprzedaż usług według pracowników</h2>${dateFilters(employeeFilter + serviceCategoryFilter + serviceNameFilter)}${summary("Liczba usług", serviceItemsRaw.length, "Wartość usług", serviceItemsRaw.reduce((s, r) => s + (r.revenueValue ?? r.value), 0))}${listTools()}${sectionTable(["Pracownik", "Liczba", "Wartość PLN"], groupRows(serviceItemsRaw, (r) => r.employee))}`,
-      products: `<h2>Sprzedaż produktów</h2>${dateFilters(employeeFilter + productCategoryFilter + productNameFilter)}${summary("Liczba produktów", productItemsRaw.reduce((s, r) => s + r.qty, 0), "Wartość produktów", productItemsRaw.reduce((s, r) => s + (r.revenueValue ?? r.value), 0))}${listTools()}${sectionTable(["Data i godzina", "Pracownik", "Klient", "Kategoria produktu", "Nazwa produktu", "L.szt.", "Wartość"], productRows)}`,
+      products: `<h2>Sprzedaż produktów</h2>${dateFilters(employeeFilter + productCategoryFilter + productNameFilter)}${summary("Liczba produktów", productItemsRaw.reduce((s, r) => s + r.qty, 0), "Wartość produktów", productItemsRaw.reduce((s, r) => s + (r.revenueValue ?? r.value), 0))}${listTools()}${sectionTable(transactionHeaders, productRows)}`,
       productsByName: `<h2>Sprzedaż produktów według nazw</h2>${dateFilters(employeeFilter + productCategoryFilter + productNameFilter)}${summary("Liczba produktów", productItemsRaw.reduce((s, r) => s + r.qty, 0), "Wartość produktów", productItemsRaw.reduce((s, r) => s + (r.revenueValue ?? r.value), 0))}${listTools()}${sectionTable(["Nazwa", "Liczba", "Wartość PLN"], groupRows(productItemsRaw, (r) => r.name))}`,
       productsByCategory: `<h2>Sprzedaż produktów według kategorii</h2>${dateFilters(employeeFilter + productCategoryFilter + productNameFilter)}${summary("Liczba produktów", productItemsRaw.reduce((s, r) => s + r.qty, 0), "Wartość produktów", productItemsRaw.reduce((s, r) => s + (r.revenueValue ?? r.value), 0))}${listTools()}${sectionTable(["Kategoria", "Liczba", "Wartość PLN"], groupRows(productItemsRaw, (r) => r.productCategory))}`,
       productsByEmployee: `<h2>Sprzedaż produktów według pracowników</h2>${dateFilters(employeeFilter + productCategoryFilter + productNameFilter)}${summary("Liczba produktów", productItemsRaw.reduce((s, r) => s + r.qty, 0), "Wartość produktów", productItemsRaw.reduce((s, r) => s + (r.revenueValue ?? r.value), 0))}${listTools()}${sectionTable(["Pracownik", "Liczba", "Wartość PLN"], groupRows(productItemsRaw, (r) => r.employee))}`,
-      passes: `<h2>Sprzedaż - karnety</h2>${dateFilters(employeeFilter)}${summary("Liczba szt.", passItemsRaw.length, "Wartość", passItemsRaw.reduce((s, r) => s + r.value, 0))}${listTools()}${sectionTable(["Data i godzina", "Pracownik", "Klient", "Wartość", "Notatka"], passRows)}`,
+      passes: `<h2>Sprzedaż - karnety</h2>${dateFilters(employeeFilter)}${summary("Liczba szt.", passItemsRaw.length, "Wartość", passItemsRaw.reduce((s, r) => s + r.value, 0))}${listTools()}${sectionTable(transactionHeaders, passRows)}`,
       passesByEmployee: `<h2>Sprzedaż - karnety według pracowników</h2>${dateFilters(employeeFilter)}${summary("Liczba szt.", passItemsRaw.length, "Wartość", passItemsRaw.reduce((s, r) => s + r.value, 0))}${listTools()}${sectionTable(["Pracownik", "Liczba", "Wartość PLN"], groupRows(passItemsRaw, (r) => r.employee))}`,
       payments: `<h2>Płatności</h2>${dateFilters(employeeFilter + paymentTypeFilter)}${summary("Liczba płatności", allPaymentRowsRaw.length, "Wartość płatności", allPaymentRowsRaw.reduce((s, r) => s + r.value, 0))}${listTools()}${sectionTable(["Data i godzina", "Pracownik", "Klient", "Typ płatności", "Wartość (PLN)"], paymentRows)}`,
       paymentsByType: `<h2>Płatności według typów</h2>${dateFilters(employeeFilter + paymentTypeFilter)}${summary("Liczba płatności", allPaymentRowsRaw.length, "Wartość płatności", allPaymentRowsRaw.reduce((s, r) => s + r.value, 0))}${listTools()}${sectionTable(["Typ płatności", "Liczba", "Procent", "Wartość PLN"], paymentByTypeRows)}`
     };
 
     const subnav = `<div class="bm-filter-tabs cm-sales-tabs">${views.map(([id, label]) => `<a class="${currentView === id ? "active" : ""}" href="sales.html?view=${encodeURIComponent(id)}">${escapeHtml(label)}</a>`).join("")}</div>`;
-    area.innerHTML = `<section class="bm-page-card cm-sales-page">${subnav}<div class="cm-sales-view"><div class="cm-sales-view-actions"><button id="salesExportBtn" class="cm-sales-export-btn" type="button">Export</button></div>${sections[currentView] || sections.services}</div></section>`;
+    area.innerHTML = `<section class="bm-page-card cm-sales-page">${subnav}<div class="cm-sales-view"><div class="cm-sales-view-actions"><button id="salesExportBtn" class="cm-sales-export-btn" type="button">Export</button></div>${sections[currentView] || sections.all}</div></section>`;
 
     setupFilters();
     document.querySelector("#salesExportBtn")?.addEventListener("click", exportActiveTable);
