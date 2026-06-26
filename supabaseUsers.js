@@ -415,7 +415,7 @@
       </tr>`).join("");
 
     area.innerHTML = `<section class="bm-page-card cm-users-admin-page">
-      <div class="bm-page-head cm-users-head"><h2>Użytkownicy</h2><div class="bm-actions-row"><button id="showAddAdminUserBtn" type="button">Dodaj użytkownika</button><button id="showEditAdminUserBtn" type="button">Edytuj</button><button id="showDeleteAdminUserBtn" type="button" class="bm-danger-btn">Usuń pracownika</button></div></div>
+      <div class="bm-page-head cm-users-head"><h2>Użytkownicy</h2><div class="bm-actions-row"><button id="showAddAdminUserBtn" type="button">Dodaj użytkownika</button><button id="showEditAdminUserBtn" type="button">Edytuj</button><button id="showDeleteAdminUserBtn" type="button" class="bm-danger-btn">Usuń pracownika (przenieś do archiwum)</button></div></div>
       <div class="bm-table-toolbar cm-limit-toolbar">${moduleLimitDropdownHtml("usersLimit", "50")}</div>
       <div class="bm-table-wrap cm-users-table-wrap"><table class="bm-table cm-users-table"><thead><tr><th>Login</th><th>Imię i nazwisko</th><th>Numer telefonu</th><th>Stanowisko</th><th>Opis stanowiska</th><th>Rola</th><th>Logowanie dozwolone</th></tr></thead><tbody>${rows.map((r) => `<tr>${r.map((c) => `<td>${c}</td>`).join("")}</tr>`).join("")}</tbody></table></div>
       <p class="bm-muted cm-table-count">Pozycje od 1 do ${users.length} z ${users.length} łącznie</p>
@@ -453,8 +453,8 @@
     </section>
 
     <section id="deleteAdminUserPanel" class="bm-page-card bm-collapsible-panel" hidden>
-      <h2>Usuń pracownika</h2>
-      ${users.length ? `<form id="deleteAdminUserForm" class="bm-form-grid"><label class="full">Wybierz pracownika<select name="employeeId" required>${userOptions}</select></label><div class="cm-admin-user-actions"><button type="submit" class="bm-danger-btn">Usuń pracownika</button><button type="button" class="cm-secondary-action" data-modal-cancel="true">Anuluj</button></div></form><p id="deleteAdminUserMessage" class="panel-message"></p>` : `<p class="bm-muted">Brak pracowników do usunięcia.</p>`}
+      <h2>Usuń pracownika (przenieś do archiwum)</h2>
+      ${users.length ? `<form id="deleteAdminUserForm" class="bm-form-grid"><label class="full">Wybierz pracownika<select name="employeeId" required>${userOptions}</select></label><p class="bm-muted full"><strong>Pracownik zostanie przeniesiony do archiwum.</strong><br>Nie będzie mógł się zalogować, zniknie z listy aktywnych użytkowników i nie będzie można przypisywać mu nowych wizyt. Historia wizyt, sprzedaży, raportów i audytu zostanie zachowana.</p><div class="cm-admin-user-actions"><button type="submit" class="bm-danger-btn">Przenieś do archiwum</button><button type="button" class="cm-secondary-action" data-modal-cancel="true">Anuluj</button></div></form><p id="deleteAdminUserMessage" class="panel-message"></p>` : `<p class="bm-muted">Brak pracowników do przeniesienia do archiwum.</p>`}
     </section>`;
 
     setupModuleLimitDropdowns(area);
@@ -739,11 +739,11 @@
         const mode = String(data || "removed");
         const info = mode === "hard_deleted"
           ? "Pracownik usunięty całkowicie z bazy."
-          : "Pracownik usunięty z aktywnych użytkowników. Dane historyczne zostały zachowane anonimowo.";
+          : "Pracownik przeniesiony do archiwum. Dane historyczne zostały zachowane anonimowo.";
         setMessage(msg, info, true);
         rerenderUsersAfterSuccess(600);
       } catch (error) {
-        setMessage(msg, "Błąd usuwania pracownika: " + (error.message || error), false);
+        setMessage(msg, "Błąd przenoszenia pracownika do archiwum: " + (error.message || error), false);
       }
     });
   }
