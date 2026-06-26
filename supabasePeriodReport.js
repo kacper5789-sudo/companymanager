@@ -1,5 +1,5 @@
 // CompanyManager — 048C Raport z okresu Supabase — filtr pracowników + szybkie zakresy
-// period-report.html: realne dane z sales / sale_items / payments / appointments / clients / profiles.
+// period-report.html: realne dane z sales / sale_items / payments / appointments / clients / profiles / passes.
 (function () {
   if (document.body?.dataset?.panelPage !== "periodReport") return;
 
@@ -319,6 +319,18 @@
     if (v.includes("pass") || v.includes("karnet")) return "pass";
     return "service";
   }
+  function rowDateInRange(value, range) {
+    if (!value) return false;
+    const d = new Date(value);
+    if (Number.isNaN(d.getTime())) return false;
+    return d >= new Date(range.startIso) && d < new Date(range.endIso);
+  }
+  function normalizePaymentMethod(value) {
+    const raw = String(value || '').trim();
+    const lower = raw.toLowerCase();
+    if (!raw || lower === 'paid' || lower === 'opłacone' || lower === 'oplacone') return 'gotówka';
+    return raw;
+  }
   function clientName(row) { return [row?.first_name, row?.last_name].filter(Boolean).join(" ").trim() || "(brak)"; }
   function employeeName(row, fallback = "") {
     return row?.full_name || row?.fullName || row?.name || row?.email || fallback || "(brak)";
@@ -356,14 +368,15 @@
 
   async function fetchPeriodData(ctx, range) {
     const sb = window.cmSupabase;
-    const [salesRes, paymentsRes, appointmentsRes, clientsRes, employeesRes] = await Promise.all([
+    const [salesRes, paymentsRes, appointmentsRes, clientsRes, employeesRes, passesRes] = await Promise.all([
       sb.from("sales").select("id,company_id,client_id,employee_id,employee_name,appointment_id,total_gross,total_net,payment_status,payment_method,status,created_at,updated_at").eq("company_id", ctx.companyId).gte("created_at", range.startIso).lt("created_at", range.endIso),
       sb.from("payments").select("id,company_id,sale_id,appointment_id,amount,method,status,paid_at,created_at").eq("company_id", ctx.companyId).gte("created_at", range.startIso).lt("created_at", range.endIso),
       sb.from("appointments").select("id,company_id,client_id,client_name,employee_id,employee_name,service_id,service_name,product_id,product_name,total,price,paid_amount,payment_status,payment_method,status,finished,date,starts_at,appointment_datetime,created_at").eq("company_id", ctx.companyId).gte("date", range.fromIso).lte("date", range.toIso),
       sb.from("clients").select("id,first_name,last_name,created_at,company_id").eq("company_id", ctx.companyId).lte("created_at", range.endIso),
-      sb.from("profiles").select("id,full_name,email,role,company_id").eq("company_id", ctx.companyId)
+      sb.from("profiles").select("id,full_name,email,role,company_id").eq("company_id", ctx.companyId),
+      sb.from("passes").select("id,company_id,customer_id,buyer_client_id,beneficiary_client_id,employee_id,service_id,service_name,pass_type,sale_id,name,number,sale_date,sale_time,valid_until,payment_method,buyer,customer_name,employee_name,value,remaining,total_units,remaining_units,description,status,active,created_at").eq("company_id", ctx.companyId).order("created_at", { ascending: false })
     ]);
-    const errors = [salesRes.error, paymentsRes.error, appointmentsRes.error, clientsRes.error, employeesRes.error].filter(Boolean);
+    const errors = [salesRes.error, paymentsRes.error, appointmentsRes.error, clientsRes.error, employeesRes.error, passesRes.error].filter(Boolean);
     if (errors.length) throw new Error(errors.map(e => e.message).join(" | "));
     const inactiveSaleStatuses = ["void", "deleted", "usunięte", "usuniete", "cancelled", "canceled", "anulowane", "anulowana"];
     const sales = (salesRes.data || []).filter(s => {
@@ -390,6 +403,7 @@
       appointments: appointmentsRes.data || [],
       clients: clientsRes.data || [],
       employees: employeesRes.data || [],
+      passes: passesRes.data || [],
       saleItems
     };
   }
@@ -403,8 +417,37 @@
     const items = data.saleItems.map(item => ({ ...item, sale: saleMap.get(item.sale_id) || {} }));
     const services = items.filter(i => normalizeItemType(i.item_type) === 'service');
     const products = items.filter(i => normalizeItemType(i.item_type) === 'product');
-    const passes = items.filter(i => normalizeItemType(i.item_type) === 'pass');
-    const revenue = data.sales.reduce((sum, sale) => sum + saleValue(sale), 0);
+    const passItemsFromSales = items.filter(i => normalizeItemType(i.item_type) === 'pass');
+    const inactivePassStatuses = ["void", "deleted", "usunięte", "usuniete", "cancelled", "canceled", "anulowane", "anulowana"];
+    const passRowsFromPasses = (data.passes || [])
+      .filter(pass => pass.active !== false && !inactivePassStatuses.includes(String(pass.status || '').toLowerCase()))
+      .filter(pass => rowDateInRange(pass.sale_date || pass.created_at, range))
+      .map(pass => {
+        const linkedSale = pass.sale_id ? saleMap.get(pass.sale_id) || {} : {};
+        return {
+          id: pass.id,
+          sale_id: pass.sale_id || '',
+          item_type: 'pass',
+          name: pass.name || pass.service_name || pass.pass_type || 'Karnet',
+          name_snapshot: pass.name || pass.service_name || pass.pass_type || 'Karnet',
+          quantity: 1,
+          total: Number(pass.value || linkedSale.total_gross || 0),
+          total_price: Number(pass.value || linkedSale.total_gross || 0),
+          created_at: pass.sale_date || linkedSale.created_at || pass.created_at,
+          sale: linkedSale,
+          employee_id: pass.employee_id || linkedSale.employee_id || '',
+          employee_name: pass.employee_name || linkedSale.employee_name || '',
+          payment_method: normalizePaymentMethod(pass.payment_method || linkedSale.payment_method || linkedSale.payment_status || 'gotówka')
+        };
+      });
+    const passSeen = new Set();
+    const passes = passRowsFromPasses.concat(passItemsFromSales).filter(pass => {
+      const key = pass.sale_id ? `sale:${pass.sale_id}` : `pass:${pass.id || pass.name || pass.created_at}`;
+      if (passSeen.has(key)) return false;
+      passSeen.add(key);
+      return true;
+    });
+    const revenue = services.concat(products, passes).reduce((sum, item) => sum + itemValue(item, saleMap), 0);
     const finished = data.appointments.filter(isFinished);
     const planned = data.appointments.filter(a => !isCancelled(a) && !isFinished(a));
     const cancelled = data.appointments.filter(isCancelled);
@@ -427,11 +470,21 @@
     };
 
     const paymentMap = new Map();
-    data.payments.forEach(p => {
-      const method = p.method || 'brak';
+    const addPayment = (methodRaw, valueRaw) => {
+      const method = normalizePaymentMethod(methodRaw || 'gotówka');
+      const value = Number(valueRaw || 0);
+      if (!value) return;
       if (!paymentMap.has(method)) paymentMap.set(method, { method, qty: 0, value: 0 });
       paymentMap.get(method).qty += 1;
-      paymentMap.get(method).value += Number(p.amount || 0);
+      paymentMap.get(method).value += value;
+    };
+    services.concat(products).forEach(item => {
+      const sale = item.sale || {};
+      addPayment(sale.payment_method || sale.payment_status || 'gotówka', itemValue(item, saleMap));
+    });
+    passes.forEach(item => {
+      const sale = item.sale || {};
+      addPayment(item.payment_method || sale.payment_method || sale.payment_status || 'gotówka', itemValue(item, saleMap));
     });
 
     const employeeRowsMap = new Map();
@@ -455,7 +508,7 @@
     items.forEach(item => {
       const sale = item.sale || {};
       const appointment = appointmentById.get(sale.appointment_id) || {};
-      const row = ensureEmployee(sale.employee_id || appointment.employee_id, sale.employee_name, appointment.employee_name);
+      const row = ensureEmployee(item.employee_id || sale.employee_id || appointment.employee_id, item.employee_name || sale.employee_name, appointment.employee_name);
       const type = normalizeItemType(item.item_type);
       const qty = itemQty(item);
       const value = itemValue(item, saleMap);
@@ -465,7 +518,7 @@
     });
 
     return {
-      kpis: { revenue, sales: data.sales.length, newClients: newClients.length, finished: finished.length, planned: planned.length, cancelled: cancelled.length },
+      kpis: { revenue, sales: services.length + products.length + passes.length, newClients: newClients.length, finished: finished.length, planned: planned.length, cancelled: cancelled.length },
       services: groupItems(services),
       products: groupItems(products),
       passes: groupItems(passes),
