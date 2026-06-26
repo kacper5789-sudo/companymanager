@@ -533,7 +533,7 @@
     <section class="bm-page-card" id="walkinFormCard" hidden>
       <h2>Dodaj sprzedaż bez wizyty</h2>
       <form id="walkinForm" class="bm-form-grid bm-wide-form">
-        ${entitySearchFieldHtml({ prefix: "walkinEmployee", type: "employee", name: "employeeId", label: "Pracownik", placeholder: "Szukaj pracownika", hint: "Wpisz imię, email lub telefon pracownika.", addLabel: "Dodaj pracownika", addTarget: "employees.html" })}
+        ${entitySearchFieldHtml({ prefix: "walkinEmployee", type: "employee", name: "employeeId", label: "Pracownik", placeholder: "Szukaj pracownika", hint: "Wpisz imię, email lub telefon pracownika." })}
         ${entitySearchFieldHtml({ prefix: "walkinClient", type: "client", name: "clientId", label: "Klient", placeholder: "Szukaj klienta z bazy", required: true, hint: "Wpisz imię, nazwisko, telefon lub email klienta.", addLabel: "Dodaj klienta", addTarget: "quick-client" })}
         <div class="bm-form-row-2 full">
           <label>Data sprzedaży<input name="saleDate" type="date" value="${isoToday()}" required></label>

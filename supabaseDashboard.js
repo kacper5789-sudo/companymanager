@@ -160,7 +160,8 @@
     return [customerName(client), client?.phone || "", client?.email || ""].filter(Boolean).join(" · ");
   }
 
-  function clientSearchFieldHtml(prefix) {
+  function clientSearchFieldHtml(prefix, options = {}) {
+    const addHtml = options.addLabel && options.addTarget ? `<button type="button" class="bm-secondary-btn cm-related-add-btn" data-open-related="${escapeHtml(options.addTarget)}" data-related-type="client">${escapeHtml(options.addLabel)}</button>` : "";
     return `
       <label>Klient
         <div class="cm-client-search" data-client-search-wrap>
@@ -168,6 +169,7 @@
           <input type="hidden" id="${escapeHtml(prefix)}Id" name="customerId">
           <div class="cm-client-search-results" data-client-results hidden></div>
         </div>
+        ${addHtml}
         <small class="cm-muted">Wpisz imię, nazwisko, telefon lub email klienta.</small>
       </label>`;
   }
@@ -257,6 +259,7 @@
 
   function entitySearchFieldHtml(config) {
     const required = config.required ? 'required' : '';
+    const addHtml = config.addLabel && config.addTarget ? `<button type="button" class="bm-secondary-btn cm-related-add-btn" data-open-related="${escapeHtml(config.addTarget)}" data-related-type="${escapeHtml(config.type)}">${escapeHtml(config.addLabel)}</button>` : "";
     return `
       <label>${escapeHtml(config.label)}
         <div class="cm-client-search cm-entity-search" data-entity-search-wrap>
@@ -264,6 +267,7 @@
           <input type="hidden" id="${escapeHtml(config.prefix)}Id" name="${escapeHtml(config.name)}">
           <div class="cm-client-search-results" data-entity-results hidden></div>
         </div>
+        ${addHtml}
         <small class="cm-muted">${escapeHtml(config.hint || 'Zacznij pisać, aby wyszukać z bazy.')}</small>
       </label>`;
   }
@@ -522,7 +526,7 @@
   }
 
   async function fetchDashboardData(ctx) {
-    const [appointmentsRes, clientsRes, servicesRes, productsRes, usersRes, passesRes, companyRes, workSchedulesRes, daysOffRes] = await Promise.all([
+    const [appointmentsRes, clientsRes, servicesRes, productsRes, usersRes, passesRes, companyRes, workSchedulesRes, daysOffRes, categoriesRes, positionsRes] = await Promise.all([
       window.cmSupabase
         .from("appointments")
         .select("id, company_id, date, time, start_time, end_time, customer_id, client_id, employee_id, employee_name, service_id, service_name, position_id, product_id, product_name, product_price, product_quantity, pass_id, pass_name, pass_used_value, pass_used_units, status, deleted, note, price, total, payment_method, cancellation_reason, cancelled_at, starts_at, ends_at, appointment_datetime, created_at, updated_at")
@@ -563,7 +567,17 @@
         .from("days_off")
         .select("id, company_id, employee_id, employee_name, start_date, end_date, type, status, deleted_at")
         .eq("company_id", ctx.companyId)
-        .is("deleted_at", null)
+        .is("deleted_at", null),
+      window.cmSupabase
+        .from("service_categories")
+        .select("id, company_id, name, active, status, deleted_at")
+        .eq("company_id", ctx.companyId)
+        .order("name", { ascending: true }),
+      window.cmSupabase
+        .from("positions")
+        .select("id, company_id, name, active, status, deleted_at")
+        .eq("company_id", ctx.companyId)
+        .order("name", { ascending: true })
     ]);
     if (appointmentsRes.error) throw appointmentsRes.error;
     if (clientsRes.error) throw clientsRes.error;
@@ -577,6 +591,8 @@
     if (companyRes.error) throw companyRes.error;
     if (workSchedulesRes.error) console.warn("Dashboard work schedules skipped", workSchedulesRes.error.message || workSchedulesRes.error);
     if (daysOffRes.error) console.warn("Dashboard days off skipped", daysOffRes.error.message || daysOffRes.error);
+    if (categoriesRes.error) console.warn("Dashboard service categories skipped", categoriesRes.error.message || categoriesRes.error);
+    if (positionsRes.error) console.warn("Dashboard positions skipped", positionsRes.error.message || positionsRes.error);
     return {
       company: companyRes.data || {},
       workSchedules: workSchedulesRes.data || [],
@@ -585,6 +601,8 @@
       clients: (clientsRes.data || []).filter(isActiveClient),
       services: (servicesRes.data || []).filter((item) => item.active !== false),
       products: (productsRes.data || []).filter((item) => item.active !== false),
+      categories: (categoriesRes.data || []).filter(activeGenericItem),
+      positions: (positionsRes.data || []).filter(activeGenericItem),
       users: uniqueUsers(safeUsersData),
       passes: (passesRes.data || []).filter((item) => item.status !== "usunięte" && item.status !== "zrealizowane")
     };
@@ -1002,10 +1020,10 @@
           <label>Data<input type="date" name="date" value="${escapeHtml(selectedDate)}" required></label>
           <label>Od<select name="start">${timeOptions(dashboardSettings(data).start)}</select></label>
           <label>Do<select name="end">${timeOptions(timeFromMinutes((minutesFromTime(dashboardSettings(data).start) || 480) + dashboardSettings(data).duration))}</select></label>
-          ${clientSearchFieldHtml("dashAddClient")}
+          ${clientSearchFieldHtml("dashAddClient", { addLabel: "Dodaj klienta", addTarget: "quick-client" })}
           ${entitySearchFieldHtml({ prefix: "dashEmployee", type: "employee", name: "employeeId", label: "Pracownik", placeholder: "Szukaj pracownika", required: true, hint: "Wpisz imię, email lub telefon pracownika." })}
-          ${entitySearchFieldHtml({ prefix: "dashService", type: "service", name: "serviceId", label: "Usługi", placeholder: "Szukaj usługi", hint: "Wpisz nazwę usługi lub cenę." })}
-          ${entitySearchFieldHtml({ prefix: "dashProduct", type: "product", name: "productId", label: "Zakup produktów", placeholder: "Szukaj produktu", hint: "Wpisz nazwę produktu, SKU, kod lub cenę." })}
+          ${entitySearchFieldHtml({ prefix: "dashService", type: "service", name: "serviceId", label: "Usługi", placeholder: "Szukaj usługi", hint: "Wpisz nazwę usługi lub cenę.", addLabel: "Dodaj usługę", addTarget: "quick-service" })}
+          ${entitySearchFieldHtml({ prefix: "dashProduct", type: "product", name: "productId", label: "Zakup produktów", placeholder: "Szukaj produktu", hint: "Wpisz nazwę produktu, SKU, kod lub cenę.", addLabel: "Dodaj produkt", addTarget: "quick-product" })}
           <label class="bm-full">Karnet klienta<select name="passId"><option value="">Najpierw wybierz klienta</option></select><small class="bm-muted">Karnet pojawi się po wyborze klienta. Karnet usługowy rozlicza usługę, produkty zostają doliczone normalnie.</small></label>
           <label>Razem do zapłaty<input name="total" value="0.00" readonly></label>
           <label>Płatność<select name="payment">${paymentOptionsHtml}</select></label>
@@ -1022,10 +1040,10 @@
           <label>Data<input type="date" name="date" value="${escapeHtml(selectedDate)}" required></label>
           <label>Od<select name="start">${timeOptions()}</select></label>
           <label>Do<select name="end">${timeOptions()}</select></label>
-          ${clientSearchFieldHtml("dashEditClient")}
+          ${clientSearchFieldHtml("dashEditClient", { addLabel: "Dodaj klienta", addTarget: "quick-client" })}
           ${entitySearchFieldHtml({ prefix: "dashEditEmployee", type: "employee", name: "employeeId", label: "Pracownik", placeholder: "Szukaj pracownika", required: true, hint: "Wpisz imię, email lub telefon pracownika." })}
-          ${entitySearchFieldHtml({ prefix: "dashEditService", type: "service", name: "serviceId", label: "Usługi", placeholder: "Szukaj usługi", hint: "Wpisz nazwę usługi lub cenę." })}
-          ${entitySearchFieldHtml({ prefix: "dashEditProduct", type: "product", name: "productId", label: "Zakup produktów", placeholder: "Szukaj produktu", hint: "Wpisz nazwę produktu, SKU, kod lub cenę." })}
+          ${entitySearchFieldHtml({ prefix: "dashEditService", type: "service", name: "serviceId", label: "Usługi", placeholder: "Szukaj usługi", hint: "Wpisz nazwę usługi lub cenę.", addLabel: "Dodaj usługę", addTarget: "quick-service" })}
+          ${entitySearchFieldHtml({ prefix: "dashEditProduct", type: "product", name: "productId", label: "Zakup produktów", placeholder: "Szukaj produktu", hint: "Wpisz nazwę produktu, SKU, kod lub cenę.", addLabel: "Dodaj produkt", addTarget: "quick-product" })}
           <label class="bm-full">Karnet klienta<select name="passId"><option value="">Najpierw wybierz klienta</option></select><small class="bm-muted">Karnet pojawi się po wyborze klienta. Karnet usługowy rozlicza usługę, produkty zostają doliczone normalnie.</small></label>
           <label>Razem do zapłaty<input name="total" value="0.00" readonly></label>
           <label>Płatność<select name="payment">${paymentOptionsHtml}</select></label>
@@ -1035,6 +1053,54 @@
         <p id="dashboardEditVisitMessage" class="panel-message"></p>
       </section>
 
+
+
+      <section class="bm-page-card bm-appointment-form" id="dashboardQuickClientCard" data-parent-panel="#dashboardAppointmentForm" hidden>
+        <div class="bm-page-head"><h2>Dodaj klienta</h2></div>
+        <p class="bm-muted">Klient zapisze się w module Klienci i od razu zostanie wybrany w formularzu grafiku.</p>
+        <form id="dashboardQuickClientForm" class="bm-form-grid bm-wide-form">
+          <label>Imię<input name="firstName" placeholder="Imię" required></label>
+          <label>Nazwisko<input name="lastName" placeholder="Nazwisko"></label>
+          <label>Telefon<input name="phone" placeholder="+48..." required></label>
+          <label>Email<input name="email" type="email" placeholder="email@firma.pl"></label>
+          <label>Płeć<select name="gender"><option value="">Nie wybrano</option><option value="female">Kobieta</option><option value="male">Mężczyzna</option></select></label>
+          <label>Data urodzenia<input name="birthDate" type="date"></label>
+          <label class="bm-full">Notatka<textarea name="notes" placeholder="Notatka o kliencie"></textarea></label>
+          <div class="bm-full cm-modal-actions"><button type="button" class="bm-secondary-btn" data-dashboard-modal-cancel="true">Anuluj</button><button type="submit">Zapisz klienta</button></div>
+        </form>
+        <p id="dashboardQuickClientMessage" class="panel-message"></p>
+      </section>
+
+      <section class="bm-page-card bm-appointment-form" id="dashboardQuickProductCard" data-parent-panel="#dashboardAppointmentForm" hidden>
+        <div class="bm-page-head"><h2>Dodaj produkt</h2></div>
+        <p class="bm-muted">Produkt zapisze się w module Produkty i od razu zostanie wybrany w formularzu grafiku.</p>
+        <form id="dashboardQuickProductForm" class="bm-form-grid bm-wide-form">
+          <label>Nazwa produktu<input name="name" placeholder="Nazwa produktu" required></label>
+          <label>Kategoria<input name="category" placeholder="np. Kosmetyki"></label>
+          <label>Cena sprzedaży<input name="price" type="number" min="0" step="0.01" placeholder="0.00" required></label>
+          <label>Ilość / stan<input name="unitStock" type="number" min="0" step="1" value="0"></label>
+          <label>Dostawca<input name="supplier" placeholder="Dostawca"></label>
+          <label class="bm-full">Opis<textarea name="description" placeholder="Opis produktu"></textarea></label>
+          <div class="bm-full cm-modal-actions"><button type="button" class="bm-secondary-btn" data-dashboard-modal-cancel="true">Anuluj</button><button type="submit">Zapisz produkt</button></div>
+        </form>
+        <p id="dashboardQuickProductMessage" class="panel-message"></p>
+      </section>
+
+      <section class="bm-page-card bm-appointment-form" id="dashboardQuickServiceCard" data-parent-panel="#dashboardAppointmentForm" hidden>
+        <div class="bm-page-head"><h2>Dodaj usługę</h2></div>
+        <p class="bm-muted">Usługa zapisze się w module Usługi i od razu zostanie wybrana w formularzu grafiku.</p>
+        <form id="dashboardQuickServiceForm" class="bm-form-grid bm-wide-form">
+          <label>Kategoria usług<select name="categoryId"><option value="">Wybierz kategorię</option>${quickServiceCategoryOptions}</select></label>
+          <label>Lub nowa kategoria<input name="newCategory" placeholder="np. Strzyżenie"></label>
+          <label>Nazwa usługi<input name="name" placeholder="Nazwa usługi" required></label>
+          <label>Stanowisko pracy<select name="positionId" required><option value="">Wybierz stanowisko</option>${quickServicePositionOptions}</select></label>
+          <div class="bm-form-row-2 bm-full"><label>Czas — godziny<input name="durationHours" type="number" min="0" step="1" value="0" required></label><label>Czas — minuty<input name="durationMinutes" type="number" min="0" max="59" step="1" value="30" required></label></div>
+          <label>Cena usługi<input name="price" type="number" min="0" step="0.01" placeholder="0.00" required></label>
+          <label class="bm-full">Opis<textarea name="description" placeholder="Opis usługi"></textarea></label>
+          <div class="bm-full cm-modal-actions"><button type="button" class="bm-secondary-btn" data-dashboard-modal-cancel="true">Anuluj</button><button type="submit">Zapisz usługę</button></div>
+        </form>
+        <p id="dashboardQuickServiceMessage" class="panel-message"></p>
+      </section>
       <section class="bm-page-card bm-appointment-form" id="dashboardFinishVisitPanel" hidden>
         <div class="bm-page-head"><h2>Zakończ wizytę</h2></div>
         <form id="dashboardFinishVisitForm" class="bm-form-grid">
@@ -1067,9 +1133,13 @@
 
     const addPanel = document.querySelector("#dashboardAppointmentForm");
     const editPanel = document.querySelector("#dashboardEditVisitPanel");
+    const quickClientPanel = document.querySelector("#dashboardQuickClientCard");
+    const quickProductPanel = document.querySelector("#dashboardQuickProductCard");
+    const quickServicePanel = document.querySelector("#dashboardQuickServiceCard");
     const finishPanel = document.querySelector("#dashboardFinishVisitPanel");
     const cancelPanel = document.querySelector("#dashboardCancelVisitPanel");
-    const panels = [addPanel, editPanel, finishPanel, cancelPanel];
+    const panels = [addPanel, editPanel, quickClientPanel, quickProductPanel, quickServicePanel, finishPanel, cancelPanel];
+    let relatedParentPanel = addPanel;
 
     document.querySelector("#dashPrevDay")?.addEventListener("click", () => { window.location.href = `dashboard.html?date=${encodeURIComponent(addDays(selectedDate, -1))}`; });
     document.querySelector("#dashNextDay")?.addEventListener("click", () => { window.location.href = `dashboard.html?date=${encodeURIComponent(addDays(selectedDate, 1))}`; });
@@ -1139,6 +1209,140 @@
     updateWorkerVisibility(false);
     setupClientSearchFields(data.clients);
     setupEntitySearchFields(data);
+
+    function returnToRelatedParent(card) {
+      const parent = card?.dataset?.parentPanel ? document.querySelector(card.dataset.parentPanel) : relatedParentPanel;
+      if (window.cmReturnToParentModalPanel) window.cmReturnToParentModalPanel(card, parent || relatedParentPanel, panels);
+      else showOnly(parent || relatedParentPanel, panels);
+    }
+    function openRelatedPanel(card, button) {
+      relatedParentPanel = button?.closest("section.bm-page-card") || addPanel;
+      if (card) card.dataset.parentPanel = relatedParentPanel?.id ? `#${relatedParentPanel.id}` : "#dashboardAppointmentForm";
+      showOnly(card, panels);
+    }
+    function setHiddenSearchValue(parent, fieldName, row) {
+      const form = parent?.querySelector("form:not([hidden])") || parent?.querySelector("form");
+      if (!form || !row?.id) return;
+      const hidden = form.elements[fieldName];
+      let input = null;
+      if (fieldName === "customerId") input = form.querySelector(`[data-client-hidden="${CSS.escape(hidden?.id || "")}"]`);
+      else input = form.querySelector(`[data-entity-name="${CSS.escape(fieldName)}"]`);
+      if (hidden) {
+        hidden.value = row.id;
+        hidden.dataset.label = row.label || row.name || "";
+        hidden.dataset.name = row.name || row.label || "";
+        hidden.dataset.price = row.price != null ? String(row.price) : "";
+        hidden.dispatchEvent(new Event("change", { bubbles: true }));
+        hidden.dispatchEvent(new Event("input", { bubbles: true }));
+      }
+      if (input) input.value = row.label || row.name || "";
+      bindDashboardTotalCalculator(form, lookups);
+    }
+    document.querySelectorAll('[data-open-related="quick-client"]').forEach((button) => button.addEventListener("click", () => openRelatedPanel(quickClientPanel, button)));
+    document.querySelectorAll('[data-open-related="quick-product"]').forEach((button) => button.addEventListener("click", () => openRelatedPanel(quickProductPanel, button)));
+    document.querySelectorAll('[data-open-related="quick-service"]').forEach((button) => button.addEventListener("click", () => openRelatedPanel(quickServicePanel, button)));
+    document.querySelectorAll('[data-dashboard-modal-cancel="true"]').forEach((button) => button.addEventListener("click", (event) => { event.preventDefault(); returnToRelatedParent(button.closest("section.bm-page-card")); }));
+
+    document.querySelector("#dashboardQuickClientForm")?.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const form = event.currentTarget;
+      if (form.dataset.saving === "1") return;
+      form.dataset.saving = "1";
+      const submit = form.querySelector('button[type="submit"]');
+      if (submit) submit.disabled = true;
+      try {
+        const fd = new FormData(form);
+        const firstName = String(fd.get("firstName") || "").trim();
+        const lastName = String(fd.get("lastName") || "").trim();
+        const phone = String(fd.get("phone") || "").trim();
+        const email = String(fd.get("email") || "").trim();
+        if (!firstName) throw new Error("Podaj imię klienta.");
+        if (!phone) throw new Error("Podaj telefon klienta.");
+        const fullName = [firstName, lastName].filter(Boolean).join(" ");
+        const payload = { company_id: ctx.companyId, first_name: firstName, last_name: lastName, full_name: fullName, phone, email: email || null, gender: String(fd.get("gender") || "") || null, birth_date: String(fd.get("birthDate") || "") || null, notes: String(fd.get("notes") || "").trim() || null, active: true, updated_at: new Date().toISOString() };
+        const { data: insertedClient, error } = await window.cmSupabase.from("clients").insert(payload).select("*").single();
+        if (error) throw error;
+        data.clients.push(insertedClient);
+        await window.cmUndo?.record({ module: "clients", actionType: "insert", targetTable: "clients", targetId: insertedClient?.id, afterData: insertedClient || payload, companyId: ctx.companyId });
+        setHiddenSearchValue(relatedParentPanel, "customerId", { id: insertedClient.id, label: clientSearchText(insertedClient), name: customerName(insertedClient) });
+        setMessage("#dashboardQuickClientMessage", "Klient zapisany i wybrany w formularzu.", true);
+        form.reset();
+        returnToRelatedParent(quickClientPanel);
+      } catch (error) {
+        setMessage("#dashboardQuickClientMessage", "Błąd zapisu klienta: " + (error.message || JSON.stringify(error)), false);
+      } finally { form.dataset.saving = "0"; if (submit) submit.disabled = false; }
+    });
+
+    document.querySelector("#dashboardQuickProductForm")?.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const form = event.currentTarget;
+      if (form.dataset.saving === "1") return;
+      form.dataset.saving = "1";
+      const submit = form.querySelector('button[type="submit"]');
+      if (submit) submit.disabled = true;
+      try {
+        const fd = new FormData(form);
+        const name = String(fd.get("name") || "").trim();
+        const price = Number(fd.get("price") || 0);
+        if (!name) throw new Error("Podaj nazwę produktu.");
+        if (price <= 0) throw new Error("Podaj cenę produktu większą od 0.");
+        const payload = { company_id: ctx.companyId, name, category: String(fd.get("category") || "").trim(), price, unit_stock: Number(fd.get("unitStock") || 0), package_stock: 0, low_package_stock: 0, units_per_package: 0, sale_only: true, supplier: String(fd.get("supplier") || "").trim(), description: String(fd.get("description") || "").trim(), include_commission: false, include_discount: false, active: true, updated_at: new Date().toISOString() };
+        const { data: insertedProduct, error } = await window.cmSupabase.from("products").insert(payload).select("*").single();
+        if (error) throw error;
+        data.products.push(insertedProduct);
+        lookups.productsById[insertedProduct.id] = insertedProduct;
+        await window.cmUndo?.record({ module: "products", actionType: "insert", targetTable: "products", targetId: insertedProduct?.id, afterData: insertedProduct || payload, companyId: ctx.companyId });
+        setHiddenSearchValue(relatedParentPanel, "productId", { id: insertedProduct.id, label: `${productName(insertedProduct)} — ${price.toFixed(2).replace('.00','')} PLN`, name: productName(insertedProduct), price });
+        setMessage("#dashboardQuickProductMessage", "Produkt zapisany i wybrany w formularzu.", true);
+        form.reset();
+        returnToRelatedParent(quickProductPanel);
+      } catch (error) {
+        setMessage("#dashboardQuickProductMessage", "Błąd zapisu produktu: " + (error.message || JSON.stringify(error)), false);
+      } finally { form.dataset.saving = "0"; if (submit) submit.disabled = false; }
+    });
+
+    document.querySelector("#dashboardQuickServiceForm")?.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const form = event.currentTarget;
+      if (form.dataset.saving === "1") return;
+      form.dataset.saving = "1";
+      const submit = form.querySelector('button[type="submit"]');
+      if (submit) submit.disabled = true;
+      try {
+        const fd = new FormData(form);
+        const name = String(fd.get("name") || "").trim();
+        let categoryId = String(fd.get("categoryId") || "").trim();
+        const newCategory = String(fd.get("newCategory") || "").trim();
+        const positionId = String(fd.get("positionId") || "").trim();
+        const durationHours = Number(fd.get("durationHours") || 0);
+        const durationMinutes = Number(fd.get("durationMinutes") || 0);
+        const price = Number(fd.get("price") || 0);
+        if (!name) throw new Error("Podaj nazwę usługi.");
+        if (!categoryId && !newCategory) throw new Error("Wybierz kategorię albo wpisz nową.");
+        if (!positionId) throw new Error("Wybierz stanowisko pracy.");
+        if (durationHours <= 0 && durationMinutes <= 0) throw new Error("Czas usługi musi być większy niż 0.");
+        if (price <= 0) throw new Error("Podaj cenę usługi większą od 0.");
+        if (!categoryId && newCategory) {
+          const { data: category, error: categoryError } = await window.cmSupabase.from("service_categories").insert({ company_id: ctx.companyId, name: newCategory, active: true, updated_at: new Date().toISOString() }).select("*").single();
+          if (categoryError) throw categoryError;
+          categoryId = category?.id || "";
+          if (category) data.categories.push(category);
+        }
+        const payload = { company_id: ctx.companyId, category_id: categoryId, name, duration_hours: durationHours, duration_minutes: durationMinutes, price_from: price, price_to: price, position_id: positionId, description: String(fd.get("description") || "").trim() || null, show_online: false, prevent_overlap: false, deposit: 0, include_commission: false, include_discount: false, active: true, updated_at: new Date().toISOString() };
+        const { data: insertedService, error } = await window.cmSupabase.from("services").insert(payload).select("*").single();
+        if (error) throw error;
+        data.services.push(insertedService);
+        lookups.servicesById[insertedService.id] = insertedService;
+        await window.cmUndo?.record({ module: "services", actionType: "insert", targetTable: "services", targetId: insertedService?.id, afterData: insertedService || payload, companyId: ctx.companyId });
+        setHiddenSearchValue(relatedParentPanel, "serviceId", { id: insertedService.id, label: `${insertedService.name || name} — ${price.toFixed(2).replace('.00','')} PLN`, name: insertedService.name || name, price });
+        setMessage("#dashboardQuickServiceMessage", "Usługa zapisana i wybrana w formularzu.", true);
+        form.reset();
+        returnToRelatedParent(quickServicePanel);
+      } catch (error) {
+        setMessage("#dashboardQuickServiceMessage", "Błąd zapisu usługi: " + (error.message || JSON.stringify(error)), false);
+      } finally { form.dataset.saving = "0"; if (submit) submit.disabled = false; }
+    });
+
     function bindPassOptions(form) {
       if (!form || !form.elements.passId) return;
       const refresh = () => {

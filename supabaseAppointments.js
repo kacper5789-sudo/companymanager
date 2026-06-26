@@ -896,7 +896,7 @@
           <label>Od<select name="start">${timeOptions("10:00")}</select></label>
           <label>Do<select name="end">${timeOptions("10:30")}</select></label>
           ${clientSearchFieldHtml("visitClient")}
-          ${entitySearchFieldHtml({ prefix: "visitEmployee", type: "employee", name: "employeeId", label: "Pracownik", placeholder: "Szukaj pracownika", required: true, hint: "Wpisz imię, email lub telefon pracownika.", addLabel: "Dodaj pracownika", addTarget: "employees.html" })}
+          ${entitySearchFieldHtml({ prefix: "visitEmployee", type: "employee", name: "employeeId", label: "Pracownik", placeholder: "Szukaj pracownika", required: true, hint: "Wpisz imię, email lub telefon pracownika." })}
           ${entitySearchFieldHtml({ prefix: "visitService", type: "service", name: "serviceId", label: "Usługi", placeholder: "Szukaj usługi", hint: "Wpisz nazwę usługi lub cenę.", addLabel: "Dodaj usługę", addTarget: "quick-service" })}
           ${entitySearchFieldHtml({ prefix: "visitProduct", type: "product", name: "productId", label: "Zakup produktów", placeholder: "Szukaj produktu", hint: "Wpisz nazwę produktu, SKU, kod lub cenę.", addLabel: "Dodaj produkt", addTarget: "quick-product" })}
           <label class="bm-full">Karnet klienta<select name="passId"><option value="">Najpierw wybierz klienta</option></select><small class="bm-muted">Karnet pojawi się po wyborze klienta. Karnet usługowy rozlicza usługę, produkty zostają doliczone normalnie.</small></label>
@@ -918,7 +918,7 @@
           <label>Od<select name="start">${timeOptions()}</select></label>
           <label>Do<select name="end">${timeOptions()}</select></label>
           ${clientSearchFieldHtml("visitEditClient")}
-          ${entitySearchFieldHtml({ prefix: "visitEditEmployee", type: "employee", name: "employeeId", label: "Pracownik", placeholder: "Szukaj pracownika", required: true, hint: "Wpisz imię, email lub telefon pracownika.", addLabel: "Dodaj pracownika", addTarget: "employees.html" })}
+          ${entitySearchFieldHtml({ prefix: "visitEditEmployee", type: "employee", name: "employeeId", label: "Pracownik", placeholder: "Szukaj pracownika", required: true, hint: "Wpisz imię, email lub telefon pracownika." })}
           ${entitySearchFieldHtml({ prefix: "visitEditService", type: "service", name: "serviceId", label: "Usługi", placeholder: "Szukaj usługi", hint: "Wpisz nazwę usługi lub cenę.", addLabel: "Dodaj usługę", addTarget: "quick-service" })}
           ${entitySearchFieldHtml({ prefix: "visitEditProduct", type: "product", name: "productId", label: "Zakup produktów", placeholder: "Szukaj produktu", hint: "Wpisz nazwę produktu, SKU, kod lub cenę.", addLabel: "Dodaj produkt", addTarget: "quick-product" })}
           <label class="bm-full">Karnet klienta<select name="passId"><option value="">Najpierw wybierz klienta</option></select><small class="bm-muted">Karnet pojawi się po wyborze klienta. Karnet usługowy rozlicza usługę, produkty zostają doliczone normalnie.</small></label>
