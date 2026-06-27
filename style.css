@@ -8953,3 +8953,192 @@ html[data-cm-theme="goldWhite"] .bm-left-info-panel .cm-theme-menu,
     left:0!important;
   }
 }
+
+/* CompanyManager v252 — Gold/White form/modal dark background purge
+   Scope: ONLY html[data-cm-theme="goldWhite"]. Original skin untouched.
+   Purpose: remove leftover navy/black modal/form backgrounds from original skin. */
+html[data-cm-theme="goldWhite"]{
+  --cm-gw-form-bg:linear-gradient(180deg,rgba(255,253,247,.98),rgba(255,246,220,.94));
+  --cm-gw-form-bg-strong:linear-gradient(135deg,rgba(255,255,255,.98),rgba(254,243,199,.94) 58%,rgba(251,191,36,.18));
+  --cm-gw-form-border:rgba(180,132,35,.34);
+  --cm-gw-form-shadow:0 24px 70px rgba(120,86,18,.18), inset 0 1px 0 rgba(255,255,255,.88);
+}
+
+/* Main offender: all centered/inline forms and modal cards */
+html[data-cm-theme="goldWhite"] body .cm-as-modal,
+html[data-cm-theme="goldWhite"] body .bm-page-card.cm-as-modal,
+html[data-cm-theme="goldWhite"] body .bm-card.cm-as-modal,
+html[data-cm-theme="goldWhite"] body .panel-card.cm-as-modal,
+html[data-cm-theme="goldWhite"] body .form-card.cm-as-modal,
+html[data-cm-theme="goldWhite"] body .cm-modal-card,
+html[data-cm-theme="goldWhite"] body .cm-payment-method-modal-card,
+html[data-cm-theme="goldWhite"] body .bm-modal,
+html[data-cm-theme="goldWhite"] body .bm-modal-card,
+html[data-cm-theme="goldWhite"] body .bm-modal-content,
+html[data-cm-theme="goldWhite"] body .modal,
+html[data-cm-theme="goldWhite"] body .modal-card,
+html[data-cm-theme="goldWhite"] body .modal-content,
+html[data-cm-theme="goldWhite"] body .popover,
+html[data-cm-theme="goldWhite"] body .dialog,
+html[data-cm-theme="goldWhite"] body .dialog-card,
+html[data-cm-theme="goldWhite"] body .bm-appointment-form,
+html[data-cm-theme="goldWhite"] body .bm-nested-form,
+html[data-cm-theme="goldWhite"] body .bm-nested-modal,
+html[data-cm-theme="goldWhite"] body .cm-centered-form-card,
+html[data-cm-theme="goldWhite"] body .cm-form-card,
+html[data-cm-theme="goldWhite"] body .products-module + .bm-page-card,
+html[data-cm-theme="goldWhite"] body [id*="FormCard"],
+html[data-cm-theme="goldWhite"] body [id*="EditPanel"],
+html[data-cm-theme="goldWhite"] body [id*="DeletePanel"],
+html[data-cm-theme="goldWhite"] body [id*="DeleteCard"],
+html[data-cm-theme="goldWhite"] body [id*="Modal"]:not(.cm-modal-backdrop),
+html[data-cm-theme="goldWhite"] body [class*="modal-card"],
+html[data-cm-theme="goldWhite"] body [class*="modal-content"]{
+  background:var(--cm-gw-form-bg-strong)!important;
+  background-color:#fffaf0!important;
+  color:var(--cm-gw-ink,#0b1220)!important;
+  border:1px solid var(--cm-gw-form-border)!important;
+  box-shadow:var(--cm-gw-form-shadow)!important;
+  text-shadow:none!important;
+  backdrop-filter:blur(10px) saturate(1.08)!important;
+  -webkit-backdrop-filter:blur(10px) saturate(1.08)!important;
+}
+
+/* Form inner grids/rows were inheriting dark navy blocks */
+html[data-cm-theme="goldWhite"] body .bm-form-grid,
+html[data-cm-theme="goldWhite"] body .bm-form-row,
+html[data-cm-theme="goldWhite"] body .bm-form-row-2,
+html[data-cm-theme="goldWhite"] body .bm-delete-row,
+html[data-cm-theme="goldWhite"] body .bm-wide-form,
+html[data-cm-theme="goldWhite"] body .panel-form-grid,
+html[data-cm-theme="goldWhite"] body .cm-modal-actions,
+html[data-cm-theme="goldWhite"] body .field,
+html[data-cm-theme="goldWhite"] body .fields,
+html[data-cm-theme="goldWhite"] body .section,
+html[data-cm-theme="goldWhite"] body .form-section,
+html[data-cm-theme="goldWhite"] body .cm-form-section{
+  background:transparent!important;
+  color:var(--cm-gw-ink,#0b1220)!important;
+  text-shadow:none!important;
+}
+
+/* Sticky headers inside popups/forms */
+html[data-cm-theme="goldWhite"] body .cm-as-modal .bm-page-head,
+html[data-cm-theme="goldWhite"] body .cm-as-modal .panel-head,
+html[data-cm-theme="goldWhite"] body .cm-as-modal .form-head,
+html[data-cm-theme="goldWhite"] body .bm-modal .bm-page-head,
+html[data-cm-theme="goldWhite"] body .modal .bm-page-head,
+html[data-cm-theme="goldWhite"] body .cm-modal-card h3,
+html[data-cm-theme="goldWhite"] body .cm-payment-method-modal-card h3,
+html[data-cm-theme="goldWhite"] body [id*="FormCard"] h2,
+html[data-cm-theme="goldWhite"] body [id*="DeleteCard"] h2{
+  background:transparent!important;
+  color:var(--cm-gw-ink,#0b1220)!important;
+  border-color:rgba(180,132,35,.18)!important;
+  text-shadow:none!important;
+}
+
+/* Every label/title in forms must be warm brown, not blue/white */
+html[data-cm-theme="goldWhite"] body .cm-as-modal label,
+html[data-cm-theme="goldWhite"] body .cm-as-modal legend,
+html[data-cm-theme="goldWhite"] body .cm-as-modal h2,
+html[data-cm-theme="goldWhite"] body .cm-as-modal h3,
+html[data-cm-theme="goldWhite"] body .bm-modal label,
+html[data-cm-theme="goldWhite"] body .modal label,
+html[data-cm-theme="goldWhite"] body .bm-form-grid label,
+html[data-cm-theme="goldWhite"] body .bm-form-row label,
+html[data-cm-theme="goldWhite"] body .bm-form-row-2 label,
+html[data-cm-theme="goldWhite"] body .panel-form-grid label,
+html[data-cm-theme="goldWhite"] body .field label,
+html[data-cm-theme="goldWhite"] body .cm-payment-method-modal-card label,
+html[data-cm-theme="goldWhite"] body .cm-modal-card label,
+html[data-cm-theme="goldWhite"] body [id*="FormCard"] label,
+html[data-cm-theme="goldWhite"] body [id*="DeleteCard"] label{
+  color:var(--cm-gw-brown,#7c2d12)!important;
+  font-weight:900!important;
+  text-shadow:none!important;
+}
+
+/* Form inputs/selects/time fields: light, not dark, with light native controls */
+html[data-cm-theme="goldWhite"] body .cm-as-modal input:not([type="checkbox"]):not([type="radio"]),
+html[data-cm-theme="goldWhite"] body .cm-as-modal select,
+html[data-cm-theme="goldWhite"] body .cm-as-modal textarea,
+html[data-cm-theme="goldWhite"] body .bm-modal input:not([type="checkbox"]):not([type="radio"]),
+html[data-cm-theme="goldWhite"] body .bm-modal select,
+html[data-cm-theme="goldWhite"] body .bm-modal textarea,
+html[data-cm-theme="goldWhite"] body .modal input:not([type="checkbox"]):not([type="radio"]),
+html[data-cm-theme="goldWhite"] body .modal select,
+html[data-cm-theme="goldWhite"] body .modal textarea,
+html[data-cm-theme="goldWhite"] body .bm-form-grid input:not([type="checkbox"]):not([type="radio"]),
+html[data-cm-theme="goldWhite"] body .bm-form-grid select,
+html[data-cm-theme="goldWhite"] body .bm-form-grid textarea,
+html[data-cm-theme="goldWhite"] body .bm-form-row input:not([type="checkbox"]):not([type="radio"]),
+html[data-cm-theme="goldWhite"] body .bm-form-row select,
+html[data-cm-theme="goldWhite"] body .bm-form-row textarea,
+html[data-cm-theme="goldWhite"] body .bm-form-row-2 input:not([type="checkbox"]):not([type="radio"]),
+html[data-cm-theme="goldWhite"] body .bm-form-row-2 select,
+html[data-cm-theme="goldWhite"] body .bm-form-row-2 textarea,
+html[data-cm-theme="goldWhite"] body .panel-form-grid input:not([type="checkbox"]):not([type="radio"]),
+html[data-cm-theme="goldWhite"] body .panel-form-grid select,
+html[data-cm-theme="goldWhite"] body .panel-form-grid textarea,
+html[data-cm-theme="goldWhite"] body [id*="FormCard"] input:not([type="checkbox"]):not([type="radio"]),
+html[data-cm-theme="goldWhite"] body [id*="FormCard"] select,
+html[data-cm-theme="goldWhite"] body [id*="FormCard"] textarea,
+html[data-cm-theme="goldWhite"] body [id*="DeleteCard"] input:not([type="checkbox"]):not([type="radio"]),
+html[data-cm-theme="goldWhite"] body [id*="DeleteCard"] select,
+html[data-cm-theme="goldWhite"] body [id*="DeleteCard"] textarea{
+  background:linear-gradient(180deg,#ffffff,#fffaf0)!important;
+  color:var(--cm-gw-ink,#0b1220)!important;
+  border:1px solid var(--cm-gw-form-border)!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.98), 0 8px 18px rgba(120,86,18,.06)!important;
+  color-scheme:light!important;
+}
+html[data-cm-theme="goldWhite"] body input[type="time"],
+html[data-cm-theme="goldWhite"] body input[type="date"],
+html[data-cm-theme="goldWhite"] body input[type="datetime-local"]{
+  color-scheme:light!important;
+}
+html[data-cm-theme="goldWhite"] body input[type="time"]::-webkit-calendar-picker-indicator,
+html[data-cm-theme="goldWhite"] body input[type="date"]::-webkit-calendar-picker-indicator,
+html[data-cm-theme="goldWhite"] body input[type="datetime-local"]::-webkit-calendar-picker-indicator{
+  filter:sepia(1) saturate(2.2) hue-rotate(350deg) brightness(.72)!important;
+  opacity:.85!important;
+}
+
+/* Inline form buttons: keep save gold, cancel cream, delete red */
+html[data-cm-theme="goldWhite"] body .cm-as-modal button,
+html[data-cm-theme="goldWhite"] body .bm-modal button,
+html[data-cm-theme="goldWhite"] body .modal button,
+html[data-cm-theme="goldWhite"] body [id*="FormCard"] button,
+html[data-cm-theme="goldWhite"] body [id*="DeleteCard"] button,
+html[data-cm-theme="goldWhite"] body .bm-form-grid button,
+html[data-cm-theme="goldWhite"] body .bm-form-row button{
+  border:1px solid var(--cm-gw-form-border)!important;
+  text-shadow:none!important;
+}
+html[data-cm-theme="goldWhite"] body .cm-as-modal button:not(.bm-danger-btn):not(.danger):not(.delete-btn):not([type="submit"]),
+html[data-cm-theme="goldWhite"] body .bm-modal button:not(.bm-danger-btn):not(.danger):not(.delete-btn):not([type="submit"]),
+html[data-cm-theme="goldWhite"] body .modal button:not(.bm-danger-btn):not(.danger):not(.delete-btn):not([type="submit"]),
+html[data-cm-theme="goldWhite"] body [id*="FormCard"] button:not(.bm-danger-btn):not(.danger):not(.delete-btn):not([type="submit"]),
+html[data-cm-theme="goldWhite"] body [id*="DeleteCard"] button:not(.bm-danger-btn):not(.danger):not(.delete-btn):not([type="submit"]){
+  background:linear-gradient(180deg,#fffdf7,#fff2c8)!important;
+  color:var(--cm-gw-brown,#7c2d12)!important;
+}
+
+/* Explicitly override old UI 057 clock rule that forced cyan in the left rail */
+html[data-cm-theme="goldWhite"][data-cm-ui="057"] .bm-left-info-panel .bm-live-clock,
+html[data-cm-theme="goldWhite"] body .bm-left-info-panel .bm-live-clock,
+html[data-cm-theme="goldWhite"] body .bm-left-info-panel #liveClock{
+  color:#111827!important;
+  text-shadow:none!important;
+}
+
+/* Dark text in empty states/messages inside forms */
+html[data-cm-theme="goldWhite"] body .panel-message,
+html[data-cm-theme="goldWhite"] body .empty-state,
+html[data-cm-theme="goldWhite"] body .dev-note,
+html[data-cm-theme="goldWhite"] body .hint,
+html[data-cm-theme="goldWhite"] body .small-note{
+  color:#475569!important;
+  text-shadow:none!important;
+}
