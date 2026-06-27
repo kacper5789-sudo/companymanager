@@ -1313,9 +1313,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const renderThemeSwitcher = () => {
     const activeTheme = getStoredCmTheme();
     const active = CM_THEME_OPTIONS[activeTheme] || CM_THEME_OPTIONS.original;
-    const options = Object.entries(CM_THEME_OPTIONS)
-      .sort(([a], [b]) => (a === CM_THEME_DEFAULT ? 1 : b === CM_THEME_DEFAULT ? -1 : 0))
-      .map(([key, meta]) => `
+    const options = Object.entries(CM_THEME_OPTIONS).map(([key, meta]) => `
       <button type="button" class="cm-theme-option ${key === activeTheme ? 'active' : ''}" data-cm-theme-choice="${key}" aria-pressed="${key === activeTheme ? 'true' : 'false'}">
         <span class="cm-theme-option-swatch" aria-hidden="true">${meta.swatch}</span>
         <span>${meta.label}</span>
@@ -2756,7 +2754,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div class="bm-user-stack">
                   <strong>${escapeHtml(user.fullName || user.login)}</strong>
                   <div class="bm-admin-dropdown">
-                    <button id="adminDropdownToggle" class="bm-admin-dropdown-toggle" type="button" aria-expanded="false" aria-controls="adminDropdownMenu"><span class="cm-side-icon" aria-hidden="true">🛡️</span><span>${escapeHtml(roleLabels[role] || role)}</span> <span>▾</span></button>
+                    <button id="adminDropdownToggle" class="bm-admin-dropdown-toggle" type="button" aria-expanded="false" aria-controls="adminDropdownMenu"><span class="cm-side-icon" aria-hidden="true">👑</span><span>${escapeHtml(roleLabels[role] || role)}</span> <span>▾</span></button>
                     <div id="adminDropdownMenu" class="bm-admin-dropdown-menu" hidden>
                       ${canAccessPage(user, 'companyPanel') ? `<a href="company-panel.html"><span class="cm-side-icon" aria-hidden="true">🏢</span><span>Panel Firmy</span></a>` : ''}
                       <a href="users.html"><span class="cm-side-icon" aria-hidden="true">👥</span><span>Użytkownicy</span></a>
@@ -2765,7 +2763,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
                   </div>
                   <button id="undoTimeBtn" class="bm-undo-time-btn" type="button"><span class="cm-side-icon" aria-hidden="true">⏪</span><span>Cofnij Czas</span></button>
-                  <a class="bm-owner-link ${page==='owner'?'active':''}" href="owner.html"><span class="cm-side-icon" aria-hidden="true">👑</span><span>Właściciel strony</span></a>
+                  <a class="bm-owner-link ${page==='owner'?'active':''}" href="owner.html"><span class="cm-side-icon" aria-hidden="true">🛡️</span><span>Właściciel strony</span></a>
                   ${canAccessPage(user, 'workSchedule') ? `<a class="bm-owner-link bm-work-schedule-link ${page==='workSchedule'?'active':''}" href="work-schedule.html"><span class="cm-side-icon" aria-hidden="true">🗓️</span><span>Grafik pracy</span></a>` : ''}
                   ${canAccessPage(user, 'reports') ? `<a class="bm-owner-link bm-stats-link ${page==='reports'?'active':''}" href="reports.html"><span class="cm-side-icon" aria-hidden="true">📈</span><span>Wykres/Statystyka</span></a>` : ''}
                   ${canAccessPage(user, 'customersReports') ? `<a class="bm-owner-link bm-customers-reports-link ${page==='customersReports'?'active':''}" href="customersraports.html"><span class="cm-side-icon" aria-hidden="true">📋</span><span>Klienci - raporty</span></a>` : ''}

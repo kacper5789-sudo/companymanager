@@ -1,0 +1,4 @@
+-- CompanyManager v247 — admin sidebar icons + underline cleanup
+-- Informacyjnie: zmiana front-end only.
+-- ADMIN używa ikony 👑, Właściciel strony używa 🛡️.
+-- Usunięto niepożądane podkreślenia/kreski z linków w bocznym menu.
