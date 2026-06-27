@@ -1313,7 +1313,9 @@ document.addEventListener('DOMContentLoaded', () => {
   const renderThemeSwitcher = () => {
     const activeTheme = getStoredCmTheme();
     const active = CM_THEME_OPTIONS[activeTheme] || CM_THEME_OPTIONS.original;
-    const options = Object.entries(CM_THEME_OPTIONS).map(([key, meta]) => `
+    const options = Object.entries(CM_THEME_OPTIONS)
+      .sort(([a], [b]) => (a === CM_THEME_DEFAULT ? 1 : b === CM_THEME_DEFAULT ? -1 : 0))
+      .map(([key, meta]) => `
       <button type="button" class="cm-theme-option ${key === activeTheme ? 'active' : ''}" data-cm-theme-choice="${key}" aria-pressed="${key === activeTheme ? 'true' : 'false'}">
         <span class="cm-theme-option-swatch" aria-hidden="true">${meta.swatch}</span>
         <span>${meta.label}</span>
