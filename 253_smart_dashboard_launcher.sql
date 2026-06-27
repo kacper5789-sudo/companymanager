@@ -1,0 +1,2 @@
+-- CompanyManager 253 Smart Dashboard Launcher
+-- Frontend-only patch. No database changes required.

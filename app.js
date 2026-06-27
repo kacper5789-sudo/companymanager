@@ -2727,6 +2727,178 @@ document.addEventListener('DOMContentLoaded', () => {
     else window.requestAnimationFrame(run);
   };
 
+
+  const CM_SMART_DASHBOARD_FLAG = 'cm_open_smart_dashboard_once';
+
+  const cmSmartDateIso = (date = new Date()) => {
+    const d = new Date(date);
+    if (Number.isNaN(d.getTime())) return currentIsoDate();
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  };
+
+  const cmSmartDateKey = (value) => {
+    if (!value) return '';
+    const raw = String(value);
+    const iso = raw.match(/(\d{4})-(\d{2})-(\d{2})/);
+    if (iso) return `${iso[2]}-${iso[3]}`;
+    const pl = raw.match(/(\d{1,2})[\.\/-](\d{1,2})(?:[\.\/-]\d{2,4})?/);
+    if (pl) return `${String(Number(pl[2])).padStart(2,'0')}-${String(Number(pl[1])).padStart(2,'0')}`;
+    const d = new Date(raw);
+    if (!Number.isNaN(d.getTime())) return `${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    return '';
+  };
+
+  const cmSmartMoney = (value) => {
+    const n = Number(value || 0);
+    return `${n.toFixed(2)} PLN`;
+  };
+
+  const cmSmartDateDiffDays = (value, from = new Date()) => {
+    if (!value) return null;
+    const d = new Date(value);
+    if (Number.isNaN(d.getTime())) return null;
+    const a = new Date(from.getFullYear(), from.getMonth(), from.getDate()).getTime();
+    const b = new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+    return Math.round((b - a) / 86400000);
+  };
+
+  const getSmartDashboardMetrics = (ctx) => {
+    const db = ctx?.db || {};
+    const company = ctx?.company || {};
+    const companyId = company.id;
+    const today = new Date();
+    const todayIso = cmSmartDateIso(today);
+    const todayKey = `${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
+    const customers = (db.customers || db.clients || []).filter(item => !companyId || item.companyId === companyId || item.company_id === companyId);
+    const dashboardVisits = (db.dashboardVisits || db.appointments || []).filter(item => !companyId || item.companyId === companyId || item.company_id === companyId);
+    const todayVisits = dashboardVisits.filter(item => String(item.date || item.visit_date || item.starts_at || item.created_at || '').slice(0, 10) === todayIso && item.cancelled !== true && !['odwołana','odwołane','cancelled','canceled'].includes(String(item.status || '').toLowerCase()));
+    const sales = (db.sales || []).filter(item => !companyId || item.companyId === companyId || item.company_id === companyId);
+    const todaySales = sales.filter(item => String(item.date || item.sale_date || item.createdAt || item.created_at || '').slice(0, 10) === todayIso);
+    const todayRevenue = todaySales.reduce((sum, item) => sum + Number(item.totalGross ?? item.total_gross ?? item.total ?? item.value ?? 0), 0);
+    const birthdayCustomers = customers.filter(item => {
+      const key = cmSmartDateKey(item.birthDate || item.birthday || item.dateOfBirth || item.date_of_birth);
+      return key && key === todayKey;
+    });
+    const products = (db.products || []).filter(item => !companyId || item.companyId === companyId || item.company_id === companyId);
+    const lowProducts = products.filter(item => {
+      const qty = Number(item.stock ?? item.quantity ?? item.qty ?? item.available ?? 0);
+      const min = Number(item.minStock ?? item.min_stock ?? 2);
+      return Number.isFinite(qty) && qty <= (Number.isFinite(min) ? min : 2);
+    }).slice(0, 5);
+    const passes = (db.passes || []).filter(item => !companyId || item.companyId === companyId || item.company_id === companyId);
+    const expiringPasses = passes.filter(item => {
+      const days = cmSmartDateDiffDays(item.expiresAt || item.expires_at || item.validTo || item.valid_to || item.endDate || item.end_date, today);
+      return days != null && days >= 0 && days <= 7;
+    }).slice(0, 5);
+    const inactiveCustomers = customers.filter(item => {
+      const days = cmSmartDateDiffDays(item.lastVisit || item.last_visit || item.lastVisitAt || item.last_visit_at, today);
+      return days != null && days <= -90;
+    }).slice(0, 5);
+    const logs = (db.auditLogs || db.audit_logs || db.activity || []).filter(item => !companyId || item.companyId === companyId || item.company_id === companyId).slice(-5).reverse();
+    return { todayIso, todayVisits, todayRevenue, birthdayCustomers, lowProducts, expiringPasses, inactiveCustomers, logs };
+  };
+
+  const smartDashboardList = (items, emptyText, mapper) => {
+    if (!items || !items.length) return `<p class="cm-smart-empty">${escapeHtml(emptyText)}</p>`;
+    return `<ul class="cm-smart-list">${items.map(mapper).join('')}</ul>`;
+  };
+
+  const buildSmartDashboardHtml = (ctx) => {
+    const m = getSmartDashboardMetrics(ctx);
+    const user = ctx?.user || {};
+    const displayName = escapeHtml((user.fullName || user.login || 'Kacper').split(' ')[0] || 'Kacper');
+    const todayLabel = new Date().toLocaleDateString('pl-PL', { weekday:'long', day:'2-digit', month:'long', year:'numeric' });
+    const birthdayPreview = m.birthdayCustomers.slice(0, 3).map(item => escapeHtml(item.fullName || item.name || item.clientName || 'Klient')).join(', ');
+    const visitsDone = m.todayVisits.filter(v => ['zakończone','completed','done'].includes(String(v.status || '').toLowerCase()) || v.finished === true).length;
+    const cards = `
+      <article class="cm-smart-card cm-smart-card-gold">
+        <span class="cm-smart-card-icon">🎂</span>
+        <div><strong>${m.birthdayCustomers.length}</strong><span>Urodziny dzisiaj</span><small>${birthdayPreview || 'Brak urodzin na dziś'}</small></div>
+      </article>
+      <article class="cm-smart-card">
+        <span class="cm-smart-card-icon">📅</span>
+        <div><strong>${m.todayVisits.length}</strong><span>Wizyty dzisiaj</span><small>${visitsDone ? `${visitsDone} zakończonych` : 'Plan dnia do sprawdzenia'}</small></div>
+      </article>
+      <article class="cm-smart-card">
+        <span class="cm-smart-card-icon">💰</span>
+        <div><strong>${cmSmartMoney(m.todayRevenue)}</strong><span>Obrót dnia</span><small>Na podstawie sprzedaży dzisiejszej</small></div>
+      </article>
+      <article class="cm-smart-card">
+        <span class="cm-smart-card-icon">📈</span>
+        <div><strong>—</strong><span>Cel dnia</span><small>Gotowe pod późniejszy cel sprzedażowy</small></div>
+      </article>`;
+    return `
+      <div class="cm-smart-overlay" id="cmSmartDashboardOverlay" role="dialog" aria-modal="true" aria-label="Smart Dashboard">
+        <div class="cm-smart-backdrop" data-smart-close></div>
+        <section class="cm-smart-panel" tabindex="-1">
+          <button class="cm-smart-close" type="button" data-smart-close aria-label="Zamknij Smart Dashboard">×</button>
+          <header class="cm-smart-hero">
+            <div>
+              <span class="cm-smart-kicker">CompanyManager Command Center</span>
+              <h1>Dzień dobry, ${displayName} 👋</h1>
+              <p>${escapeHtml(todayLabel)} — szybki przegląd tego, co dziś najważniejsze.</p>
+            </div>
+            <a class="cm-smart-primary" href="dashboard.html">Przejdź do Dashboardu</a>
+          </header>
+          <div class="cm-smart-grid">${cards}</div>
+          <div class="cm-smart-sections">
+            <article class="cm-smart-section">
+              <h3>🎁 Karnety kończące się</h3>
+              ${smartDashboardList(m.expiringPasses, 'Brak karnetów kończących się w najbliższych 7 dniach.', item => `<li><span>${escapeHtml(item.name || item.passName || item.clientName || 'Karnet')}</span><b>${escapeHtml(item.expiresAt || item.expires_at || item.validTo || item.valid_to || '')}</b></li>`)}
+            </article>
+            <article class="cm-smart-section">
+              <h3>📦 Produkty do zamówienia</h3>
+              ${smartDashboardList(m.lowProducts, 'Brak produktów poniżej minimum.', item => `<li><span>${escapeHtml(item.name || item.productName || 'Produkt')}</span><b>${escapeHtml(String(item.stock ?? item.quantity ?? item.qty ?? 0))} szt.</b></li>`)}
+            </article>
+            <article class="cm-smart-section">
+              <h3>❤️ Klienci do kontaktu</h3>
+              ${smartDashboardList(m.inactiveCustomers, 'Brak klientów oznaczonych jako dawno nieaktywni.', item => `<li><span>${escapeHtml(item.fullName || item.name || 'Klient')}</span><b>90+ dni</b></li>`)}
+            </article>
+            <article class="cm-smart-section">
+              <h3>🕒 Ostatnia aktywność</h3>
+              ${smartDashboardList(m.logs, 'Brak ostatnich aktywności do pokazania.', item => `<li><span>${escapeHtml(item.action || item.title || item.description || 'Aktywność')}</span><b>${escapeHtml(String(item.createdAt || item.created_at || '').slice(0,16).replace('T',' '))}</b></li>`)}
+            </article>
+          </div>
+        </section>
+      </div>`;
+  };
+
+  const openSmartDashboard = (ctx) => {
+    document.getElementById('cmSmartDashboardOverlay')?.remove();
+    document.body.insertAdjacentHTML('beforeend', buildSmartDashboardHtml(ctx));
+    document.body.classList.add('cm-smart-open');
+    const overlay = document.getElementById('cmSmartDashboardOverlay');
+    const panel = overlay?.querySelector('.cm-smart-panel');
+    requestAnimationFrame(() => overlay?.classList.add('is-open'));
+    panel?.focus?.();
+    const close = () => {
+      overlay?.classList.remove('is-open');
+      document.body.classList.remove('cm-smart-open');
+      setTimeout(() => overlay?.remove(), 180);
+      document.removeEventListener('keydown', onKeydown);
+    };
+    const onKeydown = (event) => { if (event.key === 'Escape') close(); };
+    overlay?.querySelectorAll('[data-smart-close]').forEach(btn => btn.addEventListener('click', close));
+    document.addEventListener('keydown', onKeydown);
+  };
+
+  const setupSmartDashboardLauncher = (ctx, page) => {
+    const logo = document.querySelector('.bm-logo-home');
+    if (!logo) return;
+    logo.addEventListener('click', (event) => {
+      event.preventDefault();
+      if (page !== 'dashboard') {
+        try { localStorage.setItem(CM_SMART_DASHBOARD_FLAG, '1'); } catch (_) {}
+        window.location.href = 'dashboard.html';
+        return;
+      }
+      openSmartDashboard(ctx);
+    });
+    let shouldOpen = false;
+    try { shouldOpen = localStorage.getItem(CM_SMART_DASHBOARD_FLAG) === '1'; localStorage.removeItem(CM_SMART_DASHBOARD_FLAG); } catch (_) {}
+    if (page === 'dashboard' && shouldOpen) setTimeout(() => openSmartDashboard(ctx), 650);
+  };
+
   const renderPanelFrame = ({ db, user, company }, page, contentHtml, title='Dashboard', subtitle='Panel firmy') => {
     const role = user.role || 'employee';
     const languageSelector = `
@@ -2789,6 +2961,7 @@ document.addEventListener('DOMContentLoaded', () => {
       </div>`;
     setTimeout(() => window.cmApplyCurrencyToDom?.(dashboardRoot), 0);
     initThemeSwitcher();
+    setupSmartDashboardLauncher({ db, user, company }, page);
     const langPicker = document.querySelector('[data-language-picker]');
     const langToggle = langPicker?.querySelector('.cm-language-current');
     const langMenu = langPicker?.querySelector('.cm-language-menu');
