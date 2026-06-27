@@ -1,0 +1,2 @@
+-- 254_smart_dashboard_logo_click_logic_fix.sql
+-- Informacyjnie: poprawka front-end. Logo CM z innych zakładek przenosi tylko na Dashboard; Smart Panel otwiera się dopiero po kliknięciu logo będąc na Dashboardzie.

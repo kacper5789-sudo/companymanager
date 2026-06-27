@@ -2728,8 +2728,6 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
 
-  const CM_SMART_DASHBOARD_FLAG = 'cm_open_smart_dashboard_once';
-
   const cmSmartDateIso = (date = new Date()) => {
     const d = new Date(date);
     if (Number.isNaN(d.getTime())) return currentIsoDate();
@@ -2888,15 +2886,11 @@ document.addEventListener('DOMContentLoaded', () => {
     logo.addEventListener('click', (event) => {
       event.preventDefault();
       if (page !== 'dashboard') {
-        try { localStorage.setItem(CM_SMART_DASHBOARD_FLAG, '1'); } catch (_) {}
         window.location.href = 'dashboard.html';
         return;
       }
       openSmartDashboard(ctx);
     });
-    let shouldOpen = false;
-    try { shouldOpen = localStorage.getItem(CM_SMART_DASHBOARD_FLAG) === '1'; localStorage.removeItem(CM_SMART_DASHBOARD_FLAG); } catch (_) {}
-    if (page === 'dashboard' && shouldOpen) setTimeout(() => openSmartDashboard(ctx), 650);
   };
 
   const renderPanelFrame = ({ db, user, company }, page, contentHtml, title='Dashboard', subtitle='Panel firmy') => {
