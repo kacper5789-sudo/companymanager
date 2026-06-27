@@ -7,6 +7,21 @@ document.addEventListener('DOMContentLoaded', () => {
   const LEGACY_KEYS = ['companymanager_database_v6_owner_start','companymanager_database_v1'];
   const SESSION_KEY = 'companymanager_session_v1';
   const UNDO_KEY = 'companymanager_last_action_v1';
+  const CM_THEME_KEY = 'companymanager_ui_theme_v1';
+  const CM_THEME_DEFAULT = 'original';
+  const CM_THEME_OPTIONS = {
+    original: { label: 'Oryginalny', swatch: '🌌' },
+    goldWhite: { label: 'Złoto / biały', swatch: '✨' }
+  };
+  const normalizeCmTheme = (value) => Object.prototype.hasOwnProperty.call(CM_THEME_OPTIONS, value) ? value : CM_THEME_DEFAULT;
+  const getStoredCmTheme = () => normalizeCmTheme(localStorage.getItem(CM_THEME_KEY) || CM_THEME_DEFAULT);
+  const applyCmTheme = (theme) => {
+    const normalized = normalizeCmTheme(theme);
+    document.documentElement.setAttribute('data-cm-theme', normalized);
+    document.documentElement.style.colorScheme = normalized === 'goldWhite' ? 'light' : 'dark';
+    return normalized;
+  };
+  applyCmTheme(getStoredCmTheme());
 
   const planLabels = {
     '3m': '3 miesiące — 100 PLN netto',
@@ -1293,6 +1308,68 @@ document.addEventListener('DOMContentLoaded', () => {
     ].filter(item => canAccessPage(panelUser, item[1]));
     const links = items.map(([href,id,label]) => `<a href="${href}" class="${page===id?'active':''}">${label}</a>`).join('');
     return links;
+  };
+
+  const renderThemeSwitcher = () => {
+    const activeTheme = getStoredCmTheme();
+    const active = CM_THEME_OPTIONS[activeTheme] || CM_THEME_OPTIONS.original;
+    const options = Object.entries(CM_THEME_OPTIONS).map(([key, meta]) => `
+      <button type="button" class="cm-theme-option ${key === activeTheme ? 'active' : ''}" data-cm-theme-choice="${key}" aria-pressed="${key === activeTheme ? 'true' : 'false'}">
+        <span class="cm-theme-option-swatch" aria-hidden="true">${meta.swatch}</span>
+        <span>${meta.label}</span>
+      </button>`).join('');
+    return `
+      <div class="cm-theme-switcher" data-cm-theme-switcher>
+        <button class="cm-theme-toggle" type="button" aria-label="Wybierz styl aplikacji" aria-expanded="false">
+          <span class="cm-theme-toggle-icon" aria-hidden="true">${active.swatch}</span>
+          <span class="cm-theme-toggle-text">Styl</span>
+        </button>
+        <div class="cm-theme-menu" hidden>
+          <strong>Wygląd aplikacji</strong>
+          ${options}
+        </div>
+      </div>`;
+  };
+
+  const initThemeSwitcher = () => {
+    const switcher = document.querySelector('[data-cm-theme-switcher]');
+    const toggle = switcher?.querySelector('.cm-theme-toggle');
+    const menu = switcher?.querySelector('.cm-theme-menu');
+    if (!switcher || !toggle || !menu) return;
+    const close = () => {
+      menu.hidden = true;
+      toggle.setAttribute('aria-expanded', 'false');
+    };
+    toggle.addEventListener('click', (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      const shouldOpen = menu.hidden;
+      document.querySelectorAll('.cm-theme-menu').forEach((item) => { item.hidden = true; });
+      menu.hidden = !shouldOpen;
+      toggle.setAttribute('aria-expanded', shouldOpen ? 'true' : 'false');
+    });
+    menu.addEventListener('click', (event) => {
+      const btn = event.target.closest('[data-cm-theme-choice]');
+      if (!btn) return;
+      event.preventDefault();
+      event.stopPropagation();
+      const nextTheme = applyCmTheme(btn.getAttribute('data-cm-theme-choice'));
+      localStorage.setItem(CM_THEME_KEY, nextTheme);
+      const meta = CM_THEME_OPTIONS[nextTheme] || CM_THEME_OPTIONS.original;
+      toggle.querySelector('.cm-theme-toggle-icon').textContent = meta.swatch;
+      menu.querySelectorAll('[data-cm-theme-choice]').forEach((item) => {
+        const isActive = item.getAttribute('data-cm-theme-choice') === nextTheme;
+        item.classList.toggle('active', isActive);
+        item.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+      });
+      close();
+    });
+    document.addEventListener('click', (event) => {
+      if (!menu.hidden && !switcher.contains(event.target)) close();
+    }, { once:false });
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape' && !menu.hidden) close();
+    });
   };
 
   const monthNamesPL = ['Styczeń','Luty','Marzec','Kwiecień','Maj','Czerwiec','Lipiec','Sierpień','Wrzesień','Październik','Listopad','Grudzień'];
@@ -2660,6 +2737,7 @@ document.addEventListener('DOMContentLoaded', () => {
         <header class="bm-horizontal-menu" aria-label="Menu panelu CompanyManager">
           <a class="bm-horizontal-brand bm-logo-home ${page==='dashboard'?'active':''}" href="dashboard.html" aria-label="CompanyManager — panel główny"><img src="../assets/favicon.png" alt="CM"></a>
           <nav class="bm-nav bm-nav-top">${panelMenu(user, page)}</nav>
+          ${renderThemeSwitcher()}
           ${String(user.role || '').toLowerCase() === 'owner' ? `<a class="bm-owner-top-companies ${page==='companies'?'active':''}" href="companies.html">Firmy</a>` : ''}
         </header>
 
@@ -2708,6 +2786,7 @@ document.addEventListener('DOMContentLoaded', () => {
         </main>
       </div>`;
     setTimeout(() => window.cmApplyCurrencyToDom?.(dashboardRoot), 0);
+    initThemeSwitcher();
     const langPicker = document.querySelector('[data-language-picker]');
     const langToggle = langPicker?.querySelector('.cm-language-current');
     const langMenu = langPicker?.querySelector('.cm-language-menu');

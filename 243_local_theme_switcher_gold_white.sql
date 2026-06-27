@@ -1,0 +1,5 @@
+-- CompanyManager v243 — Local Theme Switcher Gold/White
+-- Informacyjnie: brak zmian w bazie danych.
+-- Motyw aplikacji jest zapisywany lokalnie w przeglądarce w localStorage:
+-- key: companymanager_ui_theme_v1
+-- values: original | goldWhite
