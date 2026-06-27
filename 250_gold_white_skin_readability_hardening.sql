@@ -1,0 +1,2 @@
+-- CompanyManager v250
+-- Gold/White skin readability hardening. Frontend CSS-only patch, no database changes.
