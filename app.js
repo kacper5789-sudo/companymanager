@@ -1294,19 +1294,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const panelMenu = (panelUser, page) => {
     const items = [
-      ['positions.html','positions','Stanowiska pracy'],
-      ['employees.html','employees','Zespół'],
-      ['days-off.html','daysOff','Dni wolne pracowników'],
-      ['customers.html','customers','Klienci'],
-      ['services.html','services','Usługi'],
-      ['products.html','products','Produkty'],
-      ['visits.html','visits','Wizyty'],
-      ['walkins.html','walkins','Sprzedaż bez wizyty'],
-      ['marketing.html','marketing','Marketing'],
-      ['passes.html','passes','Karnety'],
-      ['sales.html','sales','Sprzedaż']
+      ['positions.html','positions','Stanowiska pracy','🪑'],
+      ['employees.html','employees','Zespół','👥'],
+      ['days-off.html','daysOff','Dni wolne pracowników','🌴'],
+      ['customers.html','customers','Klienci','👤'],
+      ['services.html','services','Usługi','✂️'],
+      ['products.html','products','Produkty','📦'],
+      ['visits.html','visits','Wizyty','📅'],
+      ['walkins.html','walkins','Sprzedaż bez wizyty','🛒'],
+      ['marketing.html','marketing','Marketing','📢'],
+      ['passes.html','passes','Karnety','🎟️'],
+      ['sales.html','sales','Sprzedaż','💳']
     ].filter(item => canAccessPage(panelUser, item[1]));
-    const links = items.map(([href,id,label]) => `<a href="${href}" class="${page===id?'active':''}">${label}</a>`).join('');
+    const links = items.map(([href,id,label,icon]) => `<a href="${href}" class="${page===id?'active':''}"><span class="cm-menu-icon" aria-hidden="true">${icon}</span><span class="cm-menu-label">${label}</span></a>`).join('');
     return links;
   };
 
@@ -1320,12 +1320,12 @@ document.addEventListener('DOMContentLoaded', () => {
       </button>`).join('');
     return `
       <div class="cm-theme-switcher" data-cm-theme-switcher>
-        <button class="cm-theme-toggle" type="button" aria-label="Wybierz styl aplikacji" aria-expanded="false">
+        <button class="cm-theme-toggle" type="button" aria-label="Wybierz skórkę aplikacji" aria-expanded="false">
           <span class="cm-theme-toggle-icon" aria-hidden="true">${active.swatch}</span>
-          <span class="cm-theme-toggle-text">Styl</span>
+          <span class="cm-theme-toggle-text">Skórka</span>
         </button>
         <div class="cm-theme-menu" hidden>
-          <strong>Wygląd aplikacji</strong>
+          <strong>Skórka aplikacji</strong>
           ${options}
         </div>
       </div>`;
@@ -2728,8 +2728,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const renderPanelFrame = ({ db, user, company }, page, contentHtml, title='Dashboard', subtitle='Panel firmy') => {
     const role = user.role || 'employee';
     const languageSelector = `
-      <div class="cm-language-picker cm-language-picker-side" data-language-picker>
-        <button class="cm-language-current" type="button" aria-label="Wybierz język" aria-expanded="false">PL</button>
+      <div class="cm-language-picker cm-language-picker-top" data-language-picker>
+        <button class="cm-language-current" type="button" aria-label="Wybierz język" aria-expanded="false"><span aria-hidden="true">🇵🇱</span><span class="cm-language-current-text">Język</span></button>
         <div class="cm-language-menu" hidden></div>
       </div>`;
     dashboardRoot.innerHTML = `
@@ -2737,8 +2737,8 @@ document.addEventListener('DOMContentLoaded', () => {
         <header class="bm-horizontal-menu" aria-label="Menu panelu CompanyManager">
           <a class="bm-horizontal-brand bm-logo-home ${page==='dashboard'?'active':''}" href="dashboard.html" aria-label="CompanyManager — panel główny"><img src="../assets/favicon.png" alt="CM"></a>
           <nav class="bm-nav bm-nav-top">${panelMenu(user, page)}</nav>
-          ${renderThemeSwitcher()}
-          ${String(user.role || '').toLowerCase() === 'owner' ? `<a class="bm-owner-top-companies ${page==='companies'?'active':''}" href="companies.html">Firmy</a>` : ''}
+          ${languageSelector}
+          ${String(user.role || '').toLowerCase() === 'owner' ? `<a class="bm-owner-top-companies ${page==='companies'?'active':''}" href="companies.html"><span class="cm-menu-icon" aria-hidden="true">👑</span><span class="cm-menu-label">Firmy</span></a>` : ''}
         </header>
 
         <main class="bm-main bm-main-top">
@@ -2754,25 +2754,25 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div class="bm-user-stack">
                   <strong>${escapeHtml(user.fullName || user.login)}</strong>
                   <div class="bm-admin-dropdown">
-                    <button id="adminDropdownToggle" class="bm-admin-dropdown-toggle" type="button" aria-expanded="false" aria-controls="adminDropdownMenu">${escapeHtml(roleLabels[role] || role)} <span>▾</span></button>
+                    <button id="adminDropdownToggle" class="bm-admin-dropdown-toggle" type="button" aria-expanded="false" aria-controls="adminDropdownMenu"><span class="cm-side-icon" aria-hidden="true">🛡️</span><span>${escapeHtml(roleLabels[role] || role)}</span> <span>▾</span></button>
                     <div id="adminDropdownMenu" class="bm-admin-dropdown-menu" hidden>
-                      ${canAccessPage(user, 'companyPanel') ? `<a href="company-panel.html">Panel Firmy</a>` : ''}
-                      <a href="users.html">Użytkownicy</a>
-                      ${canAccessPage(user, 'activity') ? `<a href="activity.html">Historia aktywności</a>` : ''}
-                      <button id="panelLogoutBtn" class="bm-admin-dropdown-logout" type="button">Wyloguj się</button>
+                      ${canAccessPage(user, 'companyPanel') ? `<a href="company-panel.html"><span class="cm-side-icon" aria-hidden="true">🏢</span><span>Panel Firmy</span></a>` : ''}
+                      <a href="users.html"><span class="cm-side-icon" aria-hidden="true">👥</span><span>Użytkownicy</span></a>
+                      ${canAccessPage(user, 'activity') ? `<a href="activity.html"><span class="cm-side-icon" aria-hidden="true">🕘</span><span>Historia aktywności</span></a>` : ''}
+                      <button id="panelLogoutBtn" class="bm-admin-dropdown-logout" type="button"><span class="cm-side-icon" aria-hidden="true">🚪</span><span>Wyloguj się</span></button>
                     </div>
                   </div>
-                  <button id="undoTimeBtn" class="bm-undo-time-btn" type="button">Cofnij Czas</button>
-                  <a class="bm-owner-link ${page==='owner'?'active':''}" href="owner.html">Właściciel strony</a>
-                  ${canAccessPage(user, 'workSchedule') ? `<a class="bm-owner-link bm-work-schedule-link ${page==='workSchedule'?'active':''}" href="work-schedule.html">Grafik pracy</a>` : ''}
-                  ${canAccessPage(user, 'reports') ? `<a class="bm-owner-link bm-stats-link ${page==='reports'?'active':''}" href="reports.html">Wykres/Statystyka</a>` : ''}
-                  ${canAccessPage(user, 'customersReports') ? `<a class="bm-owner-link bm-customers-reports-link ${page==='customersReports'?'active':''}" href="customersraports.html">Klienci - raporty</a>` : ''}
-                  ${canAccessPage(user, 'dailyReport') ? `<a class="bm-owner-link bm-daily-link ${page==='dailyReport'?'active':''}" href="daily-report.html">Raport dzienny</a>` : ''}
-                  ${canAccessPage(user, 'periodReport') ? `<a class="bm-owner-link bm-period-link ${page==='periodReport'?'active':''}" href="period-report.html">Raport z okresu</a>` : ''}
-                  ${canAccessPage(user, 'employeesReports') ? `<a class="bm-owner-link bm-employees-reports-link ${page==='employeesReports'?'active':''}" href="employeesraports.html">Pracownicy - raporty</a>` : ''}
-                  ${canAccessPage(user, 'smsReports') ? `<a class="bm-owner-link bm-sms-reports-link ${page==='smsReports'?'active':''}" href="sms.html">SMS</a>` : ''}
-                  ${canAccessPage(user, 'emailReports') ? `<a class="bm-owner-link bm-email-reports-link ${page==='emailReports'?'active':''}" href="email.html">Email</a>` : ''}
-                  ${languageSelector}
+                  <button id="undoTimeBtn" class="bm-undo-time-btn" type="button"><span class="cm-side-icon" aria-hidden="true">⏪</span><span>Cofnij Czas</span></button>
+                  <a class="bm-owner-link ${page==='owner'?'active':''}" href="owner.html"><span class="cm-side-icon" aria-hidden="true">👑</span><span>Właściciel strony</span></a>
+                  ${canAccessPage(user, 'workSchedule') ? `<a class="bm-owner-link bm-work-schedule-link ${page==='workSchedule'?'active':''}" href="work-schedule.html"><span class="cm-side-icon" aria-hidden="true">🗓️</span><span>Grafik pracy</span></a>` : ''}
+                  ${canAccessPage(user, 'reports') ? `<a class="bm-owner-link bm-stats-link ${page==='reports'?'active':''}" href="reports.html"><span class="cm-side-icon" aria-hidden="true">📈</span><span>Wykres/Statystyka</span></a>` : ''}
+                  ${canAccessPage(user, 'customersReports') ? `<a class="bm-owner-link bm-customers-reports-link ${page==='customersReports'?'active':''}" href="customersraports.html"><span class="cm-side-icon" aria-hidden="true">📋</span><span>Klienci - raporty</span></a>` : ''}
+                  ${canAccessPage(user, 'dailyReport') ? `<a class="bm-owner-link bm-daily-link ${page==='dailyReport'?'active':''}" href="daily-report.html"><span class="cm-side-icon" aria-hidden="true">📄</span><span>Raport dzienny</span></a>` : ''}
+                  ${canAccessPage(user, 'periodReport') ? `<a class="bm-owner-link bm-period-link ${page==='periodReport'?'active':''}" href="period-report.html"><span class="cm-side-icon" aria-hidden="true">🧾</span><span>Raport z okresu</span></a>` : ''}
+                  ${canAccessPage(user, 'employeesReports') ? `<a class="bm-owner-link bm-employees-reports-link ${page==='employeesReports'?'active':''}" href="employeesraports.html"><span class="cm-side-icon" aria-hidden="true">👨‍💼</span><span>Pracownicy - raporty</span></a>` : ''}
+                  ${canAccessPage(user, 'smsReports') ? `<a class="bm-owner-link bm-sms-reports-link ${page==='smsReports'?'active':''}" href="sms.html"><span class="cm-side-icon" aria-hidden="true">💬</span><span>SMS</span></a>` : ''}
+                  ${canAccessPage(user, 'emailReports') ? `<a class="bm-owner-link bm-email-reports-link ${page==='emailReports'?'active':''}" href="email.html"><span class="cm-side-icon" aria-hidden="true">✉️</span><span>Email</span></a>` : ''}
+                  ${renderThemeSwitcher()}
                 </div>
               </section>
             </aside>
@@ -2796,7 +2796,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let savedLang = getStoredCmLanguage();
     const renderLanguageMenu = () => {
       if (!langToggle || !langMenu) return;
-      langToggle.textContent = langLabels[savedLang] || 'PL';
+      langToggle.innerHTML = `<span aria-hidden="true">${savedLang === 'pl' ? '🇵🇱' : '🇬🇧'}</span><span class="cm-language-current-text">Język</span>`;
       langMenu.innerHTML = langOrder
         .filter(lang => lang !== savedLang)
         .map(lang => `<button type="button" data-lang="${lang}" aria-label="${langNames[lang]}">${langLabels[lang]}</button>`)
@@ -8624,7 +8624,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const toggle = picker.querySelector('.cm-language-current');
       const menu = picker.querySelector('.cm-language-menu');
       if (!toggle || !menu) return;
-      toggle.textContent = langLabels[savedLang] || 'PL';
+      toggle.innerHTML = `<span aria-hidden="true">${savedLang === 'pl' ? '🇵🇱' : '🇬🇧'}</span><span class="cm-language-current-text">Język</span>`;
       menu.innerHTML = langOrder
         .filter(lang => lang !== savedLang)
         .map(lang => `<button type="button" data-lang="${lang}" aria-label="${langNames[lang]}">${langLabels[lang]}</button>`)

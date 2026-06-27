@@ -1,0 +1,2 @@
+-- COMPANYMANAGER — 244 MENU ICONS + SKÓRKA/JĘZYK SWAP
+-- UI-only patch. No database changes required.
