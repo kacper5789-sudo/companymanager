@@ -10,16 +10,27 @@ document.addEventListener('DOMContentLoaded', () => {
   const CM_THEME_KEY = 'companymanager_ui_theme_v1';
   const CM_THEME_DEFAULT = 'original';
   const CM_THEME_OPTIONS = {
-    original: { label: 'Oryginalny', swatch: '🌌' },
-    goldWhite: { label: 'Złoto / biały', swatch: '✨' },
-    beautyRose: { label: 'Beauty Rose', swatch: '🌸' }
+    neon: { label: 'Neon', swatch: '💜' },
+    sunset: { label: 'Sunset', swatch: '🧡' },
+    medical: { label: 'Medical', swatch: '❤️' },
+    ice: { label: 'Ice', swatch: '🩵' },
+    ocean: { label: 'Ocean', swatch: '🌊' },
+    burgundy: { label: 'Burgundy', swatch: '🍷' },
+    blackLuxury: { label: 'Black Luxury', swatch: '⚫' },
+    royalBlue: { label: 'Royal Blue', swatch: '💎' },
+    coffeeHouse: { label: 'Coffee House', swatch: '☕' },
+    natureSage: { label: 'Nature Sage', swatch: '🌿' },
+    beautyRose: { label: 'Beauty Rose', swatch: '🌸' },
+    goldWhite: { label: 'Exclusive Gold', swatch: '👑' },
+    original: { label: 'Origial', swatch: '🛡️' }
   };
+  const CM_THEME_DARK = new Set(['original', 'blackLuxury', 'neon']);
   const normalizeCmTheme = (value) => Object.prototype.hasOwnProperty.call(CM_THEME_OPTIONS, value) ? value : CM_THEME_DEFAULT;
   const getStoredCmTheme = () => normalizeCmTheme(localStorage.getItem(CM_THEME_KEY) || CM_THEME_DEFAULT);
   const applyCmTheme = (theme) => {
     const normalized = normalizeCmTheme(theme);
     document.documentElement.setAttribute('data-cm-theme', normalized);
-    document.documentElement.style.colorScheme = (normalized === 'goldWhite' || normalized === 'beautyRose') ? 'light' : 'dark';
+    document.documentElement.style.colorScheme = CM_THEME_DARK.has(normalized) ? 'dark' : 'light';
     return normalized;
   };
   applyCmTheme(getStoredCmTheme());
