@@ -13898,3 +13898,234 @@ html[data-cm-theme]:not([data-cm-theme="original"]) .cm-supabase-daily-report [c
 html[data-cm-theme]:not([data-cm-theme="original"]) .cm-supabase-daily-report [class*="wrap"]{
   border-color:transparent!important;
 }
+
+/* CompanyManager 5.2 — Report Table Geometry + Sidebar Frame Cleanup
+   Cel: geometrię i miękkość bierzemy z Original, skórki zmieniają tylko kolory.
+   Dotyczy: Raport dzienny, Raport z okresu, Pracownicy-raporty i przyszłe raporty. */
+
+/* Lewy panel: usuwamy zewnętrzny prostokątny obrys, zostają tylko przyciski/pigułki wewnątrz. */
+.bm-left-info-panel{
+  border:none!important;
+  outline:none!important;
+  box-shadow:none!important;
+}
+.bm-left-info-panel::before,
+.bm-left-info-panel::after{
+  border:none!important;
+  outline:none!important;
+  box-shadow:none!important;
+}
+
+html[data-cm-theme]:not([data-cm-theme="original"]){
+  --cm-geo-report-surface: color-mix(in srgb,var(--cm-skin-card,#ffffff) 82%,transparent);
+  --cm-geo-report-surface-soft: color-mix(in srgb,var(--cm-skin-card,#ffffff) 58%,transparent);
+  --cm-geo-report-head: linear-gradient(90deg,
+    color-mix(in srgb,var(--cm-skin-accent,#2563eb) 14%,var(--cm-skin-card,#ffffff) 86%),
+    color-mix(in srgb,var(--cm-skin-accent,#2563eb) 5%,var(--cm-skin-card,#ffffff) 95%)
+  );
+  --cm-geo-report-divider: color-mix(in srgb,var(--cm-skin-accent,#2563eb) 15%,transparent);
+  --cm-geo-report-shadow: 0 18px 44px color-mix(in srgb,var(--cm-skin-shadow,rgba(0,0,0,.14)) 18%,transparent);
+}
+
+/* Wszystkie trzy raportowe moduły mają dziedziczyć układ Original: brak szarych/kanciastych płyt. */
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-daily-report-card,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-period-report-card,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-employees-reports-page,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-employees-reports-page .cm-customer-report-card,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-customers-reports-page .cm-customer-report-card{
+  border:none!important;
+  outline:none!important;
+}
+
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-daily-report-card .cm-period-section,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-period-report-card .cm-period-section,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-employees-reports-page .cm-customer-report-card,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-customers-reports-page .cm-customer-report-card{
+  background:transparent!important;
+  background-image:none!important;
+  border:none!important;
+  outline:none!important;
+  box-shadow:none!important;
+}
+
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-daily-report-card .cm-period-section,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-period-report-card .cm-period-section{
+  border-top:1px solid var(--cm-geo-report-divider)!important;
+  border-radius:0!important;
+  padding:26px 0 0!important;
+  margin:26px 0 0!important;
+}
+
+/* Karty finansów/komunikacji mają być miękkie i motywowe, nie ciemnoszare. */
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-finance-grid > div,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-comm-grid > div,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-cancel-reasons > div{
+  background:var(--cm-geo-report-surface)!important;
+  background-image:none!important;
+  border:none!important;
+  outline:none!important;
+  border-radius:24px!important;
+  box-shadow:var(--cm-geo-report-shadow)!important;
+}
+
+/* Narzędzia tabel i paginacja: bez pełnej szarej belki. */
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-daily-table-tools,
+html[data-cm-theme]:not([data-cm-theme="original"]) .bm-table-toolbar,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-daily-table-pager,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-sales-pager,
+html[data-cm-theme]:not([data-cm-theme="original"]) .dataTables_wrapper,
+html[data-cm-theme]:not([data-cm-theme="original"]) .dataTables_length,
+html[data-cm-theme]:not([data-cm-theme="original"]) .dataTables_filter,
+html[data-cm-theme]:not([data-cm-theme="original"]) .dataTables_paginate{
+  background:transparent!important;
+  background-image:none!important;
+  border:none!important;
+  outline:none!important;
+  box-shadow:none!important;
+}
+
+/* Kontenery tabel: żadnej zewnętrznej prostokątnej ramki. */
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-daily-report-card .bm-table-wrap,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-period-report-card .bm-table-wrap,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-employees-reports-page .bm-table-wrap,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-customers-reports-page .bm-table-wrap,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-daily-report-card .table-wrap,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-period-report-card .table-wrap,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-employees-reports-page .table-wrap{
+  background:transparent!important;
+  background-image:none!important;
+  border:none!important;
+  outline:none!important;
+  box-shadow:none!important;
+  border-radius:24px!important;
+  overflow:hidden!important;
+  padding:0!important;
+}
+
+/* Sama tabela jako miękka kapsuła: nagłówek i ostatni wiersz zaokrąglone. */
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-daily-report-card .bm-table,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-period-report-card .bm-table,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-employees-reports-page .bm-table,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-customers-reports-page .bm-table{
+  border-collapse:separate!important;
+  border-spacing:0!important;
+  border:none!important;
+  outline:none!important;
+  box-shadow:none!important;
+  background:transparent!important;
+  overflow:hidden!important;
+}
+
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-daily-report-card .bm-table thead,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-period-report-card .bm-table thead,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-employees-reports-page .bm-table thead,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-customers-reports-page .bm-table thead,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-daily-report-card .bm-table tbody,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-period-report-card .bm-table tbody,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-employees-reports-page .bm-table tbody,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-customers-reports-page .bm-table tbody{
+  background:transparent!important;
+  border:none!important;
+  outline:none!important;
+  box-shadow:none!important;
+}
+
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-daily-report-card .bm-table th,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-period-report-card .bm-table th,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-employees-reports-page .bm-table th,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-customers-reports-page .bm-table th{
+  background:var(--cm-geo-report-head)!important;
+  border:none!important;
+  border-bottom:1px solid var(--cm-geo-report-divider)!important;
+  color:var(--cm-skin-accent,#2563eb)!important;
+  box-shadow:none!important;
+}
+
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-daily-report-card .bm-table td,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-period-report-card .bm-table td,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-employees-reports-page .bm-table td,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-customers-reports-page .bm-table td{
+  background:var(--cm-geo-report-surface)!important;
+  border:none!important;
+  border-bottom:1px solid var(--cm-geo-report-divider)!important;
+  box-shadow:none!important;
+  color:var(--cm-skin-text,#0f172a)!important;
+}
+
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-daily-report-card .bm-table tr:last-child td,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-period-report-card .bm-table tr:last-child td,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-employees-reports-page .bm-table tr:last-child td,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-customers-reports-page .bm-table tr:last-child td{
+  border-bottom:none!important;
+}
+
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-daily-report-card .bm-table th:first-child,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-period-report-card .bm-table th:first-child,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-employees-reports-page .bm-table th:first-child,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-customers-reports-page .bm-table th:first-child{
+  border-top-left-radius:24px!important;
+}
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-daily-report-card .bm-table th:last-child,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-period-report-card .bm-table th:last-child,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-employees-reports-page .bm-table th:last-child,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-customers-reports-page .bm-table th:last-child{
+  border-top-right-radius:24px!important;
+}
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-daily-report-card .bm-table tbody tr:last-child td:first-child,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-period-report-card .bm-table tbody tr:last-child td:first-child,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-employees-reports-page .bm-table tbody tr:last-child td:first-child,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-customers-reports-page .bm-table tbody tr:last-child td:first-child{
+  border-bottom-left-radius:24px!important;
+}
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-daily-report-card .bm-table tbody tr:last-child td:last-child,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-period-report-card .bm-table tbody tr:last-child td:last-child,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-employees-reports-page .bm-table tbody tr:last-child td:last-child,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-customers-reports-page .bm-table tbody tr:last-child td:last-child{
+  border-bottom-right-radius:24px!important;
+}
+
+/* Paginacja/limit/szukaj: pigułki jak Original, bez prostokątnych obrysów. */
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-daily-report-card select,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-period-report-card select,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-employees-reports-page select,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-daily-report-card input[type="search"],
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-period-report-card input[type="search"],
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-employees-reports-page input[type="search"],
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-daily-table-pager button,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-period-report-card .bm-table-wrap + p + button,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-sales-pager button,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-sales-pager input{
+  border:none!important;
+  outline:none!important;
+  border-radius:999px!important;
+  box-shadow:0 10px 24px color-mix(in srgb,var(--cm-skin-shadow,rgba(0,0,0,.12)) 20%,transparent)!important;
+}
+
+/* Checkboxy pracowników w raportach: Exclusive Gold i wszystkie inne skórki z tego samego silnika. */
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-period-employee-picker{
+  background:transparent!important;
+  background-image:none!important;
+  border:none!important;
+  outline:none!important;
+  box-shadow:none!important;
+}
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-period-employee-check{
+  background:color-mix(in srgb,var(--cm-skin-accent,#2563eb) 13%,var(--cm-skin-card,#ffffff) 87%)!important;
+  border:none!important;
+  outline:none!important;
+  border-radius:999px!important;
+  color:var(--cm-skin-text,#0f172a)!important;
+  box-shadow:0 10px 24px color-mix(in srgb,var(--cm-skin-shadow,rgba(0,0,0,.12)) 20%,transparent)!important;
+}
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-period-employee-check input,
+html[data-cm-theme]:not([data-cm-theme="original"]) .periodEmployeeCheck,
+html[data-cm-theme]:not([data-cm-theme="original"]) #periodEmployeeAll{
+  accent-color:var(--cm-skin-accent,#2563eb)!important;
+}
+
+/* Ostatni bezpiecznik: żadna sekcja raportowa w skórkach nie może wrócić do szarej/kanciastej płyty. */
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-daily-report-card [class*="section"],
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-period-report-card [class*="section"],
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-employees-reports-page [class*="section"]{
+  background-color:transparent!important;
+}
