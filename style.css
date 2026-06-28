@@ -11901,3 +11901,414 @@ html[data-cm-theme="neon"] .passes-module .bm-filter-tabs a.active,
 html[data-cm-theme="neon"] .cm-sales-tabs a.active{
   color:var(--cm-skin-text)!important;
 }
+
+/* CompanyManager v3.4 — deeper skin polish for all skins except Original and Exclusive Gold */
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]){
+  --cm-skin-chip-bg:linear-gradient(180deg,color-mix(in srgb,var(--cm-skin-card) 88%,var(--cm-skin-accent-2) 12%),color-mix(in srgb,var(--cm-skin-soft) 86%,var(--cm-skin-accent) 14%));
+  --cm-skin-chip-active:linear-gradient(180deg,color-mix(in srgb,var(--cm-skin-card) 66%,var(--cm-skin-accent-2) 34%),color-mix(in srgb,var(--cm-skin-soft) 68%,var(--cm-skin-accent) 32%));
+  --cm-skin-head-bg:linear-gradient(135deg,color-mix(in srgb,var(--cm-skin-card) 78%,var(--cm-skin-accent-2) 22%),color-mix(in srgb,var(--cm-skin-soft) 78%,var(--cm-skin-accent) 22%));
+}
+
+/* Zespół: guzik Zarządzaj użytkownikami */
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) .cm-employees-page .bm-light-btn,
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) .cm-users-head .bm-light-btn,
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) a.bm-light-btn[href*="users.html"]{
+  background:var(--cm-skin-chip-bg)!important;
+  color:var(--cm-skin-accent)!important;
+  border:1px solid var(--cm-skin-border)!important;
+  box-shadow:0 12px 28px var(--cm-skin-shadow)!important;
+  text-shadow:none!important;
+}
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) .cm-employees-page .bm-light-btn:hover,
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) a.bm-light-btn[href*="users.html"]:hover{
+  background:var(--cm-skin-chip-active)!important;
+  color:var(--cm-skin-text)!important;
+  border-color:color-mix(in srgb,var(--cm-skin-accent) 52%,transparent)!important;
+}
+
+/* Panel firmy: całe tła, przełączniki, karty i formularze */
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) body[data-panel-page="companyPanel"] .bm-panel-area,
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) body[data-panel-page="companyPanel"] #dashboardRoot,
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) body[data-panel-page="companyPanel"] .cm-company-panel-page,
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) body[data-panel-page="companyPanel"] .cm-program-settings-page,
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) body[data-panel-page="companyPanel"] .cm-company-panel-form,
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) body[data-panel-page="companyPanel"] .cm-company-panel-form .cm-notification-box,
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) body[data-panel-page="companyPanel"] .cm-program-settings-page .cm-general-settings-box,
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) body[data-panel-page="companyPanel"] .cm-program-settings-page .cm-marketing-consent-box,
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) body[data-panel-page="companyPanel"] .cm-program-settings-page .cm-work-hours-box,
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) body[data-panel-page="companyPanel"] .cm-program-settings-page .cm-data-retention-box,
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) body[data-panel-page="companyPanel"] .cm-program-settings-page .cm-payment-methods-box,
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) body[data-panel-page="companyPanel"] .bm-company-data-card{
+  background:var(--cm-skin-panel-bg)!important;
+  color:var(--cm-skin-text)!important;
+  border-color:var(--cm-skin-border)!important;
+  box-shadow:0 18px 46px var(--cm-skin-shadow)!important;
+  text-shadow:none!important;
+}
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) body[data-panel-page="companyPanel"] .bm-page-head,
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) body[data-panel-page="companyPanel"] .cm-company-panel-switcher{
+  background:var(--cm-skin-head-bg)!important;
+  color:var(--cm-skin-text)!important;
+  border:1px solid var(--cm-skin-border)!important;
+  box-shadow:0 16px 38px var(--cm-skin-shadow)!important;
+}
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) body[data-panel-page="companyPanel"] .cm-company-panel-switcher .bm-light-btn,
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) body[data-panel-page="companyPanel"] .bm-company-doc-row a{
+  background:var(--cm-skin-chip-bg)!important;
+  color:var(--cm-skin-accent)!important;
+  border:1px solid var(--cm-skin-border)!important;
+  box-shadow:0 10px 24px var(--cm-skin-shadow)!important;
+}
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) body[data-panel-page="companyPanel"] .cm-company-panel-switcher .bm-light-btn.active,
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) body[data-panel-page="companyPanel"] .cm-company-panel-switcher .bm-light-btn:hover{
+  background:var(--cm-skin-chip-active)!important;
+  color:var(--cm-skin-text)!important;
+  border-color:color-mix(in srgb,var(--cm-skin-accent) 52%,transparent)!important;
+}
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) body[data-panel-page="companyPanel"] h2,
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) body[data-panel-page="companyPanel"] h3,
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) body[data-panel-page="companyPanel"] legend,
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) body[data-panel-page="companyPanel"] label,
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) body[data-panel-page="companyPanel"] .bm-company-data-card h3,
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) body[data-panel-page="companyPanel"] .bm-company-data-row strong{
+  color:var(--cm-skin-text)!important;
+  text-shadow:none!important;
+}
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) body[data-panel-page="companyPanel"] p,
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) body[data-panel-page="companyPanel"] .bm-muted,
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) body[data-panel-page="companyPanel"] .bm-company-data-row span,
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) body[data-panel-page="companyPanel"] .bm-company-doc-row span{
+  color:var(--cm-skin-muted)!important;
+  text-shadow:none!important;
+}
+
+/* Grafik pracy: górny panel z opisem */
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) body[data-panel-page="workSchedule"] .cm-work-schedule-head,
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) .cm-supabase-work-schedule .cm-work-schedule-head,
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) .cm-work-schedule-page .bm-page-head.customers-head{
+  background:var(--cm-skin-head-bg)!important;
+  color:var(--cm-skin-text)!important;
+  border:1px solid var(--cm-skin-border)!important;
+  box-shadow:0 16px 38px var(--cm-skin-shadow)!important;
+  text-shadow:none!important;
+}
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) body[data-panel-page="workSchedule"] .cm-work-schedule-head h2,
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) body[data-panel-page="workSchedule"] .cm-work-schedule-head .bm-muted,
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) .cm-supabase-work-schedule .cm-work-schedule-head h2,
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) .cm-supabase-work-schedule .cm-work-schedule-head .bm-muted{
+  color:var(--cm-skin-text)!important;
+  text-shadow:none!important;
+}
+
+/* Klienci - raporty: kafle KPI */
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) .cm-customers-report-kpis,
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) .cm-period-kpis{
+  color:var(--cm-skin-text)!important;
+}
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) .cm-customers-report-kpis > div,
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) .cm-period-kpis > div{
+  background:var(--cm-skin-panel-bg)!important;
+  color:var(--cm-skin-text)!important;
+  border:1px solid var(--cm-skin-border)!important;
+  box-shadow:0 18px 42px var(--cm-skin-shadow)!important;
+  text-shadow:none!important;
+}
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) .cm-customers-report-kpis > div span,
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) .cm-period-kpis > div span{
+  color:var(--cm-skin-muted)!important;
+  text-shadow:none!important;
+}
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) .cm-customers-report-kpis > div b,
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) .cm-period-kpis > div b{
+  color:var(--cm-skin-text)!important;
+  text-shadow:none!important;
+}
+
+/* Pracownicy - raporty: filtr Pracownicy, Wszyscy i chipy pracowników */
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) .cm-employees-report-page .cm-er-employee-filter,
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) .cm-er-employee-filter,
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) .cm-er-card{
+  background:var(--cm-skin-panel-bg)!important;
+  color:var(--cm-skin-text)!important;
+  border:1px solid var(--cm-skin-border)!important;
+  box-shadow:0 18px 42px var(--cm-skin-shadow)!important;
+  text-shadow:none!important;
+}
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) .cm-er-employee-title{
+  background:var(--cm-skin-head-bg)!important;
+  color:var(--cm-skin-text)!important;
+  border:1px solid var(--cm-skin-border)!important;
+  box-shadow:0 10px 24px var(--cm-skin-shadow)!important;
+  text-shadow:none!important;
+}
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) .cm-er-employee-options{
+  background:color-mix(in srgb,var(--cm-skin-soft) 76%,transparent)!important;
+  border-color:var(--cm-skin-border)!important;
+}
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) .cm-er-employee-chip{
+  background:var(--cm-skin-chip-bg)!important;
+  color:var(--cm-skin-text)!important;
+  border:1px solid var(--cm-skin-border)!important;
+  box-shadow:0 8px 20px var(--cm-skin-shadow)!important;
+  text-shadow:none!important;
+}
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) .cm-er-employee-chip:has(input:checked),
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) .cm-er-employee-chip:hover{
+  background:var(--cm-skin-chip-active)!important;
+  color:var(--cm-skin-accent)!important;
+  border-color:color-mix(in srgb,var(--cm-skin-accent) 52%,transparent)!important;
+}
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) .cm-er-employee-chip input,
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) .cm-er-employee-chip input:checked{
+  accent-color:var(--cm-skin-accent)!important;
+}
+
+/* CompanyManager v3.5 — owner page skin polish for all skins except Original and Exclusive Gold */
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) body[data-panel-page="owner"] .bm-panel-area,
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) body[data-panel-page="owner"] #dashboardRoot,
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) body[data-panel-page="owner"] .bm-owner-page{
+  background:var(--cm-skin-panel-bg)!important;
+  color:var(--cm-skin-text)!important;
+  border-color:var(--cm-skin-border)!important;
+  box-shadow:0 22px 58px var(--cm-skin-shadow)!important;
+  text-shadow:none!important;
+}
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) body[data-panel-page="owner"] .bm-owner-page .bm-page-head{
+  background:var(--cm-skin-head-bg)!important;
+  color:var(--cm-skin-text)!important;
+  border:1px solid var(--cm-skin-border)!important;
+  border-radius:18px!important;
+  padding:14px 16px!important;
+  box-shadow:0 16px 38px var(--cm-skin-shadow)!important;
+}
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) body[data-panel-page="owner"] .bm-owner-page .bm-page-head h2{
+  color:var(--cm-skin-text)!important;
+  text-shadow:none!important;
+}
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) body[data-panel-page="owner"] .bm-owner-profile{
+  background:linear-gradient(180deg,color-mix(in srgb,var(--cm-skin-card) 92%,transparent),color-mix(in srgb,var(--cm-skin-soft) 88%,transparent))!important;
+  border:1px solid var(--cm-skin-border)!important;
+  border-radius:24px!important;
+  padding:20px!important;
+  box-shadow:0 18px 46px var(--cm-skin-shadow)!important;
+}
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) body[data-panel-page="owner"] .bm-owner-photo{
+  background:var(--cm-skin-head-bg)!important;
+  color:var(--cm-skin-accent)!important;
+  border:1px solid color-mix(in srgb,var(--cm-skin-accent) 42%,transparent)!important;
+  box-shadow:0 18px 42px var(--cm-skin-shadow)!important;
+  text-shadow:none!important;
+}
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) body[data-panel-page="owner"] .bm-owner-photo span{
+  color:var(--cm-skin-accent)!important;
+  text-shadow:none!important;
+}
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) body[data-panel-page="owner"] .bm-owner-details,
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) body[data-panel-page="owner"] .bm-owner-details p{
+  color:var(--cm-skin-text)!important;
+  text-shadow:none!important;
+}
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) body[data-panel-page="owner"] .bm-owner-details label{
+  color:var(--cm-skin-accent)!important;
+  text-shadow:none!important;
+}
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) body[data-panel-page="owner"] .bm-owner-details h3{
+  color:var(--cm-skin-text)!important;
+  text-shadow:none!important;
+}
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) body[data-panel-page="owner"] .bm-owner-details a,
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) body[data-panel-page="owner"] .bm-owner-site-link{
+  color:var(--cm-skin-accent)!important;
+  text-decoration:none!important;
+  text-shadow:none!important;
+}
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) body[data-panel-page="owner"] .bm-owner-details a:hover,
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) body[data-panel-page="owner"] .bm-owner-site-link:hover{
+  color:var(--cm-skin-accent-2)!important;
+  text-decoration:underline!important;
+}
+html[data-cm-theme="blackLuxury"] body[data-panel-page="owner"] .bm-owner-profile,
+html[data-cm-theme="neon"] body[data-panel-page="owner"] .bm-owner-profile{
+  background:linear-gradient(180deg,color-mix(in srgb,var(--cm-skin-card) 92%,#000 8%),color-mix(in srgb,var(--cm-skin-soft) 86%,#000 14%))!important;
+}
+
+/* CompanyManager v3.6 — Skin Audit hardening
+   Scope: wszystkie nowe skórki poza Original i Exclusive Gold.
+   Cel: zlikwidować resztki stałych białych/niebiesko-czarnych kolorów w komponentach. */
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]){
+  --cm-skin-panel-bg:linear-gradient(180deg,color-mix(in srgb,var(--cm-skin-card) 94%,transparent),color-mix(in srgb,var(--cm-skin-soft) 88%,transparent));
+  --cm-skin-head-bg:linear-gradient(180deg,color-mix(in srgb,var(--cm-skin-accent-2) 22%,var(--cm-skin-card)),var(--cm-skin-soft));
+  --cm-skin-chip-bg:linear-gradient(180deg,color-mix(in srgb,var(--cm-skin-card) 96%,transparent),color-mix(in srgb,var(--cm-skin-soft) 92%,transparent));
+  --cm-skin-chip-active:linear-gradient(180deg,color-mix(in srgb,var(--cm-skin-accent-2) 34%,var(--cm-skin-card)),color-mix(in srgb,var(--cm-skin-soft) 88%,transparent));
+  --cm-skin-cell-bg:color-mix(in srgb,var(--cm-skin-soft) 74%,transparent);
+  --cm-skin-cell-bg-strong:color-mix(in srgb,var(--cm-skin-accent-2) 24%,var(--cm-skin-soft));
+  --cm-skin-on-accent:#ffffff;
+}
+html[data-cm-theme="blackLuxury"],
+html[data-cm-theme="neon"]{
+  --cm-skin-on-accent:#fff;
+  --cm-skin-cell-bg:color-mix(in srgb,var(--cm-skin-soft) 78%,#000 22%);
+  --cm-skin-cell-bg-strong:color-mix(in srgb,var(--cm-skin-accent) 24%,var(--cm-skin-soft));
+}
+
+/* Dni wolne — miesiąc, strzałki, dni tygodnia, cyfry i wpisy. */
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) body[data-panel-page="daysOff"] #daysOffCalendar,
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) .cm-days-off-page #daysOffCalendar{
+  background:var(--cm-skin-panel-bg)!important;
+  color:var(--cm-skin-text)!important;
+  border:1px solid var(--cm-skin-border)!important;
+  border-radius:22px!important;
+  padding:14px!important;
+  box-shadow:0 18px 44px var(--cm-skin-shadow)!important;
+  text-shadow:none!important;
+}
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) .days-off-head{
+  background:var(--cm-skin-head-bg)!important;
+  border:1px solid var(--cm-skin-border)!important;
+  border-radius:16px!important;
+  padding:10px 12px!important;
+  box-shadow:0 12px 28px var(--cm-skin-shadow)!important;
+}
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) .days-off-head strong{
+  color:var(--cm-skin-text)!important;
+  text-shadow:none!important;
+}
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) .days-off-head button,
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) #daysOffPrev,
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) #daysOffNext{
+  background:var(--cm-skin-chip-bg)!important;
+  color:var(--cm-skin-accent)!important;
+  border:1px solid var(--cm-skin-border)!important;
+  box-shadow:0 8px 20px var(--cm-skin-shadow)!important;
+  text-shadow:none!important;
+}
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) .days-off-head button:hover,
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) #daysOffPrev:hover,
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) #daysOffNext:hover{
+  background:var(--cm-skin-chip-active)!important;
+  color:var(--cm-skin-accent)!important;
+  border-color:color-mix(in srgb,var(--cm-skin-accent) 50%,transparent)!important;
+}
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) .days-off-weekdays span{
+  color:var(--cm-skin-accent)!important;
+  text-shadow:none!important;
+}
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) .day-off-cell{
+  background:var(--cm-skin-cell-bg)!important;
+  color:var(--cm-skin-text)!important;
+  border:1px solid var(--cm-skin-border)!important;
+  box-shadow:none!important;
+  text-shadow:none!important;
+}
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) .day-off-cell:hover{
+  background:var(--cm-skin-cell-bg-strong)!important;
+  border-color:color-mix(in srgb,var(--cm-skin-accent) 45%,transparent)!important;
+}
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) .day-off-cell b{
+  color:var(--cm-skin-text)!important;
+  text-shadow:none!important;
+}
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) .day-off-cell.outside b{
+  color:var(--cm-skin-muted)!important;
+  opacity:.72!important;
+}
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) .day-off-cell.today{
+  background:var(--cm-skin-cell-bg-strong)!important;
+  border-color:color-mix(in srgb,var(--cm-skin-accent) 58%,transparent)!important;
+  box-shadow:0 0 0 2px color-mix(in srgb,var(--cm-skin-accent) 28%,transparent)!important;
+}
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) .day-off-entry{
+  background:linear-gradient(180deg,var(--cm-skin-accent),color-mix(in srgb,var(--cm-skin-accent) 78%,#000 22%))!important;
+  color:var(--cm-skin-on-accent)!important;
+  border:1px solid color-mix(in srgb,var(--cm-skin-accent) 55%,transparent)!important;
+  text-shadow:none!important;
+}
+
+/* Globalny fallback na ukryte białe napisy w jasnych skórkach — formularze, karty, listy, filtry, chipy. */
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]):not([data-cm-theme="blackLuxury"]):not([data-cm-theme="neon"]) .bm-page-card,
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]):not([data-cm-theme="blackLuxury"]):not([data-cm-theme="neon"]) .bm-page-card *,
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]):not([data-cm-theme="blackLuxury"]):not([data-cm-theme="neon"]) .panel-card,
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]):not([data-cm-theme="blackLuxury"]):not([data-cm-theme="neon"]) .panel-card *,
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]):not([data-cm-theme="blackLuxury"]):not([data-cm-theme="neon"]) .cm-unified-card,
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]):not([data-cm-theme="blackLuxury"]):not([data-cm-theme="neon"]) .cm-unified-card *{
+  text-shadow:none!important;
+}
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]):not([data-cm-theme="blackLuxury"]):not([data-cm-theme="neon"]) .bm-page-card :where(h1,h2,h3,h4,b,strong,label,td,th,span),
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]):not([data-cm-theme="blackLuxury"]):not([data-cm-theme="neon"]) .panel-card :where(h1,h2,h3,h4,b,strong,label,td,th,span),
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]):not([data-cm-theme="blackLuxury"]):not([data-cm-theme="neon"]) .cm-unified-card :where(h1,h2,h3,h4,b,strong,label,td,th,span){
+  color:var(--cm-skin-text)!important;
+}
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]):not([data-cm-theme="blackLuxury"]):not([data-cm-theme="neon"]) .bm-page-card :where(p,small,.bm-muted,.muted-note,.hint),
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]):not([data-cm-theme="blackLuxury"]):not([data-cm-theme="neon"]) .panel-card :where(p,small,.bm-muted,.muted-note,.hint),
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]):not([data-cm-theme="blackLuxury"]):not([data-cm-theme="neon"]) .cm-unified-card :where(p,small,.bm-muted,.muted-note,.hint){
+  color:var(--cm-skin-muted)!important;
+}
+
+/* Każdy pozostały modułowy nagłówek / pasek z dawnym niebieskim tłem ma przejść na paletę skórki. */
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) :where(
+  .bm-page-head,.customers-head,.cm-section-head,.cm-module-head,.cm-module-header,.cm-page-titlebar,
+  .cm-filter-head,.cm-filter-title,.cm-list-head,.cm-list-title,.cm-tabs,.cm-tabbar,.cm-report-tabs,
+  .cm-pass-tabs,.cm-sales-tabs,.cm-sales-summary,.cm-summary-box,.cm-kpi-card,.cm-stat-card,
+  .cm-calendar-title,.cm-calendar-nav,.cm-calendar-toolbar
+){
+  background:var(--cm-skin-head-bg)!important;
+  color:var(--cm-skin-text)!important;
+  border:1px solid var(--cm-skin-border)!important;
+  box-shadow:0 14px 34px var(--cm-skin-shadow)!important;
+  text-shadow:none!important;
+}
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) :where(
+  .bm-page-head,.customers-head,.cm-section-head,.cm-module-head,.cm-module-header,.cm-page-titlebar,
+  .cm-filter-head,.cm-filter-title,.cm-list-head,.cm-list-title,.cm-tabs,.cm-tabbar,.cm-report-tabs,
+  .cm-pass-tabs,.cm-sales-tabs,.cm-sales-summary,.cm-summary-box,.cm-kpi-card,.cm-stat-card,
+  .cm-calendar-title,.cm-calendar-nav,.cm-calendar-toolbar
+) *{
+  color:inherit!important;
+  text-shadow:none!important;
+}
+
+/* Przyciski/chipy filtrów, które wcześniej trzymały stały kolor. */
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) :where(
+  .bm-light-btn,.filter-btn,.tab-btn,.cm-tab,.cm-filter-chip,.cm-chip,.cm-status-chip,
+  .cm-pass-filter,.cm-sales-filter,.cm-report-filter,.cm-toggle-pill,.cm-pill
+){
+  background:var(--cm-skin-chip-bg)!important;
+  color:var(--cm-skin-text)!important;
+  border:1px solid var(--cm-skin-border)!important;
+  box-shadow:0 8px 20px var(--cm-skin-shadow)!important;
+  text-shadow:none!important;
+}
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) :where(
+  .bm-light-btn.active,.bm-light-btn:hover,.filter-btn.active,.filter-btn:hover,.tab-btn.active,.tab-btn:hover,
+  .cm-tab.active,.cm-tab:hover,.cm-filter-chip.active,.cm-filter-chip:hover,.cm-chip.active,.cm-chip:hover,
+  .cm-pass-filter.active,.cm-pass-filter:hover,.cm-sales-filter.active,.cm-sales-filter:hover,
+  .cm-report-filter.active,.cm-report-filter:hover,.cm-toggle-pill.active,.cm-toggle-pill:hover,.cm-pill.active,.cm-pill:hover
+){
+  background:var(--cm-skin-chip-active)!important;
+  color:var(--cm-skin-accent)!important;
+  border-color:color-mix(in srgb,var(--cm-skin-accent) 50%,transparent)!important;
+}
+
+/* Tabele i komórki — usunięcie resztek granatu/czerni. */
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) :where(.bm-table-wrap,.table-wrap,.cm-table-wrap,.data-table-wrap){
+  background:var(--cm-skin-panel-bg)!important;
+  border-color:var(--cm-skin-border)!important;
+  box-shadow:0 14px 34px var(--cm-skin-shadow)!important;
+}
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) :where(table,.bm-table,.data-table,.cm-table){
+  background:transparent!important;
+  color:var(--cm-skin-text)!important;
+}
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) :where(table,.bm-table,.data-table,.cm-table) th{
+  background:var(--cm-skin-head-bg)!important;
+  color:var(--cm-skin-text)!important;
+  border-color:var(--cm-skin-border)!important;
+}
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) :where(table,.bm-table,.data-table,.cm-table) td{
+  background:color-mix(in srgb,var(--cm-skin-card) 70%,transparent)!important;
+  color:var(--cm-skin-text)!important;
+  border-color:color-mix(in srgb,var(--cm-skin-border) 70%,transparent)!important;
+}
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) :where(table,.bm-table,.data-table,.cm-table) tr:hover td{
+  background:var(--cm-skin-cell-bg-strong)!important;
+}
