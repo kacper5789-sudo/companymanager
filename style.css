@@ -11761,3 +11761,143 @@ html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhit
   color:#fff!important;
   border-color:var(--cm-skin-border)!important;
 }
+
+/* CompanyManager v3.3 — complete non-original/non-gold skin polish: left calendar, passes and sales tabs */
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]){
+  --cm-skin-tab-bg:linear-gradient(180deg,color-mix(in srgb,var(--cm-skin-card) 94%,var(--cm-skin-accent-2) 6%),color-mix(in srgb,var(--cm-skin-soft) 92%,var(--cm-skin-accent) 8%));
+  --cm-skin-tab-active:linear-gradient(180deg,color-mix(in srgb,var(--cm-skin-card) 72%,var(--cm-skin-accent-2) 28%),color-mix(in srgb,var(--cm-skin-soft) 78%,var(--cm-skin-accent) 22%));
+  --cm-skin-panel-bg:linear-gradient(180deg,color-mix(in srgb,var(--cm-skin-card) 96%,transparent),color-mix(in srgb,var(--cm-skin-soft) 94%,transparent));
+}
+
+/* Lewe menu: zegarek + rozwijany kalendarz nie mogą zostawać czarno-niebieskie */
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) .bm-left-info-panel .bm-mini-calendar,
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) .bm-left-info-panel .bm-calendar-center,
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) .cm-unified-menu-calendar{
+  background:var(--cm-skin-panel-bg)!important;
+  border:1px solid var(--cm-skin-border)!important;
+  color:var(--cm-skin-text)!important;
+  box-shadow:0 14px 34px var(--cm-skin-shadow), inset 0 1px 0 color-mix(in srgb,var(--cm-skin-card) 76%,white 24%)!important;
+}
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) .bm-left-info-panel .bm-calendar-center .bm-today,
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) #calendarToggle{
+  background:var(--cm-skin-tab-bg)!important;
+  color:var(--cm-skin-text)!important;
+  border:1px solid var(--cm-skin-border)!important;
+  box-shadow:0 10px 24px var(--cm-skin-shadow)!important;
+  text-shadow:none!important;
+}
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) .bm-left-info-panel .bm-calendar-center .bm-today:hover,
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) #calendarToggle:hover{
+  background:var(--cm-skin-tab-active)!important;
+  color:var(--cm-skin-accent)!important;
+  border-color:color-mix(in srgb,var(--cm-skin-accent) 48%,transparent)!important;
+}
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) .bm-left-info-panel .bm-calendar-center .bm-today strong,
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) #calendarToggle strong,
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) .bm-live-clock,
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) #liveClock{
+  color:var(--cm-skin-text)!important;
+  text-shadow:none!important;
+}
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) .bm-month,
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) #monthCalendar{
+  background:var(--cm-skin-panel-bg)!important;
+  color:var(--cm-skin-text)!important;
+  border:1px solid var(--cm-skin-border)!important;
+  box-shadow:0 18px 42px var(--cm-skin-shadow)!important;
+}
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) .bm-month *,
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) #monthCalendar *{
+  color:var(--cm-skin-text)!important;
+  text-shadow:none!important;
+}
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) .bm-month button,
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) #monthCalendar button{
+  background:var(--cm-skin-tab-bg)!important;
+  color:var(--cm-skin-accent)!important;
+  border:1px solid var(--cm-skin-border)!important;
+  box-shadow:0 8px 18px var(--cm-skin-shadow)!important;
+}
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) .bm-month button:hover,
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) #monthCalendar button:hover{
+  background:var(--cm-skin-tab-active)!important;
+}
+
+/* Karnety: statusy pokaż wszystkie / aktualne / zrealizowane / po terminie */
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) .passes-module .bm-filter-tabs,
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) .cm-sales-page .bm-filter-tabs,
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) .cm-sales-tabs{
+  background:color-mix(in srgb,var(--cm-skin-soft) 72%,transparent)!important;
+  border:1px solid var(--cm-skin-border)!important;
+  border-radius:18px!important;
+  box-shadow:0 14px 34px var(--cm-skin-shadow)!important;
+  padding:8px!important;
+}
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) .passes-module .bm-filter-tabs a,
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) .cm-sales-tabs a,
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) .cm-sales-tab,
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) .bm-filter-tabs a[href*="passes.html"],
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) .bm-filter-tabs a[href*="sales.html"]{
+  background:var(--cm-skin-tab-bg)!important;
+  color:var(--cm-skin-text)!important;
+  border:1px solid var(--cm-skin-border)!important;
+  box-shadow:0 8px 20px var(--cm-skin-shadow)!important;
+  text-shadow:none!important;
+}
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) .passes-module .bm-filter-tabs a.active,
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) .passes-module .bm-filter-tabs a:hover,
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) .cm-sales-tabs a.active,
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) .cm-sales-tabs a:hover,
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) .cm-sales-tab.active,
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) .cm-sales-tab:hover,
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) .bm-filter-tabs a[href*="passes.html"].active,
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) .bm-filter-tabs a[href*="sales.html"].active{
+  background:var(--cm-skin-tab-active)!important;
+  color:var(--cm-skin-accent)!important;
+  border-color:color-mix(in srgb,var(--cm-skin-accent) 50%,transparent)!important;
+}
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) .cm-pass-status-help{
+  background:var(--cm-skin-tab-bg)!important;
+  color:var(--cm-skin-muted)!important;
+  border:1px solid var(--cm-skin-border)!important;
+  border-radius:16px!important;
+  padding:10px 12px!important;
+}
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) .cm-pass-status-help strong{color:var(--cm-skin-accent)!important;}
+
+/* Sprzedaż: zakładki, widok, podsumowanie Pozycje/Wartość */
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) .cm-sales-page,
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) .cm-sales-view,
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) .sales-module{
+  background:var(--cm-skin-panel-bg)!important;
+  color:var(--cm-skin-text)!important;
+  border-color:var(--cm-skin-border)!important;
+}
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) .cm-sales-view h2,
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) .cm-sales-view h3{
+  color:var(--cm-skin-text)!important;
+  text-shadow:none!important;
+}
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) .cm-sales-summary,
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) .cm-sales-summary *{
+  color:var(--cm-skin-text)!important;
+  text-shadow:none!important;
+}
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) .cm-sales-summary b{
+  background:var(--cm-skin-tab-bg)!important;
+  color:var(--cm-skin-text)!important;
+  border:1px solid var(--cm-skin-border)!important;
+  box-shadow:0 12px 28px var(--cm-skin-shadow)!important;
+}
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) .cm-sales-summary b strong,
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) .cm-sales-summary strong{
+  color:var(--cm-skin-accent)!important;
+}
+
+/* Dla ciemnych skórek zachowaj czytelność aktywnych przycisków */
+html[data-cm-theme="blackLuxury"] .passes-module .bm-filter-tabs a.active,
+html[data-cm-theme="blackLuxury"] .cm-sales-tabs a.active,
+html[data-cm-theme="neon"] .passes-module .bm-filter-tabs a.active,
+html[data-cm-theme="neon"] .cm-sales-tabs a.active{
+  color:var(--cm-skin-text)!important;
+}
