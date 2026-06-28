@@ -13720,3 +13720,181 @@ html[data-cm-theme]:not([data-cm-theme="original"]) [style*="border: 1px"],
 html[data-cm-theme]:not([data-cm-theme="original"]) [style*="border:1px"]{
   border-color:transparent!important;
 }
+
+/* CompanyManager 5.1 — General UI Geometry Engine
+   Single source of geometry for every skin except Original.
+   Skins may change colors only; radius, table shape and soft layout follow Original. */
+html[data-cm-theme]:not([data-cm-theme="original"]){
+  --cm-geo-radius-xs:10px;
+  --cm-geo-radius-sm:14px;
+  --cm-geo-radius-md:18px;
+  --cm-geo-radius-lg:24px;
+  --cm-geo-radius-xl:28px;
+  --cm-geo-radius-pill:999px;
+  --cm-geo-soft-line:color-mix(in srgb,var(--cm-skin-accent,#2563eb) 12%,transparent);
+  --cm-geo-row-line:color-mix(in srgb,var(--cm-skin-accent,#2563eb) 16%,transparent);
+  --cm-geo-table-head:linear-gradient(90deg,
+    color-mix(in srgb,var(--cm-skin-accent,#2563eb) 16%,var(--cm-skin-card,#fff) 84%),
+    color-mix(in srgb,var(--cm-skin-accent,#2563eb) 7%,var(--cm-skin-card,#fff) 93%)
+  );
+  --cm-geo-soft-shadow:0 18px 46px color-mix(in srgb,var(--cm-skin-shadow,rgba(0,0,0,.14)) 30%,transparent);
+  --cm-geo-pill-shadow:0 10px 24px color-mix(in srgb,var(--cm-skin-shadow,rgba(0,0,0,.12)) 22%,transparent);
+}
+
+/* Daily report: remove old rectangular table frames from all skins and rebuild as Original-like rounded rows */
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-supabase-daily-report .cm-period-section{
+  background:transparent!important;
+  border:0!important;
+  border-top:1px solid var(--cm-geo-soft-line)!important;
+  border-radius:0!important;
+  box-shadow:none!important;
+  padding:26px 0 0!important;
+  margin-top:24px!important;
+}
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-supabase-daily-report .cm-period-section:first-of-type{
+  border-top:0!important;
+  margin-top:0!important;
+}
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-supabase-daily-report .cm-daily-datatable,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-supabase-daily-report .cm-daily-table-tools,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-supabase-daily-report .cm-daily-table-pager{
+  background:transparent!important;
+  background-image:none!important;
+  border:0!important;
+  outline:0!important;
+  box-shadow:none!important;
+}
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-supabase-daily-report .cm-daily-table-tools{
+  padding:0!important;
+  margin:14px 0 8px!important;
+}
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-supabase-daily-report .cm-daily-table-tools select,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-supabase-daily-report .cm-daily-table-tools input{
+  border:0!important;
+  border-radius:var(--cm-geo-radius-pill)!important;
+  outline:0!important;
+  background:color-mix(in srgb,var(--cm-skin-card,#fff) 88%,var(--cm-skin-bg,#f8fafc) 12%)!important;
+  box-shadow:var(--cm-geo-pill-shadow)!important;
+}
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-supabase-daily-report .cm-daily-table-wrap,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-supabase-daily-report .bm-table-wrap{
+  background:transparent!important;
+  background-image:none!important;
+  border:0!important;
+  outline:0!important;
+  box-shadow:none!important;
+  border-radius:var(--cm-geo-radius-lg)!important;
+  overflow:hidden!important;
+}
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-supabase-daily-report .cm-daily-table,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-supabase-daily-report .bm-table{
+  border:0!important;
+  outline:0!important;
+  box-shadow:none!important;
+  border-collapse:separate!important;
+  border-spacing:0!important;
+  background:transparent!important;
+  overflow:hidden!important;
+}
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-supabase-daily-report .cm-daily-table thead,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-supabase-daily-report .bm-table thead,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-supabase-daily-report .cm-daily-table tbody,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-supabase-daily-report .bm-table tbody,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-supabase-daily-report .cm-daily-table tfoot,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-supabase-daily-report .bm-table tfoot{
+  border:0!important;
+  outline:0!important;
+  box-shadow:none!important;
+  background:transparent!important;
+}
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-supabase-daily-report .cm-daily-table th,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-supabase-daily-report .bm-table th{
+  background:var(--cm-geo-table-head)!important;
+  border:0!important;
+  border-bottom:1px solid var(--cm-geo-row-line)!important;
+  color:var(--cm-skin-accent,#2563eb)!important;
+  box-shadow:none!important;
+}
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-supabase-daily-report .cm-daily-table th:first-child,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-supabase-daily-report .bm-table th:first-child{
+  border-top-left-radius:var(--cm-geo-radius-lg)!important;
+}
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-supabase-daily-report .cm-daily-table th:last-child,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-supabase-daily-report .bm-table th:last-child{
+  border-top-right-radius:var(--cm-geo-radius-lg)!important;
+}
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-supabase-daily-report .cm-daily-table td,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-supabase-daily-report .bm-table td{
+  background:color-mix(in srgb,var(--cm-skin-card,#fff) 76%,transparent)!important;
+  border:0!important;
+  border-bottom:1px solid var(--cm-geo-row-line)!important;
+  box-shadow:none!important;
+}
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-supabase-daily-report .cm-daily-table tbody tr:last-child td,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-supabase-daily-report .bm-table tbody tr:last-child td{
+  border-bottom:0!important;
+}
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-supabase-daily-report .cm-daily-table tbody tr:last-child td:first-child,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-supabase-daily-report .bm-table tbody tr:last-child td:first-child,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-supabase-daily-report .cm-daily-table tfoot tr:last-child td:first-child,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-supabase-daily-report .bm-table tfoot tr:last-child td:first-child{
+  border-bottom-left-radius:var(--cm-geo-radius-lg)!important;
+}
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-supabase-daily-report .cm-daily-table tbody tr:last-child td:last-child,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-supabase-daily-report .bm-table tbody tr:last-child td:last-child,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-supabase-daily-report .cm-daily-table tfoot tr:last-child td:last-child,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-supabase-daily-report .bm-table tfoot tr:last-child td:last-child{
+  border-bottom-right-radius:var(--cm-geo-radius-lg)!important;
+}
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-supabase-daily-report .cm-daily-table tfoot td,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-supabase-daily-report .bm-table tfoot td{
+  position:static!important;
+  background:color-mix(in srgb,var(--cm-skin-card,#fff) 72%,transparent)!important;
+  border-top:1px solid var(--cm-geo-row-line)!important;
+  color:var(--cm-skin-text,#0f172a)!important;
+}
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-supabase-daily-report .cm-daily-table-pager{
+  margin:12px 0 0!important;
+  padding:0!important;
+}
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-supabase-daily-report .cm-daily-table-pager button,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-supabase-daily-report .cm-daily-table-pager [data-table-page],
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-sales-pager button,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-sales-pager b,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-sales-pager input{
+  border:0!important;
+  outline:0!important;
+  border-radius:var(--cm-geo-radius-pill)!important;
+  box-shadow:var(--cm-geo-pill-shadow)!important;
+}
+
+/* Global table geometry: future skins inherit this too, not per-skin rectangular borders. */
+html[data-cm-theme]:not([data-cm-theme="original"]) .bm-table-wrap,
+html[data-cm-theme]:not([data-cm-theme="original"]) .table-wrap,
+html[data-cm-theme]:not([data-cm-theme="original"]) .table-container,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-table-wrap{
+  border:0!important;
+  outline:0!important;
+  box-shadow:none!important;
+  border-radius:var(--cm-geo-radius-lg)!important;
+  background:transparent!important;
+  overflow:hidden!important;
+}
+html[data-cm-theme]:not([data-cm-theme="original"]) .bm-table th:first-child,
+html[data-cm-theme]:not([data-cm-theme="original"]) .data-table th:first-child,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-report-table th:first-child{
+  border-top-left-radius:var(--cm-geo-radius-lg)!important;
+}
+html[data-cm-theme]:not([data-cm-theme="original"]) .bm-table th:last-child,
+html[data-cm-theme]:not([data-cm-theme="original"]) .data-table th:last-child,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-report-table th:last-child{
+  border-top-right-radius:var(--cm-geo-radius-lg)!important;
+}
+
+/* Kill late theme-pack rectangular frame leaks without touching Original. */
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-supabase-daily-report [class*="table"]{
+  outline-color:transparent!important;
+}
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-supabase-daily-report [class*="wrap"]{
+  border-color:transparent!important;
+}
