@@ -13563,3 +13563,160 @@ html[data-cm-theme]:not([data-cm-theme="original"]) .cm-sales-export-btn{
   border:none!important;
   outline:none!important;
 }
+
+/* CompanyManager 5.0 — Original Geometry Audit
+   Final polish: all skins except Original inherit Original-like soft geometry.
+   Removes the rectangular panel/fieldset frames that appeared in themed skins. */
+html[data-cm-theme]:not([data-cm-theme="original"]){
+  --cm-original-like-surface:transparent;
+  --cm-original-like-line:color-mix(in srgb,var(--cm-skin-accent,#2563eb) 10%,transparent);
+  --cm-original-like-soft-shadow:0 16px 38px color-mix(in srgb,var(--cm-skin-shadow,rgba(0,0,0,.14)) 45%,transparent);
+  --cm-original-like-chip-shadow:0 10px 24px color-mix(in srgb,var(--cm-skin-shadow,rgba(0,0,0,.13)) 38%,transparent);
+}
+
+/* Remove hard rectangular wrappers around filter forms, toolbars and report controls */
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-period-controls,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-customers-report-controls,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-sales-report-controls,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-sales-filters,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-report-filter-bar,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-report-filters,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-daily-date-row,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-daily-table-tools,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-er-filters,
+html[data-cm-theme]:not([data-cm-theme="original"]) .bm-table-toolbar,
+html[data-cm-theme]:not([data-cm-theme="original"]) .bm-table-tools,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-work-schedule-controls,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-supabase-work-schedule .cm-work-schedule-controls,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-work-panel,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-pass-status-help,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-sales-summary,
+html[data-cm-theme]:not([data-cm-theme="original"]) fieldset{
+  background:transparent!important;
+  background-image:none!important;
+  border:none!important;
+  outline:none!important;
+  box-shadow:none!important;
+}
+
+/* Filter forms should not draw a full rectangular plate */
+html[data-cm-theme]:not([data-cm-theme="original"]) form.cm-period-controls,
+html[data-cm-theme]:not([data-cm-theme="original"]) form.cm-customers-report-controls,
+html[data-cm-theme]:not([data-cm-theme="original"]) form.cm-sales-report-controls{
+  padding:0!important;
+  border-radius:0!important;
+}
+
+/* Main content cards: no visible outline, only surface + shadow */
+html[data-cm-theme]:not([data-cm-theme="original"]) .bm-page-card,
+html[data-cm-theme]:not([data-cm-theme="original"]) .panel-card,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-sales-page,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-sales-view,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-customers-reports-page,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-customer-report-card,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-customers-report-card,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-supa-reports-module,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-report-card,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-daily-report-card,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-period-report-card,
+html[data-cm-theme]:not([data-cm-theme="original"]) .passes-module,
+html[data-cm-theme]:not([data-cm-theme="original"]) .sales-module{
+  border:none!important;
+  outline:none!important;
+  box-shadow:var(--cm-original-like-soft-shadow)!important;
+}
+
+/* Chips/tabs/buttons: no rectangular border; only pill shape and soft depth */
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-sales-tabs,
+html[data-cm-theme]:not([data-cm-theme="original"]) .bm-filter-tabs,
+html[data-cm-theme]:not([data-cm-theme="original"]) .passes-module .bm-filter-tabs,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-report-tabs,
+html[data-cm-theme]:not([data-cm-theme="original"]) .tabs,
+html[data-cm-theme]:not([data-cm-theme="original"]) .tabbar{
+  background:transparent!important;
+  background-image:none!important;
+  border:none!important;
+  box-shadow:none!important;
+  padding:0!important;
+}
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-sales-tabs a,
+html[data-cm-theme]:not([data-cm-theme="original"]) .bm-filter-tabs a,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-sales-tab,
+html[data-cm-theme]:not([data-cm-theme="original"]) .bm-filter-btn,
+html[data-cm-theme]:not([data-cm-theme="original"]) .bm-tab,
+html[data-cm-theme]:not([data-cm-theme="original"]) .bm-report-tab,
+html[data-cm-theme]:not([data-cm-theme="original"]) .filter-btn,
+html[data-cm-theme]:not([data-cm-theme="original"]) .tab-btn,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-tab,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-filter-chip,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-chip,
+html[data-cm-theme]:not([data-cm-theme="original"]) .panel-pill,
+html[data-cm-theme]:not([data-cm-theme="original"]) .bm-pill,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-sales-summary b,
+html[data-cm-theme]:not([data-cm-theme="original"]) .summary-pill{
+  border:none!important;
+  outline:none!important;
+  box-shadow:var(--cm-original-like-chip-shadow)!important;
+}
+
+/* KPI/stat/report tiles: avoid visible outline; keep only theme surface */
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-period-kpis > div,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-daily-main-kpis > *,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-finance-grid > *,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-comm-grid > *,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-unified-stat,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-report-summary-card,
+html[data-cm-theme]:not([data-cm-theme="original"]) .metric-card,
+html[data-cm-theme]:not([data-cm-theme="original"]) .bm-stats article{
+  border:none!important;
+  outline:none!important;
+  box-shadow:var(--cm-original-like-chip-shadow)!important;
+}
+
+/* Inputs still need readable affordance, but no hard 1px rectangular frame */
+html[data-cm-theme]:not([data-cm-theme="original"]) input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+html[data-cm-theme]:not([data-cm-theme="original"]) textarea,
+html[data-cm-theme]:not([data-cm-theme="original"]) select,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-cr-dropdown-button,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-sales-date-pill,
+html[data-cm-theme]:not([data-cm-theme="original"]) .panel-input,
+html[data-cm-theme]:not([data-cm-theme="original"]) .role-select{
+  border:none!important;
+  outline:none!important;
+  box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--cm-skin-accent,#2563eb) 5%,transparent), 0 8px 20px color-mix(in srgb,var(--cm-skin-shadow,rgba(0,0,0,.12)) 22%,transparent)!important;
+}
+
+/* Tables: no outside rectangle. Only row separators, like the Original visual rhythm. */
+html[data-cm-theme]:not([data-cm-theme="original"]) .bm-table-wrap,
+html[data-cm-theme]:not([data-cm-theme="original"]) .table-wrap,
+html[data-cm-theme]:not([data-cm-theme="original"]) .table-container,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-table-wrap{
+  border:none!important;
+  outline:none!important;
+  box-shadow:none!important;
+  background:transparent!important;
+}
+html[data-cm-theme]:not([data-cm-theme="original"]) table{
+  border:none!important;
+  outline:none!important;
+  box-shadow:none!important;
+}
+html[data-cm-theme]:not([data-cm-theme="original"]) th,
+html[data-cm-theme]:not([data-cm-theme="original"]) td{
+  border-left:none!important;
+  border-right:none!important;
+  border-top:none!important;
+}
+
+/* Customer report switcher was still visibly framed in some skins */
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-customer-report-switcher{
+  border:none!important;
+  outline:none!important;
+  box-shadow:var(--cm-original-like-chip-shadow)!important;
+}
+
+/* Hard borders from older theme packs must not leak back into final skins. */
+html[data-cm-theme]:not([data-cm-theme="original"]) [style*="border: 1px"],
+html[data-cm-theme]:not([data-cm-theme="original"]) [style*="border:1px"]{
+  border-color:transparent!important;
+}
