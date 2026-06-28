@@ -14900,3 +14900,99 @@ html[data-cm-theme]:not([data-cm-theme="original"]) body[data-panel-page="compan
   outline:0!important;
   box-shadow:none!important;
 }
+
+/* CompanyManager v5.9 — Original Geometry Guard
+   Silnik skórek może zmieniać kolorystykę, ale nie może dodawać prostokątnych płyt/ramek.
+   Ten blok jest celowo na końcu pliku, żeby wygasić wcześniejsze reguły pakietów skórek. */
+html[data-cm-theme]:not([data-cm-theme="original"]) .bm-left-info-panel,
+html[data-cm-theme]:not([data-cm-theme="original"]) .bm-panel-workspace > .bm-left-info-panel{
+  border:0!important;
+  outline:0!important;
+  box-shadow:16px 18px 60px color-mix(in srgb,var(--cm-skin-shadow,rgba(0,0,0,.20)) 14%,transparent)!important;
+  overflow:visible!important;
+}
+html[data-cm-theme]:not([data-cm-theme="original"]) .bm-left-info-panel::before,
+html[data-cm-theme]:not([data-cm-theme="original"]) .bm-left-info-panel::after,
+html[data-cm-theme]:not([data-cm-theme="original"]) .bm-left-info-panel .bm-identity-block::before,
+html[data-cm-theme]:not([data-cm-theme="original"]) .bm-left-info-panel .bm-identity-block::after{
+  content:none!important;
+  display:none!important;
+}
+html[data-cm-theme]:not([data-cm-theme="original"]) .bm-left-info-panel .bm-identity-block{
+  border:0!important;
+  outline:0!important;
+  box-shadow:none!important;
+  background:transparent!important;
+}
+
+/* Grafik pracy: nagłówek strony nie jest kartą — zero tła, borderów i sztucznej płyty. */
+html[data-cm-theme]:not([data-cm-theme="original"]) body[data-panel-page="workSchedule"] .bm-page-card.cm-supabase-work-schedule,
+html[data-cm-theme]:not([data-cm-theme="original"]) body[data-panel-page="workSchedule"] .cm-supabase-work-schedule{
+  border:0!important;
+  outline:0!important;
+  background:transparent!important;
+  box-shadow:none!important;
+}
+html[data-cm-theme]:not([data-cm-theme="original"]) body[data-panel-page="workSchedule"] .cm-work-schedule-head,
+html[data-cm-theme]:not([data-cm-theme="original"]) body[data-panel-page="workSchedule"] .bm-page-card.cm-supabase-work-schedule > .cm-work-schedule-head,
+html[data-cm-theme]:not([data-cm-theme="original"]) body[data-panel-page="workSchedule"] .cm-supabase-work-schedule > .cm-work-schedule-head,
+html[data-cm-theme]:not([data-cm-theme="original"]) body[data-panel-page="workSchedule"] .bm-page-head.customers-head.cm-work-schedule-head{
+  border:0!important;
+  border-color:transparent!important;
+  outline:0!important;
+  background:transparent!important;
+  background-color:transparent!important;
+  background-image:none!important;
+  box-shadow:none!important;
+  padding:0!important;
+  margin:0 0 22px!important;
+  border-radius:0!important;
+  min-height:auto!important;
+}
+html[data-cm-theme]:not([data-cm-theme="original"]) body[data-panel-page="workSchedule"] .cm-work-schedule-head::before,
+html[data-cm-theme]:not([data-cm-theme="original"]) body[data-panel-page="workSchedule"] .cm-work-schedule-head::after{
+  content:none!important;
+  display:none!important;
+}
+html[data-cm-theme]:not([data-cm-theme="original"]) body[data-panel-page="workSchedule"] .cm-work-schedule-head h2,
+html[data-cm-theme]:not([data-cm-theme="original"]) body[data-panel-page="workSchedule"] .cm-work-schedule-head p{
+  background:transparent!important;
+  border:0!important;
+  box-shadow:none!important;
+}
+
+/* Grafik pracy: panel edycji ma być miękkim komponentem, nie prostokątną planszą. */
+html[data-cm-theme]:not([data-cm-theme="original"]) body[data-panel-page="workSchedule"] .cm-work-schedule-grid,
+html[data-cm-theme]:not([data-cm-theme="original"]) body[data-panel-page="workSchedule"] .cm-work-panel,
+html[data-cm-theme]:not([data-cm-theme="original"]) body[data-panel-page="workSchedule"] .cm-work-panel-main{
+  border:0!important;
+  outline:0!important;
+  background:linear-gradient(135deg,
+    color-mix(in srgb,var(--cm-skin-card,#fff) 70%,transparent),
+    color-mix(in srgb,var(--cm-skin-soft,#f8fafc) 56%,transparent))!important;
+  box-shadow:0 20px 52px color-mix(in srgb,var(--cm-skin-shadow,rgba(15,23,42,.10)) 10%,transparent)!important;
+  border-radius:22px!important;
+}
+html[data-cm-theme]:not([data-cm-theme="original"]) body[data-panel-page="workSchedule"] .cm-work-panel-title{
+  color:var(--cm-skin-text,#0f172a)!important;
+  background:transparent!important;
+  border:0!important;
+  box-shadow:none!important;
+}
+html[data-cm-theme]:not([data-cm-theme="original"]) body[data-panel-page="workSchedule"] .cm-work-schedule-editor-wrap,
+html[data-cm-theme]:not([data-cm-theme="original"]) body[data-panel-page="workSchedule"] .cm-work-summary-wrap{
+  border:0!important;
+  outline:0!important;
+  box-shadow:none!important;
+  background:transparent!important;
+}
+
+/* Panel firmy: zakładki i nagłówki jako pigułki/tekst, bez prostokątnego podkładu. */
+html[data-cm-theme]:not([data-cm-theme="original"]) body[data-panel-page="companyPanel"] .cm-company-panel-switcher,
+html[data-cm-theme]:not([data-cm-theme="original"]) body[data-panel-page="companyPanel"] .bm-page-head,
+html[data-cm-theme]:not([data-cm-theme="original"]) body[data-panel-page="companyPanel"] .cm-company-panel-form{
+  border:0!important;
+  outline:0!important;
+  background:transparent!important;
+  box-shadow:none!important;
+}
