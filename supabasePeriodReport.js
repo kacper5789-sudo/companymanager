@@ -321,11 +321,38 @@
   }
   function clientName(row) { return [row?.first_name, row?.last_name].filter(Boolean).join(" ").trim() || "(brak)"; }
   function employeeName(row, fallback = "") {
-    return row?.full_name || row?.fullName || row?.name || row?.email || fallback || "(brak)";
+    return row?.full_name || row?.fullName || row?.employee_name || row?.employeeName || row?.name || row?.email || fallback || "(brak)";
   }
   function nameKey(value) {
     return String(value || "").trim().toLowerCase().replace(/\s+/g, " ");
   }
+
+  function isInactiveEmployee(row) {
+    const status = String(row?.status || row?.state || "").trim().toLowerCase();
+    return row?.active === false || row?.is_active === false || ["inactive", "disabled", "archived", "deleted", "usunięty", "usuniety"].includes(status);
+  }
+
+  function employeeDirectory(profiles = [], employeesTable = []) {
+    const byKey = new Map();
+    const byName = new Set();
+    const add = (row, source = "profile") => {
+      if (!row || isInactiveEmployee(row)) return;
+      if (source === "profile" && normalizeRole(row.role) === "OWNER") return;
+      const name = employeeName(row, "").trim();
+      const nk = nameKey(name);
+      if (!name || nk === "(brak)") return;
+      const profileId = row.profile_id || row.profileId || row.user_id || row.userId || row.profile || "";
+      const id = row.id || profileId || nk;
+      const key = profileId ? `id:${profileId}` : (source === "profile" ? `id:${id}` : `employee:${id}`);
+      if (byKey.has(key) || byName.has(nk)) return;
+      byKey.set(key, { ...row, id: profileId || id, full_name: name, __cmSource: source });
+      byName.add(nk);
+    };
+    (profiles || []).forEach((row) => add(row, "profile"));
+    (employeesTable || []).forEach((row) => add(row, "employee"));
+    return Array.from(byKey.values()).sort((a, b) => employeeName(a).localeCompare(employeeName(b), "pl"));
+  }
+
   function createEmployeeResolver(employees) {
     const byId = new Map((employees || []).filter(e => e?.id).map(e => [e.id, e]));
     const byName = new Map();
@@ -356,15 +383,17 @@
 
   async function fetchPeriodData(ctx, range) {
     const sb = window.cmSupabase;
-    const [salesRes, paymentsRes, appointmentsRes, clientsRes, employeesRes] = await Promise.all([
+    const [salesRes, paymentsRes, appointmentsRes, clientsRes, employeesRes, employeesTableRes] = await Promise.all([
       sb.from("sales").select("id,company_id,client_id,employee_id,employee_name,appointment_id,total_gross,total_net,payment_status,payment_method,status,created_at,updated_at").eq("company_id", ctx.companyId).gte("created_at", range.startIso).lt("created_at", range.endIso),
       sb.from("payments").select("id,company_id,sale_id,appointment_id,amount,method,status,paid_at,created_at").eq("company_id", ctx.companyId).gte("created_at", range.startIso).lt("created_at", range.endIso),
       sb.from("appointments").select("id,company_id,client_id,client_name,employee_id,employee_name,service_id,service_name,product_id,product_name,total,price,paid_amount,payment_status,payment_method,status,finished,date,starts_at,appointment_datetime,created_at").eq("company_id", ctx.companyId).gte("date", range.fromIso).lte("date", range.toIso),
       sb.from("clients").select("id,first_name,last_name,created_at,company_id").eq("company_id", ctx.companyId).lte("created_at", range.endIso),
-      sb.from("profiles").select("id,full_name,email,role,company_id").eq("company_id", ctx.companyId)
+      sb.from("profiles").select("id,full_name,email,role,company_id").eq("company_id", ctx.companyId),
+      sb.from("employees").select("id,profile_id,user_id,full_name,employee_name,name,email,active,is_active,status,company_id").eq("company_id", ctx.companyId)
     ]);
     const errors = [salesRes.error, paymentsRes.error, appointmentsRes.error, clientsRes.error, employeesRes.error].filter(Boolean);
     if (errors.length) throw new Error(errors.map(e => e.message).join(" | "));
+    if (employeesTableRes.error) console.warn("[Raport z okresu] employees:", employeesTableRes.error.message || employeesTableRes.error);
     const inactiveSaleStatuses = ["void", "deleted", "usunięte", "usuniete", "cancelled", "canceled", "anulowane", "anulowana"];
     const sales = (salesRes.data || []).filter(s => {
       const ps = String(s.payment_status || "").toLowerCase();
@@ -390,13 +419,15 @@
       appointments: appointmentsRes.data || [],
       clients: clientsRes.data || [],
       employees: employeesRes.data || [],
+      employeesTable: employeesTableRes.error ? [] : (employeesTableRes.data || []),
       saleItems
     };
   }
 
   function buildReport(data, range) {
     const saleMap = new Map(data.sales.map(s => [s.id, s]));
-    const employeeResolver = createEmployeeResolver(data.employees || []);
+    const employeesForReport = employeeDirectory(data.employees || [], data.employeesTable || []);
+    const employeeResolver = createEmployeeResolver(employeesForReport);
     const employeeMap = employeeResolver.byId;
     const appointmentById = new Map((data.appointments || []).map(a => [a.id, a]));
     const clientMap = new Map(data.clients.map(c => [c.id, c]));
@@ -442,6 +473,9 @@
       }
       return employeeRowsMap.get(resolved.key);
     }
+    employeesForReport.forEach((employee) => {
+      ensureEmployee(employee.id, employee.full_name || employee.employee_name || employee.name || employee.email);
+    });
     data.appointments.forEach(a => {
       const row = ensureEmployee(a.employee_id, a.employee_name);
       row.visits += 1;
