@@ -12427,3 +12427,199 @@ html[data-cm-theme="neon"] .cm-finance-grid > div > span,
 html[data-cm-theme="neon"] .cm-finance-grid > div > div span{
   color:var(--cm-skin-accent-2)!important;
 }
+
+/* v3.9 — final skin fixes: from now on poprawki obejmują wszystkie skórki poza Original.
+   Domyka: customers report switcher, Dashboard FREE, Days Off calendar also for Exclusive Gold. */
+html[data-cm-theme="goldWhite"]{
+  --cm-skin-bg:#fffaf0;
+  --cm-skin-soft:#fff8e8;
+  --cm-skin-card:#ffffff;
+  --cm-skin-card-2:#fff7dd;
+  --cm-skin-panel-bg:linear-gradient(180deg,rgba(255,255,255,.94),rgba(255,250,240,.88));
+  --cm-skin-head-bg:linear-gradient(180deg,rgba(254,243,199,.96),rgba(255,255,255,.90));
+  --cm-skin-cell-bg:linear-gradient(180deg,rgba(255,255,255,.96),rgba(255,250,240,.92));
+  --cm-skin-cell-bg-strong:linear-gradient(180deg,rgba(254,243,199,.96),rgba(255,255,255,.92));
+  --cm-skin-chip-bg:linear-gradient(180deg,rgba(255,255,255,.96),rgba(255,250,240,.92));
+  --cm-skin-chip-active:linear-gradient(180deg,rgba(254,243,199,.98),rgba(255,255,255,.92));
+  --cm-skin-border:rgba(180,132,35,.24);
+  --cm-skin-text:#1f2937;
+  --cm-skin-muted:#6b7280;
+  --cm-skin-accent:#b45309;
+  --cm-skin-accent-2:#d97706;
+  --cm-skin-on-accent:#fffaf0;
+  --cm-skin-shadow:rgba(120,86,18,.14);
+}
+
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-customer-report-switcher,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-customers-reports-page .cm-customer-report-switcher{
+  background:var(--cm-skin-head-bg)!important;
+  color:var(--cm-skin-text)!important;
+  border:1px solid var(--cm-skin-border)!important;
+  box-shadow:0 16px 40px var(--cm-skin-shadow)!important;
+  text-shadow:none!important;
+}
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-customer-report-switcher strong,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-customers-reports-page .cm-customer-report-switcher strong{
+  color:var(--cm-skin-accent)!important;
+  text-shadow:none!important;
+}
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-customer-report-switcher .bm-light-btn,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-customer-report-switcher button,
+html[data-cm-theme]:not([data-cm-theme="original"]) #customersReportPrev,
+html[data-cm-theme]:not([data-cm-theme="original"]) #customersReportNext{
+  background:var(--cm-skin-chip-bg)!important;
+  color:var(--cm-skin-accent)!important;
+  border:1px solid var(--cm-skin-border)!important;
+  box-shadow:0 8px 20px var(--cm-skin-shadow)!important;
+  text-shadow:none!important;
+}
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-customer-report-switcher .bm-light-btn:hover,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-customer-report-switcher button:hover,
+html[data-cm-theme]:not([data-cm-theme="original"]) #customersReportPrev:hover,
+html[data-cm-theme]:not([data-cm-theme="original"]) #customersReportNext:hover{
+  background:var(--cm-skin-chip-active)!important;
+  color:var(--cm-skin-accent)!important;
+  border-color:color-mix(in srgb,var(--cm-skin-accent) 50%,transparent)!important;
+}
+
+html[data-cm-theme]:not([data-cm-theme="original"]) .bm-schedule-table .bm-schedule-slot.free,
+html[data-cm-theme]:not([data-cm-theme="original"]) .bm-schedule-grid .bm-schedule-slot.free,
+html[data-cm-theme]:not([data-cm-theme="original"]) td.bm-schedule-slot.free,
+html[data-cm-theme]:not([data-cm-theme="original"]) .bm-schedule-slot.free{
+  background:linear-gradient(180deg,
+    color-mix(in srgb,var(--cm-skin-card) 86%,var(--cm-skin-accent-2) 14%),
+    color-mix(in srgb,var(--cm-skin-soft) 88%,var(--cm-skin-accent) 12%)
+  )!important;
+  border-color:color-mix(in srgb,var(--cm-skin-accent) 38%,transparent)!important;
+  box-shadow:inset 0 1px 0 color-mix(in srgb,var(--cm-skin-card) 70%,transparent)!important;
+}
+html[data-cm-theme]:not([data-cm-theme="original"]) .bm-schedule-table .bm-schedule-slot.free span,
+html[data-cm-theme]:not([data-cm-theme="original"]) .bm-schedule-grid .bm-schedule-slot.free span,
+html[data-cm-theme]:not([data-cm-theme="original"]) td.bm-schedule-slot.free span,
+html[data-cm-theme]:not([data-cm-theme="original"]) .bm-schedule-slot.free span,
+html[data-cm-theme]:not([data-cm-theme="original"]) .bm-page-card .bm-schedule-slot.free span,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-unified-card .bm-schedule-slot.free span{
+  color:var(--cm-skin-accent)!important;
+  font-weight:1000!important;
+  opacity:1!important;
+  text-align:center!important;
+  text-shadow:none!important;
+}
+html[data-cm-theme="blackLuxury"] .bm-schedule-slot.free span,
+html[data-cm-theme="neon"] .bm-schedule-slot.free span{
+  color:var(--cm-skin-accent-2)!important;
+}
+
+html[data-cm-theme]:not([data-cm-theme="original"]) .days-off-head,
+html[data-cm-theme]:not([data-cm-theme="original"]) .days-off-weekdays,
+html[data-cm-theme]:not([data-cm-theme="original"]) .days-off-grid{
+  text-shadow:none!important;
+}
+html[data-cm-theme]:not([data-cm-theme="original"]) .days-off-head strong{
+  color:var(--cm-skin-accent)!important;
+  text-shadow:none!important;
+}
+html[data-cm-theme]:not([data-cm-theme="original"]) .days-off-head button,
+html[data-cm-theme]:not([data-cm-theme="original"]) #daysOffPrev,
+html[data-cm-theme]:not([data-cm-theme="original"]) #daysOffNext{
+  background:var(--cm-skin-chip-bg)!important;
+  color:var(--cm-skin-accent)!important;
+  border:1px solid var(--cm-skin-border)!important;
+  box-shadow:0 8px 20px var(--cm-skin-shadow)!important;
+  text-shadow:none!important;
+}
+html[data-cm-theme]:not([data-cm-theme="original"]) .days-off-weekdays span{
+  color:var(--cm-skin-accent)!important;
+  text-shadow:none!important;
+}
+html[data-cm-theme]:not([data-cm-theme="original"]) .day-off-cell{
+  background:var(--cm-skin-cell-bg)!important;
+  color:var(--cm-skin-text)!important;
+  border:1px solid var(--cm-skin-border)!important;
+  box-shadow:none!important;
+  text-shadow:none!important;
+}
+html[data-cm-theme]:not([data-cm-theme="original"]) .day-off-cell b,
+html[data-cm-theme]:not([data-cm-theme="original"]) .day-off-cell span{
+  color:var(--cm-skin-text)!important;
+  text-shadow:none!important;
+}
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="blackLuxury"]):not([data-cm-theme="neon"]) .day-off-cell,
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="blackLuxury"]):not([data-cm-theme="neon"]) .day-off-cell b,
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="blackLuxury"]):not([data-cm-theme="neon"]) .day-off-cell span{
+  color:var(--cm-skin-text)!important;
+}
+html[data-cm-theme]:not([data-cm-theme="original"]) .day-off-cell.outside b,
+html[data-cm-theme]:not([data-cm-theme="original"]) .day-off-cell.outside span{
+  color:var(--cm-skin-muted)!important;
+  opacity:.72!important;
+}
+html[data-cm-theme]:not([data-cm-theme="original"]) .day-off-cell.today{
+  background:var(--cm-skin-cell-bg-strong)!important;
+  border-color:color-mix(in srgb,var(--cm-skin-accent) 58%,transparent)!important;
+  box-shadow:0 0 0 2px color-mix(in srgb,var(--cm-skin-accent) 28%,transparent)!important;
+}
+html[data-cm-theme]:not([data-cm-theme="original"]) .day-off-entry{
+  background:linear-gradient(180deg,var(--cm-skin-accent),color-mix(in srgb,var(--cm-skin-accent) 78%,#000 22%))!important;
+  color:var(--cm-skin-on-accent)!important;
+  border:1px solid color-mix(in srgb,var(--cm-skin-accent) 55%,transparent)!important;
+  text-shadow:none!important;
+}
+
+/* v4.0 — Klienci - raporty: finalny fix tła przełącznika widoku.
+   Poprawia pasek: ‹ Planowane wizyty według klientów › dla wszystkich skórek poza Original.
+   W poprzednim override część skórek nie miała --cm-skin-head-bg / --cm-skin-chip-bg, więc background wracał do starego ciemnego gradientu. */
+html[data-cm-theme]:not([data-cm-theme="original"]) body[data-panel-page="customersReports"] .cm-supa-customers-reports .cm-customer-report-switcher,
+html[data-cm-theme]:not([data-cm-theme="original"]) body[data-panel-page="customersReports"] .cm-customers-reports-page .cm-customer-report-switcher,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-supa-customers-reports > .cm-customer-report-switcher,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-customers-reports-page > .cm-customer-report-switcher,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-customer-report-switcher{
+  background:linear-gradient(180deg,
+    color-mix(in srgb,var(--cm-skin-card, #ffffff) 88%,var(--cm-skin-accent-2, #d97706) 12%),
+    color-mix(in srgb,var(--cm-skin-soft, #fff8e8) 92%,var(--cm-skin-accent, #b45309) 8%)
+  )!important;
+  background-image:linear-gradient(180deg,
+    color-mix(in srgb,var(--cm-skin-card, #ffffff) 88%,var(--cm-skin-accent-2, #d97706) 12%),
+    color-mix(in srgb,var(--cm-skin-soft, #fff8e8) 92%,var(--cm-skin-accent, #b45309) 8%)
+  )!important;
+  color:var(--cm-skin-text, #1f2937)!important;
+  border:1px solid var(--cm-skin-border, rgba(180,132,35,.24))!important;
+  box-shadow:0 16px 40px var(--cm-skin-shadow, rgba(120,86,18,.14))!important;
+  text-shadow:none!important;
+}
+html[data-cm-theme]:not([data-cm-theme="original"]) body[data-panel-page="customersReports"] .cm-customer-report-switcher strong,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-supa-customers-reports > .cm-customer-report-switcher strong,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-customers-reports-page > .cm-customer-report-switcher strong,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-customer-report-switcher strong{
+  color:var(--cm-skin-accent, #b45309)!important;
+  text-shadow:none!important;
+}
+html[data-cm-theme]:not([data-cm-theme="original"]) body[data-panel-page="customersReports"] .cm-customer-report-switcher .bm-light-btn,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-customer-report-switcher .bm-light-btn,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-customer-report-switcher button,
+html[data-cm-theme]:not([data-cm-theme="original"]) #customersReportPrev,
+html[data-cm-theme]:not([data-cm-theme="original"]) #customersReportNext{
+  background:linear-gradient(180deg,
+    color-mix(in srgb,var(--cm-skin-card, #ffffff) 94%,var(--cm-skin-accent-2, #d97706) 6%),
+    color-mix(in srgb,var(--cm-skin-soft, #fff8e8) 90%,var(--cm-skin-accent, #b45309) 10%)
+  )!important;
+  background-image:linear-gradient(180deg,
+    color-mix(in srgb,var(--cm-skin-card, #ffffff) 94%,var(--cm-skin-accent-2, #d97706) 6%),
+    color-mix(in srgb,var(--cm-skin-soft, #fff8e8) 90%,var(--cm-skin-accent, #b45309) 10%)
+  )!important;
+  color:var(--cm-skin-accent, #b45309)!important;
+  border:1px solid var(--cm-skin-border, rgba(180,132,35,.24))!important;
+  box-shadow:0 8px 20px var(--cm-skin-shadow, rgba(120,86,18,.14))!important;
+  text-shadow:none!important;
+}
+html[data-cm-theme="blackLuxury"] .cm-customer-report-switcher,
+html[data-cm-theme="neon"] .cm-customer-report-switcher{
+  background:linear-gradient(180deg,
+    color-mix(in srgb,var(--cm-skin-card) 82%,var(--cm-skin-accent-2) 18%),
+    color-mix(in srgb,var(--cm-skin-soft) 80%,var(--cm-skin-accent) 20%)
+  )!important;
+  background-image:linear-gradient(180deg,
+    color-mix(in srgb,var(--cm-skin-card) 82%,var(--cm-skin-accent-2) 18%),
+    color-mix(in srgb,var(--cm-skin-soft) 80%,var(--cm-skin-accent) 20%)
+  )!important;
+}
