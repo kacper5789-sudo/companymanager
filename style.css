@@ -13268,3 +13268,107 @@ select{
     padding:9px 13px!important;
   }
 }
+
+/* CompanyManager 4.8 — Borderless Soft UI Polish
+   Usuwa prostokątne krawędzie z kontrolek i paneli w skórkach innych niż Original.
+   Original pozostaje nietknięty. */
+html[data-cm-theme]:not([data-cm-theme="original"]) .bm-page-head button,
+html[data-cm-theme]:not([data-cm-theme="original"]) .bm-action-row button,
+html[data-cm-theme]:not([data-cm-theme="original"]) .bm-actions-row button,
+html[data-cm-theme]:not([data-cm-theme="original"]) .bm-admin-actions button,
+html[data-cm-theme]:not([data-cm-theme="original"]) .bm-form-row button,
+html[data-cm-theme]:not([data-cm-theme="original"]) .bm-user-menu button,
+html[data-cm-theme]:not([data-cm-theme="original"]) .bm-light-btn,
+html[data-cm-theme]:not([data-cm-theme="original"]) .bm-excel-btn,
+html[data-cm-theme]:not([data-cm-theme="original"]) .bm-danger-btn,
+html[data-cm-theme]:not([data-cm-theme="original"]) .bm-secondary-btn,
+html[data-cm-theme]:not([data-cm-theme="original"]) button.bm-light-btn,
+html[data-cm-theme]:not([data-cm-theme="original"]) button.bm-excel-btn,
+html[data-cm-theme]:not([data-cm-theme="original"]) button.bm-danger-btn,
+html[data-cm-theme]:not([data-cm-theme="original"]) button.bm-secondary-btn,
+html[data-cm-theme]:not([data-cm-theme="original"]) .days-off-head button,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-customer-report-switcher button,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-customer-report-switcher .bm-light-btn,
+html[data-cm-theme]:not([data-cm-theme="original"]) #showAddVisit,
+html[data-cm-theme]:not([data-cm-theme="original"]) #showEditVisit,
+html[data-cm-theme]:not([data-cm-theme="original"]) #showDeleteVisit,
+html[data-cm-theme]:not([data-cm-theme="original"]) #showAddCustomer,
+html[data-cm-theme]:not([data-cm-theme="original"]) #showDeleteCustomer,
+html[data-cm-theme]:not([data-cm-theme="original"]) #exportCustomersBtn,
+html[data-cm-theme]:not([data-cm-theme="original"]) #importCustomersBtn,
+html[data-cm-theme]:not([data-cm-theme="original"]) #showAddService,
+html[data-cm-theme]:not([data-cm-theme="original"]) #showDeleteService,
+html[data-cm-theme]:not([data-cm-theme="original"]) #exportServicesBtn,
+html[data-cm-theme]:not([data-cm-theme="original"]) #importServicesBtn,
+html[data-cm-theme]:not([data-cm-theme="original"]) #showAddProduct,
+html[data-cm-theme]:not([data-cm-theme="original"]) #showDeleteProduct,
+html[data-cm-theme]:not([data-cm-theme="original"]) #exportProductsBtn,
+html[data-cm-theme]:not([data-cm-theme="original"]) #importProductsBtn,
+html[data-cm-theme]:not([data-cm-theme="original"]) #showAddWalkin,
+html[data-cm-theme]:not([data-cm-theme="original"]) #showDeleteWalkin,
+html[data-cm-theme]:not([data-cm-theme="original"]) #showAddPosition,
+html[data-cm-theme]:not([data-cm-theme="original"]) #showDeletePosition{
+  border:0!important;
+  outline:0!important;
+  border-radius:999px!important;
+  box-shadow:0 12px 28px color-mix(in srgb,var(--cm-skin-shadow,rgba(0,0,0,.16)) 82%,transparent)!important;
+}
+
+html[data-cm-theme]:not([data-cm-theme="original"]) .bm-page-card input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+html[data-cm-theme]:not([data-cm-theme="original"]) .bm-page-card select,
+html[data-cm-theme]:not([data-cm-theme="original"]) .bm-page-card textarea,
+html[data-cm-theme]:not([data-cm-theme="original"]) .bm-form-row input,
+html[data-cm-theme]:not([data-cm-theme="original"]) .bm-form-row select,
+html[data-cm-theme]:not([data-cm-theme="original"]) .role-select,
+html[data-cm-theme]:not([data-cm-theme="original"]) .panel-input,
+html[data-cm-theme]:not([data-cm-theme="original"]) .field input,
+html[data-cm-theme]:not([data-cm-theme="original"]) .field textarea,
+html[data-cm-theme]:not([data-cm-theme="original"]) .field select,
+html[data-cm-theme]:not([data-cm-theme="original"]) input[type="search"],
+html[data-cm-theme]:not([data-cm-theme="original"]) select{
+  border-color:transparent!important;
+  outline:0!important;
+  box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--cm-skin-accent,#2563eb) 8%,transparent)!important;
+}
+
+html[data-cm-theme]:not([data-cm-theme="original"]) .bm-page-card input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):focus,
+html[data-cm-theme]:not([data-cm-theme="original"]) .bm-page-card select:focus,
+html[data-cm-theme]:not([data-cm-theme="original"]) .bm-page-card textarea:focus,
+html[data-cm-theme]:not([data-cm-theme="original"]) .bm-form-row input:focus,
+html[data-cm-theme]:not([data-cm-theme="original"]) .bm-form-row select:focus,
+html[data-cm-theme]:not([data-cm-theme="original"]) .field input:focus,
+html[data-cm-theme]:not([data-cm-theme="original"]) .field textarea:focus,
+html[data-cm-theme]:not([data-cm-theme="original"]) .field select:focus,
+html[data-cm-theme]:not([data-cm-theme="original"]) input[type="search"]:focus,
+html[data-cm-theme]:not([data-cm-theme="original"]) select:focus{
+  border-color:transparent!important;
+  box-shadow:0 0 0 3px color-mix(in srgb,var(--cm-skin-accent,#2563eb) 18%,transparent), inset 0 0 0 1px color-mix(in srgb,var(--cm-skin-accent,#2563eb) 24%,transparent)!important;
+}
+
+html[data-cm-theme]:not([data-cm-theme="original"]) .bm-page-card,
+html[data-cm-theme]:not([data-cm-theme="original"]) .panel-card,
+html[data-cm-theme]:not([data-cm-theme="original"]) .bm-current-section,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-unified-card,
+html[data-cm-theme]:not([data-cm-theme="original"]) .bm-table-wrap,
+html[data-cm-theme]:not([data-cm-theme="original"]) .table-wrap,
+html[data-cm-theme]:not([data-cm-theme="original"]) .bm-status-list p,
+html[data-cm-theme]:not([data-cm-theme="original"]) .bm-day-columns div,
+html[data-cm-theme]:not([data-cm-theme="original"]) .data-list p,
+html[data-cm-theme]:not([data-cm-theme="original"]) .metric-card,
+html[data-cm-theme]:not([data-cm-theme="original"]) .bm-stats article{
+  border-color:transparent!important;
+}
+
+html[data-cm-theme]:not([data-cm-theme="original"]) .bm-filter-btn,
+html[data-cm-theme]:not([data-cm-theme="original"]) .bm-tab,
+html[data-cm-theme]:not([data-cm-theme="original"]) .bm-report-tab,
+html[data-cm-theme]:not([data-cm-theme="original"]) .filter-btn,
+html[data-cm-theme]:not([data-cm-theme="original"]) .tab-btn,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-tab,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-filter-chip,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-chip,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-status-chip,
+html[data-cm-theme]:not([data-cm-theme="original"]) .panel-pill,
+html[data-cm-theme]:not([data-cm-theme="original"]) .bm-pill{
+  border-color:transparent!important;
+}
