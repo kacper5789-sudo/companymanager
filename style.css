@@ -14129,3 +14129,304 @@ html[data-cm-theme]:not([data-cm-theme="original"]) .cm-period-report-card [clas
 html[data-cm-theme]:not([data-cm-theme="original"]) .cm-employees-reports-page [class*="section"]{
   background-color:transparent!important;
 }
+
+/* CompanyManager 5.3 — Customer Reports Original-Geometry Fix
+   Cel: Klienci-raporty w skórkach ma mieć geometrię jak Exclusive Gold/Original:
+   brak zewnętrznych prostokątnych ramek wokół filtrów i tabel. Skórki zmieniają tylko kolor. */
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-customers-reports-page .cm-period-controls,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-customers-reports-page .cm-customers-report-controls,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-supa-customers-reports .cm-period-controls,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-supa-customers-reports .cm-customers-report-controls,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-customers-reports-page .cm-reports-polished-controls,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-supa-customers-reports .cm-reports-polished-controls{
+  background:transparent!important;
+  background-image:none!important;
+  border:none!important;
+  outline:none!important;
+  box-shadow:none!important;
+  border-radius:0!important;
+  padding:0!important;
+}
+
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-customers-reports-page .cm-period-controls::before,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-customers-reports-page .cm-period-controls::after,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-customers-reports-page .cm-customers-report-controls::before,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-customers-reports-page .cm-customers-report-controls::after,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-supa-customers-reports .cm-period-controls::before,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-supa-customers-reports .cm-period-controls::after,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-supa-customers-reports .cm-customers-report-controls::before,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-supa-customers-reports .cm-customers-report-controls::after{
+  display:none!important;
+  content:none!important;
+  border:none!important;
+  box-shadow:none!important;
+  background:transparent!important;
+}
+
+/* Pola filtrów w Klienci-raporty zostają pigułkami, ale bez wspólnej prostokątnej płyty. */
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-customers-reports-page .cm-customers-report-controls input,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-customers-reports-page .cm-customers-report-controls select,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-customers-reports-page .cm-customers-report-controls button,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-customers-reports-page .cm-cr-dropdown,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-supa-customers-reports .cm-customers-report-controls input,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-supa-customers-reports .cm-customers-report-controls select,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-supa-customers-reports .cm-customers-report-controls button,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-supa-customers-reports .cm-cr-dropdown{
+  border:none!important;
+  outline:none!important;
+  border-radius:999px!important;
+  box-shadow:0 14px 34px color-mix(in srgb,var(--cm-skin-shadow,rgba(0,0,0,.14)) 16%,transparent)!important;
+}
+
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-customers-reports-page .cm-customers-report-controls label,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-supa-customers-reports .cm-customers-report-controls label{
+  background:transparent!important;
+  border:none!important;
+  outline:none!important;
+  box-shadow:none!important;
+  color:var(--cm-skin-accent,#2563eb)!important;
+}
+
+/* KPI w Klienci-raporty: bez ostrych ramek; tylko miękkie karty jak w Gold. */
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-customers-reports-page .cm-unified-stat,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-customers-reports-page .bm-stat,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-supa-customers-reports .cm-unified-stat,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-supa-customers-reports .bm-stat{
+  border:none!important;
+  outline:none!important;
+  border-radius:24px!important;
+  box-shadow:0 18px 44px color-mix(in srgb,var(--cm-skin-shadow,rgba(0,0,0,.14)) 14%,transparent)!important;
+}
+
+/* Tabela w Klienci-raporty: usuwamy prostokątną ramkę wrappera i zostawiamy zaokrąglenia samej tabeli. */
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-customers-reports-page .bm-table-wrap,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-customers-reports-page .cm-table-wrap,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-customers-reports-page .table-wrap,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-supa-customers-reports .bm-table-wrap,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-supa-customers-reports .cm-table-wrap,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-supa-customers-reports .table-wrap{
+  background:transparent!important;
+  background-image:none!important;
+  border:none!important;
+  outline:none!important;
+  box-shadow:none!important;
+  padding:0!important;
+  overflow:hidden!important;
+  border-radius:24px!important;
+}
+
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-customers-reports-page .cm-customers-report-table,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-supa-customers-reports .cm-customers-report-table{
+  border:none!important;
+  outline:none!important;
+  border-collapse:separate!important;
+  border-spacing:0!important;
+  background:transparent!important;
+  box-shadow:none!important;
+  overflow:hidden!important;
+}
+
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-customers-reports-page .cm-customers-report-table th,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-supa-customers-reports .cm-customers-report-table th{
+  border:none!important;
+  border-bottom:1px solid color-mix(in srgb,var(--cm-skin-accent,#2563eb) 16%,transparent)!important;
+  background:linear-gradient(90deg,
+    color-mix(in srgb,var(--cm-skin-accent,#2563eb) 10%,var(--cm-skin-card,#fff) 90%),
+    color-mix(in srgb,var(--cm-skin-accent,#2563eb) 4%,var(--cm-skin-card,#fff) 96%)
+  )!important;
+}
+
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-customers-reports-page .cm-customers-report-table td,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-supa-customers-reports .cm-customers-report-table td{
+  border:none!important;
+  border-bottom:1px solid color-mix(in srgb,var(--cm-skin-accent,#2563eb) 10%,transparent)!important;
+  background:color-mix(in srgb,var(--cm-skin-card,#fff) 78%,transparent)!important;
+}
+
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-customers-reports-page .cm-customers-report-table th:first-child,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-supa-customers-reports .cm-customers-report-table th:first-child{border-top-left-radius:24px!important;}
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-customers-reports-page .cm-customers-report-table th:last-child,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-supa-customers-reports .cm-customers-report-table th:last-child{border-top-right-radius:24px!important;}
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-customers-reports-page .cm-customers-report-table tbody tr:last-child td:first-child,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-supa-customers-reports .cm-customers-report-table tbody tr:last-child td:first-child{border-bottom-left-radius:24px!important;}
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-customers-reports-page .cm-customers-report-table tbody tr:last-child td:last-child,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-supa-customers-reports .cm-customers-report-table tbody tr:last-child td:last-child{border-bottom-right-radius:24px!important;}
+
+/* CompanyManager 5.4 — Theme Engine 2.0: Daily Report color-only geometry fix
+   Silnik skórek nie może dodawać prostokątnych wrapperów. Wszystkie skórki poza Original
+   dziedziczą miękką geometrię Original/Exclusive Gold: sekcje są przezroczyste, a styl mają tylko realne komponenty. */
+html[data-cm-theme]:not([data-cm-theme="original"]) body[data-panel-page="dailyReport"] .cm-period-report-card,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-daily-report-card,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-supabase-daily-report{
+  border:none!important;
+  outline:none!important;
+  box-shadow:0 26px 70px color-mix(in srgb,var(--cm-skin-shadow,rgba(0,0,0,.12)) 18%,transparent)!important;
+  background:linear-gradient(180deg,
+    color-mix(in srgb,var(--cm-skin-card,#fff) 94%,transparent),
+    color-mix(in srgb,var(--cm-skin-soft,#f8fafc) 92%,transparent)
+  )!important;
+}
+
+/* Usunięcie szarych/kanciastych płyt sekcji: Usługi / Produkty / Karnety / Pracownicy. */
+html[data-cm-theme]:not([data-cm-theme="original"]) body[data-panel-page="dailyReport"] .cm-period-section,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-daily-report-card .cm-period-section,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-supabase-daily-report .cm-period-section{
+  background:transparent!important;
+  background-color:transparent!important;
+  background-image:none!important;
+  border:none!important;
+  outline:none!important;
+  box-shadow:none!important;
+  border-radius:0!important;
+  padding:0!important;
+  margin-top:32px!important;
+}
+html[data-cm-theme]:not([data-cm-theme="original"]) body[data-panel-page="dailyReport"] .cm-period-section::before,
+html[data-cm-theme]:not([data-cm-theme="original"]) body[data-panel-page="dailyReport"] .cm-period-section::after,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-daily-report-card .cm-period-section::before,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-daily-report-card .cm-period-section::after,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-supabase-daily-report .cm-period-section::before,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-supabase-daily-report .cm-period-section::after{
+  content:none!important;
+  display:none!important;
+  background:transparent!important;
+  border:none!important;
+  box-shadow:none!important;
+}
+html[data-cm-theme]:not([data-cm-theme="original"]) body[data-panel-page="dailyReport"] .cm-period-section + .cm-period-section,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-daily-report-card .cm-period-section + .cm-period-section,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-supabase-daily-report .cm-period-section + .cm-period-section{
+  border-top:1px solid color-mix(in srgb,var(--cm-skin-accent,#2563eb) 10%,transparent)!important;
+  padding-top:28px!important;
+}
+
+/* Nagłówki sekcji bez panelowego tła. */
+html[data-cm-theme]:not([data-cm-theme="original"]) body[data-panel-page="dailyReport"] .cm-period-section h3,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-daily-report-card .cm-period-section h3,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-supabase-daily-report .cm-period-section h3{
+  background:transparent!important;
+  border:none!important;
+  outline:none!important;
+  box-shadow:none!important;
+  color:var(--cm-skin-text,#0f172a)!important;
+}
+html[data-cm-theme]:not([data-cm-theme="original"]) body[data-panel-page="dailyReport"] .cm-period-section p,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-daily-report-card .cm-period-section p,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-supabase-daily-report .cm-period-section p{
+  color:var(--cm-skin-muted,#64748b)!important;
+}
+
+/* Wrappery tabel w raportach dziennych: żadnych zewnętrznych prostokątów. */
+html[data-cm-theme]:not([data-cm-theme="original"]) body[data-panel-page="dailyReport"] .bm-table-wrap,
+html[data-cm-theme]:not([data-cm-theme="original"]) body[data-panel-page="dailyReport"] .cm-table-wrap,
+html[data-cm-theme]:not([data-cm-theme="original"]) body[data-panel-page="dailyReport"] .table-wrap,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-daily-report-card .bm-table-wrap,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-daily-report-card .cm-table-wrap,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-supabase-daily-report .bm-table-wrap,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-supabase-daily-report .cm-table-wrap{
+  background:transparent!important;
+  background-color:transparent!important;
+  background-image:none!important;
+  border:none!important;
+  outline:none!important;
+  box-shadow:none!important;
+  padding:0!important;
+  border-radius:24px!important;
+  overflow:hidden!important;
+}
+html[data-cm-theme]:not([data-cm-theme="original"]) body[data-panel-page="dailyReport"] .bm-table,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-daily-report-card .bm-table,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-supabase-daily-report .bm-table,
+html[data-cm-theme]:not([data-cm-theme="original"]) body[data-panel-page="dailyReport"] table{
+  border:none!important;
+  outline:none!important;
+  box-shadow:none!important;
+  border-collapse:separate!important;
+  border-spacing:0!important;
+  background:transparent!important;
+  overflow:hidden!important;
+}
+html[data-cm-theme]:not([data-cm-theme="original"]) body[data-panel-page="dailyReport"] .bm-table th,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-daily-report-card .bm-table th,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-supabase-daily-report .bm-table th,
+html[data-cm-theme]:not([data-cm-theme="original"]) body[data-panel-page="dailyReport"] table th{
+  background:linear-gradient(90deg,
+    color-mix(in srgb,var(--cm-skin-accent,#2563eb) 10%,var(--cm-skin-card,#fff) 90%),
+    color-mix(in srgb,var(--cm-skin-accent-2,var(--cm-skin-accent,#2563eb)) 5%,var(--cm-skin-card,#fff) 95%)
+  )!important;
+  border:none!important;
+  border-bottom:1px solid color-mix(in srgb,var(--cm-skin-accent,#2563eb) 16%,transparent)!important;
+  color:var(--cm-skin-accent,#2563eb)!important;
+}
+html[data-cm-theme]:not([data-cm-theme="original"]) body[data-panel-page="dailyReport"] .bm-table td,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-daily-report-card .bm-table td,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-supabase-daily-report .bm-table td,
+html[data-cm-theme]:not([data-cm-theme="original"]) body[data-panel-page="dailyReport"] table td{
+  background:color-mix(in srgb,var(--cm-skin-card,#fff) 88%,transparent)!important;
+  border:none!important;
+  border-bottom:1px solid color-mix(in srgb,var(--cm-skin-accent,#2563eb) 9%,transparent)!important;
+  color:var(--cm-skin-text,#0f172a)!important;
+}
+html[data-cm-theme]:not([data-cm-theme="original"]) body[data-panel-page="dailyReport"] .bm-table th:first-child,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-daily-report-card .bm-table th:first-child,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-supabase-daily-report .bm-table th:first-child{border-top-left-radius:24px!important;}
+html[data-cm-theme]:not([data-cm-theme="original"]) body[data-panel-page="dailyReport"] .bm-table th:last-child,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-daily-report-card .bm-table th:last-child,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-supabase-daily-report .bm-table th:last-child{border-top-right-radius:24px!important;}
+html[data-cm-theme]:not([data-cm-theme="original"]) body[data-panel-page="dailyReport"] .bm-table tbody tr:last-child td:first-child,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-daily-report-card .bm-table tbody tr:last-child td:first-child,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-supabase-daily-report .bm-table tbody tr:last-child td:first-child{border-bottom-left-radius:24px!important;}
+html[data-cm-theme]:not([data-cm-theme="original"]) body[data-panel-page="dailyReport"] .bm-table tbody tr:last-child td:last-child,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-daily-report-card .bm-table tbody tr:last-child td:last-child,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-supabase-daily-report .bm-table tbody tr:last-child td:last-child{border-bottom-right-radius:24px!important;}
+
+/* Toolbar przy tabelach: jak Original — bez szarej płyty, tylko pigułki select/szukaj. */
+html[data-cm-theme]:not([data-cm-theme="original"]) body[data-panel-page="dailyReport"] .bm-table-toolbar,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-daily-report-card .bm-table-toolbar,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-supabase-daily-report .bm-table-toolbar{
+  background:transparent!important;
+  background-image:none!important;
+  border:none!important;
+  outline:none!important;
+  box-shadow:none!important;
+  padding:0!important;
+}
+html[data-cm-theme]:not([data-cm-theme="original"]) body[data-panel-page="dailyReport"] input[type="search"],
+html[data-cm-theme]:not([data-cm-theme="original"]) body[data-panel-page="dailyReport"] select,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-daily-report-card input[type="search"],
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-daily-report-card select,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-supabase-daily-report input[type="search"],
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-supabase-daily-report select{
+  border:none!important;
+  outline:none!important;
+  border-radius:999px!important;
+  box-shadow:0 12px 28px color-mix(in srgb,var(--cm-skin-shadow,rgba(0,0,0,.12)) 16%,transparent)!important;
+}
+
+/* Karty finansowe i KPI: komponenty zostają miękkie, bez kanciastej obwódki wrappera. */
+html[data-cm-theme]:not([data-cm-theme="original"]) body[data-panel-page="dailyReport"] .cm-period-kpis > div,
+html[data-cm-theme]:not([data-cm-theme="original"]) body[data-panel-page="dailyReport"] .cm-finance-grid > div,
+html[data-cm-theme]:not([data-cm-theme="original"]) body[data-panel-page="dailyReport"] .cm-comm-grid > div,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-daily-report-card .cm-period-kpis > div,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-daily-report-card .cm-finance-grid > div,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-daily-report-card .cm-comm-grid > div,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-supabase-daily-report .cm-period-kpis > div,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-supabase-daily-report .cm-finance-grid > div,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-supabase-daily-report .cm-comm-grid > div{
+  border:none!important;
+  outline:none!important;
+  border-radius:24px!important;
+  box-shadow:0 18px 44px color-mix(in srgb,var(--cm-skin-shadow,rgba(0,0,0,.14)) 14%,transparent)!important;
+}
+
+/* Wiersze płatności w karcie Płatności: bez prostokątnych ramek wewnętrznych. */
+html[data-cm-theme]:not([data-cm-theme="original"]) body[data-panel-page="dailyReport"] .cm-finance-grid > div > div,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-daily-report-card .cm-finance-grid > div > div,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-supabase-daily-report .cm-finance-grid > div > div{
+  background:transparent!important;
+  border-radius:0!important;
+  box-shadow:none!important;
+  border-top:1px solid color-mix(in srgb,var(--cm-skin-accent,#2563eb) 9%,transparent)!important;
+  padding:10px 0 0!important;
+  margin-top:10px!important;
+}
