@@ -13112,3 +13112,159 @@ html[data-cm-theme] .bm-left-info-panel .bm-user-stack .cm-theme-menu.cm-skin-un
   color:#dc2626!important;
   border-color:color-mix(in srgb,#dc2626 55%,transparent)!important;
 }
+
+/* CompanyManager 4.7 — UI Shape Unification
+   Globalne zaokrąglenie kontrolek i paneli roboczych, żeby przyciski,
+   filtry, selecty i pola akcji nie wyglądały prostokątnie w różnych zakładkach. */
+:root{
+  --cm-control-radius:999px;
+  --cm-control-radius-soft:18px;
+  --cm-card-radius-ui:24px;
+}
+
+/* Główne przyciski akcji w modułach: Dodaj / Edytuj / Usuń / Export / Import */
+.bm-page-head button,
+.bm-action-row button,
+.bm-actions-row button,
+.bm-admin-actions button,
+.bm-form-row button,
+.bm-user-menu button,
+.bm-light-btn,
+.bm-excel-btn,
+.bm-danger-btn,
+.bm-secondary-btn,
+button.bm-light-btn,
+button.bm-excel-btn,
+button.bm-danger-btn,
+button.bm-secondary-btn,
+#showAddVisit,
+#showEditVisit,
+#showDeleteVisit,
+#showAddCustomer,
+#showDeleteCustomer,
+#exportCustomersBtn,
+#importCustomersBtn,
+#showAddService,
+#showDeleteService,
+#exportServicesBtn,
+#importServicesBtn,
+#showAddProduct,
+#showDeleteProduct,
+#exportProductsBtn,
+#importProductsBtn,
+#showAddWalkin,
+#showDeleteWalkin,
+#showAddPosition,
+#showDeletePosition{
+  border-radius:var(--cm-control-radius)!important;
+  min-height:38px!important;
+  padding:10px 16px!important;
+  display:inline-flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  gap:8px!important;
+  line-height:1.1!important;
+  white-space:nowrap!important;
+}
+
+/* Pola tekstowe, wyszukiwarki, selecty i paginacja typu „50 ▾” */
+.bm-page-card input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+.bm-page-card select,
+.bm-page-card textarea,
+.bm-form-row input,
+.bm-form-row select,
+.role-select,
+.panel-input,
+.field input,
+.field textarea,
+.field select,
+input[type="search"],
+select{
+  border-radius:var(--cm-control-radius-soft)!important;
+}
+
+/* Małe filtry / przełączniki / badge w raportach i listach */
+.bm-filter-btn,
+.bm-tab,
+.bm-report-tab,
+.bm-status,
+.bm-role,
+.bm-pill,
+.panel-pill,
+.bm-today,
+.cm-skin-action,
+.cm-skin-card button,
+.cm-theme-item{
+  border-radius:var(--cm-control-radius)!important;
+}
+
+/* Karty i kontenery, które wcześniej miały bardziej kanciaste narożniki */
+.bm-page-card,
+.panel-card,
+.panel-topbar,
+.bm-topbar,
+.bm-table-wrap,
+.table-wrap,
+.bm-mini-calendar,
+.bm-status-list p,
+.bm-day-columns div,
+.data-list p,
+.metric-card,
+.bm-stats article{
+  border-radius:var(--cm-card-radius-ui)!important;
+}
+
+/* Nagłówki z akcjami — lepszy oddech i spójne układanie przycisków */
+.bm-page-head,
+.customers-head{
+  gap:12px!important;
+  flex-wrap:wrap!important;
+}
+.bm-action-row,
+.bm-actions-row,
+.bm-admin-actions{
+  display:flex!important;
+  align-items:center!important;
+  gap:10px!important;
+  flex-wrap:wrap!important;
+}
+
+/* Subtelna animacja, żeby owalne kontrolki wyglądały bardziej nowocześnie */
+.bm-page-head button,
+.bm-action-row button,
+.bm-actions-row button,
+.bm-admin-actions button,
+.bm-form-row button,
+.bm-light-btn,
+.bm-excel-btn,
+.bm-danger-btn,
+.bm-secondary-btn,
+.cm-skin-action{
+  transition:transform .16s ease, filter .16s ease, box-shadow .16s ease, border-color .16s ease!important;
+}
+.bm-page-head button:hover,
+.bm-action-row button:hover,
+.bm-actions-row button:hover,
+.bm-admin-actions button:hover,
+.bm-form-row button:hover,
+.bm-light-btn:hover,
+.bm-excel-btn:hover,
+.bm-danger-btn:hover,
+.bm-secondary-btn:hover{
+  transform:translateY(-1px)!important;
+}
+
+@media(max-width:720px){
+  .bm-page-head button,
+  .bm-action-row button,
+  .bm-actions-row button,
+  .bm-admin-actions button,
+  .bm-form-row button,
+  .bm-light-btn,
+  .bm-excel-btn,
+  .bm-danger-btn,
+  .bm-secondary-btn{
+    min-height:36px!important;
+    padding:9px 13px!important;
+  }
+}
