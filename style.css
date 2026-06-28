@@ -9314,3 +9314,137 @@ body.theme-gold-white .cm-smart-panel {
   .cm-smart-primary { width: 100%; }
 }
 
+
+/* CompanyManager v2.9 — Gold/White final dark-header cleanup
+   Scope: ONLY Gold/White skin. Original dark/blue theme is untouched. */
+html[data-cm-theme="goldWhite"]{
+  --cm-gw-header-bg:linear-gradient(135deg,rgba(255,255,255,.96),rgba(254,243,199,.94) 52%,rgba(251,191,36,.30));
+  --cm-gw-header-bg-strong:linear-gradient(135deg,#fffdf7 0%,#fff3cf 58%,#f6d884 100%);
+  --cm-gw-header-border:rgba(180,132,35,.34);
+  --cm-gw-header-text:#111827;
+  --cm-gw-header-accent:#78350f;
+  --cm-gw-header-shadow:0 16px 36px rgba(120,86,18,.13), inset 0 1px 0 rgba(255,255,255,.92);
+}
+
+/* Dashboard date/action bar — remove remaining black/navy strip */
+html[data-cm-theme="goldWhite"] .bm-schedule-datebar,
+html[data-cm-theme="goldWhite"] body[data-panel-page="dashboard"] .bm-schedule-datebar,
+html[data-cm-theme="goldWhite"] .bm-dashboard-schedule .bm-schedule-datebar{
+  background:var(--cm-gw-header-bg)!important;
+  color:var(--cm-gw-header-text)!important;
+  border:1px solid var(--cm-gw-header-border)!important;
+  box-shadow:var(--cm-gw-header-shadow)!important;
+}
+html[data-cm-theme="goldWhite"] .bm-schedule-datebar *,
+html[data-cm-theme="goldWhite"] body[data-panel-page="dashboard"] .bm-schedule-datebar *{
+  color:var(--cm-gw-header-text)!important;
+  text-shadow:none!important;
+}
+html[data-cm-theme="goldWhite"] .bm-schedule-datebar #dashRelativeLabel,
+html[data-cm-theme="goldWhite"] .bm-schedule-datebar #dashFullDate{
+  color:#111827!important;
+  font-weight:950!important;
+  text-shadow:none!important;
+}
+html[data-cm-theme="goldWhite"] .bm-schedule-datebar button,
+html[data-cm-theme="goldWhite"] .bm-schedule-datebar .bm-light-btn,
+html[data-cm-theme="goldWhite"] .bm-schedule-datebar .bm-worker-count,
+html[data-cm-theme="goldWhite"] .bm-dashboard-actions .bm-light-btn,
+html[data-cm-theme="goldWhite"] .bm-dashboard-actions .bm-worker-count{
+  background:linear-gradient(180deg,#fffdf7,#fef3c7)!important;
+  color:#78350f!important;
+  border:1px solid rgba(180,83,9,.42)!important;
+  box-shadow:0 10px 24px rgba(120,86,18,.12), inset 0 1px 0 rgba(255,255,255,.92)!important;
+}
+html[data-cm-theme="goldWhite"] .bm-schedule-datebar .bm-primary-btn,
+html[data-cm-theme="goldWhite"] .bm-dashboard-actions .bm-primary-btn{
+  background:linear-gradient(180deg,#d97706,#b45309)!important;
+  color:#fffaf0!important;
+  border-color:rgba(120,53,15,.30)!important;
+  box-shadow:0 14px 30px rgba(180,83,9,.22)!important;
+}
+html[data-cm-theme="goldWhite"] .bm-schedule-datebar .bm-danger-btn,
+html[data-cm-theme="goldWhite"] .bm-dashboard-actions .bm-danger-btn{
+  background:linear-gradient(180deg,#fff7ed,#fffaf0)!important;
+  color:#9a3412!important;
+  border-color:rgba(154,52,18,.32)!important;
+}
+
+/* Dashboard active-workers bar/popover — warm gold panel instead of navy */
+html[data-cm-theme="goldWhite"] .bm-workers-popover,
+html[data-cm-theme="goldWhite"] body[data-panel-page="dashboard"] .bm-workers-popover,
+html[data-cm-theme="goldWhite"] .bm-dashboard-workers,
+html[data-cm-theme="goldWhite"] .bm-active-workers,
+html[data-cm-theme="goldWhite"] .bm-workers-panel,
+html[data-cm-theme="goldWhite"] #dashboardWorkers,
+html[data-cm-theme="goldWhite"] #activeWorkers{
+  background:var(--cm-gw-header-bg)!important;
+  color:var(--cm-gw-header-text)!important;
+  border:1px solid var(--cm-gw-header-border)!important;
+  box-shadow:var(--cm-gw-header-shadow)!important;
+}
+html[data-cm-theme="goldWhite"] .bm-workers-popover *,
+html[data-cm-theme="goldWhite"] .bm-dashboard-workers *,
+html[data-cm-theme="goldWhite"] .bm-active-workers *,
+html[data-cm-theme="goldWhite"] .bm-workers-panel *,
+html[data-cm-theme="goldWhite"] #dashboardWorkers *,
+html[data-cm-theme="goldWhite"] #activeWorkers *{
+  color:var(--cm-gw-header-accent)!important;
+  text-shadow:none!important;
+}
+html[data-cm-theme="goldWhite"] .bm-workers-popover h3{
+  background:linear-gradient(180deg,#fffdf7,#fef3c7)!important;
+  color:#78350f!important;
+  border-color:rgba(180,83,9,.34)!important;
+}
+
+/* Customer reports carousel/title strips — the three report headers must be gold/white */
+html[data-cm-theme="goldWhite"] .cm-customers-report-title,
+html[data-cm-theme="goldWhite"] .cm-customers-report-head,
+html[data-cm-theme="goldWhite"] .cm-customers-report-card .cm-customers-report-title,
+html[data-cm-theme="goldWhite"] .cm-customers-report-card .cm-customers-report-head,
+html[data-cm-theme="goldWhite"] .cm-supa-customers-reports .cm-customers-report-title,
+html[data-cm-theme="goldWhite"] .cm-supa-customers-reports .cm-customers-report-head,
+html[data-cm-theme="goldWhite"] .cm-customers-reports-page .cm-customers-report-title,
+html[data-cm-theme="goldWhite"] .cm-customers-reports-page .cm-customers-report-head{
+  background:var(--cm-gw-header-bg-strong)!important;
+  color:#111827!important;
+  border:1px solid var(--cm-gw-header-border)!important;
+  box-shadow:var(--cm-gw-header-shadow)!important;
+}
+html[data-cm-theme="goldWhite"] .cm-customers-report-title *,
+html[data-cm-theme="goldWhite"] .cm-customers-report-head *,
+html[data-cm-theme="goldWhite"] .cm-supa-customers-reports .cm-customers-report-title *,
+html[data-cm-theme="goldWhite"] .cm-supa-customers-reports .cm-customers-report-head *{
+  color:#111827!important;
+  text-shadow:none!important;
+}
+html[data-cm-theme="goldWhite"] .cm-customers-report-title h1,
+html[data-cm-theme="goldWhite"] .cm-customers-report-title h2,
+html[data-cm-theme="goldWhite"] .cm-customers-report-title h3,
+html[data-cm-theme="goldWhite"] .cm-customers-report-title strong,
+html[data-cm-theme="goldWhite"] .cm-customers-report-head h1,
+html[data-cm-theme="goldWhite"] .cm-customers-report-head h2,
+html[data-cm-theme="goldWhite"] .cm-customers-report-head h3,
+html[data-cm-theme="goldWhite"] .cm-customers-report-head strong{
+  color:#111827!important;
+  font-weight:950!important;
+}
+html[data-cm-theme="goldWhite"] .cm-report-chart-arrow,
+html[data-cm-theme="goldWhite"] .cm-report-arrow,
+html[data-cm-theme="goldWhite"] .cm-customers-report-arrow,
+html[data-cm-theme="goldWhite"] .cm-customers-report-title button,
+html[data-cm-theme="goldWhite"] .cm-customers-report-head button{
+  background:linear-gradient(180deg,#fffdf7,#fef3c7)!important;
+  color:#78350f!important;
+  border:1px solid rgba(180,83,9,.44)!important;
+  box-shadow:0 12px 24px rgba(120,86,18,.14)!important;
+}
+
+/* Safety net for any still-unpatched navy report/dashboard header in Gold/White */
+html[data-cm-theme="goldWhite"] [class*="dashboard"][class*="head"],
+html[data-cm-theme="goldWhite"] [class*="dashboard"][class*="bar"],
+html[data-cm-theme="goldWhite"] [class*="report"][class*="head"],
+html[data-cm-theme="goldWhite"] [class*="report"][class*="title"]{
+  text-shadow:none!important;
+}
