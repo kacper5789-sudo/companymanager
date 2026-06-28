@@ -14619,3 +14619,133 @@ html[data-cm-theme]:not([data-cm-theme="original"]) body[data-panel-page="dailyR
   border-radius:0!important;
   overflow:visible!important;
 }
+
+/* CompanyManager 5.7 — Theme Engine 2.0: DAILY REPORT ORIGINAL GEOMETRY LOCK
+   Finalna warstwa silnika: skórki kolorują elementy, ale NIE rysują wrapperów/ramek layoutu.
+   Cel: Raport dzienny i lewy panel mają geometrię jak Original/Luxury Gold. */
+html[data-cm-theme]:not([data-cm-theme="original"]) body[data-panel-page="dailyReport"] .cm-period-report-card,
+html[data-cm-theme]:not([data-cm-theme="original"]) body[data-panel-page="dailyReport"] .cm-daily-report-card,
+html[data-cm-theme]:not([data-cm-theme="original"]) body[data-panel-page="dailyReport"] .cm-supabase-daily-report{
+  border:none!important;
+  outline:none!important;
+  background:linear-gradient(180deg,
+    color-mix(in srgb,var(--cm-skin-card,#fff) 96%,transparent),
+    color-mix(in srgb,var(--cm-skin-soft,#f8fafc) 90%,transparent)
+  )!important;
+  box-shadow:0 24px 70px color-mix(in srgb,var(--cm-skin-shadow,rgba(0,0,0,.12)) 16%,transparent)!important;
+  border-radius:28px!important;
+}
+
+/* Nagłówek raportu i pasek daty: bez prostokątnej płyty. Widoczna zostaje tylko pigułka daty i strzałki. */
+html[data-cm-theme]:not([data-cm-theme="original"]) body[data-panel-page="dailyReport"] .cm-period-head,
+html[data-cm-theme]:not([data-cm-theme="original"]) body[data-panel-page="dailyReport"] .bm-page-head.cm-period-head,
+html[data-cm-theme]:not([data-cm-theme="original"]) body[data-panel-page="dailyReport"] .cm-daily-date-row{
+  background:transparent!important;
+  background-color:transparent!important;
+  background-image:none!important;
+  border:none!important;
+  outline:none!important;
+  box-shadow:none!important;
+  border-radius:0!important;
+  padding:0!important;
+}
+html[data-cm-theme]:not([data-cm-theme="original"]) body[data-panel-page="dailyReport"] .cm-period-head::before,
+html[data-cm-theme]:not([data-cm-theme="original"]) body[data-panel-page="dailyReport"] .cm-period-head::after,
+html[data-cm-theme]:not([data-cm-theme="original"]) body[data-panel-page="dailyReport"] .cm-daily-date-row::before,
+html[data-cm-theme]:not([data-cm-theme="original"]) body[data-panel-page="dailyReport"] .cm-daily-date-row::after{
+  content:none!important;
+  display:none!important;
+}
+html[data-cm-theme]:not([data-cm-theme="original"]) body[data-panel-page="dailyReport"] .cm-daily-date-field{
+  border:none!important;
+  border-radius:22px!important;
+  background:linear-gradient(180deg,
+    color-mix(in srgb,var(--cm-skin-card,#fff) 94%,transparent),
+    color-mix(in srgb,var(--cm-skin-soft,#f8fafc) 88%,transparent)
+  )!important;
+  box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--cm-skin-accent,#2563eb) 16%,transparent),
+             0 14px 34px color-mix(in srgb,var(--cm-skin-shadow,rgba(0,0,0,.12)) 16%,transparent)!important;
+  color:var(--cm-skin-text,#0f172a)!important;
+}
+
+/* Sekcje raportu są layout-only. Nie rysują ramek. */
+html[data-cm-theme]:not([data-cm-theme="original"]) body[data-panel-page="dailyReport"] .cm-period-section,
+html[data-cm-theme]:not([data-cm-theme="original"]) body[data-panel-page="dailyReport"] .cm-period-section + .cm-period-section{
+  background:transparent!important;
+  background-color:transparent!important;
+  background-image:none!important;
+  border:none!important;
+  outline:none!important;
+  box-shadow:none!important;
+  border-radius:0!important;
+  padding-left:0!important;
+  padding-right:0!important;
+  padding-top:0!important;
+}
+html[data-cm-theme]:not([data-cm-theme="original"]) body[data-panel-page="dailyReport"] .cm-period-section::before,
+html[data-cm-theme]:not([data-cm-theme="original"]) body[data-panel-page="dailyReport"] .cm-period-section::after{
+  content:none!important;
+  display:none!important;
+}
+
+/* KPI i finanse: miękkie karty bez twardej obwódki. */
+html[data-cm-theme]:not([data-cm-theme="original"]) body[data-panel-page="dailyReport"] .cm-period-kpis > div,
+html[data-cm-theme]:not([data-cm-theme="original"]) body[data-panel-page="dailyReport"] .cm-finance-grid > div,
+html[data-cm-theme]:not([data-cm-theme="original"]) body[data-panel-page="dailyReport"] .cm-comm-grid > div{
+  border:none!important;
+  outline:none!important;
+  border-radius:22px!important;
+  background:linear-gradient(145deg,
+    color-mix(in srgb,var(--cm-skin-card,#fff) 92%,transparent),
+    color-mix(in srgb,var(--cm-skin-soft,#f8fafc) 88%,transparent)
+  )!important;
+  box-shadow:0 18px 44px color-mix(in srgb,var(--cm-skin-shadow,rgba(0,0,0,.12)) 14%,transparent)!important;
+}
+html[data-cm-theme]:not([data-cm-theme="original"]) body[data-panel-page="dailyReport"] .cm-finance-grid > div > div{
+  border-top:1px solid color-mix(in srgb,var(--cm-skin-text,#0f172a) 7%,transparent)!important;
+}
+
+/* Tabele raportu: brak zewnętrznych prostokątów. Kształt ma tylko sama tabela. */
+html[data-cm-theme]:not([data-cm-theme="original"]) body[data-panel-page="dailyReport"] .cm-daily-table-shell,
+html[data-cm-theme]:not([data-cm-theme="original"]) body[data-panel-page="dailyReport"] .cm-daily-datatable,
+html[data-cm-theme]:not([data-cm-theme="original"]) body[data-panel-page="dailyReport"] .cm-daily-table-tools,
+html[data-cm-theme]:not([data-cm-theme="original"]) body[data-panel-page="dailyReport"] .bm-table-tools,
+html[data-cm-theme]:not([data-cm-theme="original"]) body[data-panel-page="dailyReport"] .cm-daily-table-wrap,
+html[data-cm-theme]:not([data-cm-theme="original"]) body[data-panel-page="dailyReport"] .bm-table-wrap,
+html[data-cm-theme]:not([data-cm-theme="original"]) body[data-panel-page="dailyReport"] .cm-table-wrap,
+html[data-cm-theme]:not([data-cm-theme="original"]) body[data-panel-page="dailyReport"] .table-wrap{
+  background:transparent!important;
+  background-color:transparent!important;
+  background-image:none!important;
+  border:none!important;
+  outline:none!important;
+  box-shadow:none!important;
+  padding-left:0!important;
+  padding-right:0!important;
+}
+html[data-cm-theme]:not([data-cm-theme="original"]) body[data-panel-page="dailyReport"] table.cm-daily-table,
+html[data-cm-theme]:not([data-cm-theme="original"]) body[data-panel-page="dailyReport"] table.bm-table{
+  border:none!important;
+  outline:none!important;
+  box-shadow:0 12px 34px color-mix(in srgb,var(--cm-skin-shadow,rgba(0,0,0,.12)) 10%,transparent)!important;
+  border-radius:22px!important;
+  overflow:hidden!important;
+}
+
+/* Lewy panel: usunięcie widocznej prostokątnej ramki wokół całej kolumny. */
+body .bm-left-info-panel{
+  border:none!important;
+  outline:none!important;
+  box-shadow:0 22px 70px rgba(15,23,42,.08)!important;
+}
+body .bm-left-info-panel::before,
+body .bm-left-info-panel::after{
+  content:none!important;
+  display:none!important;
+}
+
+/* Nadpisanie starszych reguł Gold/Beauty/Theme Engine, które dodawały tło lub border do wrapperów raportu. */
+html[data-cm-theme]:not([data-cm-theme="original"]) body[data-panel-page="dailyReport"] .cm-period-head *,
+html[data-cm-theme]:not([data-cm-theme="original"]) body[data-panel-page="dailyReport"] .cm-daily-date-row *{
+  text-shadow:none!important;
+}
