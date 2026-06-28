@@ -8,28 +8,117 @@ document.addEventListener('DOMContentLoaded', () => {
   const SESSION_KEY = 'companymanager_session_v1';
   const UNDO_KEY = 'companymanager_last_action_v1';
   const CM_THEME_KEY = 'companymanager_ui_theme_v1';
+  const CM_CUSTOM_THEME_KEY = 'companymanager_custom_skin_project_v1';
   const CM_THEME_DEFAULT = 'original';
   const CM_THEME_OPTIONS = {
-    neon: { label: 'Neon', swatch: '💜' },
-    sunset: { label: 'Sunset', swatch: '🧡' },
-    medical: { label: 'Medical', swatch: '❤️' },
-    ice: { label: 'Ice', swatch: '🩵' },
-    ocean: { label: 'Ocean', swatch: '🌊' },
-    burgundy: { label: 'Burgundy', swatch: '🍷' },
-    blackLuxury: { label: 'Black Luxury', swatch: '⚫' },
-    royalBlue: { label: 'Royal Blue', swatch: '💎' },
-    coffeeHouse: { label: 'Coffee House', swatch: '☕' },
-    natureSage: { label: 'Nature Sage', swatch: '🌿' },
-    beautyRose: { label: 'Beauty Rose', swatch: '🌸' },
-    goldWhite: { label: 'Exclusive Gold', swatch: '👑' },
-    original: { label: 'Origial', swatch: '🛡️' }
+    original: { label: 'Original', swatch: '🛡️', category: 'basic' },
+    goldWhite: { label: 'Exclusive Gold', swatch: '👑', category: 'basic' },
+    beautyRose: { label: 'Beauty Rose', swatch: '🌸', category: 'basic' },
+    natureSage: { label: 'Nature Sage', swatch: '🌿', category: 'basic' },
+    coffeeHouse: { label: 'Coffee House', swatch: '☕', category: 'basic' },
+    royalBlue: { label: 'Royal Blue', swatch: '💎', category: 'basic' },
+    blackLuxury: { label: 'Black Luxury', swatch: '⚫', category: 'basic' },
+    burgundy: { label: 'Burgundy', swatch: '🍷', category: 'basic' },
+    ocean: { label: 'Ocean', swatch: '🌊', category: 'basic' },
+    ice: { label: 'Ice', swatch: '🩵', category: 'basic' },
+    medical: { label: 'Medical', swatch: '❤️', category: 'basic' },
+    sunset: { label: 'Sunset', swatch: '🧡', category: 'basic' },
+    neon: { label: 'Cyber Neon', swatch: '💜', category: 'basic' },
+
+    titanArmor: { label: 'Titan Armor', swatch: '❤️', category: 'heroes' },
+    libertyShield: { label: 'Liberty Shield', swatch: '💙', category: 'heroes' },
+    shadowPanther: { label: 'Shadow Panther', swatch: '⚫', category: 'heroes' },
+    thunderGod: { label: 'Thunder God', swatch: '⚡', category: 'heroes' },
+    gammaForce: { label: 'Gamma Force', swatch: '💚', category: 'heroes' },
+    webHero: { label: 'Web Hero', swatch: '🕸️', category: 'heroes' },
+    scarletSpeed: { label: 'Scarlet Speed', swatch: '⚡', category: 'heroes' },
+    solarHero: { label: 'Solar Hero', swatch: '☀️', category: 'heroes' },
+    chaosSmile: { label: 'Chaos Smile', swatch: '🃏', category: 'heroes' },
+    darkKnight: { label: 'Dark Knight', swatch: '🦇', category: 'heroes' },
+
+    orangeNinja: { label: 'Orange Ninja', swatch: '🍥', category: 'shinobi' },
+    crimsonEye: { label: 'Crimson Eye', swatch: '🔴', category: 'shinobi' },
+    lightningAvenger: { label: 'Lightning Avenger', swatch: '⚡', category: 'shinobi' },
+    sageMaster: { label: 'Sage Master', swatch: '🐸', category: 'shinobi' },
+    blossomHealer: { label: 'Blossom Healer', swatch: '🌸', category: 'shinobi' },
+    purpleIllusion: { label: 'Purple Illusion', swatch: '🟣', category: 'shinobi' },
+
+    strawCaptain: { label: 'Straw Captain', swatch: '🏴', category: 'pirate' },
+    threeBlades: { label: 'Three Blades', swatch: '⚔️', category: 'pirate' },
+    fireCommander: { label: 'Fire Commander', swatch: '🔥', category: 'pirate' },
+    navigator: { label: 'Navigator', swatch: '🍊', category: 'pirate' },
+    ironShipwright: { label: 'Iron Shipwright', swatch: '🤖', category: 'pirate' },
+    soulMusician: { label: 'Soul Musician', swatch: '🎻', category: 'pirate' },
+    braveSniper: { label: 'Brave Sniper', swatch: '🎯', category: 'pirate' },
+    cottonDoctor: { label: 'Cotton Doctor', swatch: '🩺', category: 'pirate' },
+
+    ultraInstinct: { label: 'Ultra Instinct', swatch: '🟡', category: 'power' },
+    royalSaiyanBlue: { label: 'Royal Saiyan Blue', swatch: '🔵', category: 'power' },
+    godOfDestruction: { label: 'God of Destruction', swatch: '🟣', category: 'power' },
+    mysticWarrior: { label: 'Mystic Warrior', swatch: '🟢', category: 'power' },
+    soulReaper: { label: 'Soul Reaper', swatch: '🟠', category: 'power' },
+    crimsonGhoul: { label: 'Crimson Ghoul', swatch: '🔴', category: 'power' },
+
+    italianRacing: { label: 'Italian Racing', swatch: '🔴', category: 'automotive' },
+    motorsport: { label: 'Motorsport', swatch: '🔵', category: 'automotive' },
+    luxuryPerformance: { label: 'Luxury Performance', swatch: '⚫', category: 'automotive' },
+    hyperCar: { label: 'Hyper Car', swatch: '🟡', category: 'automotive' },
+    frenchHyper: { label: 'French Hyper', swatch: '🟦', category: 'automotive' },
+    britishLuxury: { label: 'British Luxury', swatch: '⚪', category: 'automotive' },
+
+    electricMouse: { label: 'Electric Mouse', swatch: '⚡', category: 'creature' },
+    fireDragon: { label: 'Fire Dragon', swatch: '🔥', category: 'creature' },
+    forestSeed: { label: 'Forest Seed', swatch: '🌱', category: 'creature' },
+    waterTurtle: { label: 'Water Turtle', swatch: '🌊', category: 'creature' },
+    blueVelocity: { label: 'Blue Velocity', swatch: '💙', category: 'creature' },
+
+    cyberNeon: { label: 'Cyber Neon', swatch: '💜', category: 'gaming' },
+    digitalMatrix: { label: 'Digital Matrix', swatch: '🟢', category: 'gaming' },
+    nightRacer: { label: 'Night Racer', swatch: '🌌', category: 'gaming' },
+    electricYellow: { label: 'Electric Yellow', swatch: '⚡', category: 'gaming' },
+
+    customProject: { label: 'Własny Projekt', swatch: '🎨', category: 'custom' }
   };
-  const CM_THEME_DARK = new Set(['original', 'blackLuxury', 'neon']);
+  const CM_THEME_CATEGORIES = {
+    basic: { label: 'Basic', swatch: '🛡️' },
+    heroes: { label: 'Hero Collection', swatch: '🦸' },
+    shinobi: { label: 'Shinobi Collection', swatch: '🍥' },
+    pirate: { label: 'Pirate Collection', swatch: '🏴' },
+    power: { label: 'Power Collection', swatch: '🐉' },
+    automotive: { label: 'Automotive', swatch: '🏎️' },
+    creature: { label: 'Creature Collection', swatch: '⚡' },
+    gaming: { label: 'Gaming', swatch: '🎮' },
+    custom: { label: 'Moje Projekty', swatch: '🎨' }
+  };
+  const CM_THEME_DARK = new Set(['original','blackLuxury','neon','cyberNeon','digitalMatrix','nightRacer','shadowPanther','darkKnight','chaosSmile','thunderGod','godOfDestruction','crimsonGhoul','luxuryPerformance','blueVelocity']);
   const normalizeCmTheme = (value) => Object.prototype.hasOwnProperty.call(CM_THEME_OPTIONS, value) ? value : CM_THEME_DEFAULT;
   const getStoredCmTheme = () => normalizeCmTheme(localStorage.getItem(CM_THEME_KEY) || CM_THEME_DEFAULT);
+  const getCmCustomTheme = () => {
+    try { return JSON.parse(localStorage.getItem(CM_CUSTOM_THEME_KEY) || '{}') || {}; }
+    catch (_) { return {}; }
+  };
+  const applyCmCustomThemeVars = () => {
+    const cfg = getCmCustomTheme();
+    if (!cfg || !cfg.primary) return;
+    const root = document.documentElement;
+    const vars = {
+      '--cm-skin-accent': cfg.primary,
+      '--cm-skin-accent-2': cfg.secondary || cfg.primary,
+      '--cm-skin-bg-a': cfg.background || '#f8fafc',
+      '--cm-skin-bg-b': cfg.background2 || cfg.background || '#eef2ff',
+      '--cm-skin-card': cfg.card || '#ffffff',
+      '--cm-skin-soft': cfg.soft || cfg.card || '#f8fafc',
+      '--cm-skin-text': cfg.text || '#0f172a',
+      '--cm-skin-muted': cfg.muted || '#64748b',
+      '--cm-skin-border': cfg.border || 'rgba(15,23,42,.16)',
+      '--cm-skin-shadow': cfg.shadow || 'rgba(15,23,42,.14)'
+    };
+    Object.entries(vars).forEach(([k,v]) => root.style.setProperty(k, v));
+  };
   const applyCmTheme = (theme) => {
     const normalized = normalizeCmTheme(theme);
     document.documentElement.setAttribute('data-cm-theme', normalized);
+    if (normalized === 'customProject') applyCmCustomThemeVars();
     document.documentElement.style.colorScheme = CM_THEME_DARK.has(normalized) ? 'dark' : 'light';
     return normalized;
   };
@@ -1325,22 +1414,50 @@ document.addEventListener('DOMContentLoaded', () => {
   const renderThemeSwitcher = () => {
     const activeTheme = getStoredCmTheme();
     const active = CM_THEME_OPTIONS[activeTheme] || CM_THEME_OPTIONS.original;
-    const options = Object.entries(CM_THEME_OPTIONS)
-      .sort(([a], [b]) => (a === CM_THEME_DEFAULT ? 1 : b === CM_THEME_DEFAULT ? -1 : 0))
-      .map(([key, meta]) => `
-      <button type="button" class="cm-theme-option ${key === activeTheme ? 'active' : ''}" data-cm-theme-choice="${key}" aria-pressed="${key === activeTheme ? 'true' : 'false'}">
-        <span class="cm-theme-option-swatch" aria-hidden="true">${meta.swatch}</span>
-        <span>${meta.label}</span>
+    const categoryNav = Object.entries(CM_THEME_CATEGORIES).map(([key, meta], index) => `
+      <button type="button" class="cm-skin-category ${index === 0 ? 'active' : ''}" data-cm-skin-category="${key}">
+        <span>${meta.swatch}</span><span>${meta.label}</span>
       </button>`).join('');
+    const cards = Object.entries(CM_THEME_OPTIONS).map(([key, meta]) => `
+      <button type="button" class="cm-skin-card ${key === activeTheme ? 'active' : ''}" data-cm-theme-choice="${key}" data-cm-theme-category="${meta.category || 'basic'}" aria-pressed="${key === activeTheme ? 'true' : 'false'}">
+        <span class="cm-skin-card-top"><span class="cm-skin-card-icon">${meta.swatch}</span><span class="cm-skin-card-name">${meta.label}</span></span>
+        <span class="cm-skin-preview" data-preview-theme="${key}"><i></i><b></b><em></em></span>
+      </button>`).join('');
+    const custom = getCmCustomTheme();
     return `
       <div class="cm-theme-switcher" data-cm-theme-switcher>
-        <button class="cm-theme-toggle" type="button" aria-label="Wybierz skórkę aplikacji" aria-expanded="false">
+        <button class="cm-theme-toggle" type="button" aria-label="Otwórz Skin Universe" aria-expanded="false">
           <span class="cm-theme-toggle-icon" aria-hidden="true">${active.swatch}</span>
-          <span class="cm-theme-toggle-text">Skórka</span>
+          <span class="cm-theme-toggle-text">Skórki</span>
         </button>
-        <div class="cm-theme-menu" hidden>
-          <strong>Skórka aplikacji</strong>
-          ${options}
+        <div class="cm-theme-menu cm-skin-universe" hidden>
+          <div class="cm-skin-universe-head">
+            <div><strong>🎨 Skin Universe</strong><p>Biblioteka skórek i własny projekt.</p></div>
+            <button type="button" class="cm-skin-close" data-cm-skin-close aria-label="Zamknij">×</button>
+          </div>
+          <div class="cm-skin-universe-body">
+            <aside class="cm-skin-sidebar">${categoryNav}</aside>
+            <section class="cm-skin-library">
+              <div class="cm-skin-toolbar">
+                <input type="search" class="cm-skin-search" data-cm-skin-search placeholder="Szukaj skórki...">
+                <span class="cm-skin-count" data-cm-skin-count></span>
+              </div>
+              <div class="cm-skin-grid" data-cm-skin-grid>${cards}</div>
+              <div class="cm-skin-custom-panel" data-cm-skin-custom-panel hidden>
+                <h3>🎨 Własny Projekt</h3>
+                <p>Zbuduj własną skórkę z kolorów. Zapis działa lokalnie w przeglądarce.</p>
+                <div class="cm-skin-custom-grid">
+                  <label>Kolor główny <input type="color" data-cm-custom-color="primary" value="${custom.primary || '#d4af37'}"></label>
+                  <label>Kolor dodatkowy <input type="color" data-cm-custom-color="secondary" value="${custom.secondary || '#facc15'}"></label>
+                  <label>Tło <input type="color" data-cm-custom-color="background" value="${custom.background || '#fffaf0'}"></label>
+                  <label>Karty <input type="color" data-cm-custom-color="card" value="${custom.card || '#ffffff'}"></label>
+                  <label>Tekst <input type="color" data-cm-custom-color="text" value="${custom.text || '#111827'}"></label>
+                  <label>Tekst pomocniczy <input type="color" data-cm-custom-color="muted" value="${custom.muted || '#6b7280'}"></label>
+                </div>
+                <button type="button" class="cm-primary-action" data-cm-save-custom-skin>💾 Zapisz i zastosuj</button>
+              </div>
+            </section>
+          </div>
         </div>
       </div>`;
   };
@@ -1349,33 +1466,80 @@ document.addEventListener('DOMContentLoaded', () => {
     const switcher = document.querySelector('[data-cm-theme-switcher]');
     const toggle = switcher?.querySelector('.cm-theme-toggle');
     const menu = switcher?.querySelector('.cm-theme-menu');
-    if (!switcher || !toggle || !menu) return;
+    const grid = switcher?.querySelector('[data-cm-skin-grid]');
+    const search = switcher?.querySelector('[data-cm-skin-search]');
+    const count = switcher?.querySelector('[data-cm-skin-count]');
+    const customPanel = switcher?.querySelector('[data-cm-skin-custom-panel]');
+    if (!switcher || !toggle || !menu || !grid) return;
+    let activeCategory = 'basic';
+    const updateCards = () => {
+      const term = (search?.value || '').trim().toLowerCase();
+      let visible = 0;
+      grid.querySelectorAll('[data-cm-theme-choice]').forEach((card) => {
+        const meta = CM_THEME_OPTIONS[card.getAttribute('data-cm-theme-choice')] || {};
+        const matchesCategory = activeCategory === 'custom' ? meta.category === 'custom' : meta.category === activeCategory;
+        const matchesSearch = !term || String(meta.label || '').toLowerCase().includes(term);
+        const show = matchesCategory && matchesSearch;
+        card.hidden = !show;
+        if (show) visible += 1;
+      });
+      if (count) count.textContent = `${visible} skórek`;
+      if (customPanel) customPanel.hidden = activeCategory !== 'custom';
+    };
     const close = () => {
       menu.hidden = true;
       toggle.setAttribute('aria-expanded', 'false');
     };
-    toggle.addEventListener('click', (event) => {
-      event.preventDefault();
-      event.stopPropagation();
-      const shouldOpen = menu.hidden;
+    const open = () => {
       document.querySelectorAll('.cm-theme-menu').forEach((item) => { item.hidden = true; });
-      menu.hidden = !shouldOpen;
-      toggle.setAttribute('aria-expanded', shouldOpen ? 'true' : 'false');
+      menu.hidden = false;
+      toggle.setAttribute('aria-expanded', 'true');
+      updateCards();
+    };
+    toggle.addEventListener('click', (event) => {
+      event.preventDefault(); event.stopPropagation();
+      menu.hidden ? open() : close();
     });
+    switcher.querySelector('[data-cm-skin-close]')?.addEventListener('click', close);
+    switcher.querySelectorAll('[data-cm-skin-category]').forEach((btn) => {
+      btn.addEventListener('click', (event) => {
+        event.preventDefault(); event.stopPropagation();
+        activeCategory = btn.getAttribute('data-cm-skin-category') || 'basic';
+        switcher.querySelectorAll('[data-cm-skin-category]').forEach((item) => item.classList.toggle('active', item === btn));
+        updateCards();
+      });
+    });
+    search?.addEventListener('input', updateCards);
     menu.addEventListener('click', (event) => {
       const btn = event.target.closest('[data-cm-theme-choice]');
       if (!btn) return;
-      event.preventDefault();
-      event.stopPropagation();
+      event.preventDefault(); event.stopPropagation();
       const nextTheme = applyCmTheme(btn.getAttribute('data-cm-theme-choice'));
       localStorage.setItem(CM_THEME_KEY, nextTheme);
       const meta = CM_THEME_OPTIONS[nextTheme] || CM_THEME_OPTIONS.original;
       toggle.querySelector('.cm-theme-toggle-icon').textContent = meta.swatch;
-      menu.querySelectorAll('[data-cm-theme-choice]').forEach((item) => {
+      grid.querySelectorAll('[data-cm-theme-choice]').forEach((item) => {
         const isActive = item.getAttribute('data-cm-theme-choice') === nextTheme;
         item.classList.toggle('active', isActive);
         item.setAttribute('aria-pressed', isActive ? 'true' : 'false');
       });
+      close();
+    });
+    switcher.querySelector('[data-cm-save-custom-skin]')?.addEventListener('click', (event) => {
+      event.preventDefault(); event.stopPropagation();
+      const cfg = {};
+      switcher.querySelectorAll('[data-cm-custom-color]').forEach((input) => { cfg[input.getAttribute('data-cm-custom-color')] = input.value; });
+      cfg.background2 = cfg.background;
+      cfg.soft = cfg.card;
+      cfg.border = 'color-mix(in srgb,' + cfg.primary + ' 28%,transparent)';
+      cfg.shadow = 'color-mix(in srgb,' + cfg.primary + ' 18%,transparent)';
+      localStorage.setItem(CM_CUSTOM_THEME_KEY, JSON.stringify(cfg));
+      const nextTheme = applyCmTheme('customProject');
+      localStorage.setItem(CM_THEME_KEY, nextTheme);
+      const meta = CM_THEME_OPTIONS.customProject;
+      toggle.querySelector('.cm-theme-toggle-icon').textContent = meta.swatch;
+      grid.querySelectorAll('[data-cm-theme-choice]').forEach((item) => item.classList.toggle('active', item.getAttribute('data-cm-theme-choice') === nextTheme));
+      alert('Własny Projekt zapisany i zastosowany.');
       close();
     });
     document.addEventListener('click', (event) => {
@@ -1384,6 +1548,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.addEventListener('keydown', (event) => {
       if (event.key === 'Escape' && !menu.hidden) close();
     });
+    updateCards();
   };
 
   const monthNamesPL = ['Styczeń','Luty','Marzec','Kwiecień','Maj','Czerwiec','Lipiec','Sierpień','Wrzesień','Październik','Listopad','Grudzień'];
