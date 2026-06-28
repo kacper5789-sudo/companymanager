@@ -99,7 +99,7 @@
       ? `<tfoot><tr>${footer.map(cell => `<td>${cell}</td>`).join("")}</tr></tfoot>`
       : "";
     return `
-      <div class="cm-daily-datatable ${esc(cls)}" data-daily-table="1">
+      <div class="cm-daily-table-shell ${esc(cls)}" data-daily-table="1">
         <div class="bm-table-tools cm-daily-table-tools">
           <label><select data-page-size aria-label="Liczba pozycji na stronę"><option value="50">50</option><option value="100">100</option><option value="200">200</option></select> ▾</label>
           <label>Szukaj:<input type="search" data-table-search placeholder="Szukaj"></label>

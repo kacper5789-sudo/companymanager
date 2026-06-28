@@ -14542,3 +14542,80 @@ html[data-cm-theme]:not([data-cm-theme="original"]) body[data-panel-page="dailyR
 html[data-cm-theme]:not([data-cm-theme="original"]) body[data-panel-page="dailyReport"] [class*="table-wrap"]{
   --cm-force-no-panel-bg: transparent;
 }
+
+
+/* CompanyManager 5.6 — Daily Report Shell Rebuild
+   Real fix: daily report tables no longer use the old .cm-daily-datatable frame.
+   The shell is layout-only. It never draws a panel, background, border or shadow. */
+html[data-cm-theme]:not([data-cm-theme="original"]) body[data-panel-page="dailyReport"] .cm-daily-table-shell,
+html[data-cm-theme]:not([data-cm-theme="original"]) body[data-panel-page="dailyReport"] .cm-daily-table-shell.cm-daily-services-table,
+html[data-cm-theme]:not([data-cm-theme="original"]) body[data-panel-page="dailyReport"] .cm-daily-table-shell.cm-daily-products-table,
+html[data-cm-theme]:not([data-cm-theme="original"]) body[data-panel-page="dailyReport"] .cm-daily-table-shell.cm-daily-passes-table,
+html[data-cm-theme]:not([data-cm-theme="original"]) body[data-panel-page="dailyReport"] .cm-daily-table-shell.cm-daily-employees-table{
+  display:block!important;
+  margin:10px 0 0!important;
+  padding:0!important;
+  background:transparent!important;
+  background-color:transparent!important;
+  background-image:none!important;
+  border:none!important;
+  outline:none!important;
+  box-shadow:none!important;
+  border-radius:0!important;
+  overflow:visible!important;
+}
+html[data-cm-theme]:not([data-cm-theme="original"]) body[data-panel-page="dailyReport"] .cm-daily-table-shell::before,
+html[data-cm-theme]:not([data-cm-theme="original"]) body[data-panel-page="dailyReport"] .cm-daily-table-shell::after{
+  content:none!important;
+  display:none!important;
+}
+html[data-cm-theme]:not([data-cm-theme="original"]) body[data-panel-page="dailyReport"] .cm-daily-table-shell .cm-daily-table-tools,
+html[data-cm-theme]:not([data-cm-theme="original"]) body[data-panel-page="dailyReport"] .cm-daily-table-shell .bm-table-tools,
+html[data-cm-theme]:not([data-cm-theme="original"]) body[data-panel-page="dailyReport"] .cm-daily-table-shell .cm-daily-table-pager,
+html[data-cm-theme]:not([data-cm-theme="original"]) body[data-panel-page="dailyReport"] .cm-daily-table-shell .cm-sales-pager{
+  background:transparent!important;
+  background-color:transparent!important;
+  background-image:none!important;
+  border:none!important;
+  outline:none!important;
+  box-shadow:none!important;
+  padding:0!important;
+}
+html[data-cm-theme]:not([data-cm-theme="original"]) body[data-panel-page="dailyReport"] .cm-daily-table-shell .cm-daily-table-wrap,
+html[data-cm-theme]:not([data-cm-theme="original"]) body[data-panel-page="dailyReport"] .cm-daily-table-shell .bm-table-wrap{
+  padding:0!important;
+  margin:0!important;
+  background:transparent!important;
+  background-color:transparent!important;
+  background-image:none!important;
+  border:none!important;
+  outline:none!important;
+  box-shadow:none!important;
+  border-radius:24px!important;
+  overflow:hidden!important;
+}
+html[data-cm-theme]:not([data-cm-theme="original"]) body[data-panel-page="dailyReport"] .cm-daily-table-shell table.cm-daily-table,
+html[data-cm-theme]:not([data-cm-theme="original"]) body[data-panel-page="dailyReport"] .cm-daily-table-shell table.bm-table{
+  border:none!important;
+  outline:none!important;
+  box-shadow:none!important;
+  border-collapse:separate!important;
+  border-spacing:0!important;
+  border-radius:24px!important;
+  overflow:hidden!important;
+  background:transparent!important;
+}
+/* Fallback: if any cached/generated block still has the old class, kill its frame too. */
+html[data-cm-theme]:not([data-cm-theme="original"]) body[data-panel-page="dailyReport"] .cm-daily-datatable{
+  display:block!important;
+  margin:10px 0 0!important;
+  padding:0!important;
+  background:transparent!important;
+  background-color:transparent!important;
+  background-image:none!important;
+  border:none!important;
+  outline:none!important;
+  box-shadow:none!important;
+  border-radius:0!important;
+  overflow:visible!important;
+}
