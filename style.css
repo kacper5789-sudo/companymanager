@@ -13372,3 +13372,194 @@ html[data-cm-theme]:not([data-cm-theme="original"]) .panel-pill,
 html[data-cm-theme]:not([data-cm-theme="original"]) .bm-pill{
   border-color:transparent!important;
 }
+
+/* CompanyManager 4.9 — Soft UI Engine
+   Usuwa twarde/prostokątne obwódki z modułów w skórkach innych niż Original.
+   Zostają miękkie powierzchnie, cienie i delikatne separatory — tak jak w Original. */
+html[data-cm-theme]:not([data-cm-theme="original"]){
+  --cm-soft-shadow-main:0 24px 58px color-mix(in srgb,var(--cm-skin-shadow,rgba(0,0,0,.16)) 70%,transparent);
+  --cm-soft-shadow-card:0 14px 34px color-mix(in srgb,var(--cm-skin-shadow,rgba(0,0,0,.14)) 55%,transparent);
+  --cm-soft-divider:color-mix(in srgb,var(--cm-skin-accent,#2563eb) 14%,transparent);
+  --cm-soft-control-bg:linear-gradient(180deg,color-mix(in srgb,var(--cm-skin-card,#fff) 94%,transparent),color-mix(in srgb,var(--cm-skin-soft,#f8fafc) 92%,transparent));
+  --cm-soft-control-active:linear-gradient(180deg,color-mix(in srgb,var(--cm-skin-card,#fff) 70%,var(--cm-skin-accent-2,#60a5fa) 30%),color-mix(in srgb,var(--cm-skin-soft,#f8fafc) 74%,var(--cm-skin-accent,#2563eb) 26%));
+}
+
+/* Główne moduły: powierzchnia ma być miękka, bez rysowanej obwódki */
+html[data-cm-theme]:not([data-cm-theme="original"]) .bm-page-card,
+html[data-cm-theme]:not([data-cm-theme="original"]) .panel-card,
+html[data-cm-theme]:not([data-cm-theme="original"]) .passes-module,
+html[data-cm-theme]:not([data-cm-theme="original"]) .sales-module,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-sales-page,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-sales-view,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-current-section,
+html[data-cm-theme]:not([data-cm-theme="original"]) .bm-current-section,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-unified-card,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-company-panel-page,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-company-panel-form,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-supabase-work-schedule,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-work-page,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-supabase-daily-report,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-daily-report-card,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-period-report-card,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-report-card,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-customers-report-card,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-customers-reports-module,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-supa-reports-module{
+  border:none!important;
+  outline:none!important;
+  box-shadow:var(--cm-soft-shadow-main)!important;
+}
+
+/* Nagłówki i belki akcji nie mogą robić prostokątnej ramki */
+html[data-cm-theme]:not([data-cm-theme="original"]) .bm-page-head,
+html[data-cm-theme]:not([data-cm-theme="original"]) .customers-head,
+html[data-cm-theme]:not([data-cm-theme="original"]) .bm-actions-row,
+html[data-cm-theme]:not([data-cm-theme="original"]) .bm-action-row,
+html[data-cm-theme]:not([data-cm-theme="original"]) .bm-admin-actions,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-sales-view-actions,
+html[data-cm-theme]:not([data-cm-theme="original"]) .bm-table-tools{
+  background:transparent!important;
+  border:none!important;
+  outline:none!important;
+  box-shadow:none!important;
+}
+
+/* Kontenery zakładek: bez zewnętrznej ramki/fieldsetu */
+html[data-cm-theme]:not([data-cm-theme="original"]) .bm-filter-tabs,
+html[data-cm-theme]:not([data-cm-theme="original"]) .passes-module .bm-filter-tabs,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-sales-page .bm-filter-tabs,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-sales-tabs,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-report-tabs,
+html[data-cm-theme]:not([data-cm-theme="original"]) .tabs,
+html[data-cm-theme]:not([data-cm-theme="original"]) .tabbar{
+  background:transparent!important;
+  border:none!important;
+  outline:none!important;
+  box-shadow:none!important;
+  padding-left:0!important;
+  padding-right:0!important;
+}
+
+/* Same chipy/taby zostają owalne, ale bez twardej krawędzi */
+html[data-cm-theme]:not([data-cm-theme="original"]) .bm-filter-tabs a,
+html[data-cm-theme]:not([data-cm-theme="original"]) .passes-module .bm-filter-tabs a,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-sales-tabs a,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-sales-tab,
+html[data-cm-theme]:not([data-cm-theme="original"]) .bm-filter-btn,
+html[data-cm-theme]:not([data-cm-theme="original"]) .bm-tab,
+html[data-cm-theme]:not([data-cm-theme="original"]) .bm-report-tab,
+html[data-cm-theme]:not([data-cm-theme="original"]) .filter-btn,
+html[data-cm-theme]:not([data-cm-theme="original"]) .tab-btn,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-tab,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-filter-chip,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-chip,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-status-chip,
+html[data-cm-theme]:not([data-cm-theme="original"]) .panel-pill,
+html[data-cm-theme]:not([data-cm-theme="original"]) .bm-pill{
+  border:none!important;
+  outline:none!important;
+  background:var(--cm-soft-control-bg)!important;
+  box-shadow:0 8px 20px color-mix(in srgb,var(--cm-skin-shadow,rgba(0,0,0,.14)) 44%,transparent)!important;
+}
+html[data-cm-theme]:not([data-cm-theme="original"]) .bm-filter-tabs a.active,
+html[data-cm-theme]:not([data-cm-theme="original"]) .passes-module .bm-filter-tabs a.active,
+html[data-cm-theme]:not([data-cm-theme="original"]) .passes-module .bm-filter-tabs a:hover,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-sales-tabs a.active,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-sales-tabs a:hover,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-sales-tab.active,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-sales-tab:hover,
+html[data-cm-theme]:not([data-cm-theme="original"]) .bm-filter-btn.active,
+html[data-cm-theme]:not([data-cm-theme="original"]) .bm-tab.active,
+html[data-cm-theme]:not([data-cm-theme="original"]) .bm-report-tab.active,
+html[data-cm-theme]:not([data-cm-theme="original"]) .filter-btn.active,
+html[data-cm-theme]:not([data-cm-theme="original"]) .tab-btn.active,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-tab.active{
+  border:none!important;
+  background:var(--cm-soft-control-active)!important;
+  color:var(--cm-skin-accent,#2563eb)!important;
+}
+
+/* Bloki informacyjne i formularze: usuwamy prostokątne fieldsety */
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-pass-status-help,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-sales-filters,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-sales-summary,
+html[data-cm-theme]:not([data-cm-theme="original"]) .bm-filter-panel,
+html[data-cm-theme]:not([data-cm-theme="original"]) .filters-panel,
+html[data-cm-theme]:not([data-cm-theme="original"]) .bm-form-card,
+html[data-cm-theme]:not([data-cm-theme="original"]) .bm-form-row,
+html[data-cm-theme]:not([data-cm-theme="original"]) fieldset{
+  background:transparent!important;
+  border:none!important;
+  outline:none!important;
+  box-shadow:none!important;
+}
+
+/* Podsumowania zostają jako miękkie pigułki, bez kanciastej ramki */
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-sales-summary b,
+html[data-cm-theme]:not([data-cm-theme="original"]) .summary-pill,
+html[data-cm-theme]:not([data-cm-theme="original"]) .metric-card,
+html[data-cm-theme]:not([data-cm-theme="original"]) .bm-stats article,
+html[data-cm-theme]:not([data-cm-theme="original"]) .bm-status-list p,
+html[data-cm-theme]:not([data-cm-theme="original"]) .data-list p,
+html[data-cm-theme]:not([data-cm-theme="original"]) .bm-day-columns div{
+  border:none!important;
+  outline:none!important;
+  box-shadow:0 10px 26px color-mix(in srgb,var(--cm-skin-shadow,rgba(0,0,0,.14)) 42%,transparent)!important;
+}
+
+/* Inputy/selecty/search — bez ramki; tylko miękkie podświetlenie tła */
+html[data-cm-theme]:not([data-cm-theme="original"]) input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+html[data-cm-theme]:not([data-cm-theme="original"]) textarea,
+html[data-cm-theme]:not([data-cm-theme="original"]) select,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-sales-date-pill,
+html[data-cm-theme]:not([data-cm-theme="original"]) .panel-input,
+html[data-cm-theme]:not([data-cm-theme="original"]) .role-select{
+  border:none!important;
+  outline:none!important;
+  box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--cm-skin-accent,#2563eb) 6%,transparent), 0 8px 20px color-mix(in srgb,var(--cm-skin-shadow,rgba(0,0,0,.12)) 28%,transparent)!important;
+}
+html[data-cm-theme]:not([data-cm-theme="original"]) input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):focus,
+html[data-cm-theme]:not([data-cm-theme="original"]) textarea:focus,
+html[data-cm-theme]:not([data-cm-theme="original"]) select:focus,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-sales-date-pill:hover{
+  border:none!important;
+  box-shadow:0 0 0 3px color-mix(in srgb,var(--cm-skin-accent,#2563eb) 16%,transparent), inset 0 0 0 1px color-mix(in srgb,var(--cm-skin-accent,#2563eb) 18%,transparent)!important;
+}
+
+/* Tabele: bez zewnętrznej obwódki, tylko lekkie separatory wierszy */
+html[data-cm-theme]:not([data-cm-theme="original"]) .bm-table-wrap,
+html[data-cm-theme]:not([data-cm-theme="original"]) .table-wrap,
+html[data-cm-theme]:not([data-cm-theme="original"]) .table-container,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-table-wrap{
+  border:none!important;
+  outline:none!important;
+  box-shadow:var(--cm-soft-shadow-card)!important;
+  overflow:hidden!important;
+}
+html[data-cm-theme]:not([data-cm-theme="original"]) table,
+html[data-cm-theme]:not([data-cm-theme="original"]) thead,
+html[data-cm-theme]:not([data-cm-theme="original"]) tbody{
+  border:none!important;
+  outline:none!important;
+}
+html[data-cm-theme]:not([data-cm-theme="original"]) th,
+html[data-cm-theme]:not([data-cm-theme="original"]) td{
+  border-left:none!important;
+  border-right:none!important;
+  border-top:none!important;
+  border-bottom:1px solid var(--cm-soft-divider)!important;
+}
+html[data-cm-theme]:not([data-cm-theme="original"]) tbody tr:last-child td{
+  border-bottom:none!important;
+}
+
+/* Przyciski akcji: owalny soft UI bez obwódki */
+html[data-cm-theme]:not([data-cm-theme="original"]) button,
+html[data-cm-theme]:not([data-cm-theme="original"]) .bm-light-btn,
+html[data-cm-theme]:not([data-cm-theme="original"]) .bm-excel-btn,
+html[data-cm-theme]:not([data-cm-theme="original"]) .bm-danger-btn,
+html[data-cm-theme]:not([data-cm-theme="original"]) .bm-secondary-btn,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-sales-export-btn{
+  border:none!important;
+  outline:none!important;
+}
