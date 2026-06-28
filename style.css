@@ -14749,3 +14749,154 @@ html[data-cm-theme]:not([data-cm-theme="original"]) body[data-panel-page="dailyR
 html[data-cm-theme]:not([data-cm-theme="original"]) body[data-panel-page="dailyReport"] .cm-daily-date-row *{
   text-shadow:none!important;
 }
+
+/* CompanyManager v5.8 — Color-only Theme Engine cleanup
+   Cel: skórki mają dziedziczyć geometrię Original. Silnik nie dodaje prostokątnych wrapperów.
+   Dotyczy wszystkich skórek i nowych palet; Original pozostaje wizualnym wzorcem geometrii. */
+:root{
+  --cm-ui-shell-radius:22px;
+  --cm-ui-card-radius:18px;
+  --cm-ui-pill-radius:999px;
+}
+
+/* Lewy panel: usuwamy twardą prostokątną ramkę, zostaje miękki panel jak w Original. */
+.bm-left-info-panel,
+.bm-sidebar .bm-left-info-panel,
+html[data-cm-theme] .bm-left-info-panel{
+  border:0!important;
+  outline:0!important;
+  box-shadow:0 24px 70px color-mix(in srgb,var(--cm-skin-shadow,rgba(15,23,42,.14)) 12%,transparent)!important;
+  border-radius:0 0 24px 0!important;
+}
+html[data-cm-theme] .bm-left-info-panel::before,
+html[data-cm-theme] .bm-left-info-panel::after{
+  content:none!important;
+  display:none!important;
+}
+
+/* Wspólna zasada: wrappery sekcji nie mogą wyglądać jak prostokątne formularze. */
+html[data-cm-theme]:not([data-cm-theme="original"]) body[data-panel-page="workSchedule"] .cm-supabase-work-schedule,
+html[data-cm-theme]:not([data-cm-theme="original"]) body[data-panel-page="companyPanel"] .bm-company-data-page,
+html[data-cm-theme]:not([data-cm-theme="original"]) body[data-panel-page="companyPanel"] .cm-company-panel-page,
+html[data-cm-theme]:not([data-cm-theme="original"]) body[data-panel-page="companyPanel"] .cm-company-panel-form{
+  border:0!important;
+  outline:0!important;
+  background:transparent!important;
+  box-shadow:none!important;
+}
+
+/* Grafik pracy — nagłówek ma być częścią strony, bez osobnej prostokątnej płyty. */
+html[data-cm-theme]:not([data-cm-theme="original"]) body[data-panel-page="workSchedule"] .cm-work-schedule-head,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-supabase-work-schedule .cm-work-schedule-head,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-work-schedule-page .bm-page-head.customers-head{
+  border:0!important;
+  outline:0!important;
+  background:transparent!important;
+  box-shadow:none!important;
+  padding:0!important;
+  margin:0 0 22px!important;
+  border-radius:0!important;
+}
+html[data-cm-theme]:not([data-cm-theme="original"]) body[data-panel-page="workSchedule"] .cm-work-schedule-head::before,
+html[data-cm-theme]:not([data-cm-theme="original"]) body[data-panel-page="workSchedule"] .cm-work-schedule-head::after,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-supabase-work-schedule .cm-work-schedule-head::before,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-supabase-work-schedule .cm-work-schedule-head::after{
+  content:none!important;
+  display:none!important;
+}
+
+/* Panel firmy — górny przełącznik zakładek bez zewnętrznej prostokątnej ramki. */
+html[data-cm-theme]:not([data-cm-theme="original"]) body[data-panel-page="companyPanel"] .cm-company-panel-switcher,
+html[data-cm-theme]:not([data-cm-theme="original"]) body[data-panel-page="companyPanel"] .cm-customer-report-switcher.cm-company-panel-switcher{
+  border:0!important;
+  outline:0!important;
+  background:transparent!important;
+  box-shadow:none!important;
+  padding:0!important;
+  margin:0 0 22px!important;
+  border-radius:0!important;
+}
+html[data-cm-theme]:not([data-cm-theme="original"]) body[data-panel-page="companyPanel"] .cm-company-panel-switcher::before,
+html[data-cm-theme]:not([data-cm-theme="original"]) body[data-panel-page="companyPanel"] .cm-company-panel-switcher::after{
+  content:none!important;
+  display:none!important;
+}
+
+/* Panel firmy — nagłówek „Dane firmy / zapis Supabase” bez prostokątnego boxa. */
+html[data-cm-theme]:not([data-cm-theme="original"]) body[data-panel-page="companyPanel"] .bm-page-head,
+html[data-cm-theme]:not([data-cm-theme="original"]) body[data-panel-page="companyPanel"] .bm-company-data-page > .bm-page-head{
+  border:0!important;
+  outline:0!important;
+  background:transparent!important;
+  box-shadow:none!important;
+  padding:0!important;
+  margin:0 0 22px!important;
+  border-radius:0!important;
+}
+html[data-cm-theme]:not([data-cm-theme="original"]) body[data-panel-page="companyPanel"] .bm-page-head::before,
+html[data-cm-theme]:not([data-cm-theme="original"]) body[data-panel-page="companyPanel"] .bm-page-head::after{
+  content:none!important;
+  display:none!important;
+}
+
+/* Panel firmy — formularz nie może tworzyć jednej wielkiej prostokątnej ramki. */
+html[data-cm-theme]:not([data-cm-theme="original"]) body[data-panel-page="companyPanel"] .cm-company-panel-form,
+html[data-cm-theme]:not([data-cm-theme="original"]) body[data-panel-page="companyPanel"] form.cm-company-panel-form{
+  border:0!important;
+  outline:0!important;
+  background:transparent!important;
+  box-shadow:none!important;
+  padding:0!important;
+  border-radius:0!important;
+}
+html[data-cm-theme]:not([data-cm-theme="original"]) body[data-panel-page="companyPanel"] .cm-company-panel-form::before,
+html[data-cm-theme]:not([data-cm-theme="original"]) body[data-panel-page="companyPanel"] .cm-company-panel-form::after{
+  content:none!important;
+  display:none!important;
+}
+
+/* Same grupy pól zostają miękkimi kartami, bez ciężkich kwadratów. */
+html[data-cm-theme]:not([data-cm-theme="original"]) body[data-panel-page="companyPanel"] fieldset.cm-notification-box,
+html[data-cm-theme]:not([data-cm-theme="original"]) body[data-panel-page="companyPanel"] fieldset,
+html[data-cm-theme]:not([data-cm-theme="original"]) body[data-panel-page="companyPanel"] .settings-box,
+html[data-cm-theme]:not([data-cm-theme="original"]) body[data-panel-page="companyPanel"] .cm-notification-box,
+html[data-cm-theme]:not([data-cm-theme="original"]) body[data-panel-page="companyPanel"] .cm-general-settings-box,
+html[data-cm-theme]:not([data-cm-theme="original"]) body[data-panel-page="companyPanel"] .cm-marketing-consent-box,
+html[data-cm-theme]:not([data-cm-theme="original"]) body[data-panel-page="companyPanel"] .cm-work-hours-box,
+html[data-cm-theme]:not([data-cm-theme="original"]) body[data-panel-page="companyPanel"] .cm-data-retention-box,
+html[data-cm-theme]:not([data-cm-theme="original"]) body[data-panel-page="companyPanel"] .cm-payment-methods-box{
+  border:0!important;
+  outline:0!important;
+  border-radius:var(--cm-ui-shell-radius)!important;
+  background:linear-gradient(135deg,
+    color-mix(in srgb,var(--cm-skin-card,#fff) 94%,transparent),
+    color-mix(in srgb,var(--cm-skin-soft,#f8fafc) 72%,transparent))!important;
+  box-shadow:0 20px 54px color-mix(in srgb,var(--cm-skin-shadow,rgba(15,23,42,.12)) 12%,transparent)!important;
+  padding:18px!important;
+}
+html[data-cm-theme]:not([data-cm-theme="original"]) body[data-panel-page="companyPanel"] fieldset.cm-notification-box::before,
+html[data-cm-theme]:not([data-cm-theme="original"]) body[data-panel-page="companyPanel"] fieldset.cm-notification-box::after,
+html[data-cm-theme]:not([data-cm-theme="original"]) body[data-panel-page="companyPanel"] .cm-notification-box::before,
+html[data-cm-theme]:not([data-cm-theme="original"]) body[data-panel-page="companyPanel"] .cm-notification-box::after{
+  content:none!important;
+  display:none!important;
+}
+
+/* Zakładki panelu firmy mają być pigułkami, bez płyty pod spodem. */
+html[data-cm-theme]:not([data-cm-theme="original"]) body[data-panel-page="companyPanel"] .cm-company-panel-switcher .bm-light-btn,
+html[data-cm-theme]:not([data-cm-theme="original"]) body[data-panel-page="companyPanel"] .cm-company-panel-switcher button{
+  border:0!important;
+  outline:0!important;
+  border-radius:999px!important;
+  box-shadow:0 12px 30px color-mix(in srgb,var(--cm-skin-shadow,rgba(15,23,42,.12)) 10%,transparent)!important;
+}
+
+/* Ogólny bezpiecznik dla wrapperów na tych dwóch ekranach: zero ciężkiej ramki. */
+html[data-cm-theme]:not([data-cm-theme="original"]) body[data-panel-page="workSchedule"] .bm-page-card > .bm-page-head,
+html[data-cm-theme]:not([data-cm-theme="original"]) body[data-panel-page="workSchedule"] .customers-head,
+html[data-cm-theme]:not([data-cm-theme="original"]) body[data-panel-page="companyPanel"] .bm-page-card > .bm-page-head,
+html[data-cm-theme]:not([data-cm-theme="original"]) body[data-panel-page="companyPanel"] .customers-head{
+  border:0!important;
+  outline:0!important;
+  box-shadow:none!important;
+}
