@@ -1418,11 +1418,19 @@ document.addEventListener('DOMContentLoaded', () => {
       <button type="button" class="cm-skin-category ${index === 0 ? 'active' : ''}" data-cm-skin-category="${key}">
         <span>${meta.swatch}</span><span>${meta.label}</span>
       </button>`).join('');
-    const cards = Object.entries(CM_THEME_OPTIONS).map(([key, meta]) => `
+    const cards = Object.entries(CM_THEME_OPTIONS).map(([key, meta]) => {
+      const customActions = key === 'customProject' ? `
+        <span class="cm-skin-card-actions">
+          <span type="button" role="button" tabindex="0" class="cm-skin-action cm-skin-action-edit" data-cm-edit-custom-skin>✏️ Edytuj</span>
+          <span type="button" role="button" tabindex="0" class="cm-skin-action cm-skin-action-delete" data-cm-delete-custom-skin>🗑️ Usuń</span>
+        </span>` : '';
+      return `
       <button type="button" class="cm-skin-card ${key === activeTheme ? 'active' : ''}" data-cm-theme-choice="${key}" data-cm-theme-category="${meta.category || 'basic'}" aria-pressed="${key === activeTheme ? 'true' : 'false'}">
         <span class="cm-skin-card-top"><span class="cm-skin-card-icon">${meta.swatch}</span><span class="cm-skin-card-name">${meta.label}</span></span>
         <span class="cm-skin-preview" data-preview-theme="${key}"><i></i><b></b><em></em></span>
-      </button>`).join('');
+        ${customActions}
+      </button>`;
+    }).join('');
     const custom = getCmCustomTheme();
     return `
       <div class="cm-theme-switcher" data-cm-theme-switcher>
@@ -1481,6 +1489,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const matchesSearch = !term || String(meta.label || '').toLowerCase().includes(term);
         const show = matchesCategory && matchesSearch;
         card.hidden = !show;
+        card.style.display = show ? '' : 'none';
         if (show) visible += 1;
       });
       if (count) count.textContent = `${visible} skórek`;
@@ -1511,6 +1520,42 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     search?.addEventListener('input', updateCards);
     menu.addEventListener('click', (event) => {
+      const editCustom = event.target.closest('[data-cm-edit-custom-skin]');
+      if (editCustom) {
+        event.preventDefault(); event.stopPropagation();
+        activeCategory = 'custom';
+        switcher.querySelectorAll('[data-cm-skin-category]').forEach((item) => item.classList.toggle('active', item.getAttribute('data-cm-skin-category') === 'custom'));
+        updateCards();
+        customPanel.hidden = false;
+        customPanel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        customPanel.querySelector('[data-cm-custom-color]')?.focus();
+        return;
+      }
+      const deleteCustom = event.target.closest('[data-cm-delete-custom-skin]');
+      if (deleteCustom) {
+        event.preventDefault(); event.stopPropagation();
+        if (!confirm('Usunąć Własny Projekt? Tej operacji nie można cofnąć.')) return;
+        localStorage.removeItem(CM_CUSTOM_THEME_KEY);
+        switcher.querySelectorAll('[data-cm-custom-color]').forEach((input) => {
+          const defaults = { primary:'#d4af37', secondary:'#facc15', background:'#fffaf0', card:'#ffffff', text:'#111827', muted:'#6b7280' };
+          const key = input.getAttribute('data-cm-custom-color');
+          if (defaults[key]) input.value = defaults[key];
+        });
+        if (getStoredCmTheme() === 'customProject') {
+          const nextTheme = applyCmTheme(CM_THEME_DEFAULT);
+          localStorage.setItem(CM_THEME_KEY, nextTheme);
+          const meta = CM_THEME_OPTIONS[nextTheme] || CM_THEME_OPTIONS.original;
+          toggle.querySelector('.cm-theme-toggle-icon').textContent = meta.swatch;
+          grid.querySelectorAll('[data-cm-theme-choice]').forEach((item) => {
+            const isActive = item.getAttribute('data-cm-theme-choice') === nextTheme;
+            item.classList.toggle('active', isActive);
+            item.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+          });
+        }
+        alert('Własny Projekt został usunięty.');
+        updateCards();
+        return;
+      }
       const btn = event.target.closest('[data-cm-theme-choice]');
       if (!btn) return;
       event.preventDefault(); event.stopPropagation();
