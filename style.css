@@ -9448,3 +9448,1785 @@ html[data-cm-theme="goldWhite"] [class*="report"][class*="head"],
 html[data-cm-theme="goldWhite"] [class*="report"][class*="title"]{
   text-shadow:none!important;
 }
+
+
+html[data-cm-theme="beautyRose"]{
+  color-scheme:light;
+  --bg:#fff7fb;
+  --bg2:#fdf2f8;
+  --card:#ffffff;
+  --card2:#fff1f7;
+  --line:rgba(190,24,93,.20);
+  --text:#1f2937;
+  --muted:#6b7280;
+  --blue:#db2777;
+  --cyan:#f472b6;
+  --danger:#b91c1c;
+  --ok:#047857;
+  --cm-ui-card-bg:linear-gradient(180deg,rgba(255,255,255,.94),rgba(255,247,251,.90));
+  --cm-ui-border:rgba(190,24,93,.20);
+  --cm-ui-border-strong:rgba(219,39,119,.42);
+  --cm-ui-text:#1f2937;
+  --cm-ui-muted:#6b7280;
+}
+
+html[data-cm-theme="beautyRose"] body{
+  background:
+    radial-gradient(circle at top left,rgba(236,72,153,.22),transparent 32rem),
+    radial-gradient(circle at bottom right,rgba(244,114,182,.14),transparent 30rem),
+    linear-gradient(135deg,#fff7fb,#fdf2f8 52%,#fce7f3)!important;
+  color:#1f2937!important;
+}
+
+html[data-cm-theme="beautyRose"] body::before{
+  background:
+    radial-gradient(circle at 20% 8%,rgba(236,72,153,.18),transparent 26rem),
+    radial-gradient(circle at 86% 18%,rgba(251,207,232,.12),transparent 24rem),
+    linear-gradient(180deg,rgba(255,255,255,.08),rgba(255,247,251,.72))!important;
+}
+
+html[data-cm-theme="beautyRose"] a{color:#be185d;}
+
+html[data-cm-theme="beautyRose"] .bm-horizontal-menu{
+  background:linear-gradient(90deg,rgba(255,255,255,.96),rgba(253,242,248,.94))!important;
+  border-bottom-color:rgba(190,24,93,.20)!important;
+  box-shadow:0 18px 48px rgba(131,24,67,.14)!important;
+}
+
+html[data-cm-theme="beautyRose"] .bm-horizontal-brand,
+html[data-cm-theme="beautyRose"] .bm-nav-top a,
+html[data-cm-theme="beautyRose"] .bm-owner-top-companies{
+  color:#374151!important;
+  border-color:rgba(219,39,119,.22)!important;
+  background:rgba(255,255,255,.72)!important;
+}
+
+html[data-cm-theme="beautyRose"] .bm-horizontal-brand.active,
+html[data-cm-theme="beautyRose"] .bm-horizontal-brand:hover,
+html[data-cm-theme="beautyRose"] .bm-nav-top a.active,
+html[data-cm-theme="beautyRose"] .bm-nav-top a:hover,
+html[data-cm-theme="beautyRose"] .bm-owner-top-companies.active,
+html[data-cm-theme="beautyRose"] .bm-owner-top-companies:hover{
+  color:#9d174d!important;
+  border-color:rgba(190,24,93,.44)!important;
+  background:linear-gradient(180deg,rgba(251,207,232,.95),rgba(255,255,255,.88))!important;
+  text-decoration:none!important;
+}
+
+html[data-cm-theme="beautyRose"] .cm-theme-toggle{
+  color:#9d174d!important;
+  border-color:rgba(190,24,93,.45)!important;
+  background:linear-gradient(180deg,rgba(251,207,232,.98),rgba(255,255,255,.90))!important;
+  box-shadow:0 10px 26px rgba(190,24,93,.12), inset 0 1px 0 rgba(255,255,255,.9)!important;
+}
+
+html[data-cm-theme="beautyRose"] .cm-theme-menu{
+  color:#1f2937!important;
+  background:linear-gradient(180deg,rgba(255,255,255,.98),rgba(255,247,251,.98))!important;
+  border-color:rgba(190,24,93,.28)!important;
+  box-shadow:0 26px 70px rgba(131,24,67,.20)!important;
+}
+
+html[data-cm-theme="beautyRose"] .cm-theme-menu strong{color:#9d174d!important;}
+
+html[data-cm-theme="beautyRose"] .cm-theme-option{background:rgba(255,255,255,.82)!important;color:#374151!important;border-color:rgba(219,39,119,.20)!important;}
+
+html[data-cm-theme="beautyRose"] .cm-theme-option.active{background:linear-gradient(180deg,rgba(251,207,232,.98),rgba(255,255,255,.92))!important;color:#831843!important;border-color:rgba(190,24,93,.45)!important;}
+
+html[data-cm-theme="beautyRose"] .hero-card,
+html[data-cm-theme="beautyRose"] .form-card,
+html[data-cm-theme="beautyRose"] .doc-card,
+html[data-cm-theme="beautyRose"] .auth-card,
+html[data-cm-theme="beautyRose"] .bm-page-card,
+html[data-cm-theme="beautyRose"] .panel-card,
+html[data-cm-theme="beautyRose"] .cm-unified-card,
+html[data-cm-theme="beautyRose"] .bm-current-section,
+html[data-cm-theme="beautyRose"] .bm-left-info-panel,
+html[data-cm-theme="beautyRose"] .bm-month,
+html[data-cm-theme="beautyRose"] .cm-unified-menu-calendar{
+  background:linear-gradient(180deg,rgba(255,255,255,.94),rgba(255,247,251,.88))!important;
+  border-color:rgba(219,39,119,.22)!important;
+  color:#1f2937!important;
+  box-shadow:0 20px 54px rgba(131,24,67,.13), inset 0 1px 0 rgba(255,255,255,.88)!important;
+}
+
+html[data-cm-theme="beautyRose"] .bm-current-section h2,
+html[data-cm-theme="beautyRose"] h1,
+html[data-cm-theme="beautyRose"] h2,
+html[data-cm-theme="beautyRose"] h3,
+html[data-cm-theme="beautyRose"] strong,
+html[data-cm-theme="beautyRose"] .bm-user-stack > strong{color:#111827!important;}
+
+html[data-cm-theme="beautyRose"] p,
+html[data-cm-theme="beautyRose"] .hint,
+html[data-cm-theme="beautyRose"] .small-note,
+html[data-cm-theme="beautyRose"] .bm-current-section p{color:#6b7280!important;}
+
+html[data-cm-theme="beautyRose"] input:not([type="checkbox"]):not([type="radio"]),
+html[data-cm-theme="beautyRose"] select,
+html[data-cm-theme="beautyRose"] textarea,
+html[data-cm-theme="beautyRose"] .cm-unified-date,
+html[data-cm-theme="beautyRose"] .cm-report-date-pill,
+html[data-cm-theme="beautyRose"] .cm-sales-date-pill,
+html[data-cm-theme="beautyRose"] .cm-daily-date-field{
+  background:linear-gradient(180deg,rgba(255,255,255,.96),rgba(255,247,251,.92))!important;
+  color:#1f2937!important;
+  border-color:rgba(219,39,119,.28)!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.9)!important;
+}
+
+html[data-cm-theme="beautyRose"] input::placeholder,
+html[data-cm-theme="beautyRose"] textarea::placeholder{color:#9ca3af!important;}
+
+html[data-cm-theme="beautyRose"] input:focus,
+html[data-cm-theme="beautyRose"] select:focus,
+html[data-cm-theme="beautyRose"] textarea:focus{
+  border-color:rgba(190,24,93,.60)!important;
+  box-shadow:0 0 0 4px rgba(251,207,232,.18), inset 0 1px 0 rgba(255,255,255,.95)!important;
+}
+
+html[data-cm-theme="beautyRose"] button,
+html[data-cm-theme="beautyRose"] .btn,
+html[data-cm-theme="beautyRose"] .cm-unified-action{
+  background:linear-gradient(180deg,rgba(251,207,232,.98),rgba(255,255,255,.92))!important;
+  border-color:rgba(219,39,119,.30)!important;
+  color:#831843!important;
+  box-shadow:0 12px 28px rgba(190,24,93,.12), inset 0 1px 0 rgba(255,255,255,.9)!important;
+}
+
+html[data-cm-theme="beautyRose"] .cm-primary-action,
+html[data-cm-theme="beautyRose"] .btn:not(.secondary){
+  background:linear-gradient(180deg,#db2777,#be185d)!important;
+  color:#fff7fb!important;
+  border-color:rgba(120,53,15,.22)!important;
+  box-shadow:0 16px 34px rgba(190,24,93,.26)!important;
+}
+
+html[data-cm-theme="beautyRose"] .cm-danger-action{background:linear-gradient(180deg,#fff1f2,#fff)!important;color:#991b1b!important;border-color:rgba(185,28,28,.30)!important;}
+
+html[data-cm-theme="beautyRose"] .cm-edit-action{background:linear-gradient(180deg,#fff1f7,#fff)!important;color:#9d174d!important;border-color:rgba(219,39,119,.32)!important;}
+
+html[data-cm-theme="beautyRose"] .cm-export-action{background:linear-gradient(180deg,#ecfdf5,#fff)!important;color:#047857!important;border-color:rgba(16,185,129,.30)!important;}
+
+html[data-cm-theme="beautyRose"] .cm-unified-table-wrap,
+html[data-cm-theme="beautyRose"] .bm-table-wrap,
+html[data-cm-theme="beautyRose"] .table-wrap{
+  background:rgba(255,255,255,.72)!important;
+  border-color:rgba(219,39,119,.22)!important;
+}
+
+html[data-cm-theme="beautyRose"] table,
+html[data-cm-theme="beautyRose"] .bm-table,
+html[data-cm-theme="beautyRose"] .data-table{color:#1f2937!important;}
+
+html[data-cm-theme="beautyRose"] table th,
+html[data-cm-theme="beautyRose"] .bm-table th,
+html[data-cm-theme="beautyRose"] .data-table th{
+  background:linear-gradient(180deg,rgba(251,207,232,.94),rgba(255,255,255,.88))!important;
+  color:#831843!important;
+  border-bottom-color:rgba(219,39,119,.22)!important;
+}
+
+html[data-cm-theme="beautyRose"] table td,
+html[data-cm-theme="beautyRose"] .bm-table td,
+html[data-cm-theme="beautyRose"] .data-table td{
+  color:#374151!important;
+  border-bottom-color:rgba(219,39,119,.12)!important;
+}
+
+html[data-cm-theme="beautyRose"] .dropdown-menu,
+html[data-cm-theme="beautyRose"] .cm-dropdown-menu,
+html[data-cm-theme="beautyRose"] .cm-cr-dropdown-menu,
+html[data-cm-theme="beautyRose"] .bm-admin-dropdown-menu,
+html[data-cm-theme="beautyRose"] .cm-language-menu{
+  background:linear-gradient(180deg,rgba(255,255,255,.98),rgba(255,247,251,.98))!important;
+  color:#1f2937!important;
+  border-color:rgba(219,39,119,.24)!important;
+  box-shadow:0 24px 62px rgba(131,24,67,.20)!important;
+}
+
+html[data-cm-theme="beautyRose"] .dropdown-menu *,
+html[data-cm-theme="beautyRose"] .cm-dropdown-menu *,
+html[data-cm-theme="beautyRose"] .cm-cr-dropdown-menu *,
+html[data-cm-theme="beautyRose"] .bm-admin-dropdown-menu *,
+html[data-cm-theme="beautyRose"] .cm-language-menu *{color:#1f2937!important;}
+
+html[data-cm-theme="beautyRose"] .bm-date-btn,
+html[data-cm-theme="beautyRose"] .bm-month td:not(.muted):not(:empty){color:#374151!important;}
+
+html[data-cm-theme="beautyRose"] .bm-month td.today,
+html[data-cm-theme="beautyRose"] .bm-month td.today .bm-date-btn{background:linear-gradient(180deg,#db2777,#be185d)!important;color:#fff7fb!important;}
+
+   Scope: ONLY html[data-cm-theme="beautyRose"]. Original skin untouched. */
+html[data-cm-theme="beautyRose"]{
+  --cm-gw-bg:#fff7fb;
+  --cm-gw-bg-soft:#fdf2f8;
+  --cm-gw-panel:#ffffff;
+  --cm-gw-panel-2:#fff7fb;
+  --cm-gw-gold:#db2777;
+  --cm-gw-gold-dark:#9d174d;
+  --cm-gw-gold-soft:#fbcfe8;
+  --cm-gw-border:rgba(219,39,119,.28);
+  --cm-gw-border-strong:rgba(190,24,93,.46);
+  --cm-gw-text:#111827;
+  --cm-gw-muted:#6b7280;
+  --cm-gw-shadow:0 18px 48px rgba(131,24,67,.13);
+}
+
+html[data-cm-theme="beautyRose"] body,
+html[data-cm-theme="beautyRose"] .bm-panel,
+html[data-cm-theme="beautyRose"] .bm-main,
+html[data-cm-theme="beautyRose"] .panel-shell,
+html[data-cm-theme="beautyRose"] .app-shell{
+  background:
+    radial-gradient(circle at 8% 0%,rgba(236,72,153,.18),transparent 30rem),
+    radial-gradient(circle at 94% 12%,rgba(251,207,232,.14),transparent 32rem),
+    linear-gradient(135deg,#fffafe 0%,#fff7fb 44%,#fce7f3 100%)!important;
+  color:var(--cm-gw-text)!important;
+}
+
+html[data-cm-theme="beautyRose"] .bm-page-card,
+html[data-cm-theme="beautyRose"] .panel-card,
+html[data-cm-theme="beautyRose"] .cm-unified-card,
+html[data-cm-theme="beautyRose"] .cm-period-report-card,
+html[data-cm-theme="beautyRose"] .cm-report-card,
+html[data-cm-theme="beautyRose"] .cm-customer-report-card,
+html[data-cm-theme="beautyRose"] .cm-daily-report-card,
+html[data-cm-theme="beautyRose"] .cm-supabase-daily-report,
+html[data-cm-theme="beautyRose"] .cm-supabase-work-schedule,
+html[data-cm-theme="beautyRose"] .passes-module,
+html[data-cm-theme="beautyRose"] .bm-current-section{
+  background:linear-gradient(180deg,rgba(255,255,255,.98),rgba(255,247,251,.94))!important;
+  color:var(--cm-gw-text)!important;
+  border:1px solid var(--cm-gw-border)!important;
+  box-shadow:var(--cm-gw-shadow)!important;
+}
+
+html[data-cm-theme="beautyRose"] .bm-left-info-panel{
+  background:linear-gradient(180deg,rgba(255,255,255,.96),rgba(253,242,248,.92))!important;
+  border-color:var(--cm-gw-border)!important;
+  box-shadow:0 22px 60px rgba(131,24,67,.16)!important;
+  color:var(--cm-gw-text)!important;
+}
+
+html[data-cm-theme="beautyRose"] .bm-left-info-panel .bm-calendar-center .bm-today,
+html[data-cm-theme="beautyRose"] .bm-left-info-panel .bm-identity-block{
+  background:linear-gradient(180deg,#fff,#fdf2f8)!important;
+  border-color:var(--cm-gw-border)!important;
+  box-shadow:0 12px 30px rgba(131,24,67,.12)!important;
+  color:var(--cm-gw-text)!important;
+}
+
+html[data-cm-theme="beautyRose"] .bm-left-info-panel .bm-calendar-center .bm-today strong,
+html[data-cm-theme="beautyRose"] .bm-left-info-panel .bm-user-stack strong{
+  color:var(--cm-gw-text)!important;
+}
+
+html[data-cm-theme="beautyRose"] .bm-user-stack .bm-admin-dropdown-toggle,
+html[data-cm-theme="beautyRose"] .bm-user-stack .bm-undo-time-btn,
+html[data-cm-theme="beautyRose"] .bm-owner-link,
+html[data-cm-theme="beautyRose"] .bm-admin-dropdown-menu a,
+html[data-cm-theme="beautyRose"] .bm-admin-dropdown-menu button{
+  background:linear-gradient(180deg,#fffafe,#fdf2f8)!important;
+  color:var(--cm-gw-gold-dark)!important;
+  border:1px solid var(--cm-gw-border)!important;
+  box-shadow:0 8px 20px rgba(131,24,67,.10)!important;
+  text-shadow:none!important;
+}
+
+html[data-cm-theme="beautyRose"] .bm-owner-link:hover,
+html[data-cm-theme="beautyRose"] .bm-owner-link.active,
+html[data-cm-theme="beautyRose"] .bm-user-stack .bm-admin-dropdown-toggle:hover,
+html[data-cm-theme="beautyRose"] .bm-user-stack .bm-admin-dropdown-toggle[aria-expanded="true"]{
+  background:linear-gradient(180deg,#fbcfe8,#fff7fb)!important;
+  color:#831843!important;
+  border-color:var(--cm-gw-border-strong)!important;
+  box-shadow:0 12px 28px rgba(190,24,93,.16)!important;
+}
+
+html[data-cm-theme="beautyRose"] .cm-report-filter-bar,
+html[data-cm-theme="beautyRose"] .cm-report-filters,
+html[data-cm-theme="beautyRose"] .cm-period-controls,
+html[data-cm-theme="beautyRose"] .cm-daily-date-row,
+html[data-cm-theme="beautyRose"] .cm-er-filters,
+html[data-cm-theme="beautyRose"] .cm-customers-report-controls,
+html[data-cm-theme="beautyRose"] .cm-sales-filters,
+html[data-cm-theme="beautyRose"] .cm-supabase-work-schedule .cm-work-schedule-controls,
+html[data-cm-theme="beautyRose"] .cm-work-panel,
+html[data-cm-theme="beautyRose"] .bm-table-tools,
+html[data-cm-theme="beautyRose"] .cm-daily-table-tools{
+  background:linear-gradient(180deg,rgba(255,255,255,.94),rgba(255,247,223,.90))!important;
+  color:var(--cm-gw-text)!important;
+  border:1px solid var(--cm-gw-border)!important;
+  box-shadow:0 14px 34px rgba(131,24,67,.10)!important;
+}
+
+html[data-cm-theme="beautyRose"] label,
+html[data-cm-theme="beautyRose"] .cm-sales-filters label,
+html[data-cm-theme="beautyRose"] .cm-supabase-work-schedule .cm-work-schedule-controls label,
+html[data-cm-theme="beautyRose"] .cm-er-filters label,
+html[data-cm-theme="beautyRose"] .cm-cr-dropdown-label{
+  color:#9d174d!important;
+  text-shadow:none!important;
+}
+
+html[data-cm-theme="beautyRose"] .cm-period-kpis>div,
+html[data-cm-theme="beautyRose"] .bm-stats article,
+html[data-cm-theme="beautyRose"] .cm-daily-main-kpis>*,
+html[data-cm-theme="beautyRose"] .cm-finance-grid>*,
+html[data-cm-theme="beautyRose"] .cm-comm-grid>*,
+html[data-cm-theme="beautyRose"] .cm-customer-report-card .cm-unified-stat,
+html[data-cm-theme="beautyRose"] .cm-unified-stat,
+html[data-cm-theme="beautyRose"] .cm-report-summary-card,
+html[data-cm-theme="beautyRose"] .cm-sales-summary b{
+  background:linear-gradient(180deg,#fffafe,#fff4d8)!important;
+  color:var(--cm-gw-text)!important;
+  border:1px solid var(--cm-gw-border)!important;
+  box-shadow:0 18px 40px rgba(131,24,67,.12)!important;
+}
+
+html[data-cm-theme="beautyRose"] .cm-period-kpis span,
+html[data-cm-theme="beautyRose"] .bm-stats span,
+html[data-cm-theme="beautyRose"] .cm-period-kpis small,
+html[data-cm-theme="beautyRose"] .cm-daily-main-kpis small,
+html[data-cm-theme="beautyRose"] .cm-finance-grid small{
+  color:#9d174d!important;
+  opacity:.9!important;
+}
+
+html[data-cm-theme="beautyRose"] .cm-period-kpis b,
+html[data-cm-theme="beautyRose"] .bm-stats strong,
+html[data-cm-theme="beautyRose"] .cm-daily-main-kpis strong,
+html[data-cm-theme="beautyRose"] .cm-finance-grid strong{
+  color:#111827!important;
+  text-shadow:none!important;
+}
+
+html[data-cm-theme="beautyRose"] .cm-unified-table-wrap,
+html[data-cm-theme="beautyRose"] .bm-table-wrap,
+html[data-cm-theme="beautyRose"] .table-wrap,
+html[data-cm-theme="beautyRose"] .cm-daily-table-wrap,
+html[data-cm-theme="beautyRose"] .cm-daily-datatable,
+html[data-cm-theme="beautyRose"] .cm-work-schedule-editor-wrap,
+html[data-cm-theme="beautyRose"] .cm-work-summary-wrap{
+  background:linear-gradient(180deg,#fff,#fff7fb)!important;
+  border:1px solid var(--cm-gw-border)!important;
+  box-shadow:0 12px 30px rgba(131,24,67,.10)!important;
+}
+
+html[data-cm-theme="beautyRose"] table,
+html[data-cm-theme="beautyRose"] .bm-table,
+html[data-cm-theme="beautyRose"] .data-table,
+html[data-cm-theme="beautyRose"] .cm-daily-table,
+html[data-cm-theme="beautyRose"] .cm-work-schedule-editor,
+html[data-cm-theme="beautyRose"] .cm-work-schedule-summary{
+  background:#fffafe!important;
+  color:var(--cm-gw-text)!important;
+}
+
+html[data-cm-theme="beautyRose"] table th,
+html[data-cm-theme="beautyRose"] .bm-table th,
+html[data-cm-theme="beautyRose"] .data-table th,
+html[data-cm-theme="beautyRose"] .cm-daily-table th,
+html[data-cm-theme="beautyRose"] .cm-work-schedule-editor th,
+html[data-cm-theme="beautyRose"] .cm-work-schedule-summary th{
+  background:linear-gradient(180deg,#fff3cf,#fff7fb)!important;
+  color:#831843!important;
+  border-color:var(--cm-gw-border)!important;
+  text-shadow:none!important;
+}
+
+html[data-cm-theme="beautyRose"] table td,
+html[data-cm-theme="beautyRose"] .bm-table td,
+html[data-cm-theme="beautyRose"] .data-table td,
+html[data-cm-theme="beautyRose"] .cm-daily-table td,
+html[data-cm-theme="beautyRose"] .cm-work-schedule-editor td,
+html[data-cm-theme="beautyRose"] .cm-work-schedule-summary td{
+  background:rgba(255,255,255,.70)!important;
+  color:#374151!important;
+  border-color:rgba(219,39,119,.14)!important;
+}
+
+html[data-cm-theme="beautyRose"] table tfoot td,
+html[data-cm-theme="beautyRose"] .bm-table tfoot td,
+html[data-cm-theme="beautyRose"] .data-table tfoot td,
+html[data-cm-theme="beautyRose"] .cm-daily-table tfoot td,
+html[data-cm-theme="beautyRose"] tr.summary-row td,
+html[data-cm-theme="beautyRose"] tr.total-row td{
+  background:linear-gradient(180deg,#fff0c2,#fbcfe8)!important;
+  color:#831843!important;
+  font-weight:950!important;
+}
+
+html[data-cm-theme="beautyRose"] table tr:hover td,
+html[data-cm-theme="beautyRose"] .bm-table tr:hover td,
+html[data-cm-theme="beautyRose"] .data-table tr:hover td{
+  background:#fdf2f8!important;
+}
+
+html[data-cm-theme="beautyRose"] .bm-schedule-table-wrap,
+html[data-cm-theme="beautyRose"] .bm-schedule-scroll-inner,
+html[data-cm-theme="beautyRose"] .bm-schedule-sticky-head,
+html[data-cm-theme="beautyRose"] .bm-schedule-table,
+html[data-cm-theme="beautyRose"] .cm-work-schedule-grid{
+  background:linear-gradient(180deg,#fffafe,#fdf2f8)!important;
+  border-color:var(--cm-gw-border)!important;
+  color:var(--cm-gw-text)!important;
+}
+
+html[data-cm-theme="beautyRose"] .bm-schedule-sticky-head>div,
+html[data-cm-theme="beautyRose"] .bm-schedule-table thead th,
+html[data-cm-theme="beautyRose"] .bm-schedule-table tbody tr:first-child th,
+html[data-cm-theme="beautyRose"] .bm-schedule-table tbody tr:first-child td{
+  background:linear-gradient(180deg,#fff6d8,#fffafe)!important;
+  color:#831843!important;
+}
+
+html[data-cm-theme="beautyRose"] .bm-schedule-table td,
+html[data-cm-theme="beautyRose"] .bm-schedule-slot{
+  background:#fff7fb!important;
+  color:#374151!important;
+  border-color:rgba(219,39,119,.20)!important;
+}
+
+html[data-cm-theme="beautyRose"] .bm-schedule-slot.free span,
+html[data-cm-theme="beautyRose"] .bm-schedule-slot.free,
+html[data-cm-theme="beautyRose"] .bm-schedule-slot span{
+  color:#0f766e!important;
+  text-shadow:none!important;
+}
+
+html[data-cm-theme="beautyRose"] .bm-time-col,
+html[data-cm-theme="beautyRose"] .bm-time-head{
+  background:linear-gradient(180deg,#fff3cf,#fff7fb)!important;
+  color:#831843!important;
+}
+
+html[data-cm-theme="beautyRose"] .bm-filter-tabs a,
+html[data-cm-theme="beautyRose"] .cm-sales-tab,
+html[data-cm-theme="beautyRose"] .cm-unified-tab,
+html[data-cm-theme="beautyRose"] .passes-module .bm-filter-tabs a{
+  background:linear-gradient(180deg,#fffafe,#fdf2f8)!important;
+  color:#9d174d!important;
+  border:1px solid var(--cm-gw-border)!important;
+  box-shadow:0 8px 20px rgba(131,24,67,.10)!important;
+}
+
+html[data-cm-theme="beautyRose"] .bm-filter-tabs a.active,
+html[data-cm-theme="beautyRose"] .bm-filter-tabs a:hover,
+html[data-cm-theme="beautyRose"] .cm-sales-tab.active,
+html[data-cm-theme="beautyRose"] .cm-unified-tab.active,
+html[data-cm-theme="beautyRose"] .passes-module .bm-filter-tabs a.active{
+  background:linear-gradient(180deg,#fbcfe8,#fff7fb)!important;
+  color:#831843!important;
+  border-color:var(--cm-gw-border-strong)!important;
+}
+
+html[data-cm-theme="beautyRose"] button,
+html[data-cm-theme="beautyRose"] .btn,
+html[data-cm-theme="beautyRose"] .cm-unified-action,
+html[data-cm-theme="beautyRose"] .cm-daily-arrow,
+html[data-cm-theme="beautyRose"] .cm-report-arrow,
+html[data-cm-theme="beautyRose"] .pagination button,
+html[data-cm-theme="beautyRose"] [data-table-prev],
+html[data-cm-theme="beautyRose"] [data-table-next],
+html[data-cm-theme="beautyRose"] [data-table-go]{
+  text-shadow:none!important;
+}
+
+html[data-cm-theme="beautyRose"] .cm-primary-action,
+html[data-cm-theme="beautyRose"] .btn:not(.secondary),
+html[data-cm-theme="beautyRose"] button[type="submit"]{
+  background:linear-gradient(180deg,#db2777,#be185d)!important;
+  color:#fff7fb!important;
+  border-color:rgba(120,53,15,.28)!important;
+}
+
+html[data-cm-theme="beautyRose"] .cm-export-action,
+html[data-cm-theme="beautyRose"] .cm-sales-export-btn,
+html[data-cm-theme="beautyRose"] button[data-export],
+html[data-cm-theme="beautyRose"] .export-btn{
+  background:linear-gradient(180deg,#ecfdf5,#ffffff)!important;
+  color:#047857!important;
+  border-color:rgba(16,185,129,.32)!important;
+}
+
+html[data-cm-theme="beautyRose"] .cm-danger-action,
+html[data-cm-theme="beautyRose"] .danger,
+html[data-cm-theme="beautyRose"] .delete-btn{
+  background:linear-gradient(180deg,#fff1f2,#ffffff)!important;
+  color:#991b1b!important;
+  border-color:rgba(185,28,28,.32)!important;
+}
+
+html[data-cm-theme="beautyRose"] h1,
+html[data-cm-theme="beautyRose"] h2,
+html[data-cm-theme="beautyRose"] h3,
+html[data-cm-theme="beautyRose"] h4,
+html[data-cm-theme="beautyRose"] .bm-page-card h2,
+html[data-cm-theme="beautyRose"] .bm-page-head h2{
+  color:#111827!important;
+  text-shadow:none!important;
+}
+
+html[data-cm-theme="beautyRose"] p,
+html[data-cm-theme="beautyRose"] .bm-muted,
+html[data-cm-theme="beautyRose"] .hint,
+html[data-cm-theme="beautyRose"] small,
+html[data-cm-theme="beautyRose"] .small-note{
+  color:var(--cm-gw-muted)!important;
+  text-shadow:none!important;
+}
+
+html[data-cm-theme="beautyRose"] .cm-cr-dropdown-button,
+html[data-cm-theme="beautyRose"] .dropdown-toggle,
+html[data-cm-theme="beautyRose"] select,
+html[data-cm-theme="beautyRose"] input:not([type="checkbox"]):not([type="radio"]),
+html[data-cm-theme="beautyRose"] textarea{
+  background:linear-gradient(180deg,#ffffff,#fff7fb)!important;
+  color:#111827!important;
+  border-color:var(--cm-gw-border)!important;
+}
+
+html[data-cm-theme="beautyRose"] .dropdown-menu,
+html[data-cm-theme="beautyRose"] .cm-dropdown-menu,
+html[data-cm-theme="beautyRose"] .cm-cr-dropdown-menu,
+html[data-cm-theme="beautyRose"] .bm-admin-dropdown-menu,
+html[data-cm-theme="beautyRose"] .cm-language-menu,
+html[data-cm-theme="beautyRose"] .cm-theme-menu{
+  background:linear-gradient(180deg,#ffffff,#fdf2f8)!important;
+  border-color:var(--cm-gw-border)!important;
+  color:#111827!important;
+}
+
+html[data-cm-theme="beautyRose"] .bm-left-info-panel .cm-theme-menu,
+.bm-left-info-panel .cm-theme-menu{
+  top:auto!important;
+  bottom:0!important;
+  left:calc(100% + 24px)!important;
+  right:auto!important;
+  transform:none!important;
+}
+
+  html[data-cm-theme="beautyRose"] .bm-left-info-panel .cm-theme-menu,
+  .bm-left-info-panel .cm-theme-menu{
+    top:auto!important;
+    bottom:calc(100% + 10px)!important;
+    left:0!important;
+  }
+
+   Scope: ONLY html[data-cm-theme="beautyRose"]. Original skin untouched. */
+html[data-cm-theme="beautyRose"]{
+  --cm-gw-ink:#0f172a;
+  --cm-gw-ink-soft:#334155;
+  --cm-gw-brown:#7c2d12;
+  --cm-gw-gold:#db2777;
+  --cm-gw-gold-2:#ec4899;
+  --cm-gw-cream:#fff7fb;
+  --cm-gw-cream-2:#fff4d8;
+  --cm-gw-card:#ffffff;
+  --cm-gw-line:rgba(219,39,119,.28);
+}
+
+html[data-cm-theme="beautyRose"] body,
+html[data-cm-theme="beautyRose"] main,
+html[data-cm-theme="beautyRose"] section,
+html[data-cm-theme="beautyRose"] article,
+html[data-cm-theme="beautyRose"] div,
+html[data-cm-theme="beautyRose"] span,
+html[data-cm-theme="beautyRose"] label,
+html[data-cm-theme="beautyRose"] p,
+html[data-cm-theme="beautyRose"] small,
+html[data-cm-theme="beautyRose"] li,
+html[data-cm-theme="beautyRose"] td{
+  text-shadow:none!important;
+}
+
+html[data-cm-theme="beautyRose"] .bm-clock,
+html[data-cm-theme="beautyRose"] .bm-time,
+html[data-cm-theme="beautyRose"] .bm-user-stack .bm-clock,
+html[data-cm-theme="beautyRose"] .bm-left-info-panel .bm-clock,
+html[data-cm-theme="beautyRose"] [data-clock],
+html[data-cm-theme="beautyRose"] .clock,
+html[data-cm-theme="beautyRose"] .time-now{
+  color:var(--cm-gw-ink)!important;
+  text-shadow:none!important;
+}
+
+html[data-cm-theme="beautyRose"] .text-cyan,
+html[data-cm-theme="beautyRose"] .text-blue,
+html[data-cm-theme="beautyRose"] .cyan,
+html[data-cm-theme="beautyRose"] .blue{
+  color:var(--cm-gw-brown)!important;
+}
+
+html[data-cm-theme="beautyRose"] .bm-page-card,
+html[data-cm-theme="beautyRose"] .bm-current-section,
+html[data-cm-theme="beautyRose"] .cm-unified-card,
+html[data-cm-theme="beautyRose"] .panel-card,
+html[data-cm-theme="beautyRose"] .cm-period-report-card,
+html[data-cm-theme="beautyRose"] .cm-report-card,
+html[data-cm-theme="beautyRose"] .cm-daily-report-card,
+html[data-cm-theme="beautyRose"] .cm-supabase-daily-report,
+html[data-cm-theme="beautyRose"] .cm-supa-reports-module,
+html[data-cm-theme="beautyRose"] .cm-customers-report-card,
+html[data-cm-theme="beautyRose"] .cm-customers-reports-module,
+html[data-cm-theme="beautyRose"] .cm-company-panel-page,
+html[data-cm-theme="beautyRose"] .cm-company-panel-form,
+html[data-cm-theme="beautyRose"] .cm-supabase-work-schedule,
+html[data-cm-theme="beautyRose"] .cm-work-page,
+html[data-cm-theme="beautyRose"] .passes-module,
+html[data-cm-theme="beautyRose"] .sales-module{
+  background:linear-gradient(180deg,rgba(255,255,255,.98),rgba(255,247,251,.96))!important;
+  color:var(--cm-gw-ink)!important;
+  border-color:var(--cm-gw-line)!important;
+}
+
+html[data-cm-theme="beautyRose"] .cm-report-chart-head,
+html[data-cm-theme="beautyRose"] .cm-customers-report-title,
+html[data-cm-theme="beautyRose"] .cm-customers-report-head,
+html[data-cm-theme="beautyRose"] .cm-period-head,
+html[data-cm-theme="beautyRose"] .cm-daily-date-row,
+html[data-cm-theme="beautyRose"] .cm-page-subnav,
+html[data-cm-theme="beautyRose"] .cm-company-panel-switcher,
+html[data-cm-theme="beautyRose"] .bm-page-tabs,
+html[data-cm-theme="beautyRose"] .bm-section-tabs,
+html[data-cm-theme="beautyRose"] .cm-reports-polished-controls,
+html[data-cm-theme="beautyRose"] .cm-report-filter-bar,
+html[data-cm-theme="beautyRose"] .cm-report-filters,
+html[data-cm-theme="beautyRose"] .cm-period-controls,
+html[data-cm-theme="beautyRose"] .cm-sales-filters,
+html[data-cm-theme="beautyRose"] .cm-er-filters,
+html[data-cm-theme="beautyRose"] .cm-customers-report-controls,
+html[data-cm-theme="beautyRose"] .cm-work-schedule-controls,
+html[data-cm-theme="beautyRose"] .cm-work-panel{
+  background:linear-gradient(180deg,#fff8df,#fbcfe8)!important;
+  color:var(--cm-gw-ink)!important;
+  border:1px solid var(--cm-gw-line)!important;
+  box-shadow:0 16px 38px rgba(131,24,67,.12)!important;
+}
+
+html[data-cm-theme="beautyRose"] .cm-report-chart-head strong,
+html[data-cm-theme="beautyRose"] .cm-report-chart-head small,
+html[data-cm-theme="beautyRose"] .cm-customers-report-title,
+html[data-cm-theme="beautyRose"] .cm-customers-report-title *,
+html[data-cm-theme="beautyRose"] .cm-period-head *,
+html[data-cm-theme="beautyRose"] .cm-daily-date-row *,
+html[data-cm-theme="beautyRose"] .cm-page-subnav *,
+html[data-cm-theme="beautyRose"] .bm-page-tabs *,
+html[data-cm-theme="beautyRose"] .bm-section-tabs *{
+  color:var(--cm-gw-ink)!important;
+  text-shadow:none!important;
+}
+
+html[data-cm-theme="beautyRose"] .cm-report-chart-arrow,
+html[data-cm-theme="beautyRose"] .cm-report-arrow,
+html[data-cm-theme="beautyRose"] .cm-customers-report-arrow,
+html[data-cm-theme="beautyRose"] .cm-daily-arrow{
+  background:linear-gradient(180deg,#fffafe,#fff2c8)!important;
+  color:var(--cm-gw-brown)!important;
+  border:1px solid var(--cm-gw-line)!important;
+  box-shadow:0 12px 24px rgba(131,24,67,.14)!important;
+}
+
+html[data-cm-theme="beautyRose"] body[data-panel-page="companyPanel"] .cm-company-panel-form .cm-notification-box,
+html[data-cm-theme="beautyRose"] body[data-panel-page="companyPanel"] .bm-company-data-card,
+html[data-cm-theme="beautyRose"] body[data-panel-page="companyPanel"] .bm-info-row,
+html[data-cm-theme="beautyRose"] .cm-company-panel-form .cm-notification-box,
+html[data-cm-theme="beautyRose"] .bm-company-data-card,
+html[data-cm-theme="beautyRose"] .cm-notification-box,
+html[data-cm-theme="beautyRose"] fieldset,
+html[data-cm-theme="beautyRose"] .settings-box,
+html[data-cm-theme="beautyRose"] .form-section,
+html[data-cm-theme="beautyRose"] .cm-form-section,
+html[data-cm-theme="beautyRose"] .cm-check-line,
+html[data-cm-theme="beautyRose"] .bm-info-row{
+  background:linear-gradient(180deg,#fffafe,#fff6dc)!important;
+  color:var(--cm-gw-ink)!important;
+  border-color:var(--cm-gw-line)!important;
+  box-shadow:0 12px 28px rgba(131,24,67,.09)!important;
+}
+
+html[data-cm-theme="beautyRose"] fieldset legend,
+html[data-cm-theme="beautyRose"] .cm-notification-box legend,
+html[data-cm-theme="beautyRose"] .bm-company-data-card h3,
+html[data-cm-theme="beautyRose"] body[data-panel-page="companyPanel"] .cm-company-panel-form label,
+html[data-cm-theme="beautyRose"] body[data-panel-page="companyPanel"] .cm-company-panel-form .cm-check-line,
+html[data-cm-theme="beautyRose"] body[data-panel-page="companyPanel"] .bm-info-row span,
+html[data-cm-theme="beautyRose"] body[data-panel-page="companyPanel"] .bm-info-row strong,
+html[data-cm-theme="beautyRose"] .cm-company-panel-form label,
+html[data-cm-theme="beautyRose"] .cm-company-panel-form .cm-check-line,
+html[data-cm-theme="beautyRose"] .bm-info-row span,
+html[data-cm-theme="beautyRose"] .bm-info-row strong{
+  color:var(--cm-gw-ink)!important;
+  text-shadow:none!important;
+}
+
+html[data-cm-theme="beautyRose"] textarea,
+html[data-cm-theme="beautyRose"] body[data-panel-page="companyPanel"] .cm-company-panel-form textarea,
+html[data-cm-theme="beautyRose"] .cm-company-panel-form textarea{
+  background:#fffafe!important;
+  color:var(--cm-gw-ink)!important;
+  border-color:var(--cm-gw-line)!important;
+}
+
+html[data-cm-theme="beautyRose"] .bm-light-btn,
+html[data-cm-theme="beautyRose"] .bm-page-tabs button,
+html[data-cm-theme="beautyRose"] .bm-section-tabs button,
+html[data-cm-theme="beautyRose"] .cm-company-panel-switcher .bm-light-btn,
+html[data-cm-theme="beautyRose"] .cm-sales-tab,
+html[data-cm-theme="beautyRose"] .cm-unified-tab,
+html[data-cm-theme="beautyRose"] .bm-filter-tabs a,
+html[data-cm-theme="beautyRose"] .passes-module .bm-filter-tabs a,
+html[data-cm-theme="beautyRose"] .pill,
+html[data-cm-theme="beautyRose"] .chip,
+html[data-cm-theme="beautyRose"] .tag{
+  background:linear-gradient(180deg,#fffafe,#fff2c8)!important;
+  color:var(--cm-gw-brown)!important;
+  border:1px solid var(--cm-gw-line)!important;
+  box-shadow:0 8px 20px rgba(131,24,67,.10)!important;
+}
+
+html[data-cm-theme="beautyRose"] .bm-light-btn.active,
+html[data-cm-theme="beautyRose"] .bm-page-tabs button.active,
+html[data-cm-theme="beautyRose"] .bm-section-tabs button.active,
+html[data-cm-theme="beautyRose"] .cm-company-panel-switcher .bm-light-btn.active,
+html[data-cm-theme="beautyRose"] .cm-sales-tab.active,
+html[data-cm-theme="beautyRose"] .cm-unified-tab.active,
+html[data-cm-theme="beautyRose"] .bm-filter-tabs a.active,
+html[data-cm-theme="beautyRose"] .passes-module .bm-filter-tabs a.active{
+  background:linear-gradient(180deg,#db2777,#be185d)!important;
+  color:#fff7fb!important;
+  border-color:rgba(120,53,15,.28)!important;
+}
+
+html[data-cm-theme="beautyRose"] .cm-finance-grid>div,
+html[data-cm-theme="beautyRose"] .cm-finance-grid article,
+html[data-cm-theme="beautyRose"] .cm-daily-main-kpis>div,
+html[data-cm-theme="beautyRose"] .cm-daily-main-kpis article,
+html[data-cm-theme="beautyRose"] .cm-comm-grid>div,
+html[data-cm-theme="beautyRose"] .cm-comm-grid article,
+html[data-cm-theme="beautyRose"] .cm-report-kpi,
+html[data-cm-theme="beautyRose"] .cm-report-kpi-grid-clean .cm-report-kpi{
+  background:linear-gradient(180deg,#fffafe,#fff4d8)!important;
+  color:var(--cm-gw-ink)!important;
+  border:1px solid var(--cm-gw-line)!important;
+  box-shadow:0 14px 34px rgba(131,24,67,.10)!important;
+}
+
+html[data-cm-theme="beautyRose"] .cm-finance-grid>div *,
+html[data-cm-theme="beautyRose"] .cm-daily-main-kpis>div *,
+html[data-cm-theme="beautyRose"] .cm-comm-grid>div *,
+html[data-cm-theme="beautyRose"] .cm-report-kpi *,
+html[data-cm-theme="beautyRose"] .cm-report-kpi-grid-clean .cm-report-kpi *{
+  color:var(--cm-gw-ink)!important;
+  text-shadow:none!important;
+}
+
+html[data-cm-theme="beautyRose"] .cm-finance-grid small,
+html[data-cm-theme="beautyRose"] .cm-daily-main-kpis small,
+html[data-cm-theme="beautyRose"] .cm-comm-grid small,
+html[data-cm-theme="beautyRose"] .cm-report-kpi small{
+  color:#9d174d!important;
+}
+
+html[data-cm-theme="beautyRose"] .cm-supa-chart-frame,
+html[data-cm-theme="beautyRose"] .cm-supa-chart,
+html[data-cm-theme="beautyRose"] .cm-report-chart-card,
+html[data-cm-theme="beautyRose"] .cm-report-chart,
+html[data-cm-theme="beautyRose"] .cm-report-chart-inner{
+  background:linear-gradient(180deg,#ffffff,#fff7fb)!important;
+  color:var(--cm-gw-ink)!important;
+  border-color:var(--cm-gw-line)!important;
+}
+
+html[data-cm-theme="beautyRose"] .cm-supa-chart-legend,
+html[data-cm-theme="beautyRose"] .cm-supa-chart-legend span,
+html[data-cm-theme="beautyRose"] .cm-supa-chart-col small,
+html[data-cm-theme="beautyRose"] .cm-supa-chart-frame *{
+  color:var(--cm-gw-ink-soft)!important;
+  text-shadow:none!important;
+}
+
+html[data-cm-theme="beautyRose"] .cm-supa-chart-legend i.revenue,
+html[data-cm-theme="beautyRose"] .cm-supa-bar.revenue{background:#db2777!important;}
+
+html[data-cm-theme="beautyRose"] .cm-supa-chart-legend i.visits,
+html[data-cm-theme="beautyRose"] .cm-supa-bar.visits{background:#0f766e!important;}
+
+html[data-cm-theme="beautyRose"] .cm-supa-chart-legend i.clients,
+html[data-cm-theme="beautyRose"] .cm-supa-bar.clients{background:#2563eb!important;}
+
+html[data-cm-theme="beautyRose"] .cm-supa-chart-legend i.total-clients,
+html[data-cm-theme="beautyRose"] .cm-supa-bar.total-clients{background:#9d174d!important;}
+
+html[data-cm-theme="beautyRose"] .cm-supa-chart-legend i.service,
+html[data-cm-theme="beautyRose"] .cm-supa-bar.service{background:#be185d!important;}
+
+html[data-cm-theme="beautyRose"] .cm-supa-chart-legend i.product,
+html[data-cm-theme="beautyRose"] .cm-supa-bar.product{background:#9333ea!important;}
+
+html[data-cm-theme="beautyRose"] .cm-supa-chart-legend i.pass,
+html[data-cm-theme="beautyRose"] .cm-supa-bar.pass{background:#db2777!important;}
+
+html[data-cm-theme="beautyRose"] .cm-supa-chart-legend i.planned,
+html[data-cm-theme="beautyRose"] .cm-supa-bar.planned{background:#ca8a04!important;}
+
+html[data-cm-theme="beautyRose"] .cm-supa-chart-frame .cm-supa-grid-line,
+html[data-cm-theme="beautyRose"] .cm-supa-chart-frame .grid-line{
+  border-color:rgba(219,39,119,.20)!important;
+}
+
+html[data-cm-theme="beautyRose"] .cm-supabase-work-schedule,
+html[data-cm-theme="beautyRose"] .cm-supabase-work-schedule .bm-page-card,
+html[data-cm-theme="beautyRose"] .cm-work-schedule-editor-wrap,
+html[data-cm-theme="beautyRose"] .cm-work-schedule-summary-wrap,
+html[data-cm-theme="beautyRose"] .cm-work-schedule-editor,
+html[data-cm-theme="beautyRose"] .cm-work-schedule-summary,
+html[data-cm-theme="beautyRose"] .cm-work-schedule-table,
+html[data-cm-theme="beautyRose"] .cm-work-schedule-grid,
+html[data-cm-theme="beautyRose"] .cm-work-schedule-panel{
+  background:linear-gradient(180deg,#fffafe,#fff4d8)!important;
+  color:var(--cm-gw-ink)!important;
+  border-color:var(--cm-gw-line)!important;
+}
+
+html[data-cm-theme="beautyRose"] .cm-supabase-work-schedule *,
+html[data-cm-theme="beautyRose"] .cm-work-schedule-editor *,
+html[data-cm-theme="beautyRose"] .cm-work-schedule-summary *{
+  text-shadow:none!important;
+}
+
+html[data-cm-theme="beautyRose"] .cm-supabase-work-schedule h1,
+html[data-cm-theme="beautyRose"] .cm-supabase-work-schedule h2,
+html[data-cm-theme="beautyRose"] .cm-supabase-work-schedule h3,
+html[data-cm-theme="beautyRose"] .cm-supabase-work-schedule label,
+html[data-cm-theme="beautyRose"] .cm-work-schedule-editor th,
+html[data-cm-theme="beautyRose"] .cm-work-schedule-summary th{
+  color:var(--cm-gw-brown)!important;
+}
+
+html[data-cm-theme="beautyRose"] .bm-schedule-scroll,
+html[data-cm-theme="beautyRose"] .bm-schedule-table-wrap,
+html[data-cm-theme="beautyRose"] .bm-schedule-scroll-inner,
+html[data-cm-theme="beautyRose"] .bm-schedule-table,
+html[data-cm-theme="beautyRose"] .bm-schedule-body,
+html[data-cm-theme="beautyRose"] .bm-schedule-row,
+html[data-cm-theme="beautyRose"] .bm-schedule-cell{
+  background:linear-gradient(180deg,#fffafe,#fff4d8)!important;
+  color:var(--cm-gw-ink)!important;
+  border-color:rgba(219,39,119,.18)!important;
+}
+
+html[data-cm-theme="beautyRose"] .bm-schedule-table td,
+html[data-cm-theme="beautyRose"] .bm-schedule-table th,
+html[data-cm-theme="beautyRose"] .bm-schedule-slot{
+  background:#fff7fb!important;
+  color:var(--cm-gw-ink)!important;
+  border-color:rgba(219,39,119,.18)!important;
+}
+
+html[data-cm-theme="beautyRose"] .bm-schedule-slot.free,
+html[data-cm-theme="beautyRose"] .bm-schedule-slot.free span{
+  color:#0f766e!important;
+}
+
+html[data-cm-theme="beautyRose"] input:not([type="checkbox"]):not([type="radio"]),
+html[data-cm-theme="beautyRose"] select,
+html[data-cm-theme="beautyRose"] textarea,
+html[data-cm-theme="beautyRose"] .cm-cr-dropdown-button,
+html[data-cm-theme="beautyRose"] .dropdown-toggle,
+html[data-cm-theme="beautyRose"] .select2-selection,
+html[data-cm-theme="beautyRose"] .choices,
+html[data-cm-theme="beautyRose"] .flatpickr-input{
+  background:linear-gradient(180deg,#fff,#fff7fb)!important;
+  color:var(--cm-gw-ink)!important;
+  border-color:var(--cm-gw-line)!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.95)!important;
+}
+
+html[data-cm-theme="beautyRose"] option{background:#fff7fb!important;color:var(--cm-gw-ink)!important;}
+
+html[data-cm-theme="beautyRose"] .dropdown-menu,
+html[data-cm-theme="beautyRose"] .cm-dropdown-menu,
+html[data-cm-theme="beautyRose"] .cm-cr-dropdown-menu,
+html[data-cm-theme="beautyRose"] .bm-admin-dropdown-menu,
+html[data-cm-theme="beautyRose"] .cm-language-menu,
+html[data-cm-theme="beautyRose"] .cm-theme-menu,
+html[data-cm-theme="beautyRose"] .menu,
+html[data-cm-theme="beautyRose"] .popover{
+  background:linear-gradient(180deg,#ffffff,#fdf2f8)!important;
+  color:var(--cm-gw-ink)!important;
+  border-color:var(--cm-gw-line)!important;
+  box-shadow:0 24px 60px rgba(131,24,67,.20)!important;
+}
+
+html[data-cm-theme="beautyRose"] .dropdown-menu *,
+html[data-cm-theme="beautyRose"] .cm-dropdown-menu *,
+html[data-cm-theme="beautyRose"] .cm-cr-dropdown-menu *,
+html[data-cm-theme="beautyRose"] .bm-admin-dropdown-menu *,
+html[data-cm-theme="beautyRose"] .cm-language-menu *,
+html[data-cm-theme="beautyRose"] .cm-theme-menu *,
+html[data-cm-theme="beautyRose"] .menu *,
+html[data-cm-theme="beautyRose"] .popover *{
+  color:var(--cm-gw-ink)!important;
+  text-shadow:none!important;
+}
+
+html[data-cm-theme="beautyRose"] .table-footer,
+html[data-cm-theme="beautyRose"] .cm-table-footer,
+html[data-cm-theme="beautyRose"] .cm-daily-table-pager,
+html[data-cm-theme="beautyRose"] .bm-pagination,
+html[data-cm-theme="beautyRose"] .pagination,
+html[data-cm-theme="beautyRose"] .empty-state,
+html[data-cm-theme="beautyRose"] .no-data{
+  background:transparent!important;
+  color:var(--cm-gw-ink-soft)!important;
+  text-shadow:none!important;
+}
+
+html[data-cm-theme="beautyRose"] .cm-daily-table-pager *,
+html[data-cm-theme="beautyRose"] .bm-pagination *,
+html[data-cm-theme="beautyRose"] .pagination *{
+  color:var(--cm-gw-ink-soft)!important;
+}
+
+html[data-cm-theme="beautyRose"] .cm-primary-action,
+html[data-cm-theme="beautyRose"] .bm-primary-btn,
+html[data-cm-theme="beautyRose"] button[type="submit"],
+html[data-cm-theme="beautyRose"] .btn-primary,
+html[data-cm-theme="beautyRose"] .show-btn,
+html[data-cm-theme="beautyRose"] .cm-report-show-btn{
+  background:linear-gradient(180deg,#db2777,#be185d)!important;
+  color:#fff7fb!important;
+  border-color:rgba(120,53,15,.28)!important;
+  box-shadow:0 14px 30px rgba(190,24,93,.24)!important;
+}
+
+html[data-cm-theme="beautyRose"] button:disabled,
+html[data-cm-theme="beautyRose"] .btn:disabled,
+html[data-cm-theme="beautyRose"] .disabled{
+  background:linear-gradient(180deg,#f8fafc,#fff7fb)!important;
+  color:#9ca3af!important;
+  border-color:rgba(219,39,119,.16)!important;
+  opacity:.82!important;
+}
+
+html[data-cm-theme="beautyRose"] .created-by,
+html[data-cm-theme="beautyRose"] .pwcs-badge,
+html[data-cm-theme="beautyRose"] .created-by-badge{
+  background:rgba(15,23,42,.88)!important;
+  color:#f8fafc!important;
+}
+
+   Scope: ONLY html[data-cm-theme="beautyRose"]. Original skin untouched. */
+html[data-cm-theme="beautyRose"]{
+  --cm-gw-ink:#0b1220;
+  --cm-gw-ink-soft:#263244;
+  --cm-gw-muted:#5f6b7a;
+  --cm-gw-brown:#7c2d12;
+  --cm-gw-brown-2:#9d174d;
+  --cm-gw-gold:#db2777;
+  --cm-gw-gold-2:#ec4899;
+  --cm-gw-gold-3:#fbbf24;
+  --cm-gw-cream:#fff7fb;
+  --cm-gw-cream-2:#fff4d8;
+  --cm-gw-glass:rgba(255,255,255,.72);
+  --cm-gw-line:rgba(219,39,119,.30);
+  --cm-gw-line-strong:rgba(190,24,93,.48);
+  --cm-gw-shadow:0 18px 42px rgba(131,24,67,.14);
+  --cm-gw-glow:0 0 0 1px rgba(255,255,255,.76) inset, 0 18px 42px rgba(190,24,93,.13);
+}
+
+html[data-cm-theme="beautyRose"] body,
+html[data-cm-theme="beautyRose"] body *{
+  text-shadow:none!important;
+}
+
+html[data-cm-theme="beautyRose"] body{
+  background:
+    radial-gradient(circle at 8% 0%,rgba(236,72,153,.20),transparent 32rem),
+    radial-gradient(circle at 96% 12%,rgba(251,207,232,.16),transparent 34rem),
+    linear-gradient(135deg,#fffdf8 0%,#fff7fb 42%,#f6e7bd 100%)!important;
+  color:var(--cm-gw-ink)!important;
+}
+
+html[data-cm-theme="beautyRose"] #liveClock,
+html[data-cm-theme="beautyRose"] .bm-live-clock,
+html[data-cm-theme="beautyRose"] .bm-left-info-panel #liveClock,
+html[data-cm-theme="beautyRose"] .bm-left-info-panel .bm-live-clock{
+  color:#111827!important;
+  font-weight:950!important;
+  letter-spacing:.02em!important;
+}
+
+html[data-cm-theme="beautyRose"] .bm-page-card,
+html[data-cm-theme="beautyRose"] .panel-card,
+html[data-cm-theme="beautyRose"] .cm-unified-card,
+html[data-cm-theme="beautyRose"] .cm-period-report-card,
+html[data-cm-theme="beautyRose"] .cm-report-card,
+html[data-cm-theme="beautyRose"] .cm-daily-report-card,
+html[data-cm-theme="beautyRose"] .cm-customers-report-card,
+html[data-cm-theme="beautyRose"] .cm-company-panel-page,
+html[data-cm-theme="beautyRose"] .cm-company-panel-form,
+html[data-cm-theme="beautyRose"] .cm-supabase-work-schedule,
+html[data-cm-theme="beautyRose"] .passes-module,
+html[data-cm-theme="beautyRose"] .sales-module,
+html[data-cm-theme="beautyRose"] .bm-current-section{
+  background:linear-gradient(180deg,rgba(255,255,255,.92),rgba(255,247,251,.80))!important;
+  backdrop-filter:blur(12px) saturate(1.1)!important;
+  -webkit-backdrop-filter:blur(12px) saturate(1.1)!important;
+  color:var(--cm-gw-ink)!important;
+  border:1px solid var(--cm-gw-line)!important;
+  box-shadow:var(--cm-gw-glow)!important;
+}
+
+html[data-cm-theme="beautyRose"] input:not([type="checkbox"]):not([type="radio"]),
+html[data-cm-theme="beautyRose"] select,
+html[data-cm-theme="beautyRose"] textarea,
+html[data-cm-theme="beautyRose"] .cm-cr-dropdown-button,
+html[data-cm-theme="beautyRose"] .dropdown-toggle,
+html[data-cm-theme="beautyRose"] .select2-selection,
+html[data-cm-theme="beautyRose"] .choices,
+html[data-cm-theme="beautyRose"] .flatpickr-input,
+html[data-cm-theme="beautyRose"] [contenteditable="true"]{
+  background:
+    linear-gradient(180deg,rgba(255,255,255,.98),rgba(253,242,248,.94))!important;
+  color:var(--cm-gw-ink)!important;
+  border:1px solid var(--cm-gw-line)!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.96), 0 8px 18px rgba(131,24,67,.06)!important;
+}
+
+html[data-cm-theme="beautyRose"] textarea{
+  min-height:90px;
+}
+
+html[data-cm-theme="beautyRose"] input:focus,
+html[data-cm-theme="beautyRose"] select:focus,
+html[data-cm-theme="beautyRose"] textarea:focus,
+html[data-cm-theme="beautyRose"] .cm-cr-dropdown-button:focus{
+  outline:none!important;
+  border-color:var(--cm-gw-line-strong)!important;
+  box-shadow:0 0 0 4px rgba(251,207,232,.18), inset 0 1px 0 rgba(255,255,255,.98)!important;
+}
+
+html[data-cm-theme="beautyRose"] input::placeholder,
+html[data-cm-theme="beautyRose"] textarea::placeholder{color:#9ca3af!important;}
+
+html[data-cm-theme="beautyRose"] body[data-panel-page="companyPanel"] fieldset,
+html[data-cm-theme="beautyRose"] body[data-panel-page="companyPanel"] .form-section,
+html[data-cm-theme="beautyRose"] body[data-panel-page="companyPanel"] .cm-form-section,
+html[data-cm-theme="beautyRose"] body[data-panel-page="companyPanel"] .settings-box,
+html[data-cm-theme="beautyRose"] body[data-panel-page="companyPanel"] .cm-notification-box,
+html[data-cm-theme="beautyRose"] body[data-panel-page="companyPanel"] .bm-company-data-card,
+html[data-cm-theme="beautyRose"] body[data-panel-page="companyPanel"] .bm-info-row,
+html[data-cm-theme="beautyRose"] .cm-notification-box,
+html[data-cm-theme="beautyRose"] .settings-box,
+html[data-cm-theme="beautyRose"] fieldset,
+html[data-cm-theme="beautyRose"] .form-section,
+html[data-cm-theme="beautyRose"] .cm-form-section,
+html[data-cm-theme="beautyRose"] .bm-info-row{
+  background:linear-gradient(180deg,rgba(255,253,247,.96),rgba(255,244,216,.90))!important;
+  color:var(--cm-gw-ink)!important;
+  border:1px solid var(--cm-gw-line)!important;
+  box-shadow:0 14px 32px rgba(131,24,67,.10)!important;
+}
+
+html[data-cm-theme="beautyRose"] body[data-panel-page="companyPanel"] fieldset *,
+html[data-cm-theme="beautyRose"] body[data-panel-page="companyPanel"] .form-section *,
+html[data-cm-theme="beautyRose"] body[data-panel-page="companyPanel"] .cm-form-section *,
+html[data-cm-theme="beautyRose"] body[data-panel-page="companyPanel"] .settings-box *,
+html[data-cm-theme="beautyRose"] body[data-panel-page="companyPanel"] .cm-notification-box *,
+html[data-cm-theme="beautyRose"] .cm-notification-box *,
+html[data-cm-theme="beautyRose"] fieldset *,
+html[data-cm-theme="beautyRose"] .form-section *,
+html[data-cm-theme="beautyRose"] .cm-form-section *{
+  color:var(--cm-gw-ink)!important;
+}
+
+html[data-cm-theme="beautyRose"] body[data-panel-page="companyPanel"] legend,
+html[data-cm-theme="beautyRose"] body[data-panel-page="companyPanel"] label,
+html[data-cm-theme="beautyRose"] fieldset legend,
+html[data-cm-theme="beautyRose"] label{
+  color:var(--cm-gw-brown)!important;
+  font-weight:900!important;
+}
+
+html[data-cm-theme="beautyRose"] .cm-page-subnav,
+html[data-cm-theme="beautyRose"] .cm-company-panel-switcher,
+html[data-cm-theme="beautyRose"] .bm-page-tabs,
+html[data-cm-theme="beautyRose"] .bm-section-tabs,
+html[data-cm-theme="beautyRose"] .cm-report-chart-head,
+html[data-cm-theme="beautyRose"] .cm-customers-report-title,
+html[data-cm-theme="beautyRose"] .cm-customers-report-head,
+html[data-cm-theme="beautyRose"] .cm-period-head,
+html[data-cm-theme="beautyRose"] .cm-daily-date-row,
+html[data-cm-theme="beautyRose"] .cm-reports-polished-controls,
+html[data-cm-theme="beautyRose"] .cm-report-filter-bar,
+html[data-cm-theme="beautyRose"] .cm-report-filters,
+html[data-cm-theme="beautyRose"] .cm-period-controls,
+html[data-cm-theme="beautyRose"] .cm-sales-filters,
+html[data-cm-theme="beautyRose"] .cm-er-filters,
+html[data-cm-theme="beautyRose"] .cm-customers-report-controls,
+html[data-cm-theme="beautyRose"] .cm-work-schedule-controls,
+html[data-cm-theme="beautyRose"] .cm-work-panel{
+  background:
+    linear-gradient(135deg,rgba(255,255,255,.92),rgba(251,207,232,.90) 54%,rgba(251,207,232,.24))!important;
+  color:var(--cm-gw-ink)!important;
+  border:1px solid var(--cm-gw-line)!important;
+  box-shadow:0 16px 36px rgba(131,24,67,.12)!important;
+}
+
+html[data-cm-theme="beautyRose"] .cm-page-subnav *,
+html[data-cm-theme="beautyRose"] .cm-company-panel-switcher *,
+html[data-cm-theme="beautyRose"] .bm-page-tabs *,
+html[data-cm-theme="beautyRose"] .bm-section-tabs *,
+html[data-cm-theme="beautyRose"] .cm-report-chart-head *,
+html[data-cm-theme="beautyRose"] .cm-customers-report-title *,
+html[data-cm-theme="beautyRose"] .cm-customers-report-head *,
+html[data-cm-theme="beautyRose"] .cm-period-head *,
+html[data-cm-theme="beautyRose"] .cm-daily-date-row *{
+  color:var(--cm-gw-ink)!important;
+}
+
+html[data-cm-theme="beautyRose"] .cm-customers-report-title,
+html[data-cm-theme="beautyRose"] .cm-customers-report-title h2,
+html[data-cm-theme="beautyRose"] .cm-customers-report-title strong{
+  color:#111827!important;
+  font-weight:950!important;
+}
+
+html[data-cm-theme="beautyRose"] .cm-report-chart-arrow,
+html[data-cm-theme="beautyRose"] .cm-report-arrow,
+html[data-cm-theme="beautyRose"] .cm-customers-report-arrow,
+html[data-cm-theme="beautyRose"] .cm-daily-arrow{
+  background:linear-gradient(180deg,#fffafe,#fbcfe8)!important;
+  color:var(--cm-gw-brown)!important;
+  border:1px solid var(--cm-gw-line-strong)!important;
+  box-shadow:0 12px 24px rgba(131,24,67,.16)!important;
+}
+
+html[data-cm-theme="beautyRose"] .cm-supabase-work-schedule,
+html[data-cm-theme="beautyRose"] .cm-supabase-work-schedule .bm-page-card,
+html[data-cm-theme="beautyRose"] .cm-work-schedule-editor-wrap,
+html[data-cm-theme="beautyRose"] .cm-work-schedule-summary-wrap,
+html[data-cm-theme="beautyRose"] .cm-work-schedule-editor,
+html[data-cm-theme="beautyRose"] .cm-work-schedule-summary,
+html[data-cm-theme="beautyRose"] .cm-work-schedule-table,
+html[data-cm-theme="beautyRose"] .cm-work-schedule-grid,
+html[data-cm-theme="beautyRose"] .cm-work-schedule-panel,
+html[data-cm-theme="beautyRose"] .cm-work-schedule-modal,
+html[data-cm-theme="beautyRose"] .cm-work-schedule-modal-content{
+  background:linear-gradient(180deg,#fffafe,#fff4d8)!important;
+  color:var(--cm-gw-ink)!important;
+  border-color:var(--cm-gw-line)!important;
+}
+
+html[data-cm-theme="beautyRose"] .cm-supabase-work-schedule *,
+html[data-cm-theme="beautyRose"] .cm-work-schedule-editor *,
+html[data-cm-theme="beautyRose"] .cm-work-schedule-summary *,
+html[data-cm-theme="beautyRose"] .cm-work-schedule-modal *{
+  color:var(--cm-gw-ink)!important;
+}
+
+html[data-cm-theme="beautyRose"] .cm-supabase-work-schedule h1,
+html[data-cm-theme="beautyRose"] .cm-supabase-work-schedule h2,
+html[data-cm-theme="beautyRose"] .cm-supabase-work-schedule h3,
+html[data-cm-theme="beautyRose"] .cm-supabase-work-schedule label,
+html[data-cm-theme="beautyRose"] .cm-work-schedule-editor th,
+html[data-cm-theme="beautyRose"] .cm-work-schedule-summary th{
+  color:var(--cm-gw-brown)!important;
+}
+
+html[data-cm-theme="beautyRose"] .bm-schedule-scroll,
+html[data-cm-theme="beautyRose"] .bm-schedule-table-wrap,
+html[data-cm-theme="beautyRose"] .bm-schedule-scroll-inner,
+html[data-cm-theme="beautyRose"] .bm-schedule-table,
+html[data-cm-theme="beautyRose"] .bm-schedule-body,
+html[data-cm-theme="beautyRose"] .bm-schedule-row,
+html[data-cm-theme="beautyRose"] .bm-schedule-cell{
+  background:linear-gradient(180deg,#fffafe,#fff4d8)!important;
+  color:var(--cm-gw-ink)!important;
+  border-color:rgba(219,39,119,.18)!important;
+}
+
+html[data-cm-theme="beautyRose"] .bm-schedule-table td,
+html[data-cm-theme="beautyRose"] .bm-schedule-table th,
+html[data-cm-theme="beautyRose"] .bm-schedule-slot{
+  background:#fff7fb!important;
+  color:var(--cm-gw-ink)!important;
+  border-color:rgba(219,39,119,.18)!important;
+}
+
+html[data-cm-theme="beautyRose"] .bm-schedule-slot.free,
+html[data-cm-theme="beautyRose"] .bm-schedule-slot.free span{
+  color:#0f766e!important;
+  font-weight:900!important;
+}
+
+html[data-cm-theme="beautyRose"] .cm-supa-chart-frame,
+html[data-cm-theme="beautyRose"] .cm-supa-chart,
+html[data-cm-theme="beautyRose"] .cm-supa-chart-area,
+html[data-cm-theme="beautyRose"] .cm-report-chart-card,
+html[data-cm-theme="beautyRose"] .cm-report-chart,
+html[data-cm-theme="beautyRose"] .cm-report-chart-inner{
+  background:linear-gradient(180deg,#ffffff,#fff7fb)!important;
+  color:var(--cm-gw-ink)!important;
+  border-color:var(--cm-gw-line)!important;
+}
+
+html[data-cm-theme="beautyRose"] .cm-supa-y-axis span,
+html[data-cm-theme="beautyRose"] .cm-supa-chart-col small,
+html[data-cm-theme="beautyRose"] .cm-supa-chart-legend,
+html[data-cm-theme="beautyRose"] .cm-supa-chart-legend span,
+html[data-cm-theme="beautyRose"] .cm-supa-chart-frame *{
+  color:var(--cm-gw-ink-soft)!important;
+}
+
+html[data-cm-theme="beautyRose"] .cm-supa-grid i,
+html[data-cm-theme="beautyRose"] .cm-supa-grid-line,
+html[data-cm-theme="beautyRose"] .grid-line{
+  border-color:rgba(219,39,119,.24)!important;
+  background:rgba(219,39,119,.12)!important;
+}
+
+html[data-cm-theme="beautyRose"] .cm-supa-bar,
+html[data-cm-theme="beautyRose"] .cm-supa-chart-legend i{
+  box-shadow:0 6px 14px rgba(131,24,67,.18)!important;
+}
+
+html[data-cm-theme="beautyRose"] .cm-supa-bar.revenue,
+html[data-cm-theme="beautyRose"] .cm-supa-chart-legend i.revenue{background:linear-gradient(180deg,#fbbf24,#db2777)!important;}
+
+html[data-cm-theme="beautyRose"] .cm-supa-bar.visits,
+html[data-cm-theme="beautyRose"] .cm-supa-chart-legend i.visits{background:linear-gradient(180deg,#34d399,#0f766e)!important;}
+
+html[data-cm-theme="beautyRose"] .cm-supa-bar.clients,
+html[data-cm-theme="beautyRose"] .cm-supa-chart-legend i.clients{background:linear-gradient(180deg,#60a5fa,#2563eb)!important;}
+
+html[data-cm-theme="beautyRose"] .cm-supa-bar.total-clients,
+html[data-cm-theme="beautyRose"] .cm-supa-chart-legend i.total-clients{background:linear-gradient(180deg,#ec4899,#7c2d12)!important;}
+
+html[data-cm-theme="beautyRose"] .cm-supa-bar.service,
+html[data-cm-theme="beautyRose"] .cm-supa-chart-legend i.service{background:linear-gradient(180deg,#fed7aa,#be185d)!important;}
+
+html[data-cm-theme="beautyRose"] .cm-supa-bar.product,
+html[data-cm-theme="beautyRose"] .cm-supa-chart-legend i.product{background:linear-gradient(180deg,#c4b5fd,#7c3aed)!important;}
+
+html[data-cm-theme="beautyRose"] .cm-supa-bar.pass,
+html[data-cm-theme="beautyRose"] .cm-supa-chart-legend i.pass{background:linear-gradient(180deg,#f9a8d4,#db2777)!important;}
+
+html[data-cm-theme="beautyRose"] .cm-supa-bar.planned,
+html[data-cm-theme="beautyRose"] .cm-supa-chart-legend i.planned{background:linear-gradient(180deg,#f9a8d4,#ca8a04)!important;}
+
+html[data-cm-theme="beautyRose"] .cm-finance-grid>div,
+html[data-cm-theme="beautyRose"] .cm-finance-grid article,
+html[data-cm-theme="beautyRose"] .cm-daily-main-kpis>div,
+html[data-cm-theme="beautyRose"] .cm-daily-main-kpis article,
+html[data-cm-theme="beautyRose"] .cm-comm-grid>div,
+html[data-cm-theme="beautyRose"] .cm-comm-grid article,
+html[data-cm-theme="beautyRose"] .cm-report-kpi,
+html[data-cm-theme="beautyRose"] .cm-report-kpi-grid-clean .cm-report-kpi,
+html[data-cm-theme="beautyRose"] .cm-period-kpis>div,
+html[data-cm-theme="beautyRose"] .bm-stats article,
+html[data-cm-theme="beautyRose"] .cm-unified-stat,
+html[data-cm-theme="beautyRose"] .cm-report-summary-card{
+  background:linear-gradient(180deg,#fffafe,#fff3cf)!important;
+  color:var(--cm-gw-ink)!important;
+  border:1px solid var(--cm-gw-line)!important;
+  box-shadow:0 14px 34px rgba(131,24,67,.10)!important;
+}
+
+html[data-cm-theme="beautyRose"] .cm-finance-grid>div *,
+html[data-cm-theme="beautyRose"] .cm-daily-main-kpis>div *,
+html[data-cm-theme="beautyRose"] .cm-comm-grid>div *,
+html[data-cm-theme="beautyRose"] .cm-report-kpi *,
+html[data-cm-theme="beautyRose"] .cm-period-kpis>div *,
+html[data-cm-theme="beautyRose"] .bm-stats article *,
+html[data-cm-theme="beautyRose"] .cm-unified-stat *,
+html[data-cm-theme="beautyRose"] .cm-report-summary-card *{
+  color:var(--cm-gw-ink)!important;
+}
+
+html[data-cm-theme="beautyRose"] .cm-finance-grid small,
+html[data-cm-theme="beautyRose"] .cm-daily-main-kpis small,
+html[data-cm-theme="beautyRose"] .cm-comm-grid small,
+html[data-cm-theme="beautyRose"] .cm-report-kpi small,
+html[data-cm-theme="beautyRose"] .cm-period-kpis small,
+html[data-cm-theme="beautyRose"] .bm-stats small{
+  color:var(--cm-gw-brown)!important;
+}
+
+html[data-cm-theme="beautyRose"] button,
+html[data-cm-theme="beautyRose"] .btn,
+html[data-cm-theme="beautyRose"] .bm-light-btn,
+html[data-cm-theme="beautyRose"] .bm-owner-link,
+html[data-cm-theme="beautyRose"] .bm-nav-top a,
+html[data-cm-theme="beautyRose"] .bm-filter-tabs a,
+html[data-cm-theme="beautyRose"] .cm-sales-tab,
+html[data-cm-theme="beautyRose"] .cm-unified-tab,
+html[data-cm-theme="beautyRose"] .cm-theme-toggle{
+  transition:transform .16s ease, box-shadow .16s ease, border-color .16s ease, background .16s ease!important;
+}
+
+html[data-cm-theme="beautyRose"] button:hover,
+html[data-cm-theme="beautyRose"] .btn:hover,
+html[data-cm-theme="beautyRose"] .bm-light-btn:hover,
+html[data-cm-theme="beautyRose"] .bm-owner-link:hover,
+html[data-cm-theme="beautyRose"] .bm-nav-top a:hover,
+html[data-cm-theme="beautyRose"] .bm-filter-tabs a:hover,
+html[data-cm-theme="beautyRose"] .cm-sales-tab:hover,
+html[data-cm-theme="beautyRose"] .cm-unified-tab:hover,
+html[data-cm-theme="beautyRose"] .cm-theme-toggle:hover{
+  transform:translateY(-1px)!important;
+  box-shadow:0 14px 30px rgba(190,24,93,.18), inset 0 1px 0 rgba(255,255,255,.95)!important;
+  border-color:var(--cm-gw-line-strong)!important;
+}
+
+html[data-cm-theme="beautyRose"] .cm-primary-action,
+html[data-cm-theme="beautyRose"] .bm-primary-btn,
+html[data-cm-theme="beautyRose"] button[type="submit"],
+html[data-cm-theme="beautyRose"] .btn-primary,
+html[data-cm-theme="beautyRose"] .show-btn,
+html[data-cm-theme="beautyRose"] .cm-report-show-btn{
+  background:linear-gradient(180deg,#ec4899 0%,#db2777 52%,#be185d 100%)!important;
+  color:#fff7fb!important;
+  border-color:rgba(120,53,15,.32)!important;
+  box-shadow:0 16px 34px rgba(190,24,93,.26), inset 0 1px 0 rgba(255,255,255,.35)!important;
+}
+
+html[data-cm-theme="beautyRose"] button:disabled,
+html[data-cm-theme="beautyRose"] .btn:disabled,
+html[data-cm-theme="beautyRose"] .disabled{
+  background:linear-gradient(180deg,#f8fafc,#fff7fb)!important;
+  color:#64748b!important;
+  border-color:rgba(219,39,119,.16)!important;
+  opacity:.86!important;
+}
+
+html[data-cm-theme="beautyRose"] table th,
+html[data-cm-theme="beautyRose"] .bm-table th,
+html[data-cm-theme="beautyRose"] .data-table th,
+html[data-cm-theme="beautyRose"] .cm-daily-table th{
+  background:linear-gradient(180deg,#fff3cf,#fff7fb)!important;
+  color:var(--cm-gw-brown)!important;
+}
+
+html[data-cm-theme="beautyRose"] table td,
+html[data-cm-theme="beautyRose"] .bm-table td,
+html[data-cm-theme="beautyRose"] .data-table td,
+html[data-cm-theme="beautyRose"] .cm-daily-table td{
+  color:var(--cm-gw-ink-soft)!important;
+}
+
+html[data-cm-theme="beautyRose"] .bm-left-info-panel .cm-theme-menu,
+.bm-left-info-panel .cm-theme-menu{
+  top:auto!important;
+  bottom:0!important;
+  left:calc(100% + 24px)!important;
+  right:auto!important;
+  transform:none!important;
+}
+
+  html[data-cm-theme="beautyRose"] .bm-left-info-panel .cm-theme-menu,
+  .bm-left-info-panel .cm-theme-menu{
+    top:auto!important;
+    bottom:calc(100% + 10px)!important;
+    left:0!important;
+  }
+
+   Scope: ONLY html[data-cm-theme="beautyRose"]. Original skin untouched.
+   Purpose: remove leftover navy/black modal/form backgrounds from original skin. */
+html[data-cm-theme="beautyRose"]{
+  --cm-gw-form-bg:linear-gradient(180deg,rgba(255,253,247,.98),rgba(255,246,220,.94));
+  --cm-gw-form-bg-strong:linear-gradient(135deg,rgba(255,255,255,.98),rgba(251,207,232,.94) 58%,rgba(251,207,232,.18));
+  --cm-gw-form-border:rgba(219,39,119,.34);
+  --cm-gw-form-shadow:0 24px 70px rgba(131,24,67,.18), inset 0 1px 0 rgba(255,255,255,.88);
+}
+
+html[data-cm-theme="beautyRose"] body .cm-as-modal,
+html[data-cm-theme="beautyRose"] body .bm-page-card.cm-as-modal,
+html[data-cm-theme="beautyRose"] body .bm-card.cm-as-modal,
+html[data-cm-theme="beautyRose"] body .panel-card.cm-as-modal,
+html[data-cm-theme="beautyRose"] body .form-card.cm-as-modal,
+html[data-cm-theme="beautyRose"] body .cm-modal-card,
+html[data-cm-theme="beautyRose"] body .cm-payment-method-modal-card,
+html[data-cm-theme="beautyRose"] body .bm-modal,
+html[data-cm-theme="beautyRose"] body .bm-modal-card,
+html[data-cm-theme="beautyRose"] body .bm-modal-content,
+html[data-cm-theme="beautyRose"] body .modal,
+html[data-cm-theme="beautyRose"] body .modal-card,
+html[data-cm-theme="beautyRose"] body .modal-content,
+html[data-cm-theme="beautyRose"] body .popover,
+html[data-cm-theme="beautyRose"] body .dialog,
+html[data-cm-theme="beautyRose"] body .dialog-card,
+html[data-cm-theme="beautyRose"] body .bm-appointment-form,
+html[data-cm-theme="beautyRose"] body .bm-nested-form,
+html[data-cm-theme="beautyRose"] body .bm-nested-modal,
+html[data-cm-theme="beautyRose"] body .cm-centered-form-card,
+html[data-cm-theme="beautyRose"] body .cm-form-card,
+html[data-cm-theme="beautyRose"] body .products-module + .bm-page-card,
+html[data-cm-theme="beautyRose"] body [id*="FormCard"],
+html[data-cm-theme="beautyRose"] body [id*="EditPanel"],
+html[data-cm-theme="beautyRose"] body [id*="DeletePanel"],
+html[data-cm-theme="beautyRose"] body [id*="DeleteCard"],
+html[data-cm-theme="beautyRose"] body [id*="Modal"]:not(.cm-modal-backdrop),
+html[data-cm-theme="beautyRose"] body [class*="modal-card"],
+html[data-cm-theme="beautyRose"] body [class*="modal-content"]{
+  background:var(--cm-gw-form-bg-strong)!important;
+  background-color:#fff7fb!important;
+  color:var(--cm-gw-ink,#0b1220)!important;
+  border:1px solid var(--cm-gw-form-border)!important;
+  box-shadow:var(--cm-gw-form-shadow)!important;
+  text-shadow:none!important;
+  backdrop-filter:blur(10px) saturate(1.08)!important;
+  -webkit-backdrop-filter:blur(10px) saturate(1.08)!important;
+}
+
+html[data-cm-theme="beautyRose"] body .bm-form-grid,
+html[data-cm-theme="beautyRose"] body .bm-form-row,
+html[data-cm-theme="beautyRose"] body .bm-form-row-2,
+html[data-cm-theme="beautyRose"] body .bm-delete-row,
+html[data-cm-theme="beautyRose"] body .bm-wide-form,
+html[data-cm-theme="beautyRose"] body .panel-form-grid,
+html[data-cm-theme="beautyRose"] body .cm-modal-actions,
+html[data-cm-theme="beautyRose"] body .field,
+html[data-cm-theme="beautyRose"] body .fields,
+html[data-cm-theme="beautyRose"] body .section,
+html[data-cm-theme="beautyRose"] body .form-section,
+html[data-cm-theme="beautyRose"] body .cm-form-section{
+  background:transparent!important;
+  color:var(--cm-gw-ink,#0b1220)!important;
+  text-shadow:none!important;
+}
+
+html[data-cm-theme="beautyRose"] body .cm-as-modal .bm-page-head,
+html[data-cm-theme="beautyRose"] body .cm-as-modal .panel-head,
+html[data-cm-theme="beautyRose"] body .cm-as-modal .form-head,
+html[data-cm-theme="beautyRose"] body .bm-modal .bm-page-head,
+html[data-cm-theme="beautyRose"] body .modal .bm-page-head,
+html[data-cm-theme="beautyRose"] body .cm-modal-card h3,
+html[data-cm-theme="beautyRose"] body .cm-payment-method-modal-card h3,
+html[data-cm-theme="beautyRose"] body [id*="FormCard"] h2,
+html[data-cm-theme="beautyRose"] body [id*="DeleteCard"] h2{
+  background:transparent!important;
+  color:var(--cm-gw-ink,#0b1220)!important;
+  border-color:rgba(219,39,119,.18)!important;
+  text-shadow:none!important;
+}
+
+html[data-cm-theme="beautyRose"] body .cm-as-modal label,
+html[data-cm-theme="beautyRose"] body .cm-as-modal legend,
+html[data-cm-theme="beautyRose"] body .cm-as-modal h2,
+html[data-cm-theme="beautyRose"] body .cm-as-modal h3,
+html[data-cm-theme="beautyRose"] body .bm-modal label,
+html[data-cm-theme="beautyRose"] body .modal label,
+html[data-cm-theme="beautyRose"] body .bm-form-grid label,
+html[data-cm-theme="beautyRose"] body .bm-form-row label,
+html[data-cm-theme="beautyRose"] body .bm-form-row-2 label,
+html[data-cm-theme="beautyRose"] body .panel-form-grid label,
+html[data-cm-theme="beautyRose"] body .field label,
+html[data-cm-theme="beautyRose"] body .cm-payment-method-modal-card label,
+html[data-cm-theme="beautyRose"] body .cm-modal-card label,
+html[data-cm-theme="beautyRose"] body [id*="FormCard"] label,
+html[data-cm-theme="beautyRose"] body [id*="DeleteCard"] label{
+  color:var(--cm-gw-brown,#7c2d12)!important;
+  font-weight:900!important;
+  text-shadow:none!important;
+}
+
+html[data-cm-theme="beautyRose"] body .cm-as-modal input:not([type="checkbox"]):not([type="radio"]),
+html[data-cm-theme="beautyRose"] body .cm-as-modal select,
+html[data-cm-theme="beautyRose"] body .cm-as-modal textarea,
+html[data-cm-theme="beautyRose"] body .bm-modal input:not([type="checkbox"]):not([type="radio"]),
+html[data-cm-theme="beautyRose"] body .bm-modal select,
+html[data-cm-theme="beautyRose"] body .bm-modal textarea,
+html[data-cm-theme="beautyRose"] body .modal input:not([type="checkbox"]):not([type="radio"]),
+html[data-cm-theme="beautyRose"] body .modal select,
+html[data-cm-theme="beautyRose"] body .modal textarea,
+html[data-cm-theme="beautyRose"] body .bm-form-grid input:not([type="checkbox"]):not([type="radio"]),
+html[data-cm-theme="beautyRose"] body .bm-form-grid select,
+html[data-cm-theme="beautyRose"] body .bm-form-grid textarea,
+html[data-cm-theme="beautyRose"] body .bm-form-row input:not([type="checkbox"]):not([type="radio"]),
+html[data-cm-theme="beautyRose"] body .bm-form-row select,
+html[data-cm-theme="beautyRose"] body .bm-form-row textarea,
+html[data-cm-theme="beautyRose"] body .bm-form-row-2 input:not([type="checkbox"]):not([type="radio"]),
+html[data-cm-theme="beautyRose"] body .bm-form-row-2 select,
+html[data-cm-theme="beautyRose"] body .bm-form-row-2 textarea,
+html[data-cm-theme="beautyRose"] body .panel-form-grid input:not([type="checkbox"]):not([type="radio"]),
+html[data-cm-theme="beautyRose"] body .panel-form-grid select,
+html[data-cm-theme="beautyRose"] body .panel-form-grid textarea,
+html[data-cm-theme="beautyRose"] body [id*="FormCard"] input:not([type="checkbox"]):not([type="radio"]),
+html[data-cm-theme="beautyRose"] body [id*="FormCard"] select,
+html[data-cm-theme="beautyRose"] body [id*="FormCard"] textarea,
+html[data-cm-theme="beautyRose"] body [id*="DeleteCard"] input:not([type="checkbox"]):not([type="radio"]),
+html[data-cm-theme="beautyRose"] body [id*="DeleteCard"] select,
+html[data-cm-theme="beautyRose"] body [id*="DeleteCard"] textarea{
+  background:linear-gradient(180deg,#ffffff,#fff7fb)!important;
+  color:var(--cm-gw-ink,#0b1220)!important;
+  border:1px solid var(--cm-gw-form-border)!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.98), 0 8px 18px rgba(131,24,67,.06)!important;
+  color-scheme:light!important;
+}
+
+html[data-cm-theme="beautyRose"] body input[type="time"],
+html[data-cm-theme="beautyRose"] body input[type="date"],
+html[data-cm-theme="beautyRose"] body input[type="datetime-local"]{
+  color-scheme:light!important;
+}
+
+html[data-cm-theme="beautyRose"] body input[type="time"]::-webkit-calendar-picker-indicator,
+html[data-cm-theme="beautyRose"] body input[type="date"]::-webkit-calendar-picker-indicator,
+html[data-cm-theme="beautyRose"] body input[type="datetime-local"]::-webkit-calendar-picker-indicator{
+  filter:sepia(1) saturate(2.2) hue-rotate(350deg) brightness(.72)!important;
+  opacity:.85!important;
+}
+
+html[data-cm-theme="beautyRose"] body .cm-as-modal button,
+html[data-cm-theme="beautyRose"] body .bm-modal button,
+html[data-cm-theme="beautyRose"] body .modal button,
+html[data-cm-theme="beautyRose"] body [id*="FormCard"] button,
+html[data-cm-theme="beautyRose"] body [id*="DeleteCard"] button,
+html[data-cm-theme="beautyRose"] body .bm-form-grid button,
+html[data-cm-theme="beautyRose"] body .bm-form-row button{
+  border:1px solid var(--cm-gw-form-border)!important;
+  text-shadow:none!important;
+}
+
+html[data-cm-theme="beautyRose"] body .cm-as-modal button:not(.bm-danger-btn):not(.danger):not(.delete-btn):not([type="submit"]),
+html[data-cm-theme="beautyRose"] body .bm-modal button:not(.bm-danger-btn):not(.danger):not(.delete-btn):not([type="submit"]),
+html[data-cm-theme="beautyRose"] body .modal button:not(.bm-danger-btn):not(.danger):not(.delete-btn):not([type="submit"]),
+html[data-cm-theme="beautyRose"] body [id*="FormCard"] button:not(.bm-danger-btn):not(.danger):not(.delete-btn):not([type="submit"]),
+html[data-cm-theme="beautyRose"] body [id*="DeleteCard"] button:not(.bm-danger-btn):not(.danger):not(.delete-btn):not([type="submit"]){
+  background:linear-gradient(180deg,#fffafe,#fff2c8)!important;
+  color:var(--cm-gw-brown,#7c2d12)!important;
+}
+
+html[data-cm-theme="beautyRose"][data-cm-ui="057"] .bm-left-info-panel .bm-live-clock,
+html[data-cm-theme="beautyRose"] body .bm-left-info-panel .bm-live-clock,
+html[data-cm-theme="beautyRose"] body .bm-left-info-panel #liveClock{
+  color:#111827!important;
+  text-shadow:none!important;
+}
+
+html[data-cm-theme="beautyRose"] body .panel-message,
+html[data-cm-theme="beautyRose"] body .empty-state,
+html[data-cm-theme="beautyRose"] body .dev-note,
+html[data-cm-theme="beautyRose"] body .hint,
+html[data-cm-theme="beautyRose"] body .small-note{
+  color:#475569!important;
+  text-shadow:none!important;
+}
+
+html[data-cm-theme="beautyRose"]{
+  --cm-gw-header-bg:linear-gradient(135deg,rgba(255,255,255,.96),rgba(251,207,232,.94) 52%,rgba(251,207,232,.30));
+  --cm-gw-header-bg-strong:linear-gradient(135deg,#fffafe 0%,#fff3cf 58%,#f6d884 100%);
+  --cm-gw-header-border:rgba(219,39,119,.34);
+  --cm-gw-header-text:#111827;
+  --cm-gw-header-accent:#831843;
+  --cm-gw-header-shadow:0 16px 36px rgba(131,24,67,.13), inset 0 1px 0 rgba(255,255,255,.92);
+}
+
+html[data-cm-theme="beautyRose"] .bm-schedule-datebar,
+html[data-cm-theme="beautyRose"] body[data-panel-page="dashboard"] .bm-schedule-datebar,
+html[data-cm-theme="beautyRose"] .bm-dashboard-schedule .bm-schedule-datebar{
+  background:var(--cm-gw-header-bg)!important;
+  color:var(--cm-gw-header-text)!important;
+  border:1px solid var(--cm-gw-header-border)!important;
+  box-shadow:var(--cm-gw-header-shadow)!important;
+}
+
+html[data-cm-theme="beautyRose"] .bm-schedule-datebar *,
+html[data-cm-theme="beautyRose"] body[data-panel-page="dashboard"] .bm-schedule-datebar *{
+  color:var(--cm-gw-header-text)!important;
+  text-shadow:none!important;
+}
+
+html[data-cm-theme="beautyRose"] .bm-schedule-datebar #dashRelativeLabel,
+html[data-cm-theme="beautyRose"] .bm-schedule-datebar #dashFullDate{
+  color:#111827!important;
+  font-weight:950!important;
+  text-shadow:none!important;
+}
+
+html[data-cm-theme="beautyRose"] .bm-schedule-datebar button,
+html[data-cm-theme="beautyRose"] .bm-schedule-datebar .bm-light-btn,
+html[data-cm-theme="beautyRose"] .bm-schedule-datebar .bm-worker-count,
+html[data-cm-theme="beautyRose"] .bm-dashboard-actions .bm-light-btn,
+html[data-cm-theme="beautyRose"] .bm-dashboard-actions .bm-worker-count{
+  background:linear-gradient(180deg,#fffafe,#fbcfe8)!important;
+  color:#831843!important;
+  border:1px solid rgba(190,24,93,.42)!important;
+  box-shadow:0 10px 24px rgba(131,24,67,.12), inset 0 1px 0 rgba(255,255,255,.92)!important;
+}
+
+html[data-cm-theme="beautyRose"] .bm-schedule-datebar .bm-primary-btn,
+html[data-cm-theme="beautyRose"] .bm-dashboard-actions .bm-primary-btn{
+  background:linear-gradient(180deg,#db2777,#be185d)!important;
+  color:#fff7fb!important;
+  border-color:rgba(120,53,15,.30)!important;
+  box-shadow:0 14px 30px rgba(190,24,93,.22)!important;
+}
+
+html[data-cm-theme="beautyRose"] .bm-schedule-datebar .bm-danger-btn,
+html[data-cm-theme="beautyRose"] .bm-dashboard-actions .bm-danger-btn{
+  background:linear-gradient(180deg,#fff7ed,#fff7fb)!important;
+  color:#9a3412!important;
+  border-color:rgba(154,52,18,.32)!important;
+}
+
+html[data-cm-theme="beautyRose"] .bm-workers-popover,
+html[data-cm-theme="beautyRose"] body[data-panel-page="dashboard"] .bm-workers-popover,
+html[data-cm-theme="beautyRose"] .bm-dashboard-workers,
+html[data-cm-theme="beautyRose"] .bm-active-workers,
+html[data-cm-theme="beautyRose"] .bm-workers-panel,
+html[data-cm-theme="beautyRose"] #dashboardWorkers,
+html[data-cm-theme="beautyRose"] #activeWorkers{
+  background:var(--cm-gw-header-bg)!important;
+  color:var(--cm-gw-header-text)!important;
+  border:1px solid var(--cm-gw-header-border)!important;
+  box-shadow:var(--cm-gw-header-shadow)!important;
+}
+
+html[data-cm-theme="beautyRose"] .bm-workers-popover *,
+html[data-cm-theme="beautyRose"] .bm-dashboard-workers *,
+html[data-cm-theme="beautyRose"] .bm-active-workers *,
+html[data-cm-theme="beautyRose"] .bm-workers-panel *,
+html[data-cm-theme="beautyRose"] #dashboardWorkers *,
+html[data-cm-theme="beautyRose"] #activeWorkers *{
+  color:var(--cm-gw-header-accent)!important;
+  text-shadow:none!important;
+}
+
+html[data-cm-theme="beautyRose"] .bm-workers-popover h3{
+  background:linear-gradient(180deg,#fffafe,#fbcfe8)!important;
+  color:#831843!important;
+  border-color:rgba(190,24,93,.34)!important;
+}
+
+html[data-cm-theme="beautyRose"] .cm-customers-report-title,
+html[data-cm-theme="beautyRose"] .cm-customers-report-head,
+html[data-cm-theme="beautyRose"] .cm-customers-report-card .cm-customers-report-title,
+html[data-cm-theme="beautyRose"] .cm-customers-report-card .cm-customers-report-head,
+html[data-cm-theme="beautyRose"] .cm-supa-customers-reports .cm-customers-report-title,
+html[data-cm-theme="beautyRose"] .cm-supa-customers-reports .cm-customers-report-head,
+html[data-cm-theme="beautyRose"] .cm-customers-reports-page .cm-customers-report-title,
+html[data-cm-theme="beautyRose"] .cm-customers-reports-page .cm-customers-report-head{
+  background:var(--cm-gw-header-bg-strong)!important;
+  color:#111827!important;
+  border:1px solid var(--cm-gw-header-border)!important;
+  box-shadow:var(--cm-gw-header-shadow)!important;
+}
+
+html[data-cm-theme="beautyRose"] .cm-customers-report-title *,
+html[data-cm-theme="beautyRose"] .cm-customers-report-head *,
+html[data-cm-theme="beautyRose"] .cm-supa-customers-reports .cm-customers-report-title *,
+html[data-cm-theme="beautyRose"] .cm-supa-customers-reports .cm-customers-report-head *{
+  color:#111827!important;
+  text-shadow:none!important;
+}
+
+html[data-cm-theme="beautyRose"] .cm-customers-report-title h1,
+html[data-cm-theme="beautyRose"] .cm-customers-report-title h2,
+html[data-cm-theme="beautyRose"] .cm-customers-report-title h3,
+html[data-cm-theme="beautyRose"] .cm-customers-report-title strong,
+html[data-cm-theme="beautyRose"] .cm-customers-report-head h1,
+html[data-cm-theme="beautyRose"] .cm-customers-report-head h2,
+html[data-cm-theme="beautyRose"] .cm-customers-report-head h3,
+html[data-cm-theme="beautyRose"] .cm-customers-report-head strong{
+  color:#111827!important;
+  font-weight:950!important;
+}
+
+html[data-cm-theme="beautyRose"] .cm-report-chart-arrow,
+html[data-cm-theme="beautyRose"] .cm-report-arrow,
+html[data-cm-theme="beautyRose"] .cm-customers-report-arrow,
+html[data-cm-theme="beautyRose"] .cm-customers-report-title button,
+html[data-cm-theme="beautyRose"] .cm-customers-report-head button{
+  background:linear-gradient(180deg,#fffafe,#fbcfe8)!important;
+  color:#831843!important;
+  border:1px solid rgba(190,24,93,.44)!important;
+  box-shadow:0 12px 24px rgba(131,24,67,.14)!important;
+}
+
+html[data-cm-theme="beautyRose"] [class*="dashboard"][class*="head"],
+html[data-cm-theme="beautyRose"] [class*="dashboard"][class*="bar"],
+html[data-cm-theme="beautyRose"] [class*="report"][class*="head"],
+html[data-cm-theme="beautyRose"] [class*="report"][class*="title"]{
+  text-shadow:none!important;
+}
+
+
+/* CompanyManager v300 — Beauty Rose complete skin
+   Scope: ONLY html[data-cm-theme="beautyRose"]. Original and Gold/White untouched. */
+html[data-cm-theme="beautyRose"]{
+  color-scheme:light;
+  --bg:#fff7fb;
+  --bg2:#fdf2f8;
+  --card:#ffffff;
+  --card2:#fff1f7;
+  --line:rgba(219,39,119,.24);
+  --text:#111827;
+  --muted:#6b7280;
+  --blue:#db2777;
+  --cyan:#f472b6;
+  --danger:#be123c;
+  --ok:#047857;
+  --cm-ui-card-bg:linear-gradient(180deg,rgba(255,255,255,.96),rgba(255,247,251,.92));
+  --cm-ui-border:rgba(219,39,119,.24);
+  --cm-ui-border-strong:rgba(190,24,93,.46);
+  --cm-ui-text:#111827;
+  --cm-ui-muted:#6b7280;
+}
+html[data-cm-theme="beautyRose"] body{
+  background:
+    radial-gradient(circle at top left,rgba(236,72,153,.18),transparent 32rem),
+    radial-gradient(circle at bottom right,rgba(244,114,182,.14),transparent 30rem),
+    linear-gradient(135deg,#fffafe,#fff7fb 52%,#fdf2f8)!important;
+}
+html[data-cm-theme="beautyRose"] .bm-schedule-datebar,
+html[data-cm-theme="beautyRose"] .bm-schedule-toolbar,
+html[data-cm-theme="beautyRose"] .bm-workers-popover,
+html[data-cm-theme="beautyRose"] .cm-report-slider-title,
+html[data-cm-theme="beautyRose"] .cm-report-carousel-title,
+html[data-cm-theme="beautyRose"] .cm-customer-report-slider,
+html[data-cm-theme="beautyRose"] .cm-customer-report-title,
+html[data-cm-theme="beautyRose"] .cm-report-section-title,
+html[data-cm-theme="beautyRose"] .cm-cr-report-title,
+html[data-cm-theme="beautyRose"] .cm-tab-title,
+html[data-cm-theme="beautyRose"] .cm-panel-titlebar{
+  background:linear-gradient(180deg,#fff,#fff1f7)!important;
+  color:#831843!important;
+  border:1px solid rgba(219,39,119,.28)!important;
+  box-shadow:0 18px 44px rgba(131,24,67,.13), inset 0 1px 0 rgba(255,255,255,.94)!important;
+  text-shadow:none!important;
+}
+html[data-cm-theme="beautyRose"] .bm-schedule-datebar *,
+html[data-cm-theme="beautyRose"] .bm-schedule-toolbar *,
+html[data-cm-theme="beautyRose"] .cm-report-slider-title *,
+html[data-cm-theme="beautyRose"] .cm-report-carousel-title *,
+html[data-cm-theme="beautyRose"] .cm-customer-report-title *,
+html[data-cm-theme="beautyRose"] .cm-report-section-title *,
+html[data-cm-theme="beautyRose"] .cm-cr-report-title *,
+html[data-cm-theme="beautyRose"] .cm-tab-title *,
+html[data-cm-theme="beautyRose"] .cm-panel-titlebar *{
+  color:#831843!important;
+  text-shadow:none!important;
+}
+html[data-cm-theme="beautyRose"] .cm-primary-action,
+html[data-cm-theme="beautyRose"] .btn:not(.secondary),
+html[data-cm-theme="beautyRose"] button[type="submit"]{
+  background:linear-gradient(180deg,#ec4899,#be185d)!important;
+  color:#fff!important;
+  border-color:rgba(131,24,67,.26)!important;
+  box-shadow:0 16px 34px rgba(190,24,93,.24)!important;
+}
+html[data-cm-theme="beautyRose"] .cm-theme-option.active,
+html[data-cm-theme="beautyRose"] .bm-nav-top a.active,
+html[data-cm-theme="beautyRose"] .bm-nav-top a:hover,
+html[data-cm-theme="beautyRose"] .bm-owner-link.active,
+html[data-cm-theme="beautyRose"] .bm-owner-link:hover{
+  background:linear-gradient(180deg,#fbcfe8,#fff7fb)!important;
+  color:#831843!important;
+  border-color:rgba(190,24,93,.42)!important;
+}

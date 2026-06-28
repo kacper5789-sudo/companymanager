@@ -11,14 +11,15 @@ document.addEventListener('DOMContentLoaded', () => {
   const CM_THEME_DEFAULT = 'original';
   const CM_THEME_OPTIONS = {
     original: { label: 'Oryginalny', swatch: '🌌' },
-    goldWhite: { label: 'Złoto / biały', swatch: '✨' }
+    goldWhite: { label: 'Złoto / biały', swatch: '✨' },
+    beautyRose: { label: 'Beauty Rose', swatch: '🌸' }
   };
   const normalizeCmTheme = (value) => Object.prototype.hasOwnProperty.call(CM_THEME_OPTIONS, value) ? value : CM_THEME_DEFAULT;
   const getStoredCmTheme = () => normalizeCmTheme(localStorage.getItem(CM_THEME_KEY) || CM_THEME_DEFAULT);
   const applyCmTheme = (theme) => {
     const normalized = normalizeCmTheme(theme);
     document.documentElement.setAttribute('data-cm-theme', normalized);
-    document.documentElement.style.colorScheme = normalized === 'goldWhite' ? 'light' : 'dark';
+    document.documentElement.style.colorScheme = (normalized === 'goldWhite' || normalized === 'beautyRose') ? 'light' : 'dark';
     return normalized;
   };
   applyCmTheme(getStoredCmTheme());
