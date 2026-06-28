@@ -14430,3 +14430,115 @@ html[data-cm-theme]:not([data-cm-theme="original"]) .cm-supabase-daily-report .c
   padding:10px 0 0!important;
   margin-top:10px!important;
 }
+
+/* CompanyManager 5.5 — Color-only Theme Engine hard fix
+   Naprawa realnego źródła prostokątnych płyt w raportach: .cm-daily-datatable i wrappery tabel.
+   Silnik skórek ma kolorować komponenty, ale nie może dodawać własnych płyt/layoutu. */
+html[data-cm-theme]:not([data-cm-theme="original"]) body[data-panel-page="dailyReport"] .cm-period-section,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-supabase-daily-report .cm-period-section,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-daily-report-card .cm-period-section{
+  background:transparent!important;
+  background-color:transparent!important;
+  background-image:none!important;
+  border-left:none!important;
+  border-right:none!important;
+  border-bottom:none!important;
+  outline:none!important;
+  box-shadow:none!important;
+  border-radius:0!important;
+}
+html[data-cm-theme]:not([data-cm-theme="original"]) body[data-panel-page="dailyReport"] .cm-period-section:first-of-type,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-supabase-daily-report .cm-period-section:first-of-type{
+  border-top:none!important;
+}
+
+/* To był główny winowajca: zewnętrzny prostokątny blok wokół tabel. */
+html[data-cm-theme]:not([data-cm-theme="original"]) body[data-panel-page="dailyReport"] .cm-daily-datatable,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-supabase-daily-report .cm-daily-datatable,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-daily-report-card .cm-daily-datatable{
+  display:block!important;
+  background:transparent!important;
+  background-color:transparent!important;
+  background-image:none!important;
+  border:none!important;
+  outline:none!important;
+  box-shadow:none!important;
+  border-radius:0!important;
+  padding:0!important;
+  margin:10px 0 0!important;
+  overflow:visible!important;
+}
+html[data-cm-theme]:not([data-cm-theme="original"]) body[data-panel-page="dailyReport"] .cm-daily-datatable::before,
+html[data-cm-theme]:not([data-cm-theme="original"]) body[data-panel-page="dailyReport"] .cm-daily-datatable::after,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-supabase-daily-report .cm-daily-datatable::before,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-supabase-daily-report .cm-daily-datatable::after{
+  content:none!important;
+  display:none!important;
+}
+
+/* Toolbar ma być przezroczysty; pigułkami są tylko select i search. */
+html[data-cm-theme]:not([data-cm-theme="original"]) body[data-panel-page="dailyReport"] .cm-daily-table-tools,
+html[data-cm-theme]:not([data-cm-theme="original"]) body[data-panel-page="dailyReport"] .bm-table-tools,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-supabase-daily-report .cm-daily-table-tools,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-daily-report-card .cm-daily-table-tools{
+  background:transparent!important;
+  background-color:transparent!important;
+  background-image:none!important;
+  border:none!important;
+  outline:none!important;
+  box-shadow:none!important;
+  border-radius:0!important;
+  padding:0!important;
+}
+
+/* Wrapper tabeli bez tła i bez ramki; tylko sama tabela jest miękką kapsułą. */
+html[data-cm-theme]:not([data-cm-theme="original"]) body[data-panel-page="dailyReport"] .cm-daily-table-wrap,
+html[data-cm-theme]:not([data-cm-theme="original"]) body[data-panel-page="dailyReport"] .bm-table-wrap,
+html[data-cm-theme]:not([data-cm-theme="original"]) body[data-panel-page="dailyReport"] .cm-table-wrap,
+html[data-cm-theme]:not([data-cm-theme="original"]) body[data-panel-page="dailyReport"] .table-wrap,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-supabase-daily-report .cm-daily-table-wrap,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-supabase-daily-report .bm-table-wrap,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-daily-report-card .cm-daily-table-wrap,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-daily-report-card .bm-table-wrap{
+  background:transparent!important;
+  background-color:transparent!important;
+  background-image:none!important;
+  border:none!important;
+  outline:none!important;
+  box-shadow:none!important;
+  padding:0!important;
+  margin:0!important;
+  border-radius:24px!important;
+  overflow:hidden!important;
+}
+html[data-cm-theme]:not([data-cm-theme="original"]) body[data-panel-page="dailyReport"] .cm-daily-table-wrap::before,
+html[data-cm-theme]:not([data-cm-theme="original"]) body[data-panel-page="dailyReport"] .cm-daily-table-wrap::after,
+html[data-cm-theme]:not([data-cm-theme="original"]) body[data-panel-page="dailyReport"] .bm-table-wrap::before,
+html[data-cm-theme]:not([data-cm-theme="original"]) body[data-panel-page="dailyReport"] .bm-table-wrap::after{
+  content:none!important;
+  display:none!important;
+}
+
+/* Tabela dostaje geometrię jak Original/Luxury: miękki nagłówek i miękkie zakończenie, bez zewnętrznej płyty. */
+html[data-cm-theme]:not([data-cm-theme="original"]) body[data-panel-page="dailyReport"] .cm-daily-table,
+html[data-cm-theme]:not([data-cm-theme="original"]) body[data-panel-page="dailyReport"] .bm-table,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-supabase-daily-report .cm-daily-table,
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-supabase-daily-report .bm-table{
+  width:100%!important;
+  border:none!important;
+  outline:none!important;
+  box-shadow:none!important;
+  background:transparent!important;
+  background-image:none!important;
+  border-collapse:separate!important;
+  border-spacing:0!important;
+  border-radius:24px!important;
+  overflow:hidden!important;
+}
+
+/* Usuwamy agresywne szare tła, które wyciekały z wcześniejszego silnika. */
+html[data-cm-theme]:not([data-cm-theme="original"]) body[data-panel-page="dailyReport"] [class*="daily"][class*="table"],
+html[data-cm-theme]:not([data-cm-theme="original"]) body[data-panel-page="dailyReport"] [class*="datatable"],
+html[data-cm-theme]:not([data-cm-theme="original"]) body[data-panel-page="dailyReport"] [class*="table-wrap"]{
+  --cm-force-no-panel-bg: transparent;
+}
