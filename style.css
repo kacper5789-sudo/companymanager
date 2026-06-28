@@ -12312,3 +12312,118 @@ html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhit
 html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) :where(table,.bm-table,.data-table,.cm-table) tr:hover td{
   background:var(--cm-skin-cell-bg-strong)!important;
 }
+
+/* v3.7 — Dashboard FREE cells: final override for all custom skins except Original / Exclusive Gold.
+   Some broad card/table fallbacks were overriding .bm-schedule-slot.free span back to blue/text colors. */
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) .bm-schedule-table .bm-schedule-slot.free,
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) .bm-schedule-grid .bm-schedule-slot.free,
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) td.bm-schedule-slot.free{
+  background:linear-gradient(180deg,
+    color-mix(in srgb,var(--cm-skin-card) 86%,var(--cm-skin-accent-2) 14%),
+    color-mix(in srgb,var(--cm-skin-soft) 88%,var(--cm-skin-accent) 12%)
+  )!important;
+  border-color:color-mix(in srgb,var(--cm-skin-accent) 38%,transparent)!important;
+}
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) .bm-schedule-table .bm-schedule-slot.free span,
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) .bm-schedule-grid .bm-schedule-slot.free span,
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) td.bm-schedule-slot.free span,
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) .bm-page-card .bm-schedule-slot.free span,
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) .cm-unified-card .bm-schedule-slot.free span{
+  color:var(--cm-skin-accent)!important;
+  font-weight:1000!important;
+  opacity:1!important;
+  text-align:center!important;
+  text-shadow:none!important;
+}
+html[data-cm-theme="blackLuxury"] .bm-schedule-slot.free,
+html[data-cm-theme="neon"] .bm-schedule-slot.free{
+  background:linear-gradient(180deg,
+    color-mix(in srgb,var(--cm-skin-card) 78%,var(--cm-skin-accent-2) 22%),
+    color-mix(in srgb,var(--cm-skin-soft) 76%,var(--cm-skin-accent) 24%)
+  )!important;
+}
+html[data-cm-theme="blackLuxury"] .bm-schedule-slot.free span,
+html[data-cm-theme="neon"] .bm-schedule-slot.free span{
+  color:var(--cm-skin-accent-2)!important;
+}
+
+/* v3.8 — Raport dzienny / Finanse: końcowy override kart Płatności, Stan kasy, Obrót dla wszystkich nowych skórek.
+   Nie dotyka Original ani Exclusive Gold. */
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) .cm-daily-report-card .cm-period-section,
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) .cm-supabase-daily-report .cm-period-section{
+  border-top-color:color-mix(in srgb,var(--cm-skin-border) 82%,transparent)!important;
+}
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) .cm-daily-report-card .cm-period-section h3,
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) .cm-supabase-daily-report .cm-period-section h3{
+  color:var(--cm-skin-accent)!important;
+  text-shadow:none!important;
+}
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) .cm-daily-report-card .cm-finance-grid > div,
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) .cm-supabase-daily-report .cm-finance-grid > div,
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) body[data-panel-page="dailyReport"] .cm-finance-grid > div{
+  background:linear-gradient(180deg,
+    color-mix(in srgb,var(--cm-skin-card) 94%,var(--cm-skin-accent-2) 6%),
+    color-mix(in srgb,var(--cm-skin-soft) 90%,var(--cm-skin-accent) 10%)
+  )!important;
+  color:var(--cm-skin-text)!important;
+  border:1px solid var(--cm-skin-border)!important;
+  box-shadow:0 18px 44px var(--cm-skin-shadow)!important;
+  text-shadow:none!important;
+}
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) .cm-daily-report-card .cm-finance-grid > div > span,
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) .cm-supabase-daily-report .cm-finance-grid > div > span,
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) body[data-panel-page="dailyReport"] .cm-finance-grid > div > span{
+  color:var(--cm-skin-accent)!important;
+  font-weight:1000!important;
+  text-shadow:none!important;
+}
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) .cm-daily-report-card .cm-finance-grid > div > b,
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) .cm-supabase-daily-report .cm-finance-grid > div > b,
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) body[data-panel-page="dailyReport"] .cm-finance-grid > div > b{
+  color:var(--cm-skin-text)!important;
+  text-shadow:none!important;
+}
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) .cm-daily-report-card .cm-finance-grid > div small,
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) .cm-supabase-daily-report .cm-finance-grid > div small,
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) body[data-panel-page="dailyReport"] .cm-finance-grid > div small{
+  color:var(--cm-skin-muted)!important;
+  opacity:1!important;
+  text-shadow:none!important;
+}
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) .cm-daily-report-card .cm-finance-grid > div > div,
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) .cm-supabase-daily-report .cm-finance-grid > div > div,
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) body[data-panel-page="dailyReport"] .cm-finance-grid > div > div{
+  background:color-mix(in srgb,var(--cm-skin-card) 72%,var(--cm-skin-accent-2) 8%)!important;
+  border-top:1px solid color-mix(in srgb,var(--cm-skin-accent) 24%,transparent)!important;
+  border-radius:12px!important;
+  padding:8px 10px!important;
+  margin-top:8px!important;
+  color:var(--cm-skin-text)!important;
+  box-shadow:inset 0 1px 0 color-mix(in srgb,var(--cm-skin-card) 60%,transparent)!important;
+}
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) .cm-daily-report-card .cm-finance-grid > div > div span,
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) .cm-daily-report-card .cm-finance-grid > div > div b,
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) .cm-supabase-daily-report .cm-finance-grid > div > div span,
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) .cm-supabase-daily-report .cm-finance-grid > div > div b,
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) body[data-panel-page="dailyReport"] .cm-finance-grid > div > div span,
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) body[data-panel-page="dailyReport"] .cm-finance-grid > div > div b{
+  color:var(--cm-skin-text)!important;
+  text-shadow:none!important;
+}
+html[data-cm-theme="blackLuxury"] .cm-daily-report-card .cm-finance-grid > div,
+html[data-cm-theme="blackLuxury"] .cm-supabase-daily-report .cm-finance-grid > div,
+html[data-cm-theme="blackLuxury"] body[data-panel-page="dailyReport"] .cm-finance-grid > div,
+html[data-cm-theme="neon"] .cm-daily-report-card .cm-finance-grid > div,
+html[data-cm-theme="neon"] .cm-supabase-daily-report .cm-finance-grid > div,
+html[data-cm-theme="neon"] body[data-panel-page="dailyReport"] .cm-finance-grid > div{
+  background:linear-gradient(180deg,
+    color-mix(in srgb,var(--cm-skin-card) 82%,var(--cm-skin-accent-2) 18%),
+    color-mix(in srgb,var(--cm-skin-soft) 80%,var(--cm-skin-accent) 20%)
+  )!important;
+}
+html[data-cm-theme="blackLuxury"] .cm-finance-grid > div > span,
+html[data-cm-theme="blackLuxury"] .cm-finance-grid > div > div span,
+html[data-cm-theme="neon"] .cm-finance-grid > div > span,
+html[data-cm-theme="neon"] .cm-finance-grid > div > div span{
+  color:var(--cm-skin-accent-2)!important;
+}
