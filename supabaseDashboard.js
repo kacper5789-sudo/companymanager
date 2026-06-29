@@ -693,6 +693,64 @@
     }
   }
 
+
+  const CM_EMPLOYEE_COLORS_KEY = "companyManagerEmployeeColorsV1";
+  const CM_EMPLOYEE_COLOR_PALETTE = ["#2563EB", "#16A34A", "#9333EA", "#EA580C", "#DC2626", "#CA8A04", "#0891B2", "#DB2777", "#4F46E5", "#059669", "#7C3AED", "#F97316", "#BE123C", "#65A30D", "#0D9488", "#C026D3", "#1D4ED8", "#15803D", "#A16207", "#E11D48", "#0284C7", "#7E22CE", "#D97706", "#047857", "#B91C1C", "#0F766E", "#6D28D9", "#C2410C", "#0369A1", "#4D7C0F", "#A21CAF", "#B45309", "#1E40AF", "#166534", "#991B1B", "#155E75", "#581C87", "#9A3412", "#0E7490", "#3F6212", "#F43F5E", "#22C55E", "#38BDF8", "#A78BFA", "#FACC15", "#FB7185", "#34D399", "#60A5FA", "#F59E0B", "#94A3B8"];
+
+  function normalizeEmployeeColor(color) {
+    const value = String(color || "").trim();
+    return /^#[0-9a-f]{6}$/i.test(value) ? value.toUpperCase() : "";
+  }
+
+  function readEmployeeColorStore() {
+    try { return JSON.parse(localStorage.getItem(CM_EMPLOYEE_COLORS_KEY) || "{}") || {}; } catch (_) { return {}; }
+  }
+
+  function defaultEmployeeColor(employee, index = 0) {
+    const seed = String(employee?.id || employee?.email || employee?.full_name || employee?.name || index || "");
+    let hash = 0;
+    for (let i = 0; i < seed.length; i += 1) hash = ((hash << 5) - hash + seed.charCodeAt(i)) | 0;
+    return CM_EMPLOYEE_COLOR_PALETTE[Math.abs(hash) % CM_EMPLOYEE_COLOR_PALETTE.length];
+  }
+
+  function getEmployeeColor(employee, index = 0) {
+    const stored = readEmployeeColorStore();
+    const id = String(employee?.id || "");
+    return normalizeEmployeeColor(employee?.employee_color)
+      || normalizeEmployeeColor(id ? stored[id] : "")
+      || defaultEmployeeColor(employee, index);
+  }
+
+  async function fetchEmployeeColorMap(ctx) {
+    if (!window.cmSupabase || !ctx?.companyId) return {};
+    try {
+      const { data, error } = await window.cmSupabase
+        .from("profiles")
+        .select("id, employee_color")
+        .eq("company_id", ctx.companyId);
+      if (error) throw error;
+      return Object.fromEntries((data || []).map((row) => [String(row.id), normalizeEmployeeColor(row.employee_color)]).filter((row) => row[0] && row[1]));
+    } catch (error) {
+      console.warn("Dashboard employee colors skipped", error?.message || error);
+      return {};
+    }
+  }
+
+  function mergeEmployeeColors(users, colorMap) {
+    return uniqueUsers(users).map((user, index) => {
+      const id = String(user?.id || "");
+      const color = normalizeEmployeeColor(colorMap?.[id]) || getEmployeeColor(user, index);
+      return { ...user, employee_color: color };
+    });
+  }
+
+  function employeeInitials(employee) {
+    const name = personName(employee);
+    const parts = String(name || "").trim().split(/\s+/).filter(Boolean);
+    if (!parts.length) return "?";
+    return parts.slice(0, 2).map((part) => part[0]).join("").toUpperCase();
+  }
+
   async function fetchDashboardData(ctx) {
     const [appointmentsRes, clientsRes, servicesRes, productsRes, usersRes, passesRes, companyRes, workSchedulesRes, daysOffRes, categoriesRes, positionsRes] = await Promise.all([
       window.cmSupabase
@@ -761,6 +819,8 @@
     if (daysOffRes.error) console.warn("Dashboard days off skipped", daysOffRes.error.message || daysOffRes.error);
     if (categoriesRes.error) console.warn("Dashboard service categories skipped", categoriesRes.error.message || categoriesRes.error);
     if (positionsRes.error) console.warn("Dashboard positions skipped", positionsRes.error.message || positionsRes.error);
+    const employeeColorMap = await fetchEmployeeColorMap(ctx);
+    const usersWithColors = mergeEmployeeColors(safeUsersData, employeeColorMap);
     return {
       company: companyRes.data || {},
       workSchedules: workSchedulesRes.data || [],
@@ -771,7 +831,7 @@
       products: (productsRes.data || []).filter((item) => item.active !== false),
       categories: (categoriesRes.data || []).filter(activeGenericItem),
       positions: (positionsRes.data || []).filter(activeGenericItem),
-      users: uniqueUsers(safeUsersData),
+      users: usersWithColors,
       passes: (passesRes.data || []).filter((item) => item.status !== "usunięte" && item.status !== "zrealizowane")
     };
   }
@@ -925,7 +985,9 @@
     }
 
     return rows.map((slot) => {
-      const cells = data.users.map((employee) => {
+      const cells = data.users.map((employee, employeeIndex) => {
+        const employeeColor = getEmployeeColor(employee, employeeIndex);
+        const employeeStyle = `--cm-employee-color:${escapeHtml(employeeColor)}`;
         const slotMin = minutesFromTime(slot.start);
         const windowForEmployee = windows.get(employee.id) || employeeWorkWindow(data, employee, dateIso, settings);
         const windowStart = minutesFromTime(windowForEmployee.start);
@@ -941,7 +1003,7 @@
         const inactiveClass = outsideWork || !activeWorkerIds.includes(employee.id) ? " inactive-worker" : "";
         if (!visit) {
           const label = outsideWork ? (isDayOff ? "WOLNE" : "POZA GRAFIKIEM") : "FREE";
-          return `<td class="bm-schedule-slot free${inactiveClass}" data-employee-id="${escapeHtml(employee.id)}" data-time="${escapeHtml(slot.start)}" data-date="${escapeHtml(dateIso)}" data-outside-work="${outsideWork ? "1" : "0"}"><span>${label}</span></td>`;
+          return `<td class="bm-schedule-slot free cm-employee-colored-slot${inactiveClass}" style="${employeeStyle}" data-employee-color="${escapeHtml(employeeColor)}" data-employee-id="${escapeHtml(employee.id)}" data-time="${escapeHtml(slot.start)}" data-date="${escapeHtml(dateIso)}" data-outside-work="${outsideWork ? "1" : "0"}"><span>${label}</span></td>`;
         }
         const client = lookups.clientsById[appointmentClientId(visit)];
         const service = lookups.servicesById[visit.service_id];
@@ -962,7 +1024,7 @@
           `Pracownik: ${personName(employee)}`,
           `Opis: ${visit.note || "Brak opisu"}`
         ].join("\n");
-        return `<td class="bm-schedule-slot busy${stateClass}${inactiveClass}" data-visit-id="${escapeHtml(visit.id)}" data-employee-id="${escapeHtml(employee.id)}" data-time="${escapeHtml(slot.start)}" data-date="${escapeHtml(dateIso)}" data-slot-tooltip="${escapeHtml(tooltip)}"><span>${label}</span></td>`;
+        return `<td class="bm-schedule-slot busy cm-employee-colored-slot${stateClass}${inactiveClass}" style="${employeeStyle}" data-employee-color="${escapeHtml(employeeColor)}" data-visit-id="${escapeHtml(visit.id)}" data-employee-id="${escapeHtml(employee.id)}" data-time="${escapeHtml(slot.start)}" data-date="${escapeHtml(dateIso)}" data-slot-tooltip="${escapeHtml(tooltip)}"><span>${label}</span></td>`;
       }).join("");
       return `<tr><th class="bm-time-col">${escapeHtml(slot.label)}</th>${cells}</tr>`;
     }).join("");
@@ -1087,6 +1149,14 @@
       const input = form.querySelector('[data-entity-name="employeeId"]');
       if (input) input.value = item.employee_name;
     }
+    const stripe = form.closest('section')?.querySelector('[data-edit-employee-stripe]');
+    if (stripe) {
+      const emp = safeLookups.usersById?.[item.employee_id] || Object.values(safeLookups.usersById || {}).find((u) => String(personName(u)).trim().toLowerCase() === String(item.employee_name || '').trim().toLowerCase());
+      const color = getEmployeeColor(emp || { id: item.employee_id, full_name: item.employee_name });
+      stripe.hidden = false;
+      stripe.style.setProperty('--cm-employee-color', color);
+      stripe.textContent = emp ? `Pracownik: ${personName(emp)}` : (item.employee_name ? `Pracownik: ${item.employee_name}` : 'Pracownik');
+    }
 
     setEntitySearchValue(form, "serviceId", item.service_id || "", { services: Object.values(safeLookups.servicesById || {}) });
     if (!form.elements.serviceId?.value && item.service_name && form.elements.serviceId) {
@@ -1190,7 +1260,15 @@
     const visitOptions = visibleVisits.map((item) => `<option value="${escapeHtml(item.id)}">${escapeHtml(appointmentLabel(item, lookups))}</option>`).join("");
     const finishableVisits = visibleVisits.filter((item) => !["zakończone", "odwołane", "usunięte"].includes(String(item.status || "").toLowerCase()));
     const finishVisitOptions = finishableVisits.map((item) => `<option value="${escapeHtml(item.id)}">${escapeHtml(appointmentLabel(item, lookups))}</option>`).join("");
-    const appointmentRows = visibleVisits.slice(0, 20).map((item) => {
+
+    // Dashboard nie pokazuje już globalnej listy „najbliższych wizyt”.
+    // Ta tabela zawsze dotyczy aktywnej daty Dashboardu, czyli daty z lewego kalendarza / URL.
+    const selectedDayVisits = (data.appointments || [])
+      .filter((item) => item?.deleted !== true)
+      .filter((item) => !["usunięte", "usuniete"].includes(String(item.status || "").toLowerCase()))
+      .filter((item) => appointmentDate(item) === selectedDate)
+      .sort((a, b) => String(appointmentStart(a) || "").localeCompare(String(appointmentStart(b) || "")));
+    const appointmentRows = selectedDayVisits.map((item) => {
       const client = lookups.clientsById[appointmentClientId(item)];
       const employee = lookups.usersById[item.employee_id];
       const service = lookups.servicesById[item.service_id];
@@ -1201,13 +1279,14 @@
     const activeSet = new Set(activeWorkerIds);
     const workerChecks = data.users.map((employee) => {
       const checked = activeSet.has(employee.id) ? "checked" : "";
-      return `<label data-worker-label="${escapeHtml(employee.id)}"><input type="checkbox" class="dash-worker-toggle" value="${escapeHtml(employee.id)}" ${checked}> ${escapeHtml(personName(employee))}</label>`;
+      const color = getEmployeeColor(employee);
+      return `<label data-worker-label="${escapeHtml(employee.id)}" class="cm-worker-color-toggle" style="--cm-employee-color:${escapeHtml(color)}"><input type="checkbox" class="dash-worker-toggle" value="${escapeHtml(employee.id)}" ${checked}> <span class="cm-worker-color-dot"></span>${escapeHtml(personName(employee))}</label>`;
     }).join("") || `<span class="bm-muted">Brak pracowników</span>`;
     const allWorkersChecked = data.users.length > 0 && activeWorkerIds.length === data.users.length;
 
     const employeeCount = Math.max(data.users.length, 1);
     const scheduleWidth = `${82 + (employeeCount * 180)}px`;
-    const scheduleHead = `<thead><tr><th class="bm-time-head">Godzina</th>${data.users.map((employee) => `<th data-employee-head="${escapeHtml(employee.id)}" class="${activeSet.has(employee.id) ? "" : "inactive-worker"}">${escapeHtml(personName(employee))}</th>`).join("")}</tr></thead>`;
+    const scheduleHead = `<thead><tr><th class="bm-time-head">Godzina</th>${data.users.map((employee, employeeIndex) => { const color = getEmployeeColor(employee, employeeIndex); return `<th data-employee-head="${escapeHtml(employee.id)}" class="cm-employee-colored-head ${activeSet.has(employee.id) ? "" : "inactive-worker"}" style="--cm-employee-color:${escapeHtml(color)}"><span class="cm-employee-head-badge">${escapeHtml(employeeInitials(employee))}</span><span>${escapeHtml(personName(employee))}</span></th>`; }).join("")}</tr></thead>`;
     const scheduleColgroup = `<colgroup><col class="bm-time-colgroup">${data.users.map(() => `<col class="bm-worker-colgroup">`).join("")}</colgroup>`;
 
     area.innerHTML = `
@@ -1252,7 +1331,7 @@
       </section>
 
       <section class="bm-page-card bm-appointment-form" id="dashboardEditVisitPanel" hidden>
-        <div class="bm-page-head"><h2>Edytuj wizytę</h2></div>
+        <div class="bm-page-head"><h2>Edytuj wizytę</h2><div class="cm-edit-employee-stripe" data-edit-employee-stripe hidden></div></div>
         <form id="dashboardEditVisitForm" class="bm-form-grid">
           <label class="bm-full">Wybierz wizytę<select name="visitId" id="dashEditVisitSelect" required><option value="">Wybierz wizytę</option>${visitOptions}</select></label>
           <label>Data<input type="date" name="date" value="${escapeHtml(selectedDate)}" required></label>
@@ -1338,8 +1417,8 @@
       </section>
 
       <section class="bm-page-card">
-        <div class="bm-page-head"><h2>Najbliższe wizyty</h2></div>
-        ${renderTable(["Data", "Godzina", "Klient", "Pracownik", "Usługa", "Status"], appointmentRows, "Brak wizyt w Supabase.")}
+        <div class="bm-page-head"><h2>Wizyty w wybranym dniu</h2><p class="bm-muted">${escapeHtml(plDate(selectedDate))}</p></div>
+        ${renderTable(["Data", "Godzina", "Klient", "Pracownik", "Usługa", "Status"], appointmentRows, "Brak wizyt w tym dniu.")}
       </section>
     `;
 

@@ -91,6 +91,77 @@
     search: ""
   };
 
+
+  const CM_EMPLOYEE_COLORS_KEY = "companyManagerEmployeeColorsV1";
+  const CM_EMPLOYEE_COLOR_PALETTE = ["#2563EB", "#16A34A", "#9333EA", "#EA580C", "#DC2626", "#CA8A04", "#0891B2", "#DB2777", "#4F46E5", "#059669", "#7C3AED", "#F97316", "#BE123C", "#65A30D", "#0D9488", "#C026D3", "#1D4ED8", "#15803D", "#A16207", "#E11D48", "#0284C7", "#7E22CE", "#D97706", "#047857", "#B91C1C", "#0F766E", "#6D28D9", "#C2410C", "#0369A1", "#4D7C0F", "#A21CAF", "#B45309", "#1E40AF", "#166534", "#991B1B", "#155E75", "#581C87", "#9A3412", "#0E7490", "#3F6212", "#F43F5E", "#22C55E", "#38BDF8", "#A78BFA", "#FACC15", "#FB7185", "#34D399", "#60A5FA", "#F59E0B", "#94A3B8"];
+
+  function normalizeEmployeeColor(color) {
+    const value = String(color || "").trim();
+    return /^#[0-9a-f]{6}$/i.test(value) ? value.toUpperCase() : "";
+  }
+
+  function readEmployeeColorStore() {
+    try { return JSON.parse(localStorage.getItem(CM_EMPLOYEE_COLORS_KEY) || "{}") || {}; } catch (_) { return {}; }
+  }
+
+  function writeEmployeeColorStore(store) {
+    try { localStorage.setItem(CM_EMPLOYEE_COLORS_KEY, JSON.stringify(store || {})); } catch (_) {}
+  }
+
+  function defaultEmployeeColor(employee, index = 0) {
+    const seed = String(employee?.id || employee?.email || employee?.full_name || index || "");
+    let hash = 0;
+    for (let i = 0; i < seed.length; i += 1) hash = ((hash << 5) - hash + seed.charCodeAt(i)) | 0;
+    return CM_EMPLOYEE_COLOR_PALETTE[Math.abs(hash) % CM_EMPLOYEE_COLOR_PALETTE.length];
+  }
+
+  function getEmployeeColor(employee, index = 0) {
+    const stored = readEmployeeColorStore();
+    const id = String(employee?.id || "");
+    return normalizeEmployeeColor(employee?.employee_color)
+      || normalizeEmployeeColor(id ? stored[id] : "")
+      || defaultEmployeeColor(employee, index);
+  }
+
+  function setEmployeeColorLocal(employeeId, color) {
+    const id = String(employeeId || "");
+    const normalized = normalizeEmployeeColor(color);
+    if (!id || !normalized) return;
+    const stored = readEmployeeColorStore();
+    stored[id] = normalized;
+    writeEmployeeColorStore(stored);
+  }
+
+  async function fetchEmployeeColors(ctx) {
+    if (!window.cmSupabase || !ctx?.companyId) return {};
+    try {
+      const { data, error } = await window.cmSupabase
+        .from("profiles")
+        .select("id, employee_color")
+        .eq("company_id", ctx.companyId);
+      if (error) throw error;
+      return Object.fromEntries((data || []).map((row) => [String(row.id), normalizeEmployeeColor(row.employee_color)]).filter((row) => row[0] && row[1]));
+    } catch (error) {
+      console.warn("CompanyManager employee colors read skipped", error?.message || error);
+      return {};
+    }
+  }
+
+  function mergeEmployeeColors(employees, colors) {
+    return (employees || []).map((employee, index) => {
+      const id = String(employee?.id || "");
+      const color = normalizeEmployeeColor(colors?.[id]) || getEmployeeColor(employee, index);
+      return { ...employee, employee_color: color };
+    });
+  }
+
+  function colorPickerHtml(employee, index = 0) {
+    const selected = getEmployeeColor(employee, index);
+    return `<div class="cm-employee-color-picker" data-employee-color-picker="${escapeHtml(employee.id || "")}" aria-label="Kolor pracownika">
+      ${CM_EMPLOYEE_COLOR_PALETTE.map((color) => `<button type="button" class="cm-employee-color-dot${String(color).toUpperCase() === String(selected).toUpperCase() ? " is-active" : ""}" data-employee-color="${escapeHtml(color)}" title="${escapeHtml(color)}" style="--cm-employee-color:${escapeHtml(color)}"></button>`).join("")}
+    </div>`;
+  }
+
   function normalizeRole(role) {
     return String(role || "").trim().toUpperCase();
   }
@@ -179,7 +250,7 @@
   }
 
   function employeeRows(employees) {
-    return employees.map((employee) => `
+    return employees.map((employee, index) => `
       <tr>
         <td>${escapeHtml(employee.full_name || employee.email || "—")}</td>
         <td>${escapeHtml(employee.phone || "—")}</td>
@@ -187,6 +258,7 @@
         <td>${escapeHtml(employee.position_description || "—")}</td>
         <td>${escapeHtml(roleLabel(employee.role))}</td>
         <td>${loginLabel(employee)}</td>
+        <td>${colorPickerHtml(employee, index)}</td>
       </tr>
     `).join("");
   }
@@ -203,7 +275,7 @@
     const visible = filtered;
     tbody.innerHTML = visible.length
       ? employeeRows(visible)
-      : `<tr><td colspan="6" class="bm-muted">Brak pracowników w zespole.</td></tr>`;
+      : `<tr><td colspan="7" class="bm-muted">Brak pracowników w zespole.</td></tr>`;
 
     if (count) count.textContent = `Liczba pracowników: ${filtered.length}`;
     if (pagination) {
@@ -211,6 +283,31 @@
         ? `Pozycje od 1 do ${filtered.length} z ${filtered.length} łącznie`
         : "Pozycji 0 z 0 dostępnych";
     }
+    setupEmployeeColorPickers();
+  }
+
+  function setupEmployeeColorPickers() {
+    document.querySelectorAll('[data-employee-color-picker]').forEach((picker) => {
+      if (picker.dataset.cmEmployeeColorReady === '1') return;
+      picker.dataset.cmEmployeeColorReady = '1';
+      const employeeId = picker.getAttribute('data-employee-color-picker') || '';
+      picker.querySelectorAll('[data-employee-color]').forEach((button) => {
+        button.addEventListener('click', async (event) => {
+          event.preventDefault();
+          const color = normalizeEmployeeColor(button.getAttribute('data-employee-color'));
+          if (!employeeId || !color) return;
+          setEmployeeColorLocal(employeeId, color);
+          state.employees = state.employees.map((employee) => String(employee.id) === String(employeeId) ? { ...employee, employee_color: color } : employee);
+          picker.querySelectorAll('.cm-employee-color-dot').forEach((dot) => dot.classList.toggle('is-active', dot === button));
+          try {
+            const { error } = await window.cmSupabase.from('profiles').update({ employee_color: color }).eq('id', employeeId).eq('company_id', state.ctx?.companyId);
+            if (error) throw error;
+          } catch (error) {
+            console.warn('CompanyManager employee color saved locally only', error?.message || error);
+          }
+        });
+      });
+    });
   }
 
   function renderContent(ctx, employees) {
@@ -257,6 +354,7 @@
                 <th>Opis stanowiska</th>
                 <th>Rola</th>
                 <th>Logowanie</th>
+                <th>Kolor grafiku</th>
               </tr>
             </thead>
             <tbody id="employeesSupabaseTableBody"></tbody>
@@ -299,7 +397,9 @@
         renderError(ctx.message);
         return;
       }
-      const employees = await fetchEmployees(ctx);
+      const employeesRaw = await fetchEmployees(ctx);
+      const colorMap = await fetchEmployeeColors(ctx);
+      const employees = mergeEmployeeColors(employeesRaw, colorMap);
       renderContent(ctx, employees);
     } catch (error) {
       console.error("Employees Supabase error", error);
