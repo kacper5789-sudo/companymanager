@@ -15100,3 +15100,189 @@ html[data-cm-theme="strawCaptain"] .bm-page-card,html[data-cm-theme="strawCaptai
 .cm-skin-preview[data-preview-theme="webHero"]{--cm-preview-bg-a:#070b14;--cm-preview-bg-b:#0f2344;--cm-preview-card:#0f1728;--cm-preview-soft:#1e4f9a;--cm-preview-accent:#c51625;--cm-preview-accent-2:#1e4f9a;--cm-preview-border:rgba(245,247,251,.24);}
 .cm-skin-preview[data-preview-theme="mysticWarrior"]{--cm-preview-bg-a:#090615;--cm-preview-bg-b:#1f0d38;--cm-preview-card:#6b25b8;--cm-preview-soft:#59c8ff;--cm-preview-accent:#6b25b8;--cm-preview-accent-2:#ffd51f;--cm-preview-border:rgba(89,200,255,.42);}
 .cm-skin-preview[data-preview-theme="strawCaptain"]{--cm-preview-bg-a:#091a2d;--cm-preview-bg-b:#0e3159;--cm-preview-card:#d61f2a;--cm-preview-soft:#2758c7;--cm-preview-accent:#d61f2a;--cm-preview-accent-2:#f4c543;--cm-preview-border:rgba(39,88,199,.36);}
+
+/* CompanyManager v5.3 — Theme Engine v2 polish
+   Scope: wszystkie skórki poza Original i Exclusive Gold. Nazwy istniejących skórek bez zmian.
+   Power Collection przebudowana: SSJ / SSJ2 / SSJ3 / SSJ Blue / God / Ultra / Beast / Soul Reaper / Crimson Ghoul. */
+
+/* Power Collection — final identity palettes */
+html[data-cm-theme="ssj"]{
+  color-scheme:dark;
+  --cm-skin-bg-a:#090b12;--cm-skin-bg-b:#1e1608;--cm-skin-card:#12141d;--cm-skin-soft:#2a1f0c;
+  --cm-skin-text:#fff8d8;--cm-skin-muted:#e7c46b;--cm-skin-accent:#f59e0b;--cm-skin-accent-2:#ffe15a;
+  --cm-skin-border:rgba(255,225,90,.42);--cm-skin-shadow:rgba(245,158,11,.36);
+  --cm-skin-energy:#ffd54a;--cm-skin-energy-2:#ff8a1f;--blue:#f59e0b;--cyan:#ffe15a;
+}
+html[data-cm-theme="mysticWarrior"]{
+  color-scheme:dark;
+  --cm-skin-bg-a:#080713;--cm-skin-bg-b:#1d1034;--cm-skin-card:#120b21;--cm-skin-soft:#29154b;
+  --cm-skin-text:#fff9dc;--cm-skin-muted:#d6c5ff;--cm-skin-accent:#6b25b8;--cm-skin-accent-2:#ffd631;
+  --cm-skin-border:rgba(89,200,255,.46);--cm-skin-shadow:rgba(255,214,49,.34);
+  --cm-skin-energy:#ffd631;--cm-skin-energy-2:#59c8ff;--blue:#6b25b8;--cyan:#59c8ff;
+}
+html[data-cm-theme="ssj3"]{
+  color-scheme:dark;
+  --cm-skin-bg-a:#070d18;--cm-skin-bg-b:#161d2e;--cm-skin-card:#10192a;--cm-skin-soft:#2e1f10;
+  --cm-skin-text:#fff8d6;--cm-skin-muted:#e9c16b;--cm-skin-accent:#d97a1e;--cm-skin-accent-2:#ffe03a;
+  --cm-skin-border:rgba(125,216,255,.44);--cm-skin-shadow:rgba(255,224,58,.38);
+  --cm-skin-energy:#ffe03a;--cm-skin-energy-2:#7dd8ff;--blue:#d97a1e;--cyan:#7dd8ff;
+}
+html[data-cm-theme="royalSaiyanBlue"]{
+  color-scheme:dark;
+  --cm-skin-bg-a:#03101e;--cm-skin-bg-b:#07305b;--cm-skin-card:#081a31;--cm-skin-soft:#0b3158;
+  --cm-skin-text:#effbff;--cm-skin-muted:#a8dbef;--cm-skin-accent:#1f6bff;--cm-skin-accent-2:#73d8ff;
+  --cm-skin-border:rgba(115,216,255,.44);--cm-skin-shadow:rgba(31,107,255,.36);
+  --cm-skin-energy:#73d8ff;--cm-skin-energy-2:#f3f8ff;--blue:#1f6bff;--cyan:#73d8ff;
+}
+html[data-cm-theme="godOfDestruction"]{
+  color-scheme:dark;
+  --cm-skin-bg-a:#11040a;--cm-skin-bg-b:#2a0712;--cm-skin-card:#1a0710;--cm-skin-soft:#350a17;
+  --cm-skin-text:#ffeef3;--cm-skin-muted:#e8a4b7;--cm-skin-accent:#991b1b;--cm-skin-accent-2:#ef233c;
+  --cm-skin-border:rgba(168,85,247,.32);--cm-skin-shadow:rgba(239,35,60,.34);
+  --cm-skin-energy:#ef233c;--cm-skin-energy-2:#a855f7;--blue:#ef233c;--cyan:#a855f7;
+}
+html[data-cm-theme="ultraInstinct"]{
+  color-scheme:dark;
+  --cm-skin-bg-a:#081016;--cm-skin-bg-b:#17222c;--cm-skin-card:#101820;--cm-skin-soft:#1f2b35;
+  --cm-skin-text:#ffffff;--cm-skin-muted:#cfd8e3;--cm-skin-accent:#d9e2ec;--cm-skin-accent-2:#7dd3fc;
+  --cm-skin-border:rgba(217,226,236,.38);--cm-skin-shadow:rgba(125,211,252,.24);
+  --cm-skin-energy:#f8fafc;--cm-skin-energy-2:#7dd3fc;--blue:#d9e2ec;--cyan:#7dd3fc;
+}
+html[data-cm-theme="beast"]{
+  color-scheme:dark;
+  --cm-skin-bg-a:#0d0615;--cm-skin-bg-b:#25103b;--cm-skin-card:#160b24;--cm-skin-soft:#2e1749;
+  --cm-skin-text:#fff7ff;--cm-skin-muted:#dac0f0;--cm-skin-accent:#f4f0ff;--cm-skin-accent-2:#b026ff;
+  --cm-skin-border:rgba(176,38,255,.44);--cm-skin-shadow:rgba(176,38,255,.34);
+  --cm-skin-energy:#b026ff;--cm-skin-energy-2:#e9d5ff;--blue:#b026ff;--cyan:#e9d5ff;
+}
+html[data-cm-theme="soulReaper"]{
+  color-scheme:dark;
+  --cm-skin-bg-a:#070707;--cm-skin-bg-b:#1b1008;--cm-skin-card:#101010;--cm-skin-soft:#261609;
+  --cm-skin-text:#fff3df;--cm-skin-muted:#f5b36e;--cm-skin-accent:#f97316;--cm-skin-accent-2:#facc15;
+  --cm-skin-border:rgba(249,115,22,.44);--cm-skin-shadow:rgba(249,115,22,.28);
+  --cm-skin-energy:#ff7a18;--cm-skin-energy-2:#facc15;--blue:#f97316;--cyan:#facc15;
+}
+html[data-cm-theme="crimsonGhoul"]{
+  color-scheme:dark;
+  --cm-skin-bg-a:#050506;--cm-skin-bg-b:#1c050b;--cm-skin-card:#0e0a0c;--cm-skin-soft:#260811;
+  --cm-skin-text:#fff1f2;--cm-skin-muted:#dca1ad;--cm-skin-accent:#e11d48;--cm-skin-accent-2:#ffffff;
+  --cm-skin-border:rgba(225,29,72,.46);--cm-skin-shadow:rgba(225,29,72,.28);
+  --cm-skin-energy:#e11d48;--cm-skin-energy-2:#ffffff;--blue:#e11d48;--cyan:#ffffff;
+}
+
+/* Theme Engine v2 — stronger universal skin depth, no Original/Gold. */
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]){
+  --bg:var(--cm-skin-bg-a);--bg2:var(--cm-skin-bg-b);--card:var(--cm-skin-card);--card2:var(--cm-skin-soft);
+  --line:var(--cm-skin-border);--text:var(--cm-skin-text);--muted:var(--cm-skin-muted);
+  --cm-ui-card-bg:linear-gradient(160deg,color-mix(in srgb,var(--cm-skin-card) 92%,var(--cm-skin-accent) 8%),color-mix(in srgb,var(--cm-skin-soft) 92%,black 8%));
+  --cm-ui-border:var(--cm-skin-border);--cm-ui-border-strong:color-mix(in srgb,var(--cm-skin-accent) 58%,transparent);
+  --cm-ui-text:var(--cm-skin-text);--cm-ui-muted:var(--cm-skin-muted);
+}
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) body{
+  background:
+    radial-gradient(circle at 8% 0%,color-mix(in srgb,var(--cm-skin-accent-2) 26%,transparent),transparent 28rem),
+    radial-gradient(circle at 92% 12%,color-mix(in srgb,var(--cm-skin-accent) 20%,transparent),transparent 30rem),
+    linear-gradient(135deg,var(--cm-skin-bg-a),var(--cm-skin-bg-b))!important;
+  color:var(--cm-skin-text)!important;
+}
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) .bm-horizontal-menu,
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) .bm-left-info-panel,
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) .bm-current-section,
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) .bm-page-card,
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) .panel-card,
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) .cm-unified-card,
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) .form-card,
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) .doc-card,
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) .auth-card,
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) .card{
+  background:var(--cm-ui-card-bg)!important;
+  color:var(--cm-skin-text)!important;
+  border-color:var(--cm-skin-border)!important;
+  box-shadow:0 18px 50px var(--cm-skin-shadow), inset 0 1px 0 color-mix(in srgb,var(--cm-skin-accent-2) 16%,transparent)!important;
+}
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) .bm-nav-top a.active,
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) .bm-nav-top a:hover,
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) .cm-theme-option.active,
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) .cm-skin-card.active{
+  background:linear-gradient(135deg,color-mix(in srgb,var(--cm-skin-accent) 28%,var(--cm-skin-card)),color-mix(in srgb,var(--cm-skin-accent-2) 22%,var(--cm-skin-soft)))!important;
+  color:var(--cm-skin-text)!important;
+  border-color:color-mix(in srgb,var(--cm-skin-accent-2) 58%,transparent)!important;
+  box-shadow:0 14px 34px var(--cm-skin-shadow),0 0 0 1px color-mix(in srgb,var(--cm-skin-accent-2) 18%,transparent)!important;
+}
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) input:not([type="checkbox"]):not([type="radio"]),
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) select,
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) textarea{
+  background:linear-gradient(180deg,color-mix(in srgb,var(--cm-skin-card) 92%,black 8%),color-mix(in srgb,var(--cm-skin-soft) 90%,black 10%))!important;
+  color:var(--cm-skin-text)!important;
+  border-color:var(--cm-skin-border)!important;
+  box-shadow:inset 0 1px 0 color-mix(in srgb,var(--cm-skin-accent-2) 12%,transparent)!important;
+}
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) input:focus,
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) select:focus,
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) textarea:focus{
+  outline:none!important;
+  border-color:color-mix(in srgb,var(--cm-skin-accent-2) 70%,transparent)!important;
+  box-shadow:0 0 0 3px color-mix(in srgb,var(--cm-skin-accent-2) 20%,transparent),inset 0 1px 0 color-mix(in srgb,var(--cm-skin-accent-2) 14%,transparent)!important;
+}
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) button:not(.cm-skin-category):not(.cm-skin-card),
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) .btn,
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) .cm-primary-action,
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) .cm-unified-action{
+  border-color:color-mix(in srgb,var(--cm-skin-accent-2) 42%,transparent)!important;
+}
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) .cm-theme-toggle,
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) button[type="submit"],
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) .btn:not(.secondary):not(.ghost),
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) .cm-primary-action{
+  background:linear-gradient(135deg,var(--cm-skin-accent),var(--cm-skin-accent-2))!important;
+  color:var(--cm-skin-on-accent,#fff)!important;
+  box-shadow:0 16px 36px var(--cm-skin-shadow),0 0 18px color-mix(in srgb,var(--cm-skin-accent-2) 18%,transparent)!important;
+}
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) table thead th,
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) .bm-table th{
+  background:linear-gradient(180deg,color-mix(in srgb,var(--cm-skin-accent) 24%,var(--cm-skin-card)),color-mix(in srgb,var(--cm-skin-soft) 92%,black 8%))!important;
+  color:var(--cm-skin-text)!important;
+  border-color:var(--cm-skin-border)!important;
+}
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) table td,
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) .bm-table td{
+  border-color:color-mix(in srgb,var(--cm-skin-border) 82%,transparent)!important;
+}
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) ::-webkit-scrollbar-thumb{
+  background:linear-gradient(180deg,var(--cm-skin-accent-2),var(--cm-skin-accent))!important;
+  border-radius:999px!important;
+}
+
+/* Power Collection — aura surfaces */
+html[data-cm-theme="ssj"] .bm-page-card,html[data-cm-theme="ssj"] .panel-card,html[data-cm-theme="ssj"] .cm-unified-card,html[data-cm-theme="ssj"] .bm-current-section,
+html[data-cm-theme="mysticWarrior"] .bm-page-card,html[data-cm-theme="mysticWarrior"] .panel-card,html[data-cm-theme="mysticWarrior"] .cm-unified-card,html[data-cm-theme="mysticWarrior"] .bm-current-section,
+html[data-cm-theme="ssj3"] .bm-page-card,html[data-cm-theme="ssj3"] .panel-card,html[data-cm-theme="ssj3"] .cm-unified-card,html[data-cm-theme="ssj3"] .bm-current-section,
+html[data-cm-theme="royalSaiyanBlue"] .bm-page-card,html[data-cm-theme="royalSaiyanBlue"] .panel-card,html[data-cm-theme="royalSaiyanBlue"] .cm-unified-card,html[data-cm-theme="royalSaiyanBlue"] .bm-current-section,
+html[data-cm-theme="godOfDestruction"] .bm-page-card,html[data-cm-theme="godOfDestruction"] .panel-card,html[data-cm-theme="godOfDestruction"] .cm-unified-card,html[data-cm-theme="godOfDestruction"] .bm-current-section,
+html[data-cm-theme="ultraInstinct"] .bm-page-card,html[data-cm-theme="ultraInstinct"] .panel-card,html[data-cm-theme="ultraInstinct"] .cm-unified-card,html[data-cm-theme="ultraInstinct"] .bm-current-section,
+html[data-cm-theme="beast"] .bm-page-card,html[data-cm-theme="beast"] .panel-card,html[data-cm-theme="beast"] .cm-unified-card,html[data-cm-theme="beast"] .bm-current-section,
+html[data-cm-theme="soulReaper"] .bm-page-card,html[data-cm-theme="soulReaper"] .panel-card,html[data-cm-theme="soulReaper"] .cm-unified-card,html[data-cm-theme="soulReaper"] .bm-current-section,
+html[data-cm-theme="crimsonGhoul"] .bm-page-card,html[data-cm-theme="crimsonGhoul"] .panel-card,html[data-cm-theme="crimsonGhoul"] .cm-unified-card,html[data-cm-theme="crimsonGhoul"] .bm-current-section{
+  background-image:
+    radial-gradient(circle at 82% 0%,color-mix(in srgb,var(--cm-skin-energy) 24%,transparent),transparent 30%),
+    radial-gradient(circle at 6% 100%,color-mix(in srgb,var(--cm-skin-energy-2) 16%,transparent),transparent 32%),
+    linear-gradient(145deg,color-mix(in srgb,var(--cm-skin-card) 88%,var(--cm-skin-accent) 12%),color-mix(in srgb,var(--cm-skin-soft) 86%,black 14%))!important;
+}
+html[data-cm-theme="mysticWarrior"] .bm-page-card,html[data-cm-theme="mysticWarrior"] .panel-card,html[data-cm-theme="mysticWarrior"] .cm-unified-card,
+html[data-cm-theme="ssj3"] .bm-page-card,html[data-cm-theme="ssj3"] .panel-card,html[data-cm-theme="ssj3"] .cm-unified-card{
+  background-image:
+    radial-gradient(circle at 82% 0%,color-mix(in srgb,var(--cm-skin-energy) 28%,transparent),transparent 32%),
+    repeating-linear-gradient(-35deg,color-mix(in srgb,var(--cm-skin-energy-2) 12%,transparent) 0 2px,transparent 2px 34px),
+    linear-gradient(145deg,color-mix(in srgb,var(--cm-skin-card) 88%,var(--cm-skin-accent) 12%),color-mix(in srgb,var(--cm-skin-soft) 86%,black 14%))!important;
+}
+
+/* Power Collection previews */
+.cm-skin-preview[data-preview-theme="ssj"]{--cm-preview-bg-a:#090b12;--cm-preview-bg-b:#1e1608;--cm-preview-card:#f59e0b;--cm-preview-soft:#214c9a;--cm-preview-accent:#f59e0b;--cm-preview-accent-2:#ffe15a;--cm-preview-border:rgba(255,225,90,.42)}
+.cm-skin-preview[data-preview-theme="mysticWarrior"]{--cm-preview-bg-a:#080713;--cm-preview-bg-b:#1d1034;--cm-preview-card:#6b25b8;--cm-preview-soft:#59c8ff;--cm-preview-accent:#6b25b8;--cm-preview-accent-2:#ffd631;--cm-preview-border:rgba(89,200,255,.46)}
+.cm-skin-preview[data-preview-theme="ssj3"]{--cm-preview-bg-a:#070d18;--cm-preview-bg-b:#161d2e;--cm-preview-card:#d97a1e;--cm-preview-soft:#214c9a;--cm-preview-accent:#d97a1e;--cm-preview-accent-2:#ffe03a;--cm-preview-border:rgba(125,216,255,.44)}
+.cm-skin-preview[data-preview-theme="royalSaiyanBlue"]{--cm-preview-bg-a:#03101e;--cm-preview-bg-b:#07305b;--cm-preview-card:#081a31;--cm-preview-soft:#1f6bff;--cm-preview-accent:#1f6bff;--cm-preview-accent-2:#73d8ff;--cm-preview-border:rgba(115,216,255,.44)}
+.cm-skin-preview[data-preview-theme="godOfDestruction"]{--cm-preview-bg-a:#11040a;--cm-preview-bg-b:#2a0712;--cm-preview-card:#991b1b;--cm-preview-soft:#a855f7;--cm-preview-accent:#ef233c;--cm-preview-accent-2:#a855f7;--cm-preview-border:rgba(168,85,247,.32)}
+.cm-skin-preview[data-preview-theme="ultraInstinct"]{--cm-preview-bg-a:#081016;--cm-preview-bg-b:#17222c;--cm-preview-card:#d9e2ec;--cm-preview-soft:#7dd3fc;--cm-preview-accent:#f8fafc;--cm-preview-accent-2:#7dd3fc;--cm-preview-border:rgba(217,226,236,.38)}
+.cm-skin-preview[data-preview-theme="beast"]{--cm-preview-bg-a:#0d0615;--cm-preview-bg-b:#25103b;--cm-preview-card:#f4f0ff;--cm-preview-soft:#b026ff;--cm-preview-accent:#b026ff;--cm-preview-accent-2:#e9d5ff;--cm-preview-border:rgba(176,38,255,.44)}
+.cm-skin-preview[data-preview-theme="soulReaper"]{--cm-preview-bg-a:#070707;--cm-preview-bg-b:#1b1008;--cm-preview-card:#101010;--cm-preview-soft:#f97316;--cm-preview-accent:#f97316;--cm-preview-accent-2:#facc15;--cm-preview-border:rgba(249,115,22,.44)}
+.cm-skin-preview[data-preview-theme="crimsonGhoul"]{--cm-preview-bg-a:#050506;--cm-preview-bg-b:#1c050b;--cm-preview-card:#0e0a0c;--cm-preview-soft:#e11d48;--cm-preview-accent:#e11d48;--cm-preview-accent-2:#fff;--cm-preview-border:rgba(225,29,72,.46)}
