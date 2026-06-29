@@ -80,6 +80,8 @@
 
   function shouldPromoteAsModal(panel) {
     if (!panel || panel.nodeType !== 1) return false;
+    if (panel.matches && panel.matches('[data-cm-no-modal="true"], .cm-no-modal, .cm-pass-inline-panel')) return false;
+    if (panel.closest && panel.closest('[data-cm-no-modal="true"], .cm-no-modal, .cm-pass-inline-panel')) return false;
     if (!panel.matches || !panel.matches(FORM_PANEL_SELECTOR)) return false;
     if (!isActuallyOpen(panel)) return false;
     if (panel.closest && panel.closest('.cm-client-search-results, .cm-limit-menu, .cm-cr-dropdown-menu, .bm-workers-popover, #cmGlobalFormOverlay')) return false;
@@ -90,6 +92,13 @@
   function promoteOpenFormPanels() {
     const candidates = Array.from(document.querySelectorAll(FORM_PANEL_SELECTOR));
     candidates.forEach(function (panel) {
+      if (panel.matches && panel.matches('[data-cm-no-modal="true"], .cm-no-modal, .cm-pass-inline-panel')) {
+        panel.classList.remove(MODAL_ACTIVE, MODAL_CLASS);
+        panel.removeAttribute(MODAL_DEPTH_ATTR);
+        panel.style.removeProperty('z-index');
+        removeFromStack(panel);
+        return;
+      }
       if (shouldPromoteAsModal(panel)) {
         if (!panel.classList.contains(MODAL_ACTIVE)) panel.classList.add(MODAL_ACTIVE);
         if (!panel.classList.contains(MODAL_CLASS)) panel.classList.add(MODAL_CLASS);

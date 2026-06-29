@@ -219,8 +219,28 @@
   }
 
   function showOnlyPanel(target, panels) {
-    if (window.cmShowOnlyModalPanel) return window.cmShowOnlyModalPanel(target, panels || []);
-    panels.forEach((panel) => { if (panel) panel.hidden = panel !== target ? true : !panel.hidden; });
+    // Karnety mają własny tryb inline. Nie używamy globalnego modala/overlay,
+    // bo efekty skórek potrafiły przykrywać formularz i blokować scroll/kliknięcia.
+    const list = (panels || []).filter(Boolean);
+    const shouldOpen = !!target && target.hidden;
+    list.forEach((panel) => {
+      panel.hidden = true;
+      panel.classList.remove("cm-modal-active", "cm-as-modal");
+      panel.classList.add("cm-pass-inline-panel", "cm-no-modal");
+      panel.setAttribute("data-cm-no-modal", "true");
+      panel.removeAttribute("data-cm-modal-depth");
+      panel.style.removeProperty("z-index");
+    });
+    if (target && shouldOpen) {
+      target.hidden = false;
+      target.classList.add("cm-pass-inline-panel", "cm-no-modal");
+      target.setAttribute("data-cm-no-modal", "true");
+      window.setTimeout(() => {
+        try { target.scrollIntoView({ behavior: "smooth", block: "start" }); } catch (_) { target.scrollIntoView(); }
+        try { target.querySelector("input,select,textarea,button")?.focus({ preventScroll: true }); } catch (_) {}
+      }, 0);
+    }
+    if (window.cmRefreshGlobalModalState) window.setTimeout(window.cmRefreshGlobalModalState, 0);
   }
 
   function closePassesModals() {
@@ -502,7 +522,7 @@
     area.innerHTML = `<section class="bm-page-card passes-module">
       <div class="bm-page-head customers-head"><h2>Karnety</h2><div class="bm-actions-row">${allowAdd ? `<button id="showTemplatePass" type="button" class="bm-light-btn">Dodaj typ karnetu</button><button id="showAddPass" type="button" class="bm-light-btn">Sprzedaj karnet</button>` : ""}${allowDelete ? `<button id="showDeletePass" type="button" class="bm-danger-btn">Usuń</button>` : ""}</div></div>
       ${filterTabs}
-      <section id="templatePassPanel" class="bm-page-card bm-inner-card" hidden>
+      <section id="templatePassPanel" class="bm-page-card bm-inner-card cm-pass-inline-panel cm-no-modal" data-cm-no-modal="true" hidden>
         <div class="bm-page-head customers-head"><h2>Dodaj typ karnetu do puli</h2></div>
         <form id="templatePassForm" class="bm-form-grid bm-wide-form">
           <label class="full">Nazwa typu karnetu<input name="templateName" placeholder="Np. Karnet 5 wejść / Karnet 500 PLN" required></label>
@@ -520,13 +540,13 @@
             <label>Ważność domyślna (dni)<input name="templateValidDays" type="number" min="1" step="1" value="30"></label>
           </div>
           <label class="full">Opis<textarea name="templateDescription" rows="2" placeholder="Opis typu karnetu"></textarea></label>
-          <div class="bm-form-actions full"><button type="submit">Zapisz typ karnetu</button></div>
+          <div class="bm-form-actions full"><button type="submit">Zapisz typ karnetu</button><button type="button" id="cancelTemplatePass" class="bm-light-btn">Anuluj</button></div>
         </form>
         <p id="templatePassMessage" class="panel-message"></p>
         <div class="bm-page-head customers-head"><h3>Aktualna pula karnetów</h3></div>
         ${tableRaw(["Nazwa", "Typ", "Usługa", "Wartość", "Cena", "Pula", "Ważność", "Akcja"], templatesRowsHtml, "Brak typów karnetów w puli.")}
       </section>
-      <section id="addPassPanel" class="bm-page-card bm-inner-card" hidden>
+      <section id="addPassPanel" class="bm-page-card bm-inner-card cm-pass-inline-panel cm-no-modal" data-cm-no-modal="true" hidden>
         <h2>Dodaj karnet</h2>
         <form id="addPassForm" class="bm-form-grid bm-wide-form">
           <div class="bm-form-row-2 full"><label>Data i godzina sprzedaży<input name="saleDate" type="date" value="${isoToday()}" required></label><label>Godzina<input name="saleTime" type="time" value="06:00" required></label></div>
@@ -542,7 +562,7 @@
           <label>Cena sprzedaży (PLN)<input name="value" type="number" min="0" step="0.01" value="0.00" required></label>
           <label>Sposób płatności<select name="paymentMethod" required>${paymentOptions}</select></label>
           <div class="full"><button type="button" id="showInlinePassCustomer" class="bm-secondary-btn">Dodaj klienta</button></div>
-          <div id="inlinePassCustomerPanel" class="bm-page-card bm-inner-card full bm-nested-modal" hidden>
+          <div id="inlinePassCustomerPanel" class="bm-page-card bm-inner-card full bm-nested-modal cm-no-modal" data-cm-no-modal="true" hidden>
             <h3>Dodaj nowego klienta</h3>
             <div class="bm-form-grid">
               ${cmQuickCustomerFields()}
@@ -550,11 +570,11 @@
             </div>
           </div>
           <label class="full">Opis<textarea name="description" placeholder="Opis"></textarea></label>
-          <div class="full"><button type="submit">Dodaj</button></div>
+          <div class="bm-form-actions full"><button type="submit">Dodaj</button><button type="button" id="cancelAddPass" class="bm-light-btn">Anuluj</button></div>
         </form>
         <p id="passFormMessage" class="panel-message"></p>
       </section>
-      <section id="deletePassPanel" class="bm-page-card bm-inner-card" hidden>
+      <section id="deletePassPanel" class="bm-page-card bm-inner-card cm-pass-inline-panel cm-no-modal" data-cm-no-modal="true" hidden>
         <h2>Usuń karnet</h2>
         <div class="bm-form-grid bm-wide-form">
           <label class="full">Wybierz karnet<select id="deletePassSelect"><option value="">Wybierz karnet</option>${passOptions}</select></label>
@@ -602,6 +622,17 @@
     document.querySelector("#showTemplatePass")?.addEventListener("click", () => showOnlyPanel(templatePanel, panels));
     document.querySelector("#showAddPass")?.addEventListener("click", () => showOnlyPanel(addPanel, panels));
     document.querySelector("#showDeletePass")?.addEventListener("click", () => showOnlyPanel(deletePanel, panels));
+    const closePassPanel = (panel) => {
+      if (!panel) return;
+      panel.hidden = true;
+      panel.classList.remove("cm-modal-active", "cm-as-modal");
+      panel.classList.add("cm-pass-inline-panel", "cm-no-modal");
+      panel.setAttribute("data-cm-no-modal", "true");
+      if (window.cmRefreshGlobalModalState) window.setTimeout(window.cmRefreshGlobalModalState, 0);
+    };
+    document.querySelector("#cancelTemplatePass")?.addEventListener("click", (event) => { event.preventDefault(); closePassPanel(templatePanel); });
+    document.querySelector("#cancelAddPass")?.addEventListener("click", (event) => { event.preventDefault(); closePassPanel(addPanel); });
+    document.querySelector("#cancelDeletePass")?.addEventListener("click", (event) => { event.preventDefault(); closePassPanel(deletePanel); });
     setupModuleLimitDropdowns(document);
 
     const apply = () => {

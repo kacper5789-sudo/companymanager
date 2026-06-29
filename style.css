@@ -15869,3 +15869,72 @@ html[data-cm-theme="ssj3"] :where(.bm-page-card,.panel-card,.cm-unified-card,.bm
 .cm-skin-card[data-cm-theme-choice="digitalMatrix"]{--cm-icon-glow:#22c55e;}
 .cm-skin-card[data-cm-theme-choice="nightRacer"]{--cm-icon-glow:#818cf8;}
 .cm-skin-card[data-cm-theme-choice="electricYellow"]{--cm-icon-glow:#facc15;}
+
+
+/* CompanyManager v73 — Karnety: inline forms, no global overlay takeover
+   Scope only: passes module. Original and Luxury/Gold themes are not restyled. */
+.passes-module .cm-pass-inline-panel,
+.passes-module #templatePassPanel,
+.passes-module #addPassPanel,
+.passes-module #deletePassPanel{
+  position:relative!important;
+  top:auto!important;
+  left:auto!important;
+  transform:none!important;
+  z-index:auto!important;
+  width:100%!important;
+  max-width:100%!important;
+  max-height:none!important;
+  overflow:visible!important;
+  filter:none!important;
+  opacity:1!important;
+  pointer-events:auto!important;
+  margin:18px 0!important;
+  isolation:isolate;
+}
+.passes-module .cm-pass-inline-panel *,
+.passes-module #templatePassPanel *,
+.passes-module #addPassPanel *,
+.passes-module #deletePassPanel *{
+  pointer-events:auto;
+  filter:none!important;
+}
+.passes-module .cm-pass-inline-panel::before,
+.passes-module .cm-pass-inline-panel::after,
+.passes-module #templatePassPanel::before,
+.passes-module #templatePassPanel::after,
+.passes-module #addPassPanel::before,
+.passes-module #addPassPanel::after,
+.passes-module #deletePassPanel::before,
+.passes-module #deletePassPanel::after{
+  pointer-events:none!important;
+  z-index:0!important;
+}
+.passes-module .cm-pass-inline-panel > *,
+.passes-module #templatePassPanel > *,
+.passes-module #addPassPanel > *,
+.passes-module #deletePassPanel > *{
+  position:relative;
+  z-index:1;
+}
+body.cm-modal-open .passes-module .cm-pass-inline-panel,
+html.cm-modal-open body .passes-module .cm-pass-inline-panel,
+body[data-cm-modal-open="true"] .passes-module .cm-pass-inline-panel,
+html[data-cm-modal-open="true"] body .passes-module .cm-pass-inline-panel{
+  position:relative!important;
+  top:auto!important;
+  left:auto!important;
+  transform:none!important;
+  z-index:auto!important;
+  max-height:none!important;
+  overflow:visible!important;
+  filter:none!important;
+  background:var(--cm-skin-card-bg, var(--card, rgba(15,23,42,.84)))!important;
+}
+.passes-module .bm-form-actions.full{
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+  align-items:center;
+}
+.passes-module .bm-form-actions.full button{width:auto;min-width:140px;}
