@@ -125,6 +125,37 @@ document.addEventListener('DOMContentLoaded', () => {
     document.documentElement.style.colorScheme = CM_THEME_DARK.has(normalized) ? 'dark' : 'light';
     return normalized;
   };
+
+  const triggerCmPowerLightning = (theme) => {
+    if (!['mysticWarrior','ssj3'].includes(theme)) return;
+    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const old = document.querySelector('.cm-power-lightning-burst');
+    if (old) old.remove();
+    const burst = document.createElement('div');
+    const strong = theme === 'ssj3';
+    burst.className = `cm-power-lightning-burst ${strong ? 'cm-power-lightning-ssj3' : 'cm-power-lightning-ssj2'}`;
+    burst.setAttribute('aria-hidden', 'true');
+    const count = strong ? 18 : 8;
+    for (let i = 0; i < count; i += 1) {
+      const bolt = document.createElement('span');
+      bolt.className = 'cm-power-bolt';
+      const left = strong ? (6 + Math.random() * 88) : (18 + Math.random() * 64);
+      const top = strong ? (7 + Math.random() * 80) : (16 + Math.random() * 56);
+      const height = strong ? (96 + Math.random() * 180) : (58 + Math.random() * 112);
+      const width = strong ? (2 + Math.random() * 3.2) : (1.5 + Math.random() * 2.4);
+      const rot = strong ? (-38 + Math.random() * 76) : (-30 + Math.random() * 60);
+      const delay = Math.random() * 0.16;
+      bolt.style.setProperty('--bolt-left', `${left}%`);
+      bolt.style.setProperty('--bolt-top', `${top}%`);
+      bolt.style.setProperty('--bolt-height', `${height}px`);
+      bolt.style.setProperty('--bolt-width', `${width}px`);
+      bolt.style.setProperty('--bolt-rotate', `${rot}deg`);
+      bolt.style.setProperty('--bolt-delay', `${delay}s`);
+      burst.appendChild(bolt);
+    }
+    document.body.appendChild(burst);
+    window.setTimeout(() => burst.remove(), strong ? 1150 : 900);
+  };
   applyCmTheme(getStoredCmTheme());
 
   const planLabels = {
@@ -1563,6 +1594,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!btn) return;
       event.preventDefault(); event.stopPropagation();
       const nextTheme = applyCmTheme(btn.getAttribute('data-cm-theme-choice'));
+      triggerCmPowerLightning(nextTheme);
       localStorage.setItem(CM_THEME_KEY, nextTheme);
       const meta = CM_THEME_OPTIONS[nextTheme] || CM_THEME_OPTIONS.original;
       toggle.querySelector('.cm-theme-toggle-icon').textContent = meta.swatch;
