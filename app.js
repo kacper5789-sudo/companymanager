@@ -3366,7 +3366,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
                   </div>
                   <button id="undoTimeBtn" class="bm-undo-time-btn" type="button"><span class="cm-side-icon" aria-hidden="true">⏪</span><span>Cofnij Czas</span></button>
-                  <a class="bm-owner-link ${page==='owner'?'active':''}" href="owner.html"><span class="cm-side-icon" aria-hidden="true">🛡️</span><span>Właściciel strony</span></a>
                   ${canAccessPage(user, 'workSchedule') ? `<a class="bm-owner-link bm-work-schedule-link ${page==='workSchedule'?'active':''}" href="work-schedule.html"><span class="cm-side-icon" aria-hidden="true">🗓️</span><span>Grafik pracy</span></a>` : ''}
                   ${canAccessPage(user, 'reports') ? `<a class="bm-owner-link bm-stats-link ${page==='reports'?'active':''}" href="reports.html"><span class="cm-side-icon" aria-hidden="true">📈</span><span>Wykres/Statystyka</span></a>` : ''}
                   ${canAccessPage(user, 'customersReports') ? `<a class="bm-owner-link bm-customers-reports-link ${page==='customersReports'?'active':''}" href="customersraports.html"><span class="cm-side-icon" aria-hidden="true">📋</span><span>Klienci - raporty</span></a>` : ''}
@@ -3375,6 +3374,7 @@ document.addEventListener('DOMContentLoaded', () => {
                   ${canAccessPage(user, 'employeesReports') ? `<a class="bm-owner-link bm-employees-reports-link ${page==='employeesReports'?'active':''}" href="employeesraports.html"><span class="cm-side-icon" aria-hidden="true">👨‍💼</span><span>Pracownicy - raporty</span></a>` : ''}
                   ${canAccessPage(user, 'smsReports') ? `<a class="bm-owner-link bm-sms-reports-link ${page==='smsReports'?'active':''}" href="sms.html"><span class="cm-side-icon" aria-hidden="true">💬</span><span>SMS</span></a>` : ''}
                   ${canAccessPage(user, 'emailReports') ? `<a class="bm-owner-link bm-email-reports-link ${page==='emailReports'?'active':''}" href="email.html"><span class="cm-side-icon" aria-hidden="true">✉️</span><span>Email</span></a>` : ''}
+                  <a class="bm-owner-link ${page==='owner'?'active':''}" href="owner.html"><span class="cm-side-icon" aria-hidden="true">🛡️</span><span>Właściciel strony</span></a>
                   ${renderThemeSwitcher()}
                 </div>
               </section>

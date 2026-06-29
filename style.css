@@ -16813,3 +16813,33 @@ html[data-cm-theme] .cm-edit-employee-stripe{
 @media(max-width:700px){
   html[data-cm-theme] .cm-employee-color-grid{grid-template-columns:repeat(8, 18px)!important;}
 }
+
+/* CompanyManager v60 — employee color picker final visibility fix */
+.cm-employee-color-current,
+button.cm-employee-color-current,
+html[data-cm-theme] button.cm-employee-color-current{
+  background:var(--cm-employee-color, #64748B)!important;
+  background-color:var(--cm-employee-color, #64748B)!important;
+  background-image:none!important;
+  -webkit-text-fill-color:transparent!important;
+}
+.cm-employee-color-dot,
+button.cm-employee-color-dot,
+html[data-cm-theme] button.cm-employee-color-dot{
+  background:var(--cm-employee-color, #64748B)!important;
+  background-color:var(--cm-employee-color, #64748B)!important;
+  background-image:none!important;
+  -webkit-text-fill-color:transparent!important;
+}
+.cm-employee-color-popover,
+html[data-cm-theme] .cm-employee-color-popover{
+  position:fixed!important;
+  z-index:2147483600!important;
+  max-height:min(260px, calc(100vh - 24px))!important;
+  overflow:auto!important;
+  transform:none!important;
+}
+.cm-employee-color-grid,
+html[data-cm-theme] .cm-employee-color-grid{
+  grid-template-columns:repeat(10, 18px)!important;
+}
