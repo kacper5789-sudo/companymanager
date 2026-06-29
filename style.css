@@ -15938,3 +15938,111 @@ html[data-cm-modal-open="true"] body .passes-module .cm-pass-inline-panel{
   align-items:center;
 }
 .passes-module .bm-form-actions.full button{width:auto;min-width:140px;}
+
+
+/* CompanyManager v74 — centered no-overlay panels for Passes + Marketing SMS/Email
+   Nie rusza Original/Luxury Gold: używa aktualnych zmiennych skórek i nie dodaje overlay/blur. */
+#cmGlobalFormOverlay[hidden],
+body.cm-centered-panel-open #cmGlobalFormOverlay,
+html.cm-centered-panel-open #cmGlobalFormOverlay{
+  display:none!important;
+  opacity:0!important;
+  pointer-events:none!important;
+  filter:none!important;
+  backdrop-filter:none!important;
+}
+body.cm-centered-panel-open,
+html.cm-centered-panel-open,
+body.cm-centered-panel-open .bm-panel-area,
+body.cm-centered-panel-open .bm-panel-workspace,
+body.cm-centered-panel-open main,
+body.cm-centered-panel-open .bm-app-shell{
+  filter:none!important;
+  backdrop-filter:none!important;
+}
+.cm-centered-no-overlay-panel{
+  position:fixed!important;
+  top:50%!important;
+  left:50%!important;
+  transform:translate(-50%,-50%)!important;
+  z-index:2147483000!important;
+  width:min(920px, calc(100vw - 32px))!important;
+  max-width:calc(100vw - 32px)!important;
+  max-height:calc(100vh - 32px)!important;
+  overflow:auto!important;
+  display:block!important;
+  margin:0!important;
+  opacity:1!important;
+  visibility:visible!important;
+  pointer-events:auto!important;
+  filter:none!important;
+  backdrop-filter:none!important;
+  isolation:isolate!important;
+  background:var(--cm-skin-card-bg, var(--card-bg, var(--card, #111827)))!important;
+  color:var(--cm-skin-text, var(--text, #f8fafc))!important;
+  border:1px solid var(--cm-skin-border, rgba(255,255,255,.14))!important;
+  border-radius:22px!important;
+  box-shadow:0 24px 70px rgba(0,0,0,.45), 0 0 0 1px rgba(255,255,255,.06)!important;
+}
+.cm-centered-no-overlay-panel[hidden]{display:none!important;}
+.cm-centered-no-overlay-panel *,
+.cm-centered-no-overlay-panel input,
+.cm-centered-no-overlay-panel select,
+.cm-centered-no-overlay-panel textarea,
+.cm-centered-no-overlay-panel button{
+  pointer-events:auto!important;
+  filter:none!important;
+}
+.cm-centered-no-overlay-panel::before,
+.cm-centered-no-overlay-panel::after{
+  pointer-events:none!important;
+  z-index:0!important;
+}
+.cm-centered-no-overlay-panel > *{
+  position:relative;
+  z-index:1;
+}
+.cm-centered-no-overlay-panel .bm-form-grid,
+.cm-centered-no-overlay-panel .bm-wide-form{
+  max-height:none!important;
+  overflow:visible!important;
+}
+.cm-centered-no-overlay-panel [data-cm-centered-cancel="true"]{
+  min-width:120px;
+}
+body.cm-centered-panel-open .cm-theme-fx-layer,
+body.cm-centered-panel-open .cm-theme-burst,
+body.cm-centered-panel-open .cm-ssj-lightning-layer,
+body.cm-centered-panel-open .cm-skin-fx,
+body.cm-centered-panel-open .theme-fx-layer{
+  display:none!important;
+  pointer-events:none!important;
+}
+@media (max-width: 720px){
+  .cm-centered-no-overlay-panel{
+    width:calc(100vw - 18px)!important;
+    max-width:calc(100vw - 18px)!important;
+    max-height:calc(100vh - 18px)!important;
+    border-radius:16px!important;
+  }
+}
+
+.passes-module #templatePassPanel.cm-centered-no-overlay-panel,
+.passes-module #addPassPanel.cm-centered-no-overlay-panel,
+.passes-module #deletePassPanel.cm-centered-no-overlay-panel,
+#marketingSmsCard.cm-centered-no-overlay-panel,
+#marketingEmailCard.cm-centered-no-overlay-panel{
+  position:fixed!important;
+  top:50%!important;
+  left:50%!important;
+  transform:translate(-50%,-50%)!important;
+  z-index:2147483000!important;
+  width:min(920px, calc(100vw - 32px))!important;
+  max-width:calc(100vw - 32px)!important;
+  max-height:calc(100vh - 32px)!important;
+  overflow:auto!important;
+  margin:0!important;
+  background:var(--cm-skin-card-bg, var(--card-bg, var(--card, #111827)))!important;
+}
+#marketingSmsCard.cm-centered-no-overlay-panel,
+#marketingEmailCard.cm-centered-no-overlay-panel{width:min(980px, calc(100vw - 32px))!important;}

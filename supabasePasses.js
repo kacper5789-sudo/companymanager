@@ -218,26 +218,48 @@
     msg.style.display = "block";
   }
 
+  function closeCenteredPanel(panel) {
+    if (!panel) return;
+    panel.hidden = true;
+    panel.classList.remove("cm-centered-no-overlay-panel", "cm-pass-inline-panel", "cm-modal-active", "cm-as-modal");
+    panel.setAttribute("data-cm-no-modal", "true");
+    panel.removeAttribute("data-cm-modal-depth");
+    panel.style.removeProperty("z-index");
+    document.body?.classList?.remove("cm-centered-panel-open", "cm-modal-open");
+    document.documentElement?.classList?.remove("cm-centered-panel-open", "cm-modal-open");
+    document.body?.setAttribute("data-cm-modal-open", "false");
+    document.documentElement?.setAttribute("data-cm-modal-open", "false");
+    const overlay = document.getElementById("cmGlobalFormOverlay");
+    if (overlay) { overlay.hidden = true; overlay.style.display = "none"; overlay.style.opacity = "0"; overlay.style.pointerEvents = "none"; }
+    if (window.cmRefreshGlobalModalState) window.setTimeout(window.cmRefreshGlobalModalState, 0);
+  }
+
+  function ensureCenteredCancel(panel) {
+    if (!panel || panel.querySelector('[data-cm-centered-cancel="true"]')) return;
+    const actions = panel.querySelector('.bm-form-actions.full, .bm-action-row.full, form .full:last-of-type') || panel.querySelector('form') || panel;
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "bm-light-btn";
+    button.dataset.cmCenteredCancel = "true";
+    button.textContent = "Anuluj";
+    button.addEventListener("click", () => closeCenteredPanel(panel));
+    actions.appendChild(button);
+  }
+
   function showOnlyPanel(target, panels) {
-    // Karnety mają własny tryb inline. Nie używamy globalnego modala/overlay,
-    // bo efekty skórek potrafiły przykrywać formularz i blokować scroll/kliknięcia.
+    // Karnety: własny panel na środku ekranu, bez globalnego overlay/blur.
     const list = (panels || []).filter(Boolean);
     const shouldOpen = !!target && target.hidden;
-    list.forEach((panel) => {
-      panel.hidden = true;
-      panel.classList.remove("cm-modal-active", "cm-as-modal");
-      panel.classList.add("cm-pass-inline-panel", "cm-no-modal");
-      panel.setAttribute("data-cm-no-modal", "true");
-      panel.removeAttribute("data-cm-modal-depth");
-      panel.style.removeProperty("z-index");
-    });
+    list.forEach((panel) => closeCenteredPanel(panel));
     if (target && shouldOpen) {
       target.hidden = false;
-      target.classList.add("cm-pass-inline-panel", "cm-no-modal");
+      target.classList.add("cm-centered-no-overlay-panel", "cm-pass-inline-panel", "cm-no-modal");
       target.setAttribute("data-cm-no-modal", "true");
+      ensureCenteredCancel(target);
+      document.body?.classList?.add("cm-centered-panel-open");
+      document.documentElement?.classList?.add("cm-centered-panel-open");
       window.setTimeout(() => {
-        try { target.scrollIntoView({ behavior: "smooth", block: "start" }); } catch (_) { target.scrollIntoView(); }
-        try { target.querySelector("input,select,textarea,button")?.focus({ preventScroll: true }); } catch (_) {}
+        try { target.querySelector("input:not([type='hidden']),select,textarea,button")?.focus({ preventScroll: true }); } catch (_) {}
       }, 0);
     }
     if (window.cmRefreshGlobalModalState) window.setTimeout(window.cmRefreshGlobalModalState, 0);
