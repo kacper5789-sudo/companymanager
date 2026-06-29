@@ -386,6 +386,20 @@
   function isFinished(row) { const s = String(row?.status || "").toLowerCase(); return row?.finished === true || ["zakończone", "zakończona", "completed"].includes(s); }
   function isCancelled(row) { const s = String(row?.status || "").toLowerCase(); return ["odwołane", "odwołana", "cancelled", "usunięte", "deleted"].includes(s); }
 
+  const CANCELLATION_REASONS = ["Klient odwołał", "Klient nie przyszedł", "Pomyłka", "Klient przełożył wizytę", "Inne"];
+  function cancellationReason(row) {
+    const raw = String(row?.cancellation_reason || row?.cancel_reason || row?.cancelReason || "").trim();
+    return CANCELLATION_REASONS.includes(raw) ? raw : (raw ? "Inne" : "Brak powodu");
+  }
+  function cancellationBreakdownRows(appointments) {
+    const map = new Map([...CANCELLATION_REASONS, "Brak powodu"].map((reason) => [reason, 0]));
+    (appointments || []).forEach((row) => {
+      const reason = cancellationReason(row);
+      map.set(reason, (map.get(reason) || 0) + 1);
+    });
+    return Array.from(map.entries()).filter(([, count]) => count > 0).map(([reason, count]) => ({ reason, count }));
+  }
+
   async function fetchPeriodData(ctx, range) {
     const sb = window.cmSupabase;
     const [salesRes, paymentsRes, appointmentsRes, clientsRes, employeesRes, employeesTableRes] = await Promise.all([
@@ -515,7 +529,8 @@
       products: groupedProducts,
       passes: groupedPasses,
       payments: Array.from(paymentMap.values()).sort((a, b) => b.value - a.value),
-      employees: Array.from(employeeRowsMap.values()).filter((r) => String(r.name || "").trim() !== "(brak)").sort((a, b) => b.revenue - a.revenue)
+      employees: Array.from(employeeRowsMap.values()).filter((r) => String(r.name || "").trim() !== "(brak)").sort((a, b) => b.revenue - a.revenue),
+      cancellations: cancellationBreakdownRows(cancelled)
     };
   }
 
@@ -552,6 +567,7 @@
           <section class="cm-period-section"><div class="cm-period-section-head"><div><h3>Produkty</h3><p>Sprzedane produkty w okresie: <b>${report.products.reduce((s,r)=>s+Number(r.qty||0),0)}</b></p></div></div>${table(['Nazwa produktu','L.szt.','Wartość PLN'], rowsForItems(report.products), footerForItems('SUMA', report.products))}</section>
           <section class="cm-period-section"><div class="cm-period-section-head"><div><h3>Karnety</h3><p>Sprzedane karnety w okresie: <b>${report.passes.reduce((s,r)=>s+Number(r.qty||0),0)}</b></p></div></div>${table(['Nazwa karnetu','L.szt.','Wartość PLN'], rowsForItems(report.passes), footerForItems('SUMA', report.passes))}</section>
           <section class="cm-period-section"><div class="cm-period-section-head"><div><h3>Płatności</h3><p>Metody płatności w wybranym okresie</p></div></div>${table(['Płatność','Liczba','Wartość PLN'], report.payments.map(r => [esc(r.method), String(r.qty), money(r.value)]), ['<b>SUMA</b>', `<b>${report.payments.reduce((s,r)=>s+r.qty,0)}</b>`, `<b>${money(report.payments.reduce((s,r)=>s+r.value,0))}</b>`])}</section>
+          <section class="cm-period-section"><div class="cm-period-section-head"><div><h3>Powody odwołań</h3><p>Dlaczego wizyty zostały odwołane w wybranym okresie</p></div></div>${table(['Powód','Liczba'], report.cancellations.map(r => [esc(r.reason), String(r.count)]), ['<b>SUMA</b>', `<b>${report.cancellations.reduce((s,r)=>s+Number(r.count||0),0)}</b>`])}</section>
           <section class="cm-period-section"><div class="cm-period-section-head"><div><h3>Pracownicy</h3><p>Podsumowanie sprzedaży i wizyt</p></div></div>${employeeReportSection(report.employees)}</section>
         </div>
       </section>`;

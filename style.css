@@ -16444,3 +16444,14 @@ html[data-cm-theme="beautyRose"] #cmPassPortalRoot .cm-pass-portal-panel:not([hi
     width:100%;
   }
 }
+
+/* v82 — dashboard cancellation reason box */
+.bm-dashboard-cancel-box{
+  margin-top:12px;
+  padding:12px;
+  border:1px solid var(--cm-border, rgba(148,163,184,.25));
+  border-radius:16px;
+  background:var(--cm-card-soft, rgba(15,23,42,.55));
+}
+.bm-dashboard-cancel-box[hidden]{display:none!important;}
+.bm-dashboard-edit-status-actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center;}

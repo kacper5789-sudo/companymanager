@@ -39,6 +39,19 @@
   function canFinishAppointments(ctx) { return hasAnyPermission(ctx, ["appointments_finish", "appointments_edit", "wizyty (dodawanie, edycja, zakończenie, usuwanie)"]); }
   function canCancelAppointments(ctx) { return hasAnyPermission(ctx, ["appointments_delete", "appointments_edit", "wizyty (dodawanie, edycja, zakończenie, usuwanie)"]); }
 
+  const CANCELLATION_REASONS = [
+    "Klient odwołał",
+    "Klient nie przyszedł",
+    "Pomyłka",
+    "Klient przełożył wizytę",
+    "Inne"
+  ];
+
+  function cancellationReasonOptions(selected = "") {
+    const current = String(selected || "").trim();
+    return `<option value="">Wybierz powód odwołania</option>${CANCELLATION_REASONS.map((reason) => `<option value="${escapeHtml(reason)}" ${reason === current ? "selected" : ""}>${escapeHtml(reason)}</option>`).join("")}`;
+  }
+
   function getPanelArea() {
     return document.querySelector(".bm-panel-area") || document.getElementById("dashboardRoot");
   }
@@ -1221,6 +1234,13 @@
             <button type="button" id="dashEditFinishVisitBtn" class="bm-light-btn" ${allowFinish ? "" : "disabled"}>Zakończ wizytę</button>
             <button type="button" id="dashEditCancelVisitBtn" class="bm-danger-btn" ${allowCancel ? "" : "disabled"}>Odwołaj wizytę</button>
           </div>
+          <div class="bm-full bm-dashboard-cancel-box" id="dashEditCancelReasonBox" hidden>
+            <label class="bm-full">Powód odwołania wizyty<select name="cancelReason" id="dashEditCancelReasonSelect">${cancellationReasonOptions()}</select><small class="bm-muted">Wymagane do statystyk w raportach.</small></label>
+            <div class="bm-full bm-dashboard-edit-status-actions">
+              <button type="button" class="bm-danger-btn" id="dashEditConfirmCancelVisitBtn">Potwierdź odwołanie</button>
+              <button type="button" class="bm-secondary-btn" id="dashEditHideCancelReasonBtn">Anuluj</button>
+            </div>
+          </div>
         </form>
         <p id="dashboardEditVisitMessage" class="panel-message"></p>
       </section>
@@ -1668,15 +1688,27 @@
       window.setTimeout(renderDashboard, 180);
     }
 
+    function showCancelReasonBox() {
+      if (!allowCancel) { setMessage("#dashboardEditVisitMessage", "Brak uprawnienia do odwołania wizyt.", false); return; }
+      const visitId = selectedEditVisitId();
+      if (!visitId) { setMessage("#dashboardEditVisitMessage", "Wybierz wizytę do odwołania.", false); return; }
+      const before = data.appointments.find((item) => item.id === visitId);
+      const box = document.querySelector("#dashEditCancelReasonBox");
+      const select = document.querySelector("#dashEditCancelReasonSelect");
+      if (select) select.innerHTML = cancellationReasonOptions(before?.cancellation_reason || "");
+      if (box) box.hidden = false;
+      setMessage("#dashboardEditVisitMessage", "Wybierz powód odwołania wizyty.", true);
+    }
+
     async function cancelVisitFromEditForm() {
       if (!allowCancel) { setMessage("#dashboardEditVisitMessage", "Brak uprawnienia do odwołania wizyt.", false); return; }
       const visitId = selectedEditVisitId();
       if (!visitId) { setMessage("#dashboardEditVisitMessage", "Wybierz wizytę do odwołania.", false); return; }
       const before = data.appointments.find((item) => item.id === visitId);
       if (!before) { setMessage("#dashboardEditVisitMessage", "Nie znaleziono wizyty.", false); return; }
-      const reason = window.prompt("Podaj powód odwołania wizyty:", before.cancellation_reason || "") || "";
-      if (!reason.trim()) { setMessage("#dashboardEditVisitMessage", "Odwołanie przerwane — nie podano powodu.", false); return; }
-      const patch = { status: "odwołane", deleted: false, cancellation_reason: reason.trim(), cancelled_at: new Date().toISOString(), updated_at: new Date().toISOString() };
+      const reason = String(document.querySelector("#dashEditCancelReasonSelect")?.value || "").trim();
+      if (!CANCELLATION_REASONS.includes(reason)) { setMessage("#dashboardEditVisitMessage", "Musisz wybrać powód odwołania wizyty.", false); return; }
+      const patch = { status: "odwołane", deleted: false, cancellation_reason: reason, cancelled_at: new Date().toISOString(), updated_at: new Date().toISOString() };
       const { data: updated, error } = await window.cmSupabase.from("appointments").update(patch).eq("id", visitId).eq("company_id", ctx.companyId).select("*").single();
       if (error) { setMessage("#dashboardEditVisitMessage", `Błąd odwołania: ${error.message}`, false); return; }
       await window.cmUndo?.record({ module: "dashboard", actionType: "update", targetTable: "appointments", targetId: visitId, beforeData: before, afterData: updated || patch, companyId: ctx.companyId });
@@ -1686,7 +1718,9 @@
     }
 
     document.querySelector("#dashEditFinishVisitBtn")?.addEventListener("click", (event) => { event.preventDefault(); finishVisitFromEditForm(); });
-    document.querySelector("#dashEditCancelVisitBtn")?.addEventListener("click", (event) => { event.preventDefault(); cancelVisitFromEditForm(); });
+    document.querySelector("#dashEditCancelVisitBtn")?.addEventListener("click", (event) => { event.preventDefault(); showCancelReasonBox(); });
+    document.querySelector("#dashEditConfirmCancelVisitBtn")?.addEventListener("click", (event) => { event.preventDefault(); cancelVisitFromEditForm(); });
+    document.querySelector("#dashEditHideCancelReasonBtn")?.addEventListener("click", (event) => { event.preventDefault(); const box = document.querySelector("#dashEditCancelReasonBox"); if (box) box.hidden = true; });
 
     document.querySelector("#dashboardFinishVisitForm")?.addEventListener("submit", async (event) => {
       event.preventDefault();

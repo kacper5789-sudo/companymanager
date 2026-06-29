@@ -99,6 +99,20 @@
     return row?.finished === true || ["zakończone", "zakończona", "zakończony", "completed"].includes(status);
   }
 
+  const CANCELLATION_REASONS = ["Klient odwołał", "Klient nie przyszedł", "Pomyłka", "Klient przełożył wizytę", "Inne"];
+  function cancellationReason(row) {
+    const raw = String(row?.cancellation_reason || row?.cancel_reason || row?.cancelReason || "").trim();
+    return CANCELLATION_REASONS.includes(raw) ? raw : (raw ? "Inne" : "Brak powodu");
+  }
+  function cancellationBreakdownRows(appointments) {
+    const map = new Map([...CANCELLATION_REASONS, "Brak powodu"].map((reason) => [reason, 0]));
+    (appointments || []).forEach((row) => {
+      const reason = cancellationReason(row);
+      map.set(reason, (map.get(reason) || 0) + 1);
+    });
+    return Array.from(map.entries()).filter(([, count]) => count > 0).map(([reason, count]) => ({ reason, count }));
+  }
+
   function normalizeRole(role) { return String(role || "").trim().toUpperCase(); }
   function normalizePermissions(raw) {
     if (!raw) return {};
@@ -221,6 +235,9 @@
       const svc = servicesById[String(appointmentServiceId(a))];
       return selectedCategories.includes(String(svc?.category_id || svc?.categoryId || ""));
     });
+
+    const cancelledVisitsInSelection = visits.filter(isCancelled);
+    const cancellationReasons = cancellationBreakdownRows(cancelledVisitsInSelection);
 
     const salesInRange = (raw.sales || []).filter((sale) => inRange(sale.created_at || sale.sale_date || sale.paid_at, filters.from, filters.to));
     const salesById = Object.fromEntries((raw.sales || []).map((sale) => [String(sale.id), sale]));
@@ -434,8 +451,10 @@
         <div><span>Liczba usług</span><b>${esc(totals.services)}</b></div>
         <div><span>Liczba produktów</span><b>${esc(totals.products || 0)}</b></div>
         <div><span>Wartość wizyt</span><b>${esc(money(totals.value))}</b></div>
+        <div><span>Odwołane wizyty</span><b>${esc(cancelledVisitsInSelection.length)}</b></div>
         <div><span>Pozycje w tabeli</span><b>${esc(rowsData.length)}</b></div>
       </div>
+      <section class="cm-period-section cm-customer-cancel-reasons"><h3>Powody odwołań</h3><p>Odwołane wizyty klientów według powodu</p>${table(["Powód", "Liczba"], cancellationReasons.map(r => [esc(r.reason), String(r.count)]))}</section>
       <div class="bm-table-toolbar"><label>${limitSelect(filters.limit)}</label><label>Szukaj: <input id="crSearch" type="search" value="${esc(filters.search)}" placeholder="Szukaj"></label></div>
       <div id="crTableWrap">${table(headers, shownRows)}</div>
     </section>`;

@@ -329,10 +329,13 @@
     const emailSentFromMarketing = emailRecipients.filter((row) => String(row.status || "").toLowerCase() === "sent").length;
     const emailSent = emailSentFromLogs + emailSentFromMarketing;
 
+    const cancelledAppointments = appointments.filter(isCancelled);
+
     return {
       plannedVisits: appointments.filter(isPlanned).length,
       finishedVisits: appointments.filter(isFinished).length,
-      cancelledVisits: appointments.filter(isCancelled).length,
+      cancelledVisits: cancelledAppointments.length,
+      cancellationReasons: cancellationBreakdownRows(cancelledAppointments),
       newClients: clients.length,
       salesCount: sales.length,
       revenue,
@@ -433,6 +436,7 @@
         <section class="cm-period-section"><h3>Usługi</h3><p>Sprzedane usługi w tym dniu: <b>${int(report.serviceItems.length)}</b></p>${servicesTable}</section>
         <section class="cm-period-section"><h3>Produkty</h3><p>Sprzedane produkty w tym dniu: <b>${int(report.productItems.length)}</b></p>${productsTable}</section>
         <section class="cm-period-section"><h3>Karnety</h3><p>Sprzedane karnety w tym dniu: <b>${int(report.passItems.length)}</b></p>${passesTable}</section>
+        <section class="cm-period-section"><h3>Powody odwołań</h3><p>Odwołane wizyty według powodu</p>${table(["Powód", "Liczba"], (report.cancellationReasons || []).map(r => [esc(r.reason), int(r.count)]), "cm-daily-cancel-reasons-table", ["<b>Suma</b>", int((report.cancellationReasons || []).reduce((sum, r) => sum + Number(r.count || 0), 0))])}</section>
         <section class="cm-period-section"><h3>Pracownicy</h3>${employeeTable}</section>
         <section class="cm-period-section cm-comm-grid"><div><h3>SMS</h3><p>Wysłane SMS</p><b>${int(report.smsSent)}</b></div><div><h3>Email</h3><p>Wysłane EMAIL</p><b>${int(report.emailSent)}</b></div></section>
       </section>`;
