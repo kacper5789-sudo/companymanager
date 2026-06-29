@@ -38,10 +38,6 @@
     '#visitDeleteCard',
     '#walkinFormCard',
     '#walkinDeleteCard',
-    '.bm-page-card',
-    '.bm-card',
-    '.panel-card',
-    '.form-card',
     '.cm-form-card',
     '.modal',
     '.bm-modal',
@@ -75,13 +71,22 @@
   function hasRealFormControls(panel) {
     if (!panel || panel.nodeType !== 1) return false;
     if (panel.matches && panel.matches('.cm-modal-backdrop')) return true;
-    return !!panel.querySelector('form, input:not([type="hidden"]), select, textarea');
+    const controls = Array.from(panel.querySelectorAll('form, input:not([type="hidden"]), select, textarea'));
+    return controls.some(function (control) {
+      if (!control || control.nodeType !== 1) return false;
+      const hiddenParent = control.closest('[hidden], [aria-hidden="true"]');
+      if (hiddenParent && hiddenParent !== panel) return false;
+      const style = window.getComputedStyle ? window.getComputedStyle(control) : null;
+      if (style && (style.display === 'none' || style.visibility === 'hidden')) return false;
+      return true;
+    });
   }
 
   function shouldPromoteAsModal(panel) {
     if (!panel || panel.nodeType !== 1) return false;
     if (!panel.matches || !panel.matches(FORM_PANEL_SELECTOR)) return false;
     if (!isActuallyOpen(panel)) return false;
+    if (panel.matches && panel.matches('.passes-module, .bm-panel-area, #dashboardRoot')) return false;
     if (panel.closest && panel.closest('.cm-client-search-results, .cm-limit-menu, .cm-cr-dropdown-menu, .bm-workers-popover, #cmGlobalFormOverlay')) return false;
     if (!looksLikeFormPanel(panel)) return false;
     return hasRealFormControls(panel);
