@@ -386,9 +386,9 @@
   function isFinished(row) { const s = String(row?.status || "").toLowerCase(); return row?.finished === true || ["zakończone", "zakończona", "completed"].includes(s); }
   function isCancelled(row) { const s = String(row?.status || "").toLowerCase(); return ["odwołane", "odwołana", "cancelled", "usunięte", "deleted"].includes(s); }
 
-  const CANCELLATION_REASONS = ["Klient odwołał", "Klient nie przyszedł", "Pomyłka", "Klient przełożył wizytę", "Inne"];
+  const CANCELLATION_REASONS = ["Klient odwołał", "Klient nie przyszedł", "Klient przełożył wizytę", "Pomyłka", "Inne"];
   function cancellationReason(row) {
-    const raw = String(row?.cancellation_reason || row?.cancel_reason || row?.cancelReason || "").trim();
+    const raw = String(row?.cancellation_reason || row?.cancel_reason || row?.cancelReason || row?.cancellationReason || row?.cancelReasonLabel || "").trim();
     return CANCELLATION_REASONS.includes(raw) ? raw : (raw ? "Inne" : "Brak powodu");
   }
   function cancellationBreakdownRows(appointments) {
@@ -405,7 +405,7 @@
     const [salesRes, paymentsRes, appointmentsRes, clientsRes, employeesRes, employeesTableRes] = await Promise.all([
       sb.from("sales").select("id,company_id,client_id,employee_id,employee_name,appointment_id,total_gross,total_net,payment_status,payment_method,status,created_at,updated_at").eq("company_id", ctx.companyId).gte("created_at", range.startIso).lt("created_at", range.endIso),
       sb.from("payments").select("id,company_id,sale_id,appointment_id,amount,method,status,paid_at,created_at").eq("company_id", ctx.companyId).gte("created_at", range.startIso).lt("created_at", range.endIso),
-      sb.from("appointments").select("id,company_id,client_id,client_name,employee_id,employee_name,service_id,service_name,product_id,product_name,total,price,paid_amount,payment_status,payment_method,status,finished,date,starts_at,appointment_datetime,created_at").eq("company_id", ctx.companyId).gte("date", range.fromIso).lte("date", range.toIso),
+      sb.from("appointments").select("id,company_id,client_id,client_name,employee_id,employee_name,service_id,service_name,product_id,product_name,total,price,paid_amount,payment_status,payment_method,status,finished,date,starts_at,appointment_datetime,created_at,cancellation_reason,cancel_reason,cancelled_at").eq("company_id", ctx.companyId).gte("date", range.fromIso).lte("date", range.toIso),
       sb.from("clients").select("id,first_name,last_name,created_at,company_id").eq("company_id", ctx.companyId).lte("created_at", range.endIso),
       sb.from("profiles").select("id,full_name,email,role,company_id").eq("company_id", ctx.companyId),
       sb.from("employees").select("id,profile_id,user_id,full_name,employee_name,name,email,active,is_active,status,company_id").eq("company_id", ctx.companyId)

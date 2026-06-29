@@ -99,9 +99,9 @@
     return row?.finished === true || ["zakończone", "zakończona", "zakończony", "completed"].includes(status);
   }
 
-  const CANCELLATION_REASONS = ["Klient odwołał", "Klient nie przyszedł", "Pomyłka", "Klient przełożył wizytę", "Inne"];
+  const CANCELLATION_REASONS = ["Klient odwołał", "Klient nie przyszedł", "Klient przełożył wizytę", "Pomyłka", "Inne"];
   function cancellationReason(row) {
-    const raw = String(row?.cancellation_reason || row?.cancel_reason || row?.cancelReason || "").trim();
+    const raw = String(row?.cancellation_reason || row?.cancel_reason || row?.cancelReason || row?.cancellationReason || row?.cancelReasonLabel || "").trim();
     return CANCELLATION_REASONS.includes(raw) ? raw : (raw ? "Inne" : "Brak powodu");
   }
   function cancellationBreakdownRows(appointments) {
@@ -227,17 +227,20 @@
     const selectedEmployees = filters.employees;
     const selectedCategories = filters.categories;
 
-    let visits = raw.appointments.filter((a) => inRange(appointmentDate(a), filters.from, filters.to));
-    if (filters.mode === "finishedVisits") visits = visits.filter((a) => isFinished(a) && !isCancelled(a));
-    else visits = visits.filter((a) => !isFinished(a) && !isCancelled(a));
-    if (selectedEmployees.length) visits = visits.filter((a) => selectedEmployees.includes(String(appointmentEmployeeId(a))));
-    if (selectedCategories.length) visits = visits.filter((a) => {
+    let baseVisits = raw.appointments.filter((a) => inRange(appointmentDate(a), filters.from, filters.to));
+    if (selectedEmployees.length) baseVisits = baseVisits.filter((a) => selectedEmployees.includes(String(appointmentEmployeeId(a))));
+    if (selectedCategories.length) baseVisits = baseVisits.filter((a) => {
       const svc = servicesById[String(appointmentServiceId(a))];
       return selectedCategories.includes(String(svc?.category_id || svc?.categoryId || ""));
     });
 
-    const cancelledVisitsInSelection = visits.filter(isCancelled);
+    const cancelledVisitsInSelection = baseVisits.filter(isCancelled);
     const cancellationReasons = cancellationBreakdownRows(cancelledVisitsInSelection);
+
+    let visits;
+    if (filters.mode === "finishedVisits") visits = baseVisits.filter((a) => isFinished(a) && !isCancelled(a));
+    else if (filters.mode === "cancelledVisits") visits = cancelledVisitsInSelection;
+    else visits = baseVisits.filter((a) => !isFinished(a) && !isCancelled(a));
 
     const salesInRange = (raw.sales || []).filter((sale) => inRange(sale.created_at || sale.sale_date || sale.paid_at, filters.from, filters.to));
     const salesById = Object.fromEntries((raw.sales || []).map((sale) => [String(sale.id), sale]));
@@ -389,6 +392,30 @@
         esc(r.lastDate ? dateLabel(r.lastDate) : "-"),
         money(r.value)
       ]);
+    } else if (filters.mode === "cancelledVisits") {
+      headers = ["Data", "Klient", "Pracownik", "Usługa", "Powód"];
+      const cancelledRows = byVisit();
+      reportRowsForStats = cancelledRows;
+      rowsData = cancelledRows.map((r) => [
+        esc(r.date ? dateLabel(r.date) : "-"),
+        esc(r.client),
+        esc(r.employee),
+        esc(r.service),
+        esc(cancellationReason(visits.find((a) => String(appointmentDate(a) || "").slice(0,10) === r.date && (a.client_name || a.clientName || "") === r.client) || {}))
+      ]);
+      // Powyższe jest tylko awaryjne; niżej nadpisujemy z bezpośrednich danych, żeby powód był zawsze poprawny.
+      rowsData = visits.map((a) => {
+        const client = clientsById[String(appointmentClientId(a))];
+        const employee = profilesById[String(appointmentEmployeeId(a))];
+        const svc = servicesById[String(appointmentServiceId(a))];
+        return [
+          esc(dateLabel(String(appointmentDate(a) || "").slice(0, 10))),
+          esc(clientName(client, a.client_name || a.clientName || "(brak)")),
+          esc(employeeName(employee, a.employee_name || a.employeeName || "(brak)")),
+          esc(serviceName(svc, a.service_name || a.serviceName)),
+          esc(cancellationReason(a))
+        ];
+      });
     } else {
       headers = ["Klient", "Planowane wizyty", "Usługi", "Produkty", "Najbliższa wizyta", "Ostatnia planowana", "Wartość"];
       reportRowsForStats = byCustomer();
@@ -425,9 +452,10 @@
     const titles = {
       plannedClients: "Planowane wizyty według klientów",
       plannedCategories: "Planowane wizyty według kategorii usług",
-      finishedVisits: "Zakończone wizyty klientów"
+      finishedVisits: "Zakończone wizyty klientów",
+      cancelledVisits: "Odwołane wizyty klientów"
     };
-    const modes = ["plannedClients", "plannedCategories", "finishedVisits"];
+    const modes = ["plannedClients", "plannedCategories", "finishedVisits", "cancelledVisits"];
     const title = titles[filters.mode] || titles.plannedClients;
     const presets = [["currentMonth", "bieżący miesiąc"], ["currentWeek", "bieżący tydzień"], ["today", "dziś"], ["yesterday", "wczoraj"], ["last7", "ostatnie 7 dni"], ["last30", "ostatnie 30 dni"], ["previousMonth", "poprzedni miesiąc"], ["last3Months", "ostatnie 3 miesiące"], ["last12Months", "ostatnie 12 miesięcy"]];
 

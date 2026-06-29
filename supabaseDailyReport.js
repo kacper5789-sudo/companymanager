@@ -12,6 +12,20 @@
   const isoDate = (date) => `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
   const dayNames = ["Niedziela", "Poniedziałek", "Wtorek", "Środa", "Czwartek", "Piątek", "Sobota"];
   const paymentLabels = ["gotówka", "karta", "przelew", "karnet", "pakiet", "gratis"];
+  const CANCELLATION_REASONS = ["Klient odwołał", "Klient nie przyszedł", "Klient przełożył wizytę", "Pomyłka", "Inne"];
+  function cancellationReason(row) {
+    const raw = String(row?.cancellation_reason || row?.cancel_reason || row?.cancelReason || row?.cancellationReason || row?.cancelReasonLabel || "").trim();
+    if (CANCELLATION_REASONS.includes(raw)) return raw;
+    return raw ? "Inne" : "Brak powodu";
+  }
+  function cancellationBreakdownRows(appointments) {
+    const map = new Map([...CANCELLATION_REASONS, "Brak powodu"].map((reason) => [reason, 0]));
+    (appointments || []).forEach((row) => {
+      const reason = cancellationReason(row);
+      map.set(reason, (map.get(reason) || 0) + 1);
+    });
+    return Array.from(map.entries()).filter(([, count]) => count > 0).map(([reason, count]) => ({ reason, count }));
+  }
 
   function parseLocalDate(value) {
     const raw = String(value || "").slice(0, 10);
@@ -191,7 +205,7 @@
     const [salesRes, paymentsRes, appointmentsRes, employeesRes, clientsRes, notificationLogsRes, emailRecipientsRes] = await Promise.all([
       sb.from("sales").select("id,company_id,client_id,employee_id,employee_name,appointment_id,total_gross,total_net,payment_status,payment_method,status,created_at,updated_at").eq("company_id", ctx.companyId).gte("created_at", range.startIso).lt("created_at", range.endIso),
       sb.from("payments").select("id,company_id,sale_id,appointment_id,amount,method,status,paid_at,created_at").eq("company_id", ctx.companyId).gte("created_at", range.startIso).lt("created_at", range.endIso),
-      sb.from("appointments").select("id,company_id,client_id,client_name,employee_id,employee_name,service_id,service_name,product_id,product_name,total,price,paid_amount,payment_status,payment_method,status,date,starts_at,appointment_datetime,created_at").eq("company_id", ctx.companyId).eq("date", range.dayIso),
+      sb.from("appointments").select("id,company_id,client_id,client_name,employee_id,employee_name,service_id,service_name,product_id,product_name,total,price,paid_amount,payment_status,payment_method,status,date,starts_at,appointment_datetime,created_at,cancellation_reason,cancel_reason,cancelled_at").eq("company_id", ctx.companyId).eq("date", range.dayIso),
       sb.from("profiles").select("id,full_name,email,role,company_id").eq("company_id", ctx.companyId),
       sb.from("clients").select("id,first_name,last_name,created_at,company_id").eq("company_id", ctx.companyId).gte("created_at", range.startIso).lt("created_at", range.endIso),
       sb.from("notification_logs").select("id,company_id,channel,type,status,provider_message_id,sent_at,created_at").eq("company_id", ctx.companyId).gte("created_at", range.startIso).lt("created_at", range.endIso),

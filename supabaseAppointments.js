@@ -985,7 +985,8 @@
         escapeHtml(customerName(client)),
         escapeHtml(personName(user)),
         escapeHtml(service?.name || "-"),
-        escapeHtml(item.status || "-")
+        escapeHtml(item.status || "-"),
+        escapeHtml(item.cancellation_reason || item.cancel_reason || item.cancelReason || "-")
       ];
     });
 
@@ -1016,7 +1017,7 @@
         <div class="bm-page-head"><h2>Pokaż wizyty:</h2><div class="bm-action-row"><button id="showAddVisit" type="button" ${allowAdd ? "" : "disabled"}>Dodaj</button><button id="showEditVisit" type="button" class="bm-secondary-btn" ${allowEdit ? "" : "disabled"}>Edytuj</button><button id="showDeleteVisit" type="button" class="bm-danger-btn" ${allowDelete ? "" : "disabled"}>Usuń</button></div></div>
         <div class="bm-tabs">${statusTabs}</div>
         <div class="bm-table-toolbar cm-limit-toolbar">${moduleLimitDropdownHtml("visitsLimit")}</div>
-        ${table(["Data", "Godzina", "Klient", "Pracownik", "Usługa", "Status"], rows, "Brak wizyt w Supabase.")}
+        ${table(["Data", "Godzina", "Klient", "Pracownik", "Usługa", "Status", "Powód"], rows, "Brak wizyt w Supabase.")}
         ${pagination(filtered.length)}
       </section>
 

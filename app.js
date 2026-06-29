@@ -5784,14 +5784,15 @@ document.addEventListener('DOMContentLoaded', () => {
         escapeHtml(customerName(customer)),
         escapeHtml(employee?.fullName || '-'),
         escapeHtml(service?.name || '-'),
-        escapeHtml(visit.status || '-')
+        escapeHtml(visit.status || '-'),
+        escapeHtml(visit.cancelReason || visit.cancellationReason || visit.cancel_reason || '-')
       ];
     });
 
     const content = `<section class="bm-page-card visits-module">
       <div class="bm-page-head"><h2>Pokaż wizyty:</h2><div class="bm-action-row"><button id="showAddVisit" type="button"${visitActionDisabledAttrs}>Dodaj</button><button id="showEditVisit" type="button" class="bm-secondary-btn${canUseCurrentVisitActions ? '' : ' cm-permission-disabled'}" ${canUseCurrentVisitActions ? '' : `disabled title="Brak uprawnienia: ${escapeHtml(currentVisitActionPermission)}"`}>Edytuj</button><button id="showDeleteVisit" type="button" class="bm-danger-btn${canUseCurrentVisitActions ? '' : ' cm-permission-disabled'}" ${canUseCurrentVisitActions ? '' : `disabled title="Brak uprawnienia: ${escapeHtml(currentVisitActionPermission)}"`}>Usuń</button></div></div>
       <div class="bm-tabs">${statusTabs}</div>
-      ${canViewCurrentVisitHistory ? `<div class="bm-table-toolbar cm-limit-toolbar">${limitDropdownHtml('visitsLimit', '50')}</div>${table(['Data','Godzina','Klient','Pracownik','Usługa','Status'], rows)}` : permissionBlockedHtml(currentVisitHistoryPermission)}
+      ${canViewCurrentVisitHistory ? `<div class="bm-table-toolbar cm-limit-toolbar">${limitDropdownHtml('visitsLimit', '50')}</div>${table(['Data','Godzina','Klient','Pracownik','Usługa','Status','Powód'], rows)}` : permissionBlockedHtml(currentVisitHistoryPermission)}
     </section>
 
     <section class="bm-page-card" id="visitFormCard" hidden>
