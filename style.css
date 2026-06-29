@@ -17040,3 +17040,171 @@ html body .passes-module #deletePassPanel.cm-pass-safe-modal::after{
     padding:16px!important;
   }
 }
+
+/* CompanyManager v70 — Karnety: themed modal without dim/blur
+   Fix: Dodaj typ karnetu / Sprzedaj karnet nie mogą wyglądać jak Original,
+   nie mogą być przyciemnione i muszą dziedziczyć aktualną skórkę. */
+html.cm-pass-modal-open body #cmGlobalFormOverlay,
+body.cm-pass-modal-open #cmGlobalFormOverlay{
+  display:none!important;
+  opacity:0!important;
+  visibility:hidden!important;
+  pointer-events:none!important;
+  background:transparent!important;
+  backdrop-filter:none!important;
+  -webkit-backdrop-filter:none!important;
+  filter:none!important;
+}
+html.cm-pass-modal-open body::before,
+html.cm-pass-modal-open body::after,
+body.cm-pass-modal-open::before,
+body.cm-pass-modal-open::after{
+  display:none!important;
+  content:none!important;
+  opacity:0!important;
+  pointer-events:none!important;
+  backdrop-filter:none!important;
+  -webkit-backdrop-filter:none!important;
+  filter:none!important;
+}
+html.cm-pass-modal-open body,
+body.cm-pass-modal-open,
+html.cm-pass-modal-open body .bm-shell,
+body.cm-pass-modal-open .bm-shell,
+html.cm-pass-modal-open body .bm-main,
+body.cm-pass-modal-open .bm-main,
+html.cm-pass-modal-open body .passes-module,
+body.cm-pass-modal-open .passes-module{
+  opacity:1!important;
+  filter:none!important;
+  -webkit-filter:none!important;
+  backdrop-filter:none!important;
+  -webkit-backdrop-filter:none!important;
+}
+html.cm-pass-modal-open body .cm-theme-fx-layer,
+body.cm-pass-modal-open .cm-theme-fx-layer,
+html.cm-pass-modal-open body .cm-theme-fx-particles,
+body.cm-pass-modal-open .cm-theme-fx-particles,
+html.cm-pass-modal-open body .cm-ssj-lightning-layer,
+body.cm-pass-modal-open .cm-ssj-lightning-layer,
+html.cm-pass-modal-open body .cm-aura-layer,
+body.cm-pass-modal-open .cm-aura-layer,
+html.cm-pass-modal-open body [data-cm-fx],
+body.cm-pass-modal-open [data-cm-fx]{
+  display:none!important;
+  opacity:0!important;
+  visibility:hidden!important;
+  pointer-events:none!important;
+}
+
+html body .passes-module :where(#templatePassPanel,#addPassPanel,#deletePassPanel).cm-pass-safe-modal{
+  position:fixed!important;
+  top:50%!important;
+  left:50%!important;
+  right:auto!important;
+  bottom:auto!important;
+  transform:translate(-50%,-50%)!important;
+  width:min(980px, calc(100vw - 28px))!important;
+  max-width:min(980px, calc(100vw - 28px))!important;
+  max-height:88vh!important;
+  overflow-y:auto!important;
+  overflow-x:hidden!important;
+  z-index:2147483600!important;
+  display:block!important;
+  visibility:visible!important;
+  opacity:1!important;
+  pointer-events:auto!important;
+  touch-action:auto!important;
+  isolation:isolate!important;
+  margin:0!important;
+  padding:22px!important;
+  border-radius:24px!important;
+  filter:none!important;
+  -webkit-filter:none!important;
+  backdrop-filter:none!important;
+  -webkit-backdrop-filter:none!important;
+}
+
+/* Original fallback — czytelne, ale bez przyciemnienia. */
+html body .passes-module :where(#templatePassPanel,#addPassPanel,#deletePassPanel).cm-pass-safe-modal{
+  background:linear-gradient(180deg,rgba(15,23,42,.98),rgba(2,6,23,.96))!important;
+  color:#e5eefb!important;
+  border:1px solid rgba(148,163,184,.34)!important;
+  box-shadow:0 26px 90px rgba(0,0,0,.42),0 0 0 1px rgba(255,255,255,.06) inset!important;
+}
+
+/* Każda skórka poza Original i Exclusive Gold dziedziczy Theme Engine v2. */
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) body .passes-module :where(#templatePassPanel,#addPassPanel,#deletePassPanel).cm-pass-safe-modal{
+  background:
+    radial-gradient(circle at 86% 0%,color-mix(in srgb,var(--cm-skin-accent-2) 24%,transparent),transparent 30%),
+    radial-gradient(circle at 5% 100%,color-mix(in srgb,var(--cm-skin-accent) 18%,transparent),transparent 34%),
+    linear-gradient(145deg,color-mix(in srgb,var(--cm-skin-card) 92%,var(--cm-skin-accent) 8%),color-mix(in srgb,var(--cm-skin-soft) 90%,black 10%))!important;
+  color:var(--cm-skin-text)!important;
+  border:1px solid var(--cm-skin-border)!important;
+  box-shadow:0 28px 90px color-mix(in srgb,var(--cm-skin-shadow) 78%,rgba(0,0,0,.25)),0 0 0 1px color-mix(in srgb,var(--cm-skin-accent-2) 18%,transparent) inset!important;
+}
+html[data-cm-theme="goldWhite"] body .passes-module :where(#templatePassPanel,#addPassPanel,#deletePassPanel).cm-pass-safe-modal{
+  background:linear-gradient(180deg,rgba(255,255,255,.98),rgba(255,250,240,.96))!important;
+  color:#1f2937!important;
+  border:1px solid rgba(180,132,35,.34)!important;
+  box-shadow:0 28px 80px rgba(146,64,14,.18),0 0 0 1px rgba(180,132,35,.16) inset!important;
+}
+
+html body .passes-module :where(#templatePassPanel,#addPassPanel,#deletePassPanel).cm-pass-safe-modal::before,
+html body .passes-module :where(#templatePassPanel,#addPassPanel,#deletePassPanel).cm-pass-safe-modal::after{
+  content:none!important;
+  display:none!important;
+  opacity:0!important;
+  pointer-events:none!important;
+}
+html body .passes-module :where(#templatePassPanel,#addPassPanel,#deletePassPanel).cm-pass-safe-modal *{
+  opacity:1!important;
+  visibility:visible!important;
+  filter:none!important;
+  -webkit-filter:none!important;
+  backdrop-filter:none!important;
+  -webkit-backdrop-filter:none!important;
+}
+html body .passes-module :where(#templatePassPanel,#addPassPanel,#deletePassPanel).cm-pass-safe-modal :where(input,select,textarea,button,label,a){
+  pointer-events:auto!important;
+  touch-action:auto!important;
+}
+html body .passes-module :where(#templatePassPanel,#addPassPanel,#deletePassPanel).cm-pass-safe-modal :where(input,select,textarea){
+  background:rgba(15,23,42,.92)!important;
+  color:#f8fafc!important;
+  border:1px solid rgba(148,163,184,.36)!important;
+  box-shadow:none!important;
+}
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) body .passes-module :where(#templatePassPanel,#addPassPanel,#deletePassPanel).cm-pass-safe-modal :where(input,select,textarea){
+  background:linear-gradient(180deg,color-mix(in srgb,var(--cm-skin-card) 92%,black 8%),color-mix(in srgb,var(--cm-skin-soft) 88%,black 12%))!important;
+  color:var(--cm-skin-text)!important;
+  border-color:color-mix(in srgb,var(--cm-skin-accent-2) 38%,var(--cm-skin-border))!important;
+}
+html[data-cm-theme="goldWhite"] body .passes-module :where(#templatePassPanel,#addPassPanel,#deletePassPanel).cm-pass-safe-modal :where(input,select,textarea){
+  background:#fffaf0!important;
+  color:#1f2937!important;
+  border-color:rgba(180,132,35,.34)!important;
+}
+html body .passes-module :where(#templatePassPanel,#addPassPanel,#deletePassPanel).cm-pass-safe-modal button{
+  position:relative!important;
+  z-index:2147483601!important;
+  pointer-events:auto!important;
+  cursor:pointer!important;
+  filter:none!important;
+  opacity:1!important;
+}
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) body .passes-module :where(#templatePassPanel,#addPassPanel,#deletePassPanel).cm-pass-safe-modal button[type="submit"]{
+  background:linear-gradient(135deg,var(--cm-skin-accent),var(--cm-skin-accent-2))!important;
+  color:var(--cm-skin-on-accent,#fff)!important;
+  border-color:color-mix(in srgb,var(--cm-skin-accent-2) 44%,transparent)!important;
+  box-shadow:0 14px 34px var(--cm-skin-shadow)!important;
+}
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]) body .passes-module :where(#templatePassPanel,#addPassPanel,#deletePassPanel).cm-pass-safe-modal .bm-light-btn{
+  background:linear-gradient(180deg,color-mix(in srgb,var(--cm-skin-card) 82%,var(--cm-skin-accent-2) 18%),color-mix(in srgb,var(--cm-skin-soft) 90%,black 10%))!important;
+  color:var(--cm-skin-text)!important;
+  border:1px solid var(--cm-skin-border)!important;
+}
+html body .passes-module :where(#templatePassPanel,#addPassPanel,#deletePassPanel)[hidden],
+html body .passes-module :where(#templatePassPanel,#addPassPanel,#deletePassPanel).cm-pass-safe-modal[hidden]{
+  display:none!important;
+}
