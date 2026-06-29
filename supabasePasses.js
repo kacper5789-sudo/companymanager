@@ -218,25 +218,64 @@
     msg.style.display = "block";
   }
 
+  function markPassModal(panel, active) {
+    if (!panel) return;
+    panel.classList.toggle("cm-modal-active", !!active);
+    panel.classList.toggle("cm-as-modal", !!active);
+    panel.classList.toggle("cm-pass-panel-active", !!active);
+    if (active) {
+      panel.removeAttribute("hidden");
+      panel.style.pointerEvents = "auto";
+      panel.style.touchAction = "auto";
+      panel.style.overflowY = "auto";
+      panel.style.overflowX = "hidden";
+      panel.style.zIndex = "2147483000";
+    } else {
+      panel.hidden = true;
+      panel.style.removeProperty("pointer-events");
+      panel.style.removeProperty("touch-action");
+      panel.style.removeProperty("overflow-y");
+      panel.style.removeProperty("overflow-x");
+      panel.style.removeProperty("z-index");
+    }
+  }
+
+  function syncPassModalBodyState() {
+    const isOpen = !!document.querySelector(".cm-pass-panel-active:not([hidden])");
+    document.body?.classList?.toggle("cm-modal-open", isOpen);
+    document.documentElement?.classList?.toggle("cm-modal-open", isOpen);
+    document.body?.classList?.toggle("cm-pass-modal-open", isOpen);
+    document.documentElement?.classList?.toggle("cm-pass-modal-open", isOpen);
+    document.body?.setAttribute?.("data-cm-modal-open", isOpen ? "true" : "false");
+    document.documentElement?.setAttribute?.("data-cm-modal-open", isOpen ? "true" : "false");
+    const overlay = document.getElementById("cmGlobalFormOverlay");
+    if (overlay) {
+      overlay.hidden = !isOpen;
+      overlay.style.display = isOpen ? "block" : "none";
+      overlay.style.opacity = isOpen ? "1" : "0";
+      overlay.style.pointerEvents = "none";
+    }
+  }
+
   function showOnlyPanel(target, panels) {
-    if (window.cmShowOnlyModalPanel) return window.cmShowOnlyModalPanel(target, panels || []);
-    panels.forEach((panel) => { if (panel) panel.hidden = panel !== target ? true : !panel.hidden; });
+    const list = (panels || []).filter(Boolean);
+    const shouldOpen = !!target && target.hidden;
+    list.forEach((panel) => markPassModal(panel, false));
+    if (target && shouldOpen) {
+      markPassModal(target, true);
+      setTimeout(() => {
+        try { target.scrollTop = 0; } catch (_) {}
+        target.querySelector("input,select,textarea,button")?.focus?.({ preventScroll: true });
+      }, 0);
+    }
+    syncPassModalBodyState();
   }
 
   function closePassesModals() {
-    if (window.cmHardCloseAllModalPanels) {
-      window.cmHardCloseAllModalPanels();
-      return;
-    }
-    if (window.cmCloseAllModalPanels) {
-      window.cmCloseAllModalPanels();
-      return;
-    }
-    document.querySelectorAll(".cm-modal-active, .cm-as-modal").forEach((panel) => {
-      panel.hidden = true;
-      panel.classList.remove("cm-modal-active", "cm-as-modal");
-    });
-    document.body?.classList?.remove("cm-modal-open");
+    document.querySelectorAll("#templatePassPanel, #addPassPanel, #deletePassPanel, #inlinePassCustomerPanel").forEach((panel) => markPassModal(panel, false));
+    document.querySelectorAll(".cm-pass-panel-active").forEach((panel) => markPassModal(panel, false));
+    syncPassModalBodyState();
+    if (window.cmRefreshGlobalModalState) setTimeout(() => window.cmRefreshGlobalModalState(), 0);
   }
 
   function rerenderPassesAfterSuccess(delay = 450) {
@@ -520,7 +559,7 @@
             <label>Ważność domyślna (dni)<input name="templateValidDays" type="number" min="1" step="1" value="30"></label>
           </div>
           <label class="full">Opis<textarea name="templateDescription" rows="2" placeholder="Opis typu karnetu"></textarea></label>
-          <div class="bm-form-actions full"><button type="submit">Zapisz typ karnetu</button></div>
+          <div class="bm-form-actions full"><button type="submit">Zapisz typ karnetu</button><button type="button" class="bm-light-btn" data-pass-modal-cancel>Anuluj</button></div>
         </form>
         <p id="templatePassMessage" class="panel-message"></p>
         <div class="bm-page-head customers-head"><h3>Aktualna pula karnetów</h3></div>
@@ -550,7 +589,7 @@
             </div>
           </div>
           <label class="full">Opis<textarea name="description" placeholder="Opis"></textarea></label>
-          <div class="full"><button type="submit">Dodaj</button></div>
+          <div class="full bm-form-actions"><button type="submit">Dodaj</button><button type="button" class="bm-light-btn" data-pass-modal-cancel>Anuluj</button></div>
         </form>
         <p id="passFormMessage" class="panel-message"></p>
       </section>
@@ -558,7 +597,7 @@
         <h2>Usuń karnet</h2>
         <div class="bm-form-grid bm-wide-form">
           <label class="full">Wybierz karnet<select id="deletePassSelect"><option value="">Wybierz karnet</option>${passOptions}</select></label>
-          <div class="full"><button id="deletePassBtn" type="button" class="bm-danger-btn">Usuń</button></div>
+          <div class="full bm-form-actions"><button id="deletePassBtn" type="button" class="bm-danger-btn">Usuń</button><button type="button" class="bm-light-btn" data-pass-modal-cancel>Anuluj</button></div>
         </div>
         <p id="passDeleteMessage" class="panel-message"></p>
       </section>
@@ -602,6 +641,15 @@
     document.querySelector("#showTemplatePass")?.addEventListener("click", () => showOnlyPanel(templatePanel, panels));
     document.querySelector("#showAddPass")?.addEventListener("click", () => showOnlyPanel(addPanel, panels));
     document.querySelector("#showDeletePass")?.addEventListener("click", () => showOnlyPanel(deletePanel, panels));
+    document.querySelectorAll("[data-pass-modal-cancel]").forEach((button) => {
+      button.addEventListener("click", (event) => {
+        event.preventDefault();
+        closePassesModals();
+      });
+    });
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape" && document.body?.classList?.contains("cm-pass-modal-open")) closePassesModals();
+    }, { once: true });
     setupModuleLimitDropdowns(document);
 
     const apply = () => {

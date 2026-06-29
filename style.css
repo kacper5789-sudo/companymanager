@@ -16002,3 +16002,285 @@ html[data-cm-theme]:not([data-cm-theme="original"]) body.cm-modal-open #inlinePa
   z-index:60020!important;
   pointer-events:auto!important;
 }
+
+/* CompanyManager v62 — Passes modal final isolation fix
+   Problem występował tylko na części skórek, bo niektóre motywy dodają własne warstwy glow/lightning/body-overlay.
+   Karnety dostają własny, niezależny tryb modalny: panel zawsze jest nad overlayem, przewijalny i klikalny. */
+html.cm-pass-modal-open body,
+body.cm-pass-modal-open{
+  overflow:hidden!important;
+}
+html.cm-pass-modal-open body #cmGlobalFormOverlay,
+body.cm-pass-modal-open #cmGlobalFormOverlay{
+  display:block!important;
+  opacity:1!important;
+  pointer-events:none!important;
+  z-index:2147482000!important;
+  background:rgba(2,6,23,.64)!important;
+  backdrop-filter:blur(10px) saturate(1.04)!important;
+  -webkit-backdrop-filter:blur(10px) saturate(1.04)!important;
+}
+html[data-cm-theme] body.cm-pass-modal-open #templatePassPanel.cm-pass-panel-active,
+html[data-cm-theme] body.cm-pass-modal-open #addPassPanel.cm-pass-panel-active,
+html[data-cm-theme] body.cm-pass-modal-open #deletePassPanel.cm-pass-panel-active{
+  display:block!important;
+  visibility:visible!important;
+  opacity:1!important;
+  position:fixed!important;
+  left:50%!important;
+  top:50%!important;
+  transform:translate(-50%,-50%)!important;
+  width:min(960px, calc(100vw - 28px))!important;
+  max-width:calc(100vw - 28px)!important;
+  max-height:calc(100vh - 42px)!important;
+  overflow-y:auto!important;
+  overflow-x:hidden!important;
+  overscroll-behavior:contain!important;
+  -webkit-overflow-scrolling:touch!important;
+  z-index:2147483000!important;
+  pointer-events:auto!important;
+  touch-action:auto!important;
+  isolation:auto!important;
+  contain:none!important;
+  filter:none!important;
+  backdrop-filter:none!important;
+}
+html[data-cm-theme] body.cm-pass-modal-open #templatePassPanel.cm-pass-panel-active::before,
+html[data-cm-theme] body.cm-pass-modal-open #templatePassPanel.cm-pass-panel-active::after,
+html[data-cm-theme] body.cm-pass-modal-open #addPassPanel.cm-pass-panel-active::before,
+html[data-cm-theme] body.cm-pass-modal-open #addPassPanel.cm-pass-panel-active::after,
+html[data-cm-theme] body.cm-pass-modal-open #deletePassPanel.cm-pass-panel-active::before,
+html[data-cm-theme] body.cm-pass-modal-open #deletePassPanel.cm-pass-panel-active::after,
+html[data-cm-theme] body.cm-pass-modal-open #inlinePassCustomerPanel::before,
+html[data-cm-theme] body.cm-pass-modal-open #inlinePassCustomerPanel::after{
+  content:none!important;
+  display:none!important;
+  pointer-events:none!important;
+  animation:none!important;
+}
+html[data-cm-theme] body.cm-pass-modal-open #templatePassPanel.cm-pass-panel-active *,
+html[data-cm-theme] body.cm-pass-modal-open #addPassPanel.cm-pass-panel-active *,
+html[data-cm-theme] body.cm-pass-modal-open #deletePassPanel.cm-pass-panel-active *{
+  pointer-events:auto!important;
+  filter:none!important;
+}
+html[data-cm-theme] body.cm-pass-modal-open #templatePassPanel.cm-pass-panel-active :where(form,input,select,textarea,button,label,a),
+html[data-cm-theme] body.cm-pass-modal-open #addPassPanel.cm-pass-panel-active :where(form,input,select,textarea,button,label,a),
+html[data-cm-theme] body.cm-pass-modal-open #deletePassPanel.cm-pass-panel-active :where(form,input,select,textarea,button,label,a){
+  position:relative!important;
+  z-index:2147483010!important;
+  pointer-events:auto!important;
+  touch-action:auto!important;
+}
+html[data-cm-theme] body.cm-pass-modal-open #inlinePassCustomerPanel{
+  position:relative!important;
+  left:auto!important;
+  top:auto!important;
+  transform:none!important;
+  width:100%!important;
+  max-height:none!important;
+  overflow:visible!important;
+  z-index:2147483020!important;
+  pointer-events:auto!important;
+}
+html[data-cm-theme="beautyRose"] body.cm-pass-modal-open::before,
+html[data-cm-theme="mysticWarrior"] body.cm-pass-modal-open::before,
+html[data-cm-theme="ssj"] body.cm-pass-modal-open::before,
+html[data-cm-theme="ssj3"] body.cm-pass-modal-open::before{
+  pointer-events:none!important;
+}
+html[data-cm-theme="mysticWarrior"] body.cm-pass-modal-open #templatePassPanel,
+html[data-cm-theme="mysticWarrior"] body.cm-pass-modal-open #addPassPanel,
+html[data-cm-theme="mysticWarrior"] body.cm-pass-modal-open #deletePassPanel,
+html[data-cm-theme="ssj3"] body.cm-pass-modal-open #templatePassPanel,
+html[data-cm-theme="ssj3"] body.cm-pass-modal-open #addPassPanel,
+html[data-cm-theme="ssj3"] body.cm-pass-modal-open #deletePassPanel{
+  overflow-y:auto!important;
+}
+
+/* CompanyManager v63 — SSJ Blue / God aura engine
+   SSJ Blue dostaje lazurową poświatę i cząsteczki energii, God dostaje czerwono-pomarańczową aurę/ogień.
+   Efekty są dekoracyjne, bez przechwytywania kliknięć. */
+.cm-power-aura-burst{
+  position:fixed;
+  inset:0;
+  z-index:2147483647;
+  pointer-events:none!important;
+  overflow:hidden;
+  opacity:0;
+  mix-blend-mode:screen;
+  animation:cmPowerAuraFade 1.28s ease-out forwards;
+}
+.cm-power-aura-burst::before,
+.cm-power-aura-burst::after{
+  content:"";
+  position:absolute;
+  inset:-16%;
+  pointer-events:none!important;
+  opacity:.95;
+  filter:saturate(1.35) blur(.2px);
+}
+.cm-power-aura-blue::before{
+  background:
+    radial-gradient(ellipse at 50% 100%, rgba(0,209,255,.34), transparent 34%),
+    radial-gradient(circle at 22% 34%, rgba(101,229,255,.20), transparent 26%),
+    radial-gradient(circle at 78% 38%, rgba(16,112,255,.22), transparent 30%),
+    linear-gradient(90deg, transparent, rgba(71,206,255,.13), transparent);
+  animation:cmBlueAuraWave 1.22s ease-out forwards;
+}
+.cm-power-aura-blue::after{
+  background:
+    conic-gradient(from 12deg at 50% 55%, transparent 0 10%, rgba(82,217,255,.28) 13%, transparent 18% 30%, rgba(255,255,255,.22) 34%, transparent 40% 58%, rgba(0,157,255,.22) 64%, transparent 70% 100%);
+  transform:scale(.75) rotate(0deg);
+  animation:cmBlueAuraSpin 1.18s cubic-bezier(.2,.8,.2,1) forwards;
+}
+.cm-power-aura-god::before{
+  background:
+    radial-gradient(ellipse at 50% 102%, rgba(255,89,20,.42), transparent 36%),
+    radial-gradient(circle at 18% 72%, rgba(255,183,63,.20), transparent 24%),
+    radial-gradient(circle at 82% 62%, rgba(239,35,60,.24), transparent 28%),
+    linear-gradient(180deg, rgba(255,207,95,.11), transparent 34%, rgba(255,71,35,.16));
+  animation:cmGodAuraFlame 1.16s ease-out forwards;
+}
+.cm-power-aura-god::after{
+  background:
+    repeating-conic-gradient(from 0deg at 50% 92%, transparent 0 8deg, rgba(255,88,24,.20) 10deg 13deg, transparent 16deg 26deg, rgba(255,217,113,.13) 29deg 31deg, transparent 34deg 46deg);
+  transform:scale(.82) translateY(5%);
+  animation:cmGodAuraHeat 1.12s cubic-bezier(.16,.84,.2,1) forwards;
+}
+.cm-power-aura-particle{
+  position:absolute;
+  left:var(--p-left);
+  top:var(--p-top);
+  width:var(--p-size);
+  height:var(--p-size);
+  pointer-events:none!important;
+  border-radius:999px;
+  opacity:0;
+  transform:translate3d(0,0,0) scale(.7);
+  animation:cmPowerAuraParticle var(--p-speed) ease-out var(--p-delay) forwards;
+}
+.cm-power-aura-blue .cm-power-aura-particle{
+  background:rgba(120,228,255,.95);
+  box-shadow:0 0 12px rgba(61,205,255,.95),0 0 26px rgba(28,134,255,.48);
+}
+.cm-power-aura-god .cm-power-aura-particle{
+  background:rgba(255,202,82,.96);
+  box-shadow:0 0 12px rgba(255,111,36,.95),0 0 28px rgba(239,35,60,.46);
+  border-radius:55% 45% 56% 44%;
+}
+@keyframes cmPowerAuraFade{
+  0%{opacity:0;}
+  12%{opacity:1;}
+  70%{opacity:.86;}
+  100%{opacity:0;}
+}
+@keyframes cmBlueAuraWave{
+  0%{opacity:0;transform:translateY(10%) scale(.94);filter:blur(1.4px) saturate(1.05);}
+  35%{opacity:1;transform:translateY(0) scale(1.02);filter:blur(.2px) saturate(1.55);}
+  100%{opacity:0;transform:translateY(-7%) scale(1.12);filter:blur(2px) saturate(1.2);}
+}
+@keyframes cmBlueAuraSpin{
+  0%{opacity:0;transform:scale(.62) rotate(-18deg);}
+  28%{opacity:.74;transform:scale(.92) rotate(6deg);}
+  100%{opacity:0;transform:scale(1.22) rotate(32deg);}
+}
+@keyframes cmGodAuraFlame{
+  0%{opacity:0;transform:translateY(10%) scale(.96);filter:blur(2px) saturate(1);}
+  30%{opacity:1;transform:translateY(0) scale(1.03);filter:blur(.4px) saturate(1.55);}
+  100%{opacity:0;transform:translateY(-9%) scale(1.14);filter:blur(2.8px) saturate(1.2);}
+}
+@keyframes cmGodAuraHeat{
+  0%{opacity:0;transform:scale(.70) translateY(10%) skewX(0deg);}
+  34%{opacity:.78;transform:scale(.98) translateY(0) skewX(-2deg);}
+  66%{opacity:.52;transform:scale(1.10) translateY(-4%) skewX(2deg);}
+  100%{opacity:0;transform:scale(1.24) translateY(-12%) skewX(0deg);}
+}
+@keyframes cmPowerAuraParticle{
+  0%{opacity:0;transform:translate3d(0,0,0) scale(.55);}
+  20%{opacity:1;}
+  100%{opacity:0;transform:translate3d(var(--p-drift), calc(var(--p-rise) * -1), 0) scale(1.35);}
+}
+
+/* Stała aura na kartach po aktywowaniu SSJ Blue / God. */
+html[data-cm-theme="royalSaiyanBlue"] :where(.bm-page-card,.panel-card,.cm-unified-card,.bm-current-section,.dashboard-card,.stat-card,.report-card,.summary-card,.settings-card,.employee-card,.client-card,.service-card,.product-card,.appointment-card,.sale-card,.marketing-card,.pass-card,.chart-card,.table-card,.filter-card,.cm-card,.card),
+html[data-cm-theme="godOfDestruction"] :where(.bm-page-card,.panel-card,.cm-unified-card,.bm-current-section,.dashboard-card,.stat-card,.report-card,.summary-card,.settings-card,.employee-card,.client-card,.service-card,.product-card,.appointment-card,.sale-card,.marketing-card,.pass-card,.chart-card,.table-card,.filter-card,.cm-card,.card){
+  position:relative;
+  overflow:hidden;
+  isolation:isolate;
+}
+html[data-cm-theme="royalSaiyanBlue"] :where(.bm-page-card,.panel-card,.cm-unified-card,.bm-current-section,.dashboard-card,.stat-card,.report-card,.summary-card,.settings-card,.employee-card,.client-card,.service-card,.product-card,.appointment-card,.sale-card,.marketing-card,.pass-card,.chart-card,.table-card,.filter-card,.cm-card,.card)::before,
+html[data-cm-theme="godOfDestruction"] :where(.bm-page-card,.panel-card,.cm-unified-card,.bm-current-section,.dashboard-card,.stat-card,.report-card,.summary-card,.settings-card,.employee-card,.client-card,.service-card,.product-card,.appointment-card,.sale-card,.marketing-card,.pass-card,.chart-card,.table-card,.filter-card,.cm-card,.card)::before{
+  content:"";
+  position:absolute;
+  inset:-28%;
+  z-index:0;
+  pointer-events:none!important;
+  opacity:.55;
+  mix-blend-mode:screen;
+}
+html[data-cm-theme="royalSaiyanBlue"] :where(.bm-page-card,.panel-card,.cm-unified-card,.bm-current-section,.dashboard-card,.stat-card,.report-card,.summary-card,.settings-card,.employee-card,.client-card,.service-card,.product-card,.appointment-card,.sale-card,.marketing-card,.pass-card,.chart-card,.table-card,.filter-card,.cm-card,.card)::before{
+  background:
+    radial-gradient(circle at 76% 12%, rgba(83,220,255,.25), transparent 30%),
+    radial-gradient(circle at 8% 92%, rgba(31,107,255,.18), transparent 32%),
+    linear-gradient(115deg, transparent 0 32%, rgba(118,226,255,.13) 41%, transparent 52% 100%);
+  filter:drop-shadow(0 0 18px rgba(55,200,255,.32));
+  animation:cmBlueCardAura 4.4s ease-in-out infinite;
+}
+html[data-cm-theme="godOfDestruction"] :where(.bm-page-card,.panel-card,.cm-unified-card,.bm-current-section,.dashboard-card,.stat-card,.report-card,.summary-card,.settings-card,.employee-card,.client-card,.service-card,.product-card,.appointment-card,.sale-card,.marketing-card,.pass-card,.chart-card,.table-card,.filter-card,.cm-card,.card)::before{
+  background:
+    radial-gradient(ellipse at 70% 100%, rgba(255,83,24,.25), transparent 34%),
+    radial-gradient(circle at 15% 18%, rgba(239,35,60,.20), transparent 30%),
+    linear-gradient(18deg, transparent 0 40%, rgba(255,188,71,.10) 48%, transparent 58% 100%);
+  filter:drop-shadow(0 0 18px rgba(255,69,35,.30));
+  animation:cmGodCardFlame 3.8s ease-in-out infinite;
+}
+html[data-cm-theme="royalSaiyanBlue"] :where(.bm-page-card,.panel-card,.cm-unified-card,.bm-current-section,.dashboard-card,.stat-card,.report-card,.summary-card,.settings-card,.employee-card,.client-card,.service-card,.product-card,.appointment-card,.sale-card,.marketing-card,.pass-card,.chart-card,.table-card,.filter-card,.cm-card,.card)::after,
+html[data-cm-theme="godOfDestruction"] :where(.bm-page-card,.panel-card,.cm-unified-card,.bm-current-section,.dashboard-card,.stat-card,.report-card,.summary-card,.settings-card,.employee-card,.client-card,.service-card,.product-card,.appointment-card,.sale-card,.marketing-card,.pass-card,.chart-card,.table-card,.filter-card,.cm-card,.card)::after{
+  content:"";
+  position:absolute;
+  inset:0;
+  z-index:0;
+  pointer-events:none!important;
+  border-radius:inherit;
+}
+html[data-cm-theme="royalSaiyanBlue"] :where(.bm-page-card,.panel-card,.cm-unified-card,.bm-current-section,.dashboard-card,.stat-card,.report-card,.summary-card,.settings-card,.employee-card,.client-card,.service-card,.product-card,.appointment-card,.sale-card,.marketing-card,.pass-card,.chart-card,.table-card,.filter-card,.cm-card,.card)::after{
+  box-shadow:inset 0 0 0 1px rgba(115,216,255,.16), inset 0 0 30px rgba(55,200,255,.09);
+  background:radial-gradient(circle at 88% 18%, rgba(115,216,255,.12), transparent 34%);
+  animation:cmCardAuraBreathe 3.2s ease-in-out infinite;
+}
+html[data-cm-theme="godOfDestruction"] :where(.bm-page-card,.panel-card,.cm-unified-card,.bm-current-section,.dashboard-card,.stat-card,.report-card,.summary-card,.settings-card,.employee-card,.client-card,.service-card,.product-card,.appointment-card,.sale-card,.marketing-card,.pass-card,.chart-card,.table-card,.filter-card,.cm-card,.card)::after{
+  box-shadow:inset 0 0 0 1px rgba(239,35,60,.16), inset 0 0 32px rgba(255,84,31,.10);
+  background:radial-gradient(ellipse at 88% 90%, rgba(255,84,31,.14), transparent 34%);
+  animation:cmCardAuraBreathe 2.85s ease-in-out infinite;
+}
+html[data-cm-theme="royalSaiyanBlue"] :where(.bm-page-card,.panel-card,.cm-unified-card,.bm-current-section,.dashboard-card,.stat-card,.report-card,.summary-card,.settings-card,.employee-card,.client-card,.service-card,.product-card,.appointment-card,.sale-card,.marketing-card,.pass-card,.chart-card,.table-card,.filter-card,.cm-card,.card) > *,
+html[data-cm-theme="godOfDestruction"] :where(.bm-page-card,.panel-card,.cm-unified-card,.bm-current-section,.dashboard-card,.stat-card,.report-card,.summary-card,.settings-card,.employee-card,.client-card,.service-card,.product-card,.appointment-card,.sale-card,.marketing-card,.pass-card,.chart-card,.table-card,.filter-card,.cm-card,.card) > *{
+  position:relative;
+  z-index:1;
+}
+@keyframes cmBlueCardAura{
+  0%,100%{opacity:.34;transform:translate3d(-8%,-3%,0) scale(1);}
+  50%{opacity:.76;transform:translate3d(7%,3%,0) scale(1.05);}
+}
+@keyframes cmGodCardFlame{
+  0%,100%{opacity:.34;transform:translate3d(0,7%,0) scale(1) skewX(0deg);}
+  38%{opacity:.76;transform:translate3d(3%,-2%,0) scale(1.04) skewX(-1.4deg);}
+  72%{opacity:.50;transform:translate3d(-3%,-5%,0) scale(1.07) skewX(1.4deg);}
+}
+@keyframes cmCardAuraBreathe{
+  0%,100%{opacity:.45;filter:saturate(1);}
+  50%{opacity:.90;filter:saturate(1.45);}
+}
+@media (prefers-reduced-motion: reduce){
+  .cm-power-aura-burst,
+  .cm-power-aura-burst::before,
+  .cm-power-aura-burst::after,
+  .cm-power-aura-particle,
+  html[data-cm-theme="royalSaiyanBlue"] :where(.bm-page-card,.panel-card,.cm-unified-card,.bm-current-section,.dashboard-card,.stat-card,.report-card,.summary-card,.settings-card,.employee-card,.client-card,.service-card,.product-card,.appointment-card,.sale-card,.marketing-card,.pass-card,.chart-card,.table-card,.filter-card,.cm-card,.card)::before,
+  html[data-cm-theme="godOfDestruction"] :where(.bm-page-card,.panel-card,.cm-unified-card,.bm-current-section,.dashboard-card,.stat-card,.report-card,.summary-card,.settings-card,.employee-card,.client-card,.service-card,.product-card,.appointment-card,.sale-card,.marketing-card,.pass-card,.chart-card,.table-card,.filter-card,.cm-card,.card)::before,
+  html[data-cm-theme="royalSaiyanBlue"] :where(.bm-page-card,.panel-card,.cm-unified-card,.bm-current-section,.dashboard-card,.stat-card,.report-card,.summary-card,.settings-card,.employee-card,.client-card,.service-card,.product-card,.appointment-card,.sale-card,.marketing-card,.pass-card,.chart-card,.table-card,.filter-card,.cm-card,.card)::after,
+  html[data-cm-theme="godOfDestruction"] :where(.bm-page-card,.panel-card,.cm-unified-card,.bm-current-section,.dashboard-card,.stat-card,.report-card,.summary-card,.settings-card,.employee-card,.client-card,.service-card,.product-card,.appointment-card,.sale-card,.marketing-card,.pass-card,.chart-card,.table-card,.filter-card,.cm-card,.card)::after{
+    animation:none!important;
+  }
+}

@@ -127,6 +127,7 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   const CM_POWER_LIGHTNING_THEMES = new Set(['mysticWarrior','ssj3']);
+  const CM_POWER_AURA_THEMES = new Set(['royalSaiyanBlue','godOfDestruction']);
   let cmLastLightningAt = 0;
   const triggerCmPowerLightning = (theme) => {
     if (!CM_POWER_LIGHTNING_THEMES.has(theme)) return;
@@ -190,12 +191,48 @@ document.addEventListener('DOMContentLoaded', () => {
     window.setTimeout(() => burst.remove(), strong ? 1350 : 1050);
   };
 
+
+
+  let cmLastAuraAt = 0;
+  const triggerCmPowerAura = (theme) => {
+    if (!CM_POWER_AURA_THEMES.has(theme)) return;
+    const now = Date.now();
+    if (now - cmLastAuraAt < 140) return;
+    cmLastAuraAt = now;
+    const old = document.querySelector('.cm-power-aura-burst');
+    if (old) old.remove();
+    const burst = document.createElement('div');
+    const blue = theme === 'royalSaiyanBlue';
+    burst.className = `cm-power-aura-burst ${blue ? 'cm-power-aura-blue' : 'cm-power-aura-god'}`;
+    burst.setAttribute('aria-hidden', 'true');
+
+    const particleCount = blue ? 26 : 34;
+    for (let i = 0; i < particleCount; i += 1) {
+      const particle = document.createElement('span');
+      particle.className = 'cm-power-aura-particle';
+      particle.style.setProperty('--p-left', `${(4 + Math.random() * 92).toFixed(2)}%`);
+      particle.style.setProperty('--p-top', `${(50 + Math.random() * 46).toFixed(2)}%`);
+      particle.style.setProperty('--p-size', `${(blue ? 3 + Math.random() * 5 : 2 + Math.random() * 7).toFixed(2)}px`);
+      particle.style.setProperty('--p-drift', `${(-36 + Math.random() * 72).toFixed(2)}px`);
+      particle.style.setProperty('--p-rise', `${(blue ? 90 + Math.random() * 170 : 70 + Math.random() * 150).toFixed(2)}px`);
+      particle.style.setProperty('--p-delay', `${(Math.random() * .24).toFixed(3)}s`);
+      particle.style.setProperty('--p-speed', `${(blue ? .9 + Math.random() * .55 : .75 + Math.random() * .5).toFixed(3)}s`);
+      burst.appendChild(particle);
+    }
+
+    document.body.appendChild(burst);
+    window.setTimeout(() => burst.remove(), blue ? 1450 : 1350);
+  };
+
   document.addEventListener('pointerdown', (event) => {
     const card = event.target.closest?.('[data-cm-theme-choice]');
     if (!card) return;
     const theme = card.getAttribute('data-cm-theme-choice');
     if (CM_POWER_LIGHTNING_THEMES.has(theme)) {
       window.setTimeout(() => triggerCmPowerLightning(theme), 20);
+    }
+    if (CM_POWER_AURA_THEMES.has(theme)) {
+      window.setTimeout(() => triggerCmPowerAura(theme), 20);
     }
   }, true);
   applyCmTheme(getStoredCmTheme());
