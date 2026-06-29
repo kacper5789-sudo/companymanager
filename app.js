@@ -7013,10 +7013,13 @@ document.addEventListener('DOMContentLoaded', () => {
     ];
     const totalPayments = allPayments.reduce((sum, item) => sum + item.amount, 0);
     const cashPayments = allPayments.filter(p => String(p.method).toLowerCase().includes('gotówka')).reduce((sum, item) => sum + item.amount, 0);
-    const paymentRows = paymentMethods.map(method => {
-      const value = allPayments.filter(p => String(p.method || '').toLowerCase() === method.toLowerCase()).reduce((sum, item) => sum + item.amount, 0);
-      return `<div><span>${escapeHtml(method)}</span><b>${money(value)}</b></div>`;
-    }).join('');
+    const paymentMethodStats = paymentMethods.map(method => {
+      const items = allPayments.filter(p => String(p.method || '').toLowerCase() === method.toLowerCase());
+      return { method, count: items.length, value: items.reduce((sum, item) => sum + item.amount, 0) };
+    }).filter(item => item.count > 0 || item.value > 0);
+    const paymentMethodRows = paymentMethodStats.length
+      ? paymentMethodStats.map(item => [escapeHtml(item.method), String(item.count), money(item.value)])
+      : [['-','0','0.00 PLN']];
 
     const serviceCategoryStats = new Map();
     serviceSales.forEach(sale => {
@@ -7096,11 +7099,12 @@ document.addEventListener('DOMContentLoaded', () => {
       <section class="cm-period-section">
         <h3>Finanse</h3>
         <div class="cm-finance-grid">
-          <div><span>Płatności</span><b>${money(totalPayments)}</b>${paymentRows}</div>
+          <div><span>Płatności</span><b>${money(totalPayments)}</b><small>liczba płatności: ${allPayments.length}</small></div>
           <div><span>Stan kasy</span><b>${money(cashPayments)}</b><small>+${money(cashPayments)} płatności gotówką</small></div>
           <div><span>Obrót</span><b>${money(totalPayments)}</b><small>łączny obrót w wybranym okresie</small></div>
         </div>
       </section>
+      <section class="cm-period-section"><h3>Płatności</h3><p>Metody płatności w wybranym okresie</p>${table(['Płatność','Liczba','Wartość PLN'], paymentMethodRows)}</section>
       <section class="cm-period-section"><h3>Usługi</h3><p>Sprzedane usługi w tym okresie: <b>${serviceSales.length}</b></p>${table(['L.szt.','Wartość PLN','Kategoria','Kod usługi'], serviceRows.length ? serviceRows : [['0','0.00 PLN','(bez kategorii)','']])}</section>
       <section class="cm-period-section"><h3>Produkty</h3><p>Sprzedane produkty w tym okresie: <b>${productSales.length}</b></p>${table(['L.szt.','Wartość PLN','Kategoria','Kod produktu'], productRows.length ? productRows : [['0','0.00 PLN','(bez kategorii)','']])}</section>
       <section class="cm-period-section"><h3>Karnety</h3><p>Sprzedane karnety</p>${table(['L.szt.','Wartość PLN','Kategoria'], passRows.length ? passRows : [['0','0.00 PLN','-']])}</section>

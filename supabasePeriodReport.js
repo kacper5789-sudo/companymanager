@@ -359,7 +359,12 @@
   }
 
   function createEmployeeResolver(employees) {
-    const byId = new Map((employees || []).filter(e => e?.id).map(e => [e.id, e]));
+    const byId = new Map();
+    (employees || []).forEach(e => {
+      [e?.id, e?.profile_id, e?.profileId, e?.user_id, e?.userId].filter(Boolean).forEach(id => {
+        if (!byId.has(id)) byId.set(id, e);
+      });
+    });
     const byName = new Map();
     (employees || []).forEach(e => {
       const nm = nameKey(employeeName(e, ""));
@@ -402,15 +407,16 @@
 
   async function fetchPeriodData(ctx, range) {
     const sb = window.cmSupabase;
-    const [salesRes, paymentsRes, appointmentsRes, clientsRes, employeesRes, employeesTableRes] = await Promise.all([
+    const [salesRes, paymentsRes, appointmentsRes, clientsRes, employeesRes, employeesTableRes, passesRes] = await Promise.all([
       sb.from("sales").select("id,company_id,client_id,employee_id,employee_name,appointment_id,total_gross,total_net,payment_status,payment_method,status,created_at,updated_at").eq("company_id", ctx.companyId).gte("created_at", range.startIso).lt("created_at", range.endIso),
       sb.from("payments").select("id,company_id,sale_id,appointment_id,amount,method,status,paid_at,created_at").eq("company_id", ctx.companyId).gte("created_at", range.startIso).lt("created_at", range.endIso),
       sb.from("appointments").select("id,company_id,client_id,client_name,employee_id,employee_name,service_id,service_name,product_id,product_name,total,price,paid_amount,payment_status,payment_method,status,finished,date,starts_at,appointment_datetime,created_at,cancellation_reason,cancel_reason,cancelled_at").eq("company_id", ctx.companyId).gte("date", range.fromIso).lte("date", range.toIso),
       sb.from("clients").select("id,first_name,last_name,created_at,company_id").eq("company_id", ctx.companyId).lte("created_at", range.endIso),
       sb.from("profiles").select("id,full_name,email,role,company_id").eq("company_id", ctx.companyId),
-      sb.from("employees").select("id,profile_id,user_id,full_name,employee_name,name,email,active,is_active,status,company_id").eq("company_id", ctx.companyId)
+      sb.from("employees").select("id,profile_id,user_id,full_name,employee_name,name,email,active,is_active,status,company_id").eq("company_id", ctx.companyId),
+      sb.from("passes").select("id,company_id,sale_id,employee_id,employee_name,buyer_client_id,beneficiary_client_id,customer_id,name,number,value,payment_method,sale_date,sale_time,created_at,active,status").eq("company_id", ctx.companyId).gte("created_at", range.startIso).lt("created_at", range.endIso)
     ]);
-    const errors = [salesRes.error, paymentsRes.error, appointmentsRes.error, clientsRes.error, employeesRes.error].filter(Boolean);
+    const errors = [salesRes.error, paymentsRes.error, appointmentsRes.error, clientsRes.error, employeesRes.error, passesRes.error].filter(Boolean);
     if (errors.length) throw new Error(errors.map(e => e.message).join(" | "));
     if (employeesTableRes.error) console.warn("[Raport z okresu] employees:", employeesTableRes.error.message || employeesTableRes.error);
     const inactiveSaleStatuses = ["void", "deleted", "usunięte", "usuniete", "cancelled", "canceled", "anulowane", "anulowana"];
@@ -422,7 +428,7 @@
     const saleIds = sales.map(s => s.id).filter(Boolean);
     let saleItems = [];
     if (saleIds.length) {
-      const itemsRes = await sb.from("sale_items").select("id,company_id,sale_id,item_type,service_id,product_id,name,name_snapshot,quantity,unit_price,total,total_price,created_at").in("sale_id", saleIds);
+      const itemsRes = await sb.from("sale_items").select("id,company_id,sale_id,item_type,service_id,product_id,pass_id,name,name_snapshot,quantity,unit_price,total,total_price,created_at").in("sale_id", saleIds);
       if (itemsRes.error) throw new Error(itemsRes.error.message);
       saleItems = itemsRes.data || [];
     }
@@ -439,18 +445,55 @@
       clients: clientsRes.data || [],
       employees: employeesRes.data || [],
       employeesTable: employeesTableRes.error ? [] : (employeesTableRes.data || []),
-      saleItems
+      saleItems,
+      passes: passesRes.data || []
     };
   }
 
   function buildReport(data, range) {
     const saleMap = new Map(data.sales.map(s => [s.id, s]));
+    const rawPasses = (data.passes || []).filter((pass) => pass.active !== false && !["void", "deleted", "usunięte", "usuniete", "cancelled", "canceled", "anulowane", "anulowana"].includes(String(pass.status || "").toLowerCase()));
+    const passBySaleId = new Map();
+    rawPasses.forEach((pass) => { if (pass.sale_id && !passBySaleId.has(pass.sale_id)) passBySaleId.set(pass.sale_id, pass); });
     const employeesForReport = employeeDirectory(data.employees || [], data.employeesTable || []);
     const employeeResolver = createEmployeeResolver(employeesForReport);
     const employeeMap = employeeResolver.byId;
     const appointmentById = new Map((data.appointments || []).map(a => [a.id, a]));
     const clientMap = new Map(data.clients.map(c => [c.id, c]));
-    const items = data.saleItems.map(item => ({ ...item, sale: saleMap.get(item.sale_id) || {} }));
+    let items = data.saleItems.map(item => ({ ...item, sale: saleMap.get(item.sale_id) || {} }));
+    const passIdsInItems = new Set(items.filter(i => normalizeItemType(i.item_type) === 'pass').map(i => String(i.pass_id || '')).filter(Boolean));
+    rawPasses.forEach((pass) => {
+      if (pass.id && passIdsInItems.has(String(pass.id))) return;
+      const sale = pass.sale_id ? saleMap.get(pass.sale_id) : null;
+      const syntheticSaleId = pass.sale_id || `pass-sale-${pass.id}`;
+      if (!saleMap.has(syntheticSaleId)) {
+        saleMap.set(syntheticSaleId, {
+          id: syntheticSaleId,
+          employee_id: pass.employee_id,
+          employee_name: pass.employee_name,
+          total_gross: Number(pass.value || 0),
+          total_net: Number(pass.value || 0),
+          payment_method: pass.payment_method || 'gotówka',
+          created_at: pass.created_at
+        });
+      }
+      items.push({
+        id: `pass-fallback-${pass.id}`,
+        company_id: pass.company_id,
+        sale_id: syntheticSaleId,
+        item_type: 'pass',
+        pass_id: pass.id,
+        name: pass.name || pass.number || 'Karnet',
+        name_snapshot: pass.name || pass.number || 'Karnet',
+        quantity: 1,
+        unit_price: Number(pass.value || sale?.total_gross || 0),
+        total: Number(pass.value || sale?.total_gross || 0),
+        total_price: Number(pass.value || sale?.total_gross || 0),
+        created_at: pass.created_at,
+        __linkedPass: pass,
+        sale: saleMap.get(syntheticSaleId) || sale || {}
+      });
+    });
     const services = items.filter(i => normalizeItemType(i.item_type) === 'service');
     const products = items.filter(i => normalizeItemType(i.item_type) === 'product');
     const passes = items.filter(i => normalizeItemType(i.item_type) === 'pass');
@@ -507,8 +550,9 @@
     });
     items.forEach(item => {
       const sale = item.sale || {};
+      const linkedPass = item.__linkedPass || (item.pass_id ? rawPasses.find(pass => String(pass.id) === String(item.pass_id)) : passBySaleId.get(item.sale_id) || {});
       const appointment = appointmentById.get(sale.appointment_id) || {};
-      const row = ensureEmployee(sale.employee_id || appointment.employee_id, sale.employee_name, appointment.employee_name);
+      const row = ensureEmployee(sale.employee_id || linkedPass.employee_id || appointment.employee_id, sale.employee_name, linkedPass.employee_name, appointment.employee_name);
       const type = normalizeItemType(item.item_type);
       const qty = itemQty(item);
       const value = itemValue(item, saleMap);
