@@ -1,6 +1,0 @@
--- CompanyManager v245 — Skin menu right popover fix
--- UI/CSS only. No database changes required.
--- Changes:
--- - Skórka aplikacji dropdown opens to the right from the left rail.
--- - Left rail keeps overflow visible so the popover is not clipped.
--- - Mobile/tablet fallback still opens downward inside viewport.

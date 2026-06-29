@@ -16455,3 +16455,34 @@ html[data-cm-theme="beautyRose"] #cmPassPortalRoot .cm-pass-portal-panel:not([hi
 }
 .bm-dashboard-cancel-box[hidden]{display:none!important;}
 .bm-dashboard-edit-status-actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center;}
+
+/* v83 — Dashboard appointment status cells */
+.bm-schedule-slot.finished,
+.bm-schedule-slot.cancelled{
+  background:linear-gradient(180deg,rgba(71,85,105,.56),rgba(30,41,59,.72)) !important;
+  border-left:2px solid rgba(148,163,184,.78) !important;
+  filter:grayscale(.25);
+}
+.bm-schedule-slot.finished span,
+.bm-schedule-slot.cancelled span{
+  color:#e5e7eb !important;
+  opacity:.92 !important;
+}
+.bm-schedule-slot.finished strong,
+.bm-schedule-slot.cancelled strong{
+  display:inline-block;
+  margin-top:3px;
+  padding:2px 7px;
+  border-radius:999px;
+  background:rgba(148,163,184,.22);
+  color:#f8fafc;
+  font-size:10px;
+  letter-spacing:.06em;
+}
+.bm-schedule-slot.cancelled strong{background:rgba(239,68,68,.22);color:#fecaca;}
+.bm-schedule-slot.finished strong{background:rgba(34,197,94,.18);color:#bbf7d0;}
+html[data-cm-theme]:not([data-cm-theme="original"]) .bm-schedule-slot.finished,
+html[data-cm-theme]:not([data-cm-theme="original"]) .bm-schedule-slot.cancelled{
+  background:linear-gradient(180deg,color-mix(in srgb,var(--cm-skin-card) 72%,#64748b 28%),color-mix(in srgb,var(--cm-skin-soft) 74%,#111827 26%)) !important;
+  border-color:color-mix(in srgb,var(--cm-skin-text) 45%,transparent) !important;
+}

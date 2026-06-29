@@ -42,8 +42,8 @@
   const CANCELLATION_REASONS = [
     "Klient odwołał",
     "Klient nie przyszedł",
-    "Pomyłka",
     "Klient przełożył wizytę",
+    "Pomyłka",
     "Inne"
   ];
 
@@ -900,7 +900,7 @@
   }
 
   function scheduleRows(data, lookups, dateIso, activeWorkerIds = []) {
-    const active = data.appointments.filter((item) => appointmentDate(item) === dateIso && item.deleted !== true && !["odwołana", "odwołane", "usunięte"].includes(String(item.status || "").toLowerCase()));
+    const active = data.appointments.filter((item) => appointmentDate(item) === dateIso && item.deleted !== true && !["usunięte"].includes(String(item.status || "").toLowerCase()));
     const settings = dashboardSettings(data);
     const visitDuration = Math.max(5, settings.duration || 30);
     const breakMinutes = Math.max(0, settings.breakMinutes || 0);
@@ -946,10 +946,15 @@
         const client = lookups.clientsById[appointmentClientId(visit)];
         const service = lookups.servicesById[visit.service_id];
         const product = lookups.productsById[visit.product_id];
+        const statusValue = String(visit.status || "").toLowerCase();
+        const visitCancelled = ["odwołana", "odwołane", "odwołany", "cancelled", "canceled"].includes(statusValue) || Boolean(visit.cancelled_at || visit.cancellation_reason);
+        const visitFinished = ["zakończone", "zakończona", "zakończony", "completed", "done"].includes(statusValue);
+        const stateClass = visitCancelled ? " cancelled" : visitFinished ? " finished" : "";
+        const stateLabel = visitCancelled ? "ODWOŁANA" : visitFinished ? "ZAKOŃCZONA" : "";
         const isStart = appointmentStart(visit) === slot.start;
         const label = isStart
-          ? `${escapeHtml(appointmentStart(visit))} - ${escapeHtml(appointmentEnd(visit))}<br>${escapeHtml(customerName(client))}: ${escapeHtml(serviceName(service) !== "-" ? serviceName(service) : productName(product))}`
-          : `<span class="bm-continuation">ZAJĘTE do ${escapeHtml(appointmentEnd(visit))}</span>`;
+          ? `${escapeHtml(appointmentStart(visit))} - ${escapeHtml(appointmentEnd(visit))}<br>${escapeHtml(customerName(client))}: ${escapeHtml(serviceName(service) !== "-" ? serviceName(service) : productName(product))}${stateLabel ? `<br><strong>${stateLabel}</strong>` : ""}`
+          : `<span class="bm-continuation">${stateLabel || "ZAJĘTE"} do ${escapeHtml(appointmentEnd(visit))}</span>`;
         const tooltip = [
           `Klient: ${customerName(client)}`,
           `Telefon: ${client?.phone || "Brak numeru"}`,
@@ -957,7 +962,7 @@
           `Pracownik: ${personName(employee)}`,
           `Opis: ${visit.note || "Brak opisu"}`
         ].join("\n");
-        return `<td class="bm-schedule-slot busy${inactiveClass}" data-visit-id="${escapeHtml(visit.id)}" data-employee-id="${escapeHtml(employee.id)}" data-time="${escapeHtml(slot.start)}" data-date="${escapeHtml(dateIso)}" data-slot-tooltip="${escapeHtml(tooltip)}"><span>${label}</span></td>`;
+        return `<td class="bm-schedule-slot busy${stateClass}${inactiveClass}" data-visit-id="${escapeHtml(visit.id)}" data-employee-id="${escapeHtml(employee.id)}" data-time="${escapeHtml(slot.start)}" data-date="${escapeHtml(dateIso)}" data-slot-tooltip="${escapeHtml(tooltip)}"><span>${label}</span></td>`;
       }).join("");
       return `<tr><th class="bm-time-col">${escapeHtml(slot.label)}</th>${cells}</tr>`;
     }).join("");

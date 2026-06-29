@@ -3740,7 +3740,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const employeeIds = new Set(employees.map(employee => employee.id));
     const todayIso = currentIsoDate();
     const allDashboardVisits = (db.dashboardVisits || []).filter(v => v.companyId === company.id && employeeIds.has(v.employeeId));
-    const dashVisits = allDashboardVisits.filter(v => v.status !== 'odwołana' && v.status !== 'odwołane' && v.cancelled !== true);
+    const dashVisits = allDashboardVisits;
     const isoFromDateObj = (date) => `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
     const timeSlots = [];
     for (let hour = 6; hour <= 20; hour++) {
@@ -3757,6 +3757,11 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!match) return '';
       return `${String(Number(match[1])).padStart(2,'0')}:${match[2]}`;
     };
+    const dashboardCancelReasons = ['Klient odwołał','Klient nie przyszedł','Klient przełożył wizytę','Pomyłka','Inne'];
+    const dashboardCancelReasonOptions = (selected = '') => `<option value="">Wybierz powód</option>${dashboardCancelReasons.map(reason => `<option value="${escapeHtml(reason)}" ${reason === selected ? 'selected' : ''}>${escapeHtml(reason)}</option>`).join('')}`;
+    const isDashboardVisitCancelled = (visit) => ['odwołane','odwołana','odwołany','usunięte','usunięta'].includes(String(visit?.status || '').toLowerCase()) || visit?.cancelled === true;
+    const isDashboardVisitFinished = (visit) => ['zakończone','zakończona','zakończony','completed','done'].includes(String(visit?.status || '').toLowerCase()) || visit?.finished === true;
+    const dashboardVisitStateClass = (visit) => isDashboardVisitCancelled(visit) ? 'cancelled' : isDashboardVisitFinished(visit) ? 'finished' : 'active';
     const findVisitInSlot = (employee, time, dateIso, offset) => {
       const slotMin = minutesFromTime(time);
       if (slotMin == null) return null;
@@ -3793,10 +3798,12 @@ document.addEventListener('DOMContentLoaded', () => {
       const visit = findVisitInSlot(employee, time, dateIso, offset);
       if (visit?.type === 'real') {
         const real = visit.item;
-        const label = `${escapeHtml(real.start)} - ${escapeHtml(real.end)}<br>${escapeHtml(real.clientName)}: ${escapeHtml(real.serviceName || real.productName || 'Wizyta')}`;
-        return { busy:true, text: visit.isStart ? label : `<span class="bm-continuation">ZAJĘTE do ${escapeHtml(real.end)}</span>`, tooltip: buildSlotTooltip(visit, employee) };
+        const state = dashboardVisitStateClass(real);
+        const stateLabel = state === 'cancelled' ? 'ODWOŁANA' : state === 'finished' ? 'ZAKOŃCZONA' : '';
+        const label = `${escapeHtml(real.start)} - ${escapeHtml(real.end)}<br>${escapeHtml(real.clientName)}: ${escapeHtml(real.serviceName || real.productName || 'Wizyta')}${stateLabel ? `<br><strong>${stateLabel}</strong>` : ''}`;
+        return { busy:true, state, visitId:real.id, text: visit.isStart ? label : `<span class="bm-continuation">${stateLabel || 'ZAJĘTE'} do ${escapeHtml(real.end)}</span>`, tooltip: buildSlotTooltip(visit, employee) };
       }
-      return { busy:false, text:'FREE', tooltip:'Wolny termin' };
+      return { busy:false, state:'free', visitId:'', text:'FREE', tooltip:'Wolny termin' };
     };
     const getEmployeeLabel = (employee) => escapeHtml(employee.fullName || employee.email || employee.login || 'Pracownik');
     const customerOptions = customers.map(customer => `<option value="${escapeHtml(customer.id)}">${escapeHtml(customerName(customer))}</option>`).join('');
@@ -3823,7 +3830,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const scheduleRows = timeSlots.map(time => {
       const cells = employees.map(employee => {
         const cell = getScheduleCell(employee, time, todayIso, 0);
-        return `<td class="bm-schedule-slot ${cell.busy ? 'busy' : 'free'}" data-employee-id="${escapeHtml(employee.id)}" data-employee-name="${getEmployeeLabel(employee)}" data-time="${escapeHtml(time)}" data-slot-tooltip="${escapeHtml(cell.tooltip || '')}"><span>${cell.text}</span></td>`;
+        return `<td class="bm-schedule-slot ${cell.busy ? 'busy' : 'free'} ${cell.state === 'cancelled' ? 'cancelled' : ''} ${cell.state === 'finished' ? 'finished' : ''}" data-visit-id="${escapeHtml(cell.visitId || '')}" data-employee-id="${escapeHtml(employee.id)}" data-employee-name="${getEmployeeLabel(employee)}" data-time="${escapeHtml(time)}" data-slot-tooltip="${escapeHtml(cell.tooltip || '')}"><span>${cell.text}</span></td>`;
       }).join('');
       return `<tr><th class="bm-time-col">${escapeHtml(time)}</th>${cells}</tr>`;
     }).join('');
@@ -3879,7 +3886,15 @@ document.addEventListener('DOMContentLoaded', () => {
         <label class="bm-full">Opis<textarea name="note" placeholder="Notatka"></textarea></label>
         <button type="submit">Zapisz zmiany</button>
         <div class="bm-full bm-dashboard-edit-status-actions">
+          <button type="button" id="dashEditFinishVisitBtn" class="bm-light-btn">Zakończ wizytę</button>
           <button type="button" id="dashEditCancelVisitBtn" class="bm-danger-btn">Odwołaj wizytę</button>
+        </div>
+        <div class="bm-full bm-dashboard-cancel-box" id="dashEditCancelReasonBox" hidden>
+          <label class="bm-full">Powód odwołania wizyty<select name="cancelReason" id="dashEditCancelReasonSelect">${dashboardCancelReasonOptions()}</select><small class="bm-muted">Wymagane do statystyk w raportach.</small></label>
+          <div class="bm-full bm-dashboard-edit-status-actions">
+            <button type="button" class="bm-danger-btn" id="dashEditConfirmCancelVisitBtn">Potwierdź odwołanie</button>
+            <button type="button" class="bm-light-btn" id="dashEditHideCancelReasonBtn">Anuluj</button>
+          </div>
         </div>
       </form>
       <p id="dashboardEditVisitMessage" class="panel-message"></p>
@@ -3888,7 +3903,7 @@ document.addEventListener('DOMContentLoaded', () => {
       <div class="bm-page-head"><h2>Odwołaj wizytę</h2></div>
       <form id="dashboardCancelVisitForm" class="bm-form-grid">
         <label class="bm-full">Wybierz wizytę<select name="visitId" required><option value="">Wybierz wizytę</option>${dashboardVisitOptions}</select></label>
-        <label class="bm-full">Powód<textarea name="reason" placeholder="Powód" required></textarea></label>
+        <label class="bm-full">Powód odwołania wizyty<select name="reason" required>${dashboardCancelReasonOptions()}</select></label>
         <button type="submit" class="bm-danger-btn">Odwołaj wizytę</button>
       </form>
       <p id="dashboardCancelVisitMessage" class="panel-message"></p>
@@ -3949,10 +3964,18 @@ document.addEventListener('DOMContentLoaded', () => {
       if (editVisitPanel) { editVisitPanel.hidden = false; editVisitPanel.classList.add('cm-modal-active'); updateGlobalModalState(); }
     });
     document.querySelector('#dashEditCancelVisitBtn')?.addEventListener('click', () => {
+      const box = document.querySelector('#dashEditCancelReasonBox');
       const visitId = editVisitForm?.visitId?.value || '';
-      const cancelSelect = cancelVisitForm?.querySelector('select[name="visitId"]');
-      if (cancelSelect) cancelSelect.value = visitId;
-      if (cancelVisitPanel) { cancelVisitPanel.hidden = false; cancelVisitPanel.classList.add('cm-modal-active'); updateGlobalModalState(); }
+      const selected = allDashboardVisits.find(v => v.id === visitId);
+      const select = document.querySelector('#dashEditCancelReasonSelect');
+      if (select) select.innerHTML = dashboardCancelReasonOptions(selected?.cancelReason || selected?.cancellationReason || '');
+      if (box) box.hidden = false;
+      const msg = document.querySelector('#dashboardEditVisitMessage');
+      if (msg) { msg.textContent = 'Wybierz powód odwołania wizyty.'; msg.style.color = '#86efac'; }
+    });
+    document.querySelector('#dashEditHideCancelReasonBtn')?.addEventListener('click', () => {
+      const box = document.querySelector('#dashEditCancelReasonBox');
+      if (box) box.hidden = true;
     });
     document.querySelectorAll('.dash-worker-toggle').forEach(input => input.addEventListener('change', () => updateEmployeeCount(true)));
     document.querySelector('#dashToggleAllWorkers')?.addEventListener('change', event => {
@@ -4019,9 +4042,22 @@ document.addEventListener('DOMContentLoaded', () => {
       cell.addEventListener('mousemove', positionSlotTooltip);
       cell.addEventListener('mouseleave', () => { if (slotTooltip) slotTooltip.hidden = true; });
     });
+    const openDashboardEditForVisit = (visitId) => {
+      const select = document.querySelector('#dashEditVisitSelect');
+      if (!visitId || !select || !editVisitPanel) return false;
+      select.value = visitId;
+      select.dispatchEvent(new Event('change', { bubbles:true }));
+      editVisitPanel.hidden = false;
+      editVisitPanel.classList.add('cm-modal-active');
+      const cancelBox = document.querySelector('#dashEditCancelReasonBox');
+      if (cancelBox) cancelBox.hidden = true;
+      updateGlobalModalState();
+      return true;
+    };
     document.querySelectorAll('.bm-schedule-slot').forEach(cell => cell.addEventListener('click', () => {
       if (slotTooltip) slotTooltip.hidden = true;
       if (cell.classList.contains('inactive-worker')) return;
+      if (cell.classList.contains('busy') && openDashboardEditForVisit(cell.dataset.visitId || '')) return;
       formCard.hidden = false;
       formCard.classList.add('cm-modal-active');
       const start = cell.dataset.time || '06:00';
@@ -4052,6 +4088,32 @@ document.addEventListener('DOMContentLoaded', () => {
       editVisitForm.payment.value = selected.payment || 'gotówka';
       editVisitForm.note.value = selected.note || '';
     });
+    document.querySelector('#dashEditFinishVisitBtn')?.addEventListener('click', () => {
+      const visitId = editVisitForm?.visitId?.value || '';
+      const currentDb = loadDatabase();
+      const index = (currentDb.dashboardVisits || []).findIndex(v => v.id === visitId && v.companyId === company.id);
+      const msg = document.querySelector('#dashboardEditVisitMessage');
+      if (index < 0) { if (msg) { msg.textContent = 'Wybierz wizytę do zakończenia.'; msg.style.color = '#fca5a5'; } return; }
+      saveUndoSnapshot('Zakończenie wizyty z dashboardu', currentDb);
+      currentDb.dashboardVisits[index] = { ...currentDb.dashboardVisits[index], status:'zakończone', finished:true, finishedAt:new Date().toISOString(), updatedAt:new Date().toISOString() };
+      saveDatabase(currentDb);
+      if (msg) { msg.textContent = 'Wizyta zakończona.'; msg.style.color = '#86efac'; }
+      setTimeout(()=>window.location.reload(),650);
+    });
+    document.querySelector('#dashEditConfirmCancelVisitBtn')?.addEventListener('click', () => {
+      const visitId = editVisitForm?.visitId?.value || '';
+      const reason = String(document.querySelector('#dashEditCancelReasonSelect')?.value || '').trim();
+      const currentDb = loadDatabase();
+      const index = (currentDb.dashboardVisits || []).findIndex(v => v.id === visitId && v.companyId === company.id);
+      const msg = document.querySelector('#dashboardEditVisitMessage');
+      if (index < 0) { if (msg) { msg.textContent = 'Wybierz wizytę do odwołania.'; msg.style.color = '#fca5a5'; } return; }
+      if (!dashboardCancelReasons.includes(reason)) { if (msg) { msg.textContent = 'Musisz wybrać powód odwołania wizyty.'; msg.style.color = '#fca5a5'; } return; }
+      saveUndoSnapshot('Odwołanie wizyty z dashboardu', currentDb);
+      currentDb.dashboardVisits[index] = { ...currentDb.dashboardVisits[index], status:'odwołana', cancelled:true, cancelReason:reason, cancelledAt:new Date().toISOString(), updatedAt:new Date().toISOString() };
+      saveDatabase(currentDb);
+      if (msg) { msg.textContent = 'Wizyta odwołana.'; msg.style.color = '#86efac'; }
+      setTimeout(()=>window.location.reload(),650);
+    });
     editVisitForm?.addEventListener('submit', (event) => {
       event.preventDefault();
       const data = new FormData(editVisitForm);
@@ -4077,7 +4139,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const index = (currentDb.dashboardVisits || []).findIndex(v => v.id === data.get('visitId') && v.companyId === company.id);
       const msg = document.querySelector('#dashboardCancelVisitMessage');
       if (index < 0) { if (msg) { msg.textContent = 'Wybierz wizytę do odwołania.'; msg.style.color = '#fca5a5'; } return; }
-      if (!reason) { if (msg) { msg.textContent = 'Wpisz powód odwołania.'; msg.style.color = '#fca5a5'; } return; }
+      if (!dashboardCancelReasons.includes(reason)) { if (msg) { msg.textContent = 'Musisz wybrać powód odwołania wizyty.'; msg.style.color = '#fca5a5'; } return; }
       saveUndoSnapshot('Odwołanie wizyty z dashboardu', currentDb);
       currentDb.dashboardVisits[index] = { ...currentDb.dashboardVisits[index], status:'odwołana', cancelled:true, cancelReason:reason, cancelledAt:new Date().toISOString() };
       saveDatabase(currentDb);
