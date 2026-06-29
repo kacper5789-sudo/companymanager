@@ -520,11 +520,28 @@
     };
 
     const paymentMap = new Map();
-    data.payments.forEach(p => {
-      const method = p.method || 'brak';
+    const paymentSaleIds = new Set();
+    function addPaymentRow(methodValue, amountValue) {
+      const method = methodValue || 'brak';
       if (!paymentMap.has(method)) paymentMap.set(method, { method, qty: 0, value: 0 });
       paymentMap.get(method).qty += 1;
-      paymentMap.get(method).value += Number(p.amount || 0);
+      paymentMap.get(method).value += Number(amountValue || 0);
+    }
+    data.payments.forEach(p => {
+      if (p.sale_id) paymentSaleIds.add(String(p.sale_id));
+      addPaymentRow(p.method, p.amount);
+    });
+
+    // Karnety w CompanyManager mogą istnieć jako rekord w `passes` nawet wtedy,
+    // gdy nie powstał osobny rekord w `payments`. Podsumowanie płatności w
+    // raporcie z okresu musi liczyć realną wpłatę za karnet tak samo jak
+    // raport dzienny: jedna sprzedaż karnetu = jedna płatność daną metodą.
+    rawPasses.forEach((pass) => {
+      if (pass.sale_id && paymentSaleIds.has(String(pass.sale_id))) return;
+      const sale = pass.sale_id ? saleMap.get(pass.sale_id) : null;
+      const amount = Number(pass.value || sale?.total_gross || sale?.total_net || 0);
+      if (!amount) return;
+      addPaymentRow(pass.payment_method || sale?.payment_method || 'gotówka', amount);
     });
 
     const employeeRowsMap = new Map();
