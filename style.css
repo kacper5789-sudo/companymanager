@@ -16497,28 +16497,76 @@ html[data-cm-theme]:not([data-cm-theme="original"]) .bm-schedule-slot.cancelled{
 }
 
 
-/* CompanyManager v98 — Employee color system */
+/* CompanyManager v99 — Employee color system compact picker */
 .cm-employee-color-picker{
+  position:relative;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  width:36px;
+  min-height:36px;
+}
+.cm-employee-color-current{
+  width:26px;
+  height:26px;
+  border-radius:999px;
+  border:2px solid rgba(255,255,255,.82);
+  background:var(--cm-employee-color, #64748b);
+  cursor:pointer;
+  padding:0;
+  box-shadow:0 0 0 1px rgba(15,23,42,.18), 0 10px 24px rgba(0,0,0,.22);
+  transition:transform .16s ease, box-shadow .16s ease;
+}
+.cm-employee-color-current:hover{
+  transform:translateY(-1px) scale(1.08);
+  box-shadow:0 0 0 2px rgba(255,255,255,.92), 0 0 0 6px color-mix(in srgb, var(--cm-employee-color) 25%, transparent), 0 14px 30px rgba(0,0,0,.28);
+}
+.cm-employee-color-popover{
+  position:absolute;
+  z-index:9999;
+  top:34px;
+  left:50%;
+  transform:translateX(-50%);
+  width:256px;
+  padding:12px;
+  border-radius:16px;
+  border:1px solid rgba(148,163,184,.25);
+  background:linear-gradient(180deg, rgba(15,23,42,.97), rgba(2,6,23,.95));
+  box-shadow:0 24px 70px rgba(0,0,0,.36), inset 0 1px 0 rgba(255,255,255,.08);
+}
+.cm-employee-color-popover-title{
+  font-size:11px;
+  font-weight:900;
+  letter-spacing:.04em;
+  text-transform:uppercase;
+  color:rgba(226,232,240,.78);
+  margin:0 0 9px;
+}
+.cm-employee-color-grid{
   display:grid;
   grid-template-columns:repeat(10, 18px);
-  gap:6px;
+  gap:7px;
   align-items:center;
-  max-width:240px;
 }
 .cm-employee-color-dot{
   width:18px;
   height:18px;
   border-radius:999px;
-  border:1px solid rgba(255,255,255,.32);
+  border:1px solid rgba(255,255,255,.34);
   background:var(--cm-employee-color, #64748b);
   cursor:pointer;
   padding:0;
   box-shadow:0 0 0 1px rgba(15,23,42,.18), 0 5px 12px rgba(0,0,0,.16);
+  transition:transform .14s ease, box-shadow .14s ease;
 }
 .cm-employee-color-dot:hover,
 .cm-employee-color-dot.is-active{
-  transform:translateY(-1px) scale(1.08);
+  transform:translateY(-1px) scale(1.12);
   box-shadow:0 0 0 2px rgba(255,255,255,.9), 0 0 0 5px color-mix(in srgb, var(--cm-employee-color) 28%, transparent), 0 8px 20px rgba(0,0,0,.22);
+}
+@media(max-width:700px){
+  .cm-employee-color-popover{left:auto;right:0;transform:none;width:236px;}
+  .cm-employee-color-grid{grid-template-columns:repeat(8, 18px);}
 }
 .cm-worker-color-toggle{
   display:inline-flex;

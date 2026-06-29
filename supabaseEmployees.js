@@ -1,4 +1,5 @@
 // CompanyManager — Employees / Team Module powered by Supabase
+// v99: compact employee color picker popover
 // 040A: Zespół jako podgląd pracowników z profiles + positions. Tworzenie/edycja kont zostaje w Użytkownicy.
 
 (function () {
@@ -82,6 +83,7 @@
 
   document.addEventListener("click", () => {
     document.querySelectorAll(".cm-limit-menu").forEach((menu) => { menu.hidden = true; });
+    document.querySelectorAll("[data-employee-color-menu]").forEach((menu) => { menu.hidden = true; });
   });
 
   let state = {
@@ -158,7 +160,13 @@
   function colorPickerHtml(employee, index = 0) {
     const selected = getEmployeeColor(employee, index);
     return `<div class="cm-employee-color-picker" data-employee-color-picker="${escapeHtml(employee.id || "")}" aria-label="Kolor pracownika">
-      ${CM_EMPLOYEE_COLOR_PALETTE.map((color) => `<button type="button" class="cm-employee-color-dot${String(color).toUpperCase() === String(selected).toUpperCase() ? " is-active" : ""}" data-employee-color="${escapeHtml(color)}" title="${escapeHtml(color)}" style="--cm-employee-color:${escapeHtml(color)}"></button>`).join("")}
+      <button type="button" class="cm-employee-color-current" data-employee-color-toggle aria-label="Zmień kolor pracownika" title="Zmień kolor pracownika" style="--cm-employee-color:${escapeHtml(selected)}"></button>
+      <div class="cm-employee-color-popover" data-employee-color-menu hidden>
+        <div class="cm-employee-color-popover-title">Wybierz kolor</div>
+        <div class="cm-employee-color-grid">
+          ${CM_EMPLOYEE_COLOR_PALETTE.map((color) => `<button type="button" class="cm-employee-color-dot${String(color).toUpperCase() === String(selected).toUpperCase() ? " is-active" : ""}" data-employee-color="${escapeHtml(color)}" title="${escapeHtml(color)}" style="--cm-employee-color:${escapeHtml(color)}"></button>`).join("")}
+        </div>
+      </div>
     </div>`;
   }
 
@@ -291,14 +299,29 @@
       if (picker.dataset.cmEmployeeColorReady === '1') return;
       picker.dataset.cmEmployeeColorReady = '1';
       const employeeId = picker.getAttribute('data-employee-color-picker') || '';
+      const toggle = picker.querySelector('[data-employee-color-toggle]');
+      const menu = picker.querySelector('[data-employee-color-menu]');
+
+      toggle?.addEventListener('click', (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        document.querySelectorAll('[data-employee-color-menu]').forEach((item) => {
+          if (item !== menu) item.hidden = true;
+        });
+        if (menu) menu.hidden = !menu.hidden;
+      });
+
       picker.querySelectorAll('[data-employee-color]').forEach((button) => {
         button.addEventListener('click', async (event) => {
           event.preventDefault();
+          event.stopPropagation();
           const color = normalizeEmployeeColor(button.getAttribute('data-employee-color'));
           if (!employeeId || !color) return;
           setEmployeeColorLocal(employeeId, color);
           state.employees = state.employees.map((employee) => String(employee.id) === String(employeeId) ? { ...employee, employee_color: color } : employee);
           picker.querySelectorAll('.cm-employee-color-dot').forEach((dot) => dot.classList.toggle('is-active', dot === button));
+          if (toggle) toggle.style.setProperty('--cm-employee-color', color);
+          if (menu) menu.hidden = true;
           try {
             const { error } = await window.cmSupabase.from('profiles').update({ employee_color: color }).eq('id', employeeId).eq('company_id', state.ctx?.companyId);
             if (error) throw error;
