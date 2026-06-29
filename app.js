@@ -6717,7 +6717,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const nextNumber = `KARNET-${String((currentDb.passes || []).filter(p => p.companyId === company.id).length + 1).padStart(4,'0')}`;
       saveUndoSnapshot('Dodanie karnetu', currentDb);
       currentDb.passes = currentDb.passes || [];
-      currentDb.passes.push({ id:createId('pass'), companyId:company.id, name:'Karnet', number:nextNumber, saleDate:data.saleDate, saleTime:data.saleTime, employeeId:data.employeeId, buyer:employee?.fullName || '-', validUntil:data.validUntil, paymentMethod:data.paymentMethod, customerId:data.customerId, value:String(data.value || '0.00'), remaining:String(data.value || '0.00'), description:String(data.description || '').trim(), status:'aktualne', createdAt:new Date().toISOString() });
+      currentDb.passes.push({ id:createId('pass'), companyId:company.id, name:'Karnet', number:nextNumber, saleDate:data.saleDate, saleTime:data.saleTime, employeeId:data.employeeId, employeeName:employee?.fullName || employee?.login || '', sellerEmployeeId:data.employeeId, sellerName:employee?.fullName || employee?.login || '', buyer:customerById[data.customerId] || '', validUntil:data.validUntil, paymentMethod:data.paymentMethod, customerId:data.customerId, value:String(data.value || '0.00'), remaining:String(data.value || '0.00'), description:String(data.description || '').trim(), status:'aktualne', createdAt:new Date().toISOString() });
       saveDatabase(currentDb);
       window.location.reload();
     });
@@ -6978,7 +6978,34 @@ document.addEventListener('DOMContentLoaded', () => {
       ...walkins.filter(w => inRange(w.date || w.saleDate, currentStart, currentEnd) && (w.serviceId || w.serviceCustom || (!w.productId && !w.productName)))
     ];
     const productSales = [...billableDashboardVisits.filter(v => v.productId), ...walkins.filter(w => inRange(w.date || w.saleDate, currentStart, currentEnd) && (w.productId || w.productName))];
-    const passSales = passes.filter(p => inRange(p.saleDate || p.createdAt || currentIsoDate(), currentStart, currentEnd));
+    const passSalesFromPasses = passes.filter(p => inRange(p.saleDate || p.createdAt || p.date || currentIsoDate(), currentStart, currentEnd));
+    const passSalesFromSales = (db.sales || []).filter(sale => {
+      if (sale.companyId !== company.id && sale.company_id !== company.id) return false;
+      if (isSeedDemoRecord(sale)) return false;
+      const saleKind = String(sale.type || sale.kind || sale.category || sale.saleType || sale.sale_type || sale.itemType || sale.item_type || '').toLowerCase();
+      const saleName = String(sale.name || sale.itemName || sale.item_name || sale.productName || sale.product_name || sale.serviceName || sale.service_name || sale.note || sale.description || '').toLowerCase();
+      const looksLikePass = saleKind.includes('pass') || saleKind.includes('karnet') || saleName.includes('karnet') || sale.passId || sale.pass_id;
+      return looksLikePass && inRange(sale.saleDate || sale.sale_date || sale.date || String(sale.createdAt || sale.created_at || '').slice(0,10), currentStart, currentEnd);
+    }).map(sale => ({
+      ...sale,
+      id: sale.id || sale.saleId || sale.sale_id,
+      saleDate: sale.saleDate || sale.sale_date || sale.date || String(sale.createdAt || sale.created_at || '').slice(0,10),
+      saleTime: sale.saleTime || sale.sale_time || sale.time || '',
+      employeeId: sale.employeeId || sale.employee_id || sale.sellerEmployeeId || sale.seller_employee_id || sale.userId || sale.user_id || sale.profileId || sale.profile_id,
+      employeeName: sale.employeeName || sale.employee_name || sale.sellerName || sale.seller_name || sale.workerName || sale.worker_name,
+      customerId: sale.customerId || sale.customer_id,
+      customerName: sale.customerName || sale.customer_name,
+      value: sale.value || sale.total || sale.amount || sale.price || 0,
+      paymentMethod: sale.paymentMethod || sale.payment_method || sale.payment || 'gotówka',
+      name: sale.name || sale.itemName || sale.item_name || 'Karnet'
+    }));
+    const seenPassSales = new Set();
+    const passSales = [...passSalesFromPasses, ...passSalesFromSales].filter(pass => {
+      const key = String(pass.id || pass.passId || pass.pass_id || `${pass.saleDate || pass.date}|${pass.employeeId || pass.employee_id}|${pass.customerId || pass.customer_id}|${pass.value || pass.total || pass.amount}`);
+      if (seenPassSales.has(key)) return false;
+      seenPassSales.add(key);
+      return true;
+    });
     const allPayments = [
       ...billableDashboardVisits.map(v => ({ amount:Number(v.total || 0), method:v.payment || 'gotówka' })),
       ...walkins.filter(w => inRange(w.date || w.saleDate, currentStart, currentEnd)).map(w => ({ amount:Number(w.amount || w.total || 0), method:w.paymentMethod || w.payment || 'gotówka' })),
@@ -7017,12 +7044,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const productRows = [...productStats.values()].map(item => [String(item.count), money(item.value), escapeHtml(item.category), escapeHtml(item.code || '')]);
     const passRows = passSales.length ? passSales.map(p => ['1', money(p.value || 0), escapeHtml(p.number || p.name || 'Karnet')]) : [];
     const normalizeEmployeeRef = (value) => String(value || '').trim();
-    const passEmployeeRef = (pass) => normalizeEmployeeRef(pass.employeeId || pass.employee_id || pass.sellerEmployeeId || pass.seller_employee_id || pass.userId || pass.user_id || pass.profileId || pass.profile_id);
-    const passEmployeeName = (pass) => String(pass.employeeName || pass.employee_name || pass.sellerName || pass.seller_name || pass.buyer || pass.soldBy || pass.sold_by || '').trim().toLowerCase();
+    const passEmployeeRef = (pass) => normalizeEmployeeRef(pass.employeeId || pass.employee_id || pass.sellerEmployeeId || pass.seller_employee_id || pass.userId || pass.user_id || pass.profileId || pass.profile_id || pass.createdBy || pass.created_by || pass.soldById || pass.sold_by_id);
+    const passEmployeeName = (pass) => String(pass.employeeName || pass.employee_name || pass.sellerName || pass.seller_name || pass.workerName || pass.worker_name || pass.soldBy || pass.sold_by || '').trim().toLowerCase();
     const isPassForEmployee = (pass, employee) => {
       const ref = passEmployeeRef(pass);
-      const employeeId = normalizeEmployeeRef(employee.id || employee.userId || employee.user_id || employee.profileId || employee.profile_id);
-      if (ref && employeeId && ref === employeeId) return true;
+      const employeeRefs = [employee.id, employee.userId, employee.user_id, employee.profileId, employee.profile_id, employee.authUserId, employee.auth_user_id, employee.email, employee.login].map(normalizeEmployeeRef).filter(Boolean);
+      if (ref && employeeRefs.includes(ref)) return true;
       const name = passEmployeeName(pass);
       const employeeNames = [employee.fullName, employee.full_name, employee.name, employee.login, employee.email].map(v => String(v || '').trim().toLowerCase()).filter(Boolean);
       return !!name && employeeNames.includes(name);
