@@ -202,17 +202,18 @@
     const range = dateRange(day);
     const sb = window.cmSupabase;
 
-    const [salesRes, paymentsRes, appointmentsRes, employeesRes, clientsRes, notificationLogsRes, emailRecipientsRes] = await Promise.all([
+    const [salesRes, paymentsRes, appointmentsRes, employeesRes, clientsRes, passesRes, notificationLogsRes, emailRecipientsRes] = await Promise.all([
       sb.from("sales").select("id,company_id,client_id,employee_id,employee_name,appointment_id,total_gross,total_net,payment_status,payment_method,status,created_at,updated_at").eq("company_id", ctx.companyId).gte("created_at", range.startIso).lt("created_at", range.endIso),
-      sb.from("payments").select("id,company_id,sale_id,appointment_id,amount,method,status,paid_at,created_at").eq("company_id", ctx.companyId).gte("created_at", range.startIso).lt("created_at", range.endIso),
+      sb.from("payments").select("id,company_id,sale_id,appointment_id,amount,method,status,paid_at,created_at").eq("company_id", ctx.companyId).gte("paid_at", range.startIso).lt("paid_at", range.endIso),
       sb.from("appointments").select("id,company_id,client_id,client_name,employee_id,employee_name,service_id,service_name,product_id,product_name,total,price,paid_amount,payment_status,payment_method,status,date,starts_at,appointment_datetime,created_at,cancellation_reason,cancel_reason,cancelled_at").eq("company_id", ctx.companyId).eq("date", range.dayIso),
       sb.from("profiles").select("id,full_name,email,role,company_id").eq("company_id", ctx.companyId),
       sb.from("clients").select("id,first_name,last_name,created_at,company_id").eq("company_id", ctx.companyId).gte("created_at", range.startIso).lt("created_at", range.endIso),
+      sb.from("passes").select("id,company_id,sale_id,employee_id,employee_name,buyer_client_id,beneficiary_client_id,customer_id,name,number,value,payment_method,sale_date,sale_time,created_at,active,status").eq("company_id", ctx.companyId).gte("created_at", range.startIso).lt("created_at", range.endIso),
       sb.from("notification_logs").select("id,company_id,channel,type,status,provider_message_id,sent_at,created_at").eq("company_id", ctx.companyId).gte("created_at", range.startIso).lt("created_at", range.endIso),
       sb.from("marketing_campaign_recipients").select("id,channel,status,sent_at,created_at").eq("channel", "email").eq("status", "sent").gte("sent_at", range.startIso).lt("sent_at", range.endIso)
     ]);
 
-    const errors = [salesRes.error, paymentsRes.error, appointmentsRes.error, employeesRes.error, clientsRes.error, notificationLogsRes.error, emailRecipientsRes.error].filter(Boolean);
+    const errors = [salesRes.error, paymentsRes.error, appointmentsRes.error, employeesRes.error, clientsRes.error, passesRes.error, notificationLogsRes.error, emailRecipientsRes.error].filter(Boolean);
     if (errors.length) throw new Error(errors.map(e => e.message).join(" | "));
 
     const inactiveSaleStatuses = ["void", "deleted", "usunięte", "usuniete", "cancelled", "canceled", "anulowane", "anulowana"];
@@ -242,6 +243,7 @@
       employees: employeesRes.data || [],
       clients: clientsRes.data || [],
       saleItems,
+      passes: passesRes.data || [],
       notificationLogs: notificationLogsRes.data || [],
       emailRecipients: emailRecipientsRes.data || []
     };
@@ -252,11 +254,36 @@
     const payments = data.payments || [];
     const appointments = data.appointments || [];
     const employees = data.employees || [];
-    const saleItems = data.saleItems || [];
+    let saleItems = data.saleItems || [];
+    const passes = (data.passes || []).filter((pass) => pass.active !== false && !["void", "deleted", "usunięte", "usuniete", "cancelled", "canceled", "anulowane", "anulowana"].includes(String(pass.status || "").toLowerCase()));
     const clients = data.clients || [];
     const notificationLogs = data.notificationLogs || [];
     const emailRecipients = data.emailRecipients || [];
     const saleMap = new Map(sales.map(s => [s.id, s]));
+    const passBySaleId = new Map();
+    passes.forEach((pass) => { if (pass.sale_id && !passBySaleId.has(pass.sale_id)) passBySaleId.set(pass.sale_id, pass); });
+    const passIdsInItems = new Set(saleItems.filter(i => ["pass", "karnet"].includes(String(i.item_type || "").toLowerCase())).map(i => String(i.pass_id || "")).filter(Boolean));
+    passes.forEach((pass) => {
+      if (pass.id && passIdsInItems.has(String(pass.id))) return;
+      const sale = pass.sale_id ? saleMap.get(pass.sale_id) : null;
+      saleItems.push({
+        id: `pass-fallback-${pass.id}`,
+        company_id: pass.company_id,
+        sale_id: pass.sale_id || `pass-sale-${pass.id}`,
+        item_type: "pass",
+        pass_id: pass.id,
+        name: pass.name || pass.number || "Karnet",
+        name_snapshot: pass.name || pass.number || "Karnet",
+        quantity: 1,
+        unit_price: Number(pass.value || sale?.total_gross || 0),
+        total: Number(pass.value || sale?.total_gross || 0),
+        total_price: Number(pass.value || sale?.total_gross || 0),
+        created_at: pass.created_at
+      });
+      if (!sale && pass.sale_id) {
+        saleMap.set(pass.sale_id, { id: pass.sale_id, employee_id: pass.employee_id, employee_name: pass.employee_name, total_gross: Number(pass.value || 0), payment_method: pass.payment_method || "gotówka", created_at: pass.created_at });
+      }
+    });
     const employeeMap = new Map(employees.map(e => [e.id, e]));
     const employeeNameKey = (value) => String(value || "").trim().toLowerCase().replace(/\s+/g, " ");
     const employeeByName = new Map();
@@ -291,10 +318,23 @@
     const passItems = saleItems.filter(i => ["pass", "karnet"].includes(String(i.item_type || "").toLowerCase()));
 
     const revenue = sales.reduce((sum, sale) => sum + saleValue(sale), 0);
-    const paymentSum = payments.reduce((sum, p) => sum + Number(p.amount || 0), 0);
-    const cash = payments.filter(p => String(p.method || "").toLowerCase().includes("gotówka")).reduce((sum, p) => sum + Number(p.amount || 0), 0);
+    const paidSaleIds = new Set(payments.map(p => p.sale_id).filter(Boolean));
+    const syntheticSalePayments = sales
+      .filter((sale) => sale.id && !paidSaleIds.has(sale.id) && saleValue(sale) > 0)
+      .map((sale) => ({
+        id: `sale-payment-${sale.id}`,
+        sale_id: sale.id,
+        amount: saleValue(sale),
+        method: sale.payment_method || "gotówka",
+        status: sale.payment_status || "paid",
+        paid_at: sale.created_at,
+        created_at: sale.created_at
+      }));
+    const reportPayments = payments.concat(syntheticSalePayments);
+    const paymentSum = reportPayments.reduce((sum, p) => sum + Number(p.amount || 0), 0);
+    const cash = reportPayments.filter(p => String(p.method || "").toLowerCase().includes("gotówka")).reduce((sum, p) => sum + Number(p.amount || 0), 0);
 
-    const paymentsByMethod = groupBy(payments, p => String(p.method || "gotówka").trim() || "gotówka", (_, key) => ({ method: key, count: 0, value: 0 }), (row, p) => { row.count += 1; row.value += Number(p.amount || 0); });
+    const paymentsByMethod = groupBy(reportPayments, p => String(p.method || "gotówka").trim() || "gotówka", (_, key) => ({ method: key, count: 0, value: 0 }), (row, p) => { row.count += 1; row.value += Number(p.amount || 0); });
 
     const serviceRows = groupBy(serviceItems, i => i.name_snapshot || i.name || "Usługa", (_, key) => ({ name: key, count: 0, value: 0 }), (row, i) => { row.count += Number(i.quantity || 1); row.value += itemValue(i, saleMap); });
     const productRows = groupBy(productItems, i => i.name_snapshot || i.name || "Produkt", (_, key) => ({ name: key, count: 0, value: 0 }), (row, i) => { row.count += Number(i.quantity || 1); row.value += itemValue(i, saleMap); });
@@ -324,8 +364,9 @@
     });
     saleItems.forEach((i) => {
       const sale = saleMap.get(i.sale_id) || {};
+      const linkedPass = i.pass_id ? passes.find(pass => String(pass.id) === String(i.pass_id)) : passBySaleId.get(i.sale_id) || {};
       const appointment = appointments.find(a => a.id && a.id === sale.appointment_id) || {};
-      const row = ensureEmployee(sale.employee_id || appointment.employee_id, sale.employee_name, appointment.employee_name);
+      const row = ensureEmployee(sale.employee_id || linkedPass.employee_id || appointment.employee_id, sale.employee_name, linkedPass.employee_name, appointment.employee_name);
       const type = String(i.item_type || "").toLowerCase();
       const qty = Number(i.quantity || 1);
       const val = itemValue(i, saleMap);

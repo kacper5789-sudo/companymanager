@@ -201,18 +201,37 @@
     return { id: id || null, name: name || null };
   }
 
+  function normalizeRpcInserted(inserted) {
+    if (Array.isArray(inserted)) return inserted[0] || {};
+    if (inserted?.data && Array.isArray(inserted.data)) return inserted.data[0] || {};
+    if (inserted?.data && typeof inserted.data === "object") return inserted.data;
+    return inserted || {};
+  }
+
   async function syncPassSaleEmployee(ctx, inserted, employee) {
     if (!employee?.id) return;
+    const row = normalizeRpcInserted(inserted);
     const patch = { employee_id: employee.id, employee_name: employee.name || null, updated_at: new Date().toISOString() };
-    const passId = inserted?.pass_id || inserted?.id || inserted?.pass?.id || null;
-    const saleId = inserted?.sale_id || inserted?.sale?.id || null;
+    let passId = row?.pass_id || row?.id || row?.pass?.id || row?.passId || null;
+    let saleId = row?.sale_id || row?.sale?.id || row?.saleId || null;
+
+    // RPC cm_create_pass_sale bywa zwracane jako różne kształty danych.
+    // Jeżeli nie dostaliśmy sale_id, dociągamy świeżo utworzony karnet i z niego bierzemy powiązaną sprzedaż.
+    if (!saleId && passId) {
+      const { data: passRow, error: passError } = await window.cmSupabase
+        .from("passes")
+        .select("id,sale_id,employee_id,employee_name")
+        .eq("id", passId)
+        .eq("company_id", ctx.companyId)
+        .maybeSingle();
+      if (passError) throw passError;
+      saleId = passRow?.sale_id || saleId;
+    }
+
     const tasks = [];
-    if (passId) {
-      tasks.push(window.cmSupabase.from("passes").update(patch).eq("id", passId).eq("company_id", ctx.companyId));
-    }
-    if (saleId) {
-      tasks.push(window.cmSupabase.from("sales").update(patch).eq("id", saleId).eq("company_id", ctx.companyId));
-    }
+    if (passId) tasks.push(window.cmSupabase.from("passes").update(patch).eq("id", passId).eq("company_id", ctx.companyId));
+    if (saleId) tasks.push(window.cmSupabase.from("sales").update(patch).eq("id", saleId).eq("company_id", ctx.companyId));
+
     if (tasks.length) {
       const results = await Promise.all(tasks);
       const error = results.map((res) => res.error).find(Boolean);
