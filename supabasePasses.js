@@ -221,7 +221,7 @@
   function closeCenteredPanel(panel) {
     if (!panel) return;
     panel.hidden = true;
-    panel.classList.remove("cm-centered-no-overlay-panel", "cm-pass-inline-panel", "cm-modal-active", "cm-as-modal");
+    panel.classList.remove("cm-centered-no-overlay-panel", "cm-pass-inline-panel", "cm-modal-active", "cm-as-modal", "cm-pass-portal-panel");
     panel.setAttribute("data-cm-no-modal", "true");
     panel.removeAttribute("data-cm-modal-depth");
     ["position","top","left","right","bottom","inset","transform","z-index","width","max-width","max-height","overflow","margin","display","visibility","opacity","pointer-events"].forEach((prop) => panel.style.removeProperty(prop));
@@ -232,6 +232,40 @@
     const overlay = document.getElementById("cmGlobalFormOverlay");
     if (overlay) { overlay.hidden = true; overlay.style.display = "none"; overlay.style.opacity = "0"; overlay.style.pointerEvents = "none"; }
     if (window.cmRefreshGlobalModalState) window.setTimeout(window.cmRefreshGlobalModalState, 0);
+  }
+
+
+
+  function isGoldOrRoseTheme() {
+    const theme = document.documentElement?.dataset?.cmTheme || "";
+    return theme === "goldWhite" || theme === "beautyRose";
+  }
+
+  function ensurePassPortalRoot() {
+    let root = document.getElementById("cmPassPortalRoot");
+    if (!root) {
+      root = document.createElement("div");
+      root.id = "cmPassPortalRoot";
+      root.setAttribute("aria-hidden", "false");
+      document.body.appendChild(root);
+    }
+    return root;
+  }
+
+  function portalPassPanelForGoldRose(panel) {
+    if (!panel || !isGoldOrRoseTheme()) return;
+    const root = ensurePassPortalRoot();
+    if (!panel.dataset.cmOriginalParentId) {
+      const marker = document.createElement("span");
+      marker.hidden = true;
+      marker.dataset.cmPassPortalMarker = panel.id || "pass-panel";
+      marker.id = `cm-pass-portal-marker-${panel.id || Math.random().toString(36).slice(2)}`;
+      panel.parentNode?.insertBefore(marker, panel);
+      panel.dataset.cmOriginalParentId = marker.id;
+    }
+    if (panel.parentElement !== root) root.appendChild(panel);
+    panel.classList.add("cm-pass-portal-panel", "cm-centered-no-overlay-panel", "cm-no-modal");
+    panel.setAttribute("data-cm-no-modal", "true");
   }
 
   function ensureCenteredCancel(panel) {
@@ -248,10 +282,10 @@
 
   function forceCenteredPassPanel(panel) {
     if (!panel) return;
-    // Hotfix dla Exclusive Gold + Beauty Rose: te dwa motywy mają własne reguły z transform/filter,
-    // więc centrowanie wymuszamy inline z !important, bez ruszania Original ani innych skórek.
-    const theme = document.documentElement?.dataset?.cmTheme || "";
-    if (theme !== "goldWhite" && theme !== "beautyRose") return;
+    // Exclusive Gold + Beauty Rose: przenosimy panel do body, bo ich kontenery mają transform/filter
+    // i position:fixed liczył się względem kontenera zamiast względem ekranu.
+    if (!isGoldOrRoseTheme()) return;
+    portalPassPanelForGoldRose(panel);
     const important = "important";
     panel.style.setProperty("position", "fixed", important);
     panel.style.setProperty("inset", "auto", important);

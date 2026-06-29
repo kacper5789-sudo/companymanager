@@ -16327,3 +16327,76 @@ html[data-cm-theme="beautyRose"] .passes-module #deletePassPanel[hidden]{
   opacity:0!important;
   pointer-events:none!important;
 }
+
+/* CompanyManager v78 — Gold/Rose passes portal centering fix
+   Scope: ONLY Karnety forms moved to #cmPassPortalRoot for Exclusive Gold and Beauty Rose.
+   This avoids parent transform/filter breaking position:fixed. No overlay, no blur. */
+#cmPassPortalRoot{
+  position:fixed!important;
+  inset:0!important;
+  z-index:2147483000!important;
+  pointer-events:none!important;
+  background:transparent!important;
+  filter:none!important;
+  backdrop-filter:none!important;
+  -webkit-backdrop-filter:none!important;
+}
+#cmPassPortalRoot .cm-pass-portal-panel[hidden]{
+  display:none!important;
+  visibility:hidden!important;
+  opacity:0!important;
+  pointer-events:none!important;
+}
+html[data-cm-theme="goldWhite"] #cmPassPortalRoot .cm-pass-portal-panel:not([hidden]),
+html[data-cm-theme="beautyRose"] #cmPassPortalRoot .cm-pass-portal-panel:not([hidden]){
+  position:fixed!important;
+  top:50%!important;
+  left:50%!important;
+  right:auto!important;
+  bottom:auto!important;
+  inset:auto!important;
+  transform:translate(-50%,-50%)!important;
+  z-index:2147483001!important;
+  display:block!important;
+  visibility:visible!important;
+  opacity:1!important;
+  pointer-events:auto!important;
+  width:min(920px, calc(100vw - 32px))!important;
+  max-width:calc(100vw - 32px)!important;
+  max-height:calc(100vh - 32px)!important;
+  overflow:auto!important;
+  margin:0!important;
+  padding:18px!important;
+  border-radius:22px!important;
+  filter:none!important;
+  backdrop-filter:none!important;
+  -webkit-backdrop-filter:none!important;
+  isolation:isolate!important;
+}
+html[data-cm-theme="goldWhite"] #cmPassPortalRoot .cm-pass-portal-panel:not([hidden]){
+  background:linear-gradient(180deg,rgba(255,255,255,.99),rgba(255,250,240,.97))!important;
+  color:#111827!important;
+  border:1px solid rgba(180,132,35,.30)!important;
+  box-shadow:0 26px 80px rgba(120,86,18,.20), 0 0 0 1px rgba(255,255,255,.82) inset!important;
+}
+html[data-cm-theme="beautyRose"] #cmPassPortalRoot .cm-pass-portal-panel:not([hidden]){
+  background:linear-gradient(180deg,rgba(255,255,255,.99),rgba(255,247,251,.97))!important;
+  color:#111827!important;
+  border:1px solid rgba(219,39,119,.30)!important;
+  box-shadow:0 26px 80px rgba(131,24,67,.18), 0 0 0 1px rgba(255,255,255,.88) inset!important;
+}
+html[data-cm-theme="goldWhite"] #cmPassPortalRoot .cm-pass-portal-panel:not([hidden]) *,
+html[data-cm-theme="beautyRose"] #cmPassPortalRoot .cm-pass-portal-panel:not([hidden]) *{
+  pointer-events:auto!important;
+  filter:none!important;
+  backdrop-filter:none!important;
+  -webkit-backdrop-filter:none!important;
+}
+html[data-cm-theme="goldWhite"] #cmPassPortalRoot .cm-pass-portal-panel:not([hidden])::before,
+html[data-cm-theme="goldWhite"] #cmPassPortalRoot .cm-pass-portal-panel:not([hidden])::after,
+html[data-cm-theme="beautyRose"] #cmPassPortalRoot .cm-pass-portal-panel:not([hidden])::before,
+html[data-cm-theme="beautyRose"] #cmPassPortalRoot .cm-pass-portal-panel:not([hidden])::after{
+  content:none!important;
+  display:none!important;
+  pointer-events:none!important;
+}
