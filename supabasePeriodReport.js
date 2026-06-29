@@ -409,7 +409,7 @@
     const sb = window.cmSupabase;
     const [salesRes, paymentsRes, appointmentsRes, clientsRes, employeesRes, employeesTableRes, passesRes] = await Promise.all([
       sb.from("sales").select("id,company_id,client_id,employee_id,employee_name,appointment_id,total_gross,total_net,payment_status,payment_method,status,created_at,updated_at").eq("company_id", ctx.companyId).gte("created_at", range.startIso).lt("created_at", range.endIso),
-      sb.from("payments").select("id,company_id,sale_id,appointment_id,amount,method,status,paid_at,created_at").eq("company_id", ctx.companyId).gte("created_at", range.startIso).lt("created_at", range.endIso),
+      sb.from("payments").select("id,company_id,sale_id,appointment_id,amount,method,status,paid_at,created_at").eq("company_id", ctx.companyId),
       sb.from("appointments").select("id,company_id,client_id,client_name,employee_id,employee_name,service_id,service_name,product_id,product_name,total,price,paid_amount,payment_status,payment_method,status,finished,date,starts_at,appointment_datetime,created_at,cancellation_reason,cancel_reason,cancelled_at").eq("company_id", ctx.companyId).gte("date", range.fromIso).lte("date", range.toIso),
       sb.from("clients").select("id,first_name,last_name,created_at,company_id").eq("company_id", ctx.companyId).lte("created_at", range.endIso),
       sb.from("profiles").select("id,full_name,email,role,company_id").eq("company_id", ctx.companyId),
@@ -433,10 +433,20 @@
       saleItems = itemsRes.data || [];
     }
     const activeSaleIds = new Set(sales.map(s => s.id).filter(Boolean));
+    const rangeStart = new Date(range.startIso);
+    const rangeEnd = new Date(range.endIso);
+    const inPaymentRange = (p) => {
+      const rawDate = p.paid_at || p.created_at;
+      const d = rawDate ? new Date(rawDate) : null;
+      return d && !Number.isNaN(d.getTime()) && d >= rangeStart && d < rangeEnd;
+    };
     const payments = (paymentsRes.data || []).filter(p => {
       if (String(p.status || "").toLowerCase() === "void") return false;
-      if (p.sale_id && !activeSaleIds.has(p.sale_id)) return false;
-      return true;
+      // Płatności powiązane ze sprzedażą/wizytą mogą być potrzebne jako źródło metody
+      // dla pozycji sprzedaży z danego okresu, nawet gdy sam rekord payment ma inną datę techniczną.
+      if (p.sale_id && activeSaleIds.has(p.sale_id)) return true;
+      if (p.appointment_id) return true;
+      return inPaymentRange(p);
     });
     return {
       sales,
@@ -520,28 +530,66 @@
     };
 
     const paymentMap = new Map();
-    const paymentSaleIds = new Set();
-    function addPaymentRow(methodValue, amountValue) {
-      const method = methodValue || 'brak';
-      if (!paymentMap.has(method)) paymentMap.set(method, { method, qty: 0, value: 0 });
-      paymentMap.get(method).qty += 1;
-      paymentMap.get(method).value += Number(amountValue || 0);
+    function normalizePaymentMethodLabel(value) {
+      const raw = String(value || '').trim();
+      return raw || 'gotówka';
     }
-    data.payments.forEach(p => {
-      if (p.sale_id) paymentSaleIds.add(String(p.sale_id));
-      addPaymentRow(p.method, p.amount);
+    function addPaymentEvent(methodValue, countValue, amountValue) {
+      const method = normalizePaymentMethodLabel(methodValue);
+      const qty = Math.max(1, Number(countValue || 1));
+      const value = Number(amountValue || 0);
+      if (!value) return;
+      if (!paymentMap.has(method)) paymentMap.set(method, { method, qty: 0, value: 0 });
+      paymentMap.get(method).qty += qty;
+      paymentMap.get(method).value += value;
+    }
+
+    const paymentBySaleId = new Map();
+    const paymentByAppointmentId = new Map();
+    (data.payments || []).forEach((payment) => {
+      if (payment.sale_id && !paymentBySaleId.has(payment.sale_id)) paymentBySaleId.set(payment.sale_id, payment);
+      if (payment.appointment_id && !paymentByAppointmentId.has(payment.appointment_id)) paymentByAppointmentId.set(payment.appointment_id, payment);
     });
 
-    // Karnety w CompanyManager mogą istnieć jako rekord w `passes` nawet wtedy,
-    // gdy nie powstał osobny rekord w `payments`. Podsumowanie płatności w
-    // raporcie z okresu musi liczyć realną wpłatę za karnet tak samo jak
-    // raport dzienny: jedna sprzedaż karnetu = jedna płatność daną metodą.
-    rawPasses.forEach((pass) => {
-      if (pass.sale_id && paymentSaleIds.has(String(pass.sale_id))) return;
-      const sale = pass.sale_id ? saleMap.get(pass.sale_id) : null;
-      const amount = Number(pass.value || sale?.total_gross || sale?.total_net || 0);
-      if (!amount) return;
-      addPaymentRow(pass.payment_method || sale?.payment_method || 'gotówka', amount);
+    // Raport z okresu -> Płatności ma liczyć ZDARZENIA PŁATNOŚCI:
+    // każda opłacona pozycja gotówką/kartą/przelewem = +1 oraz jej realna wartość.
+    // To jest ta sama definicja, którą widzi moduł Sprzedaż -> Płatności według typów.
+    // Nie liczymy tu "rodzajów produktów", tylko faktyczne opłacone pozycje z okresu.
+    const representedSaleValue = new Map();
+    items.forEach((item) => {
+      const sale = item.sale || saleMap.get(item.sale_id) || {};
+      const linkedPass = item.__linkedPass || (item.pass_id ? rawPasses.find(pass => String(pass.id) === String(item.pass_id)) : passBySaleId.get(item.sale_id) || {});
+      const appointment = appointmentById.get(sale.appointment_id) || {};
+      const payment = paymentBySaleId.get(sale.id) || paymentByAppointmentId.get(appointment.id) || {};
+      const method = payment.method || linkedPass.payment_method || sale.payment_method || appointment.payment_method || 'gotówka';
+      const qty = itemQty(item);
+      const value = itemValue(item, saleMap);
+      if (item.sale_id) representedSaleValue.set(item.sale_id, (representedSaleValue.get(item.sale_id) || 0) + value);
+      addPaymentEvent(method, qty, value);
+    });
+
+    // Fallback: jeśli istnieje sprzedaż opłacona, ale nie ma sale_items albo część wartości
+    // nie jest pokryta pozycjami, doliczamy brak jako osobne zdarzenie płatności.
+    data.sales.forEach((sale) => {
+      const total = saleValue(sale);
+      const represented = representedSaleValue.get(sale.id) || 0;
+      const missing = Math.max(0, total - represented);
+      if (missing <= 0.009) return;
+      const appointment = appointmentById.get(sale.appointment_id) || {};
+      const payment = paymentBySaleId.get(sale.id) || paymentByAppointmentId.get(appointment.id) || {};
+      addPaymentEvent(payment.method || sale.payment_method || appointment.payment_method || 'gotówka', 1, missing);
+    });
+
+    // Fallback awaryjny: surowe rekordy payments bez sale_id/appointment_id też są płatnościami.
+    const usedPaymentIds = new Set();
+    (data.payments || []).forEach((payment) => {
+      if (payment.sale_id || payment.appointment_id) return;
+      const rawDate = payment.paid_at || payment.created_at;
+      const d = rawDate ? new Date(rawDate) : null;
+      if (!d || Number.isNaN(d.getTime()) || d < new Date(range.startIso) || d >= new Date(range.endIso)) return;
+      if (usedPaymentIds.has(payment.id)) return;
+      usedPaymentIds.add(payment.id);
+      addPaymentEvent(payment.method || 'gotówka', 1, Number(payment.amount || 0));
     });
 
     const employeeRowsMap = new Map();
