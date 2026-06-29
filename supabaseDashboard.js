@@ -68,6 +68,30 @@
     return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
   }
 
+
+  function validIsoDate(value) {
+    const raw = String(value || "").slice(0, 10);
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(raw)) return "";
+    const [y, m, d] = raw.split("-").map(Number);
+    const date = new Date(y, m - 1, d);
+    if (Number.isNaN(date.getTime())) return "";
+    return iso(date) === raw ? raw : "";
+  }
+
+  function getDashboardSelectedDate() {
+    const params = new URLSearchParams(window.location.search);
+    const fromUrl = validIsoDate(params.get("date"));
+    if (fromUrl) {
+      try { localStorage.setItem("cm_dashboard_selected_date", fromUrl); } catch (_) {}
+      return fromUrl;
+    }
+    try {
+      const fromStorage = validIsoDate(localStorage.getItem("cm_dashboard_selected_date"));
+      if (fromStorage) return fromStorage;
+    } catch (_) {}
+    return iso(new Date());
+  }
+
   function parseIso(value) {
     const [y, m, d] = String(value || "").split("-").map(Number);
     if (!y || !m || !d) return new Date();
@@ -1125,8 +1149,7 @@
       return;
     }
 
-    const params = new URLSearchParams(window.location.search);
-    const selectedDate = params.get("date") || iso(new Date());
+    const selectedDate = getDashboardSelectedDate();
 
     area.innerHTML = `<section class="bm-page-card"><h2>Dashboard</h2><p>Ładuję dane z Supabase...</p></section>`;
 

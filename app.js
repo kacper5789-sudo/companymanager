@@ -1759,7 +1759,25 @@ document.addEventListener('DOMContentLoaded', () => {
   const cmGetDashboardUrlDate = () => {
     try { return cmParsePanelDate(new URLSearchParams(window.location.search).get('date')); } catch (_) { return null; }
   };
-  let cmSelectedPanelDate = cmGetDashboardUrlDate() || CM_TODAY;
+  const cmGetStoredDashboardDate = () => {
+    try { return cmParsePanelDate(localStorage.getItem('cm_dashboard_selected_date')); } catch (_) { return null; }
+  };
+  const cmGoToDashboardDate = (dateOrIso) => {
+    const parsed = dateOrIso instanceof Date ? dateOrIso : cmParsePanelDate(dateOrIso);
+    if (!parsed) return;
+    const selectedIso = cmPanelDateIso(parsed);
+    try { localStorage.setItem('cm_dashboard_selected_date', selectedIso); } catch (_) {}
+    try { window.dispatchEvent(new CustomEvent('cm:dashboard-date-selected', { detail: { date: selectedIso } })); } catch (_) {}
+    const current = String(window.location.pathname || '').toLowerCase();
+    const target = new URL('dashboard.html', window.location.href);
+    target.searchParams.set('date', selectedIso);
+    if (current.endsWith('/dashboard.html') || current.endsWith('dashboard.html')) {
+      window.location.assign(target.toString());
+    } else {
+      window.location.assign(target.toString());
+    }
+  };
+  let cmSelectedPanelDate = cmGetDashboardUrlDate() || cmGetStoredDashboardDate() || CM_TODAY;
   cmCalendarDate = new Date(cmSelectedPanelDate.getFullYear(), cmSelectedPanelDate.getMonth(), 1);
 
   const buildMonthCalendarHtml = (date) => {
@@ -1778,7 +1796,7 @@ document.addEventListener('DOMContentLoaded', () => {
           const d = new Date(year, month, day);
           const isToday = sameDay(d, CM_TODAY);
           const isSelected = sameDay(d, cmSelectedPanelDate);
-          cells += `<td><button type="button" class="bm-date-btn ${isToday ? 'today' : ''} ${isSelected ? 'active selected' : ''}" data-day="${day}">${day}</button></td>`;
+          cells += `<td><button type="button" class="bm-date-btn ${isToday ? 'today' : ''} ${isSelected ? 'active selected' : ''}" data-day="${day}" data-dashboard-date="${cmPanelDateIso(d)}">${day}</button></td>`;
         }
       }
       rows += `<tr>${cells}</tr>`;
@@ -1849,29 +1867,39 @@ document.addEventListener('DOMContentLoaded', () => {
       if (target.id === 'cmPrevYears') { cmYearStart -= 12; renderMiniCalendar(); }
       if (target.id === 'cmNextYears') { cmYearStart += 12; renderMiniCalendar(); }
       if (target.classList.contains('bm-year-btn')) { const y = Number(target.dataset.year); if (!Number.isNaN(y)) { cmCalendarDate = new Date(y, cmCalendarDate.getMonth(), 1); month.dataset.mode = 'month'; renderMiniCalendar(); } }
-      if (target.classList.contains('bm-date-btn')) {
-        const selected = Number(target.dataset.day);
-        if (!Number.isNaN(selected)) {
-          const d = new Date(cmCalendarDate.getFullYear(), cmCalendarDate.getMonth(), selected);
-          cmSelectedPanelDate = d;
-          const selectedIso = cmPanelDateIso(d);
-          try { localStorage.setItem('cm_dashboard_selected_date', selectedIso); } catch (_) {}
-          toggle.querySelector('strong').textContent = formatDisplayDate(d);
+      const dateBtn = target.closest?.('.bm-date-btn');
+      if (dateBtn) {
+        const selectedIso = dateBtn.getAttribute('data-dashboard-date');
+        const selected = cmParsePanelDate(selectedIso) || new Date(cmCalendarDate.getFullYear(), cmCalendarDate.getMonth(), Number(dateBtn.dataset.day || 1));
+        if (selected) {
+          cmSelectedPanelDate = selected;
+          try { localStorage.setItem('cm_dashboard_selected_date', cmPanelDateIso(selected)); } catch (_) {}
+          const strong = toggle.querySelector('strong');
+          if (strong) strong.textContent = formatDisplayDate(selected);
           month.hidden = true;
           renderMiniCalendar();
-          const targetUrl = `dashboard.html?date=${encodeURIComponent(selectedIso)}`;
-          const currentPath = String(window.location.pathname || '').toLowerCase();
-          if (currentPath.endsWith('/dashboard.html') || currentPath.endsWith('dashboard.html')) {
-            window.location.href = targetUrl;
-          } else {
-            window.location.href = targetUrl;
-          }
+          cmGoToDashboardDate(selected);
         }
       }
     });
   };
 
 
+
+
+  // Hard fallback: every mini-calendar day button must drive the Dashboard date, even if a theme layer or another listener swallows the normal click handler.
+  if (!window.__cmDashboardCalendarCaptureInstalled) {
+    window.__cmDashboardCalendarCaptureInstalled = true;
+    document.addEventListener('click', (event) => {
+      const btn = event.target?.closest?.('#monthCalendar .bm-date-btn[data-dashboard-date]');
+      if (!btn) return;
+      const isoDate = btn.getAttribute('data-dashboard-date');
+      if (!cmParsePanelDate(isoDate)) return;
+      event.preventDefault();
+      event.stopPropagation();
+      cmGoToDashboardDate(isoDate);
+    }, true);
+  }
 
   const cmTranslations = {
     'en-gb': {
