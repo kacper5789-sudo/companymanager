@@ -16285,3 +16285,45 @@ html[data-cm-theme="beautyRose"] .passes-module #deletePassPanel:not([hidden])::
   backdrop-filter:none!important;
   -webkit-backdrop-filter:none!important;
 }
+
+/* CompanyManager v77 — Exclusive Gold + Beauty Rose Karnety center hard fix
+   Scope: ONLY pass forms in goldWhite and beautyRose. Original and other skins untouched.
+   Fixes v76 left-corner issue caused by earlier `inset:auto` overriding top/left. */
+html[data-cm-theme="goldWhite"] .passes-module #templatePassPanel.cm-centered-no-overlay-panel:not([hidden]),
+html[data-cm-theme="goldWhite"] .passes-module #addPassPanel.cm-centered-no-overlay-panel:not([hidden]),
+html[data-cm-theme="goldWhite"] .passes-module #deletePassPanel.cm-centered-no-overlay-panel:not([hidden]),
+html[data-cm-theme="beautyRose"] .passes-module #templatePassPanel.cm-centered-no-overlay-panel:not([hidden]),
+html[data-cm-theme="beautyRose"] .passes-module #addPassPanel.cm-centered-no-overlay-panel:not([hidden]),
+html[data-cm-theme="beautyRose"] .passes-module #deletePassPanel.cm-centered-no-overlay-panel:not([hidden]){
+  position:fixed!important;
+  inset:auto!important;
+  top:50%!important;
+  left:50%!important;
+  right:auto!important;
+  bottom:auto!important;
+  transform:translate(-50%,-50%)!important;
+  z-index:2147483000!important;
+  display:block!important;
+  visibility:visible!important;
+  opacity:1!important;
+  pointer-events:auto!important;
+  width:min(920px, calc(100vw - 32px))!important;
+  max-width:calc(100vw - 32px)!important;
+  max-height:calc(100vh - 32px)!important;
+  overflow:auto!important;
+  margin:0!important;
+  filter:none!important;
+  backdrop-filter:none!important;
+  -webkit-backdrop-filter:none!important;
+}
+html[data-cm-theme="goldWhite"] .passes-module #templatePassPanel[hidden],
+html[data-cm-theme="goldWhite"] .passes-module #addPassPanel[hidden],
+html[data-cm-theme="goldWhite"] .passes-module #deletePassPanel[hidden],
+html[data-cm-theme="beautyRose"] .passes-module #templatePassPanel[hidden],
+html[data-cm-theme="beautyRose"] .passes-module #addPassPanel[hidden],
+html[data-cm-theme="beautyRose"] .passes-module #deletePassPanel[hidden]{
+  display:none!important;
+  visibility:hidden!important;
+  opacity:0!important;
+  pointer-events:none!important;
+}

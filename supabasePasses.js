@@ -224,7 +224,7 @@
     panel.classList.remove("cm-centered-no-overlay-panel", "cm-pass-inline-panel", "cm-modal-active", "cm-as-modal");
     panel.setAttribute("data-cm-no-modal", "true");
     panel.removeAttribute("data-cm-modal-depth");
-    panel.style.removeProperty("z-index");
+    ["position","top","left","right","bottom","inset","transform","z-index","width","max-width","max-height","overflow","margin","display","visibility","opacity","pointer-events"].forEach((prop) => panel.style.removeProperty(prop));
     document.body?.classList?.remove("cm-centered-panel-open", "cm-modal-open");
     document.documentElement?.classList?.remove("cm-centered-panel-open", "cm-modal-open");
     document.body?.setAttribute("data-cm-modal-open", "false");
@@ -246,6 +246,32 @@
     actions.appendChild(button);
   }
 
+  function forceCenteredPassPanel(panel) {
+    if (!panel) return;
+    // Hotfix dla Exclusive Gold + Beauty Rose: te dwa motywy mają własne reguły z transform/filter,
+    // więc centrowanie wymuszamy inline z !important, bez ruszania Original ani innych skórek.
+    const theme = document.documentElement?.dataset?.cmTheme || "";
+    if (theme !== "goldWhite" && theme !== "beautyRose") return;
+    const important = "important";
+    panel.style.setProperty("position", "fixed", important);
+    panel.style.setProperty("inset", "auto", important);
+    panel.style.setProperty("top", "50%", important);
+    panel.style.setProperty("left", "50%", important);
+    panel.style.setProperty("right", "auto", important);
+    panel.style.setProperty("bottom", "auto", important);
+    panel.style.setProperty("transform", "translate(-50%, -50%)", important);
+    panel.style.setProperty("z-index", "2147483000", important);
+    panel.style.setProperty("display", "block", important);
+    panel.style.setProperty("visibility", "visible", important);
+    panel.style.setProperty("opacity", "1", important);
+    panel.style.setProperty("pointer-events", "auto", important);
+    panel.style.setProperty("width", "min(920px, calc(100vw - 32px))", important);
+    panel.style.setProperty("max-width", "calc(100vw - 32px)", important);
+    panel.style.setProperty("max-height", "calc(100vh - 32px)", important);
+    panel.style.setProperty("overflow", "auto", important);
+    panel.style.setProperty("margin", "0", important);
+  }
+
   function showOnlyPanel(target, panels) {
     // Karnety: własny panel na środku ekranu, bez globalnego overlay/blur.
     const list = (panels || []).filter(Boolean);
@@ -255,10 +281,12 @@
       target.hidden = false;
       target.classList.add("cm-centered-no-overlay-panel", "cm-pass-inline-panel", "cm-no-modal");
       target.setAttribute("data-cm-no-modal", "true");
+      forceCenteredPassPanel(target);
       ensureCenteredCancel(target);
       document.body?.classList?.add("cm-centered-panel-open");
       document.documentElement?.classList?.add("cm-centered-panel-open");
       window.setTimeout(() => {
+        forceCenteredPassPanel(target);
         try { target.querySelector("input:not([type='hidden']),select,textarea,button")?.focus({ preventScroll: true }); } catch (_) {}
       }, 0);
     }
