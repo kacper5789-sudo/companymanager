@@ -80,6 +80,22 @@
     return iso(date);
   }
 
+  function isIsoDate(value) {
+    return /^\d{4}-\d{2}-\d{2}$/.test(String(value || '').slice(0, 10));
+  }
+
+  function getDashboardSelectedDate() {
+    let value = '';
+    try { value = new URLSearchParams(window.location.search).get('date') || ''; } catch (_) {}
+    if (!isIsoDate(value)) {
+      try { value = localStorage.getItem('cm_dashboard_selected_date') || ''; } catch (_) {}
+    }
+    if (!isIsoDate(value)) value = iso(new Date());
+    value = String(value).slice(0, 10);
+    try { localStorage.setItem('cm_dashboard_selected_date', value); } catch (_) {}
+    return value;
+  }
+
   function plDate(value) {
     if (!value) return "";
     const [y, m, d] = String(value).slice(0, 10).split("-");
@@ -1117,24 +1133,6 @@
     form.elements.note.value = item.note || "";
   }
 
-
-  function setDashboardSelectedDate(dateIso) {
-    const value = String(dateIso || "").slice(0, 10);
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return;
-    try { localStorage.setItem("cm_dashboard_selected_date", value); } catch (_) {}
-    try {
-      const url = new URL(window.location.href);
-      url.searchParams.set("date", value);
-      window.history.replaceState({}, "", url.toString());
-    } catch (_) {}
-    renderDashboard();
-  }
-  window.cmSetDashboardDate = setDashboardSelectedDate;
-  window.addEventListener("cm:dashboard-date-selected", (event) => {
-    const value = event?.detail?.date;
-    if (value) setDashboardSelectedDate(value);
-  });
-
   async function renderDashboard() {
     const area = getPanelArea();
     if (!area) return;
@@ -1143,18 +1141,10 @@
       return;
     }
 
-    const params = new URLSearchParams(window.location.search);
-    let selectedDate = params.get("date");
-    if (!selectedDate) {
-      try { selectedDate = localStorage.getItem("cm_dashboard_selected_date") || ""; } catch (_) {}
-    }
-    selectedDate = String(selectedDate || iso(new Date())).slice(0, 10);
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(selectedDate)) selectedDate = iso(new Date());
-    try { localStorage.setItem("cm_dashboard_selected_date", selectedDate); } catch (_) {}
-
+    const selectedDate = getDashboardSelectedDate();
     try {
-      const strong = document.querySelector("#calendarToggle strong");
-      if (strong) strong.textContent = dayHeader(selectedDate).replace(/^([A-ZŁŚŻŹĆŃÓĘĄ][^,]+),\s*/, "");
+      const label = document.querySelector('#calendarToggle strong');
+      if (label) label.textContent = plDate(selectedDate);
     } catch (_) {}
 
     area.innerHTML = `<section class="bm-page-card"><h2>Dashboard</h2><p>Ładuję dane z Supabase...</p></section>`;
@@ -1773,7 +1763,7 @@
       if (!before) { setMessage("#dashboardEditVisitMessage", "Nie znaleziono wizyty.", false); return; }
       const reason = String(document.querySelector("#dashEditCancelReasonSelect")?.value || "").trim();
       if (!CANCELLATION_REASONS.includes(reason)) { setMessage("#dashboardEditVisitMessage", "Musisz wybrać powód odwołania wizyty.", false); return; }
-      const patch = { status: "odwołane", deleted: false, cancellation_reason: reason, cancel_reason: reason, cancelled_at: new Date().toISOString(), updated_at: new Date().toISOString() };
+      const patch = { status: "odwołane", deleted: false, cancellation_reason: reason, cancelled_at: new Date().toISOString(), updated_at: new Date().toISOString() };
       const { data: updated, error } = await window.cmSupabase.from("appointments").update(patch).eq("id", visitId).eq("company_id", ctx.companyId).select("*").single();
       if (error) { setMessage("#dashboardEditVisitMessage", `Błąd odwołania: ${error.message}`, false); return; }
       await window.cmUndo?.record({ module: "dashboard", actionType: "update", targetTable: "appointments", targetId: visitId, beforeData: before, afterData: updated || patch, companyId: ctx.companyId });
@@ -1822,7 +1812,7 @@
       const reason = String(formData.get("reason") || "").trim();
       if (!visitId || !reason) { setMessage("#dashboardCancelVisitMessage", "Wybierz wizytę i wpisz powód.", false); return; }
       const before = data.appointments.find((item) => item.id === visitId);
-      const patch = { status: "odwołane", deleted: false, cancellation_reason: reason, cancel_reason: reason, cancelled_at: new Date().toISOString(), updated_at: new Date().toISOString() };
+      const patch = { status: "odwołane", deleted: false, cancellation_reason: reason, cancelled_at: new Date().toISOString(), updated_at: new Date().toISOString() };
       const { data: updated, error } = await window.cmSupabase.from("appointments").update(patch).eq("id", visitId).eq("company_id", ctx.companyId).select("*").single();
       if (error) { setMessage("#dashboardCancelVisitMessage", `Błąd odwołania: ${error.message}`, false); return; }
       await window.cmUndo?.record({ module: "dashboard", actionType: "update", targetTable: "appointments", targetId: visitId, beforeData: before, afterData: updated || patch, companyId: ctx.companyId });

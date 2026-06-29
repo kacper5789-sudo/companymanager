@@ -750,9 +750,6 @@
   function appointmentDate(item) { return item.date || ""; }
   function appointmentTime(item) { return normalizeTime(item.time || item.start_time); }
   function appointmentCancellationReason(item) {
-    const note = String(item?.note || "");
-    const noteMatch = note.match(/Pow[oó]d odwo[lł]ania(?: wizyty)?[:\-]\s*([^
-;]+)/i);
     const raw = String(
       item?.cancellation_reason ||
       item?.cancel_reason ||
@@ -760,23 +757,9 @@
       item?.cancelReason ||
       item?.cancelReasonLabel ||
       item?.reason ||
-      (noteMatch ? noteMatch[1] : "") ||
       ""
     ).trim();
-    if (!raw) return "-";
-    const aliases = {
-      "klient odwolal": "Klient odwołał",
-      "klient odwołał": "Klient odwołał",
-      "klient nie przyszedl": "Klient nie przyszedł",
-      "klient nie przyszedł": "Klient nie przyszedł",
-      "klient przelozyl wizyte": "Klient przełożył wizytę",
-      "klient przełożył wizytę": "Klient przełożył wizytę",
-      "pomyłka": "Pomyłka",
-      "pomylka": "Pomyłka",
-      "inne": "Inne"
-    };
-    const key = raw.toLowerCase().replace(/\s+/g, " ");
-    return aliases[key] || raw;
+    return raw || "-";
   }
   function appointmentClientId(item) { return item.customer_id || item.client_id || ""; }
 

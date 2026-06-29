@@ -250,7 +250,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const candidates = [
       visit?.cancelReason,
       visit?.cancellationReason,
-      visit?.cancellation_reason,
       visit?.cancel_reason,
       visit?.cancelReasonLabel,
       visit?.statusReason,
@@ -1523,7 +1522,9 @@ document.addEventListener('DOMContentLoaded', () => {
   }, true);
 
   const panelMenu = (panelUser, page) => {
-    const items = [
+    // v93: docelowa kolejność górnego menu operacyjnego.
+    // Nie zmienia linków, uprawnień ani działania modułów — tylko kolejność renderowania.
+    const orderedTopMenuItems = [
       ['visits.html','visits','Wizyty','📅'],
       ['customers.html','customers','Klienci','👤'],
       ['services.html','services','Usługi','✂️'],
@@ -1535,8 +1536,9 @@ document.addEventListener('DOMContentLoaded', () => {
       ['positions.html','positions','Stanowiska pracy','🪑'],
       ['walkins.html','walkins','Sprzedaż bez wizyty','🛒'],
       ['sales.html','sales','Sprzedaż','💳']
-    ].filter(item => canAccessPage(panelUser, item[1]));
-    const links = items.map(([href,id,label,icon]) => `<a href="${href}" class="${page===id?'active':''}"><span class="cm-menu-icon" aria-hidden="true">${icon}</span><span class="cm-menu-label">${label}</span></a>`).join('');
+    ];
+    const items = orderedTopMenuItems.filter(item => canAccessPage(panelUser, item[1]));
+    const links = items.map(([href,id,label,icon]) => `<a href="${href}" class="${page===id?'active':''}" data-menu-id="${id}"><span class="cm-menu-icon" aria-hidden="true">${icon}</span><span class="cm-menu-label">${label}</span></a>`).join('');
     return links;
   };
 
@@ -1860,16 +1862,13 @@ document.addEventListener('DOMContentLoaded', () => {
           toggle.querySelector('strong').textContent = formatDisplayDate(d);
           month.hidden = true;
           renderMiniCalendar();
-          try {
-            window.dispatchEvent(new CustomEvent('cm:dashboard-date-selected', { detail: { date: selectedIso } }));
-          } catch (_) {}
-          if (document.body?.dataset?.panelPage === 'dashboard' && typeof window.cmSetDashboardDate === 'function') {
-            window.cmSetDashboardDate(selectedIso);
-            return;
+          const targetUrl = `dashboard.html?date=${encodeURIComponent(selectedIso)}`;
+          const currentPath = String(window.location.pathname || '').toLowerCase();
+          if (currentPath.endsWith('/dashboard.html') || currentPath.endsWith('dashboard.html')) {
+            window.location.href = targetUrl;
+          } else {
+            window.location.href = targetUrl;
           }
-          const targetUrl = new URL('dashboard.html', window.location.href);
-          targetUrl.searchParams.set('date', selectedIso);
-          window.location.assign(targetUrl.toString());
         }
       }
     });
@@ -3821,9 +3820,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // Usunięto ręcznie dopisane osoby testowe, żeby grafik nie pokazywał kolumn bez realnego użytkownika.
     const employees = dbEmployees;
     const employeeIds = new Set(employees.map(employee => employee.id));
-    const dashboardDate = cmGetDashboardUrlDate() || cmSelectedPanelDate || CM_TODAY;
-    cmSelectedPanelDate = dashboardDate;
-    const todayIso = cmPanelDateIso(dashboardDate);
+    const dashboardBaseDate = (cmSelectedPanelDate instanceof Date && !Number.isNaN(cmSelectedPanelDate.getTime())) ? cmSelectedPanelDate : CM_TODAY;
+    const todayIso = isoFromDateObj(dashboardBaseDate);
     const allDashboardVisits = (db.dashboardVisits || []).filter(v => v.companyId === company.id && employeeIds.has(v.employeeId));
     const dashVisits = allDashboardVisits;
     const isoFromDateObj = (date) => `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
@@ -3902,12 +3900,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const timeOptions = [];
     for (let hour = 0; hour < 24; hour++) for (let min = 0; min < 60; min += 5) timeOptions.push(`${String(hour).padStart(2,'0')}:${String(min).padStart(2,'0')}`);
     const timeSelectOptions = timeOptions.map(t => `<option value="${t}">${t}</option>`).join('');
-    const selectedDate = dashboardDate;
-    const isDashboardToday = sameDay(selectedDate, CM_TODAY);
+    const selectedDate = new Date();
     const dayHeader = `${selectedDate.toLocaleDateString('pl-PL', { weekday:'long' }).replace(/^./, c => c.toUpperCase())}, ${selectedDate.getDate()} ${monthNamesPL[selectedDate.getMonth()]}, ${selectedDate.getFullYear()}`;
     const dateBar = `<section class="bm-schedule-datebar">
       <button type="button" id="dashPrevDay" aria-label="Poprzedni dzień">‹</button>
-      <strong id="dashRelativeLabel">${isDashboardToday ? 'dzisiaj' : escapeHtml(formatIsoDatePL(todayIso) || todayIso)}</strong>
+      <strong id="dashRelativeLabel">dzisiaj</strong>
       <button type="button" id="dashNextDay" aria-label="Następny dzień">›</button>
       <span id="dashFullDate">${escapeHtml(dayHeader)}</span>
       <span class="bm-dashboard-actions"><button type="button" id="dashEditVisitBtn" class="bm-light-btn">Edytuj</button><button type="button" id="dashEmployeeCount" class="bm-worker-count">(${employees.length})</button></span>
@@ -4021,7 +4018,7 @@ document.addEventListener('DOMContentLoaded', () => {
       workerState[iso] = currentDb.dashboardWorkerState[iso];
       saveDatabase(currentDb);
     };
-    const activeIsoDate = () => { const date = new Date(); date.setDate(date.getDate() + dayOffset); return isoFromDateObj(date); };
+    const activeIsoDate = () => { const date = new Date(dashboardBaseDate.getFullYear(), dashboardBaseDate.getMonth(), dashboardBaseDate.getDate()); date.setDate(date.getDate() + dayOffset); return isoFromDateObj(date); };
     const applyWorkerStateForDate = (iso) => {
       const active = getActiveWorkerIdsForDate(iso);
       const offIds = dayOffEmployeeIds(iso);
@@ -4070,7 +4067,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     let dayOffset = 0;
     const refreshScheduleCells = () => {
-      const date = new Date(); date.setDate(date.getDate() + dayOffset);
+      const date = new Date(dashboardBaseDate.getFullYear(), dashboardBaseDate.getMonth(), dashboardBaseDate.getDate()); date.setDate(date.getDate() + dayOffset);
       const iso = isoFromDateObj(date);
       document.querySelectorAll('.bm-schedule-slot').forEach(cell => {
         const employee = employees.find(emp => emp.id === cell.dataset.employeeId);
@@ -4088,7 +4085,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (form?.date) form.date.value = iso;
     };
     const updateDashDate = () => {
-      const date = new Date(); date.setDate(date.getDate() + dayOffset);
+      const date = new Date(dashboardBaseDate.getFullYear(), dashboardBaseDate.getMonth(), dashboardBaseDate.getDate()); date.setDate(date.getDate() + dayOffset);
       const iso = isoFromDateObj(date);
       const rel = dayOffset === 0 ? 'dzisiaj' : dayOffset === 1 ? 'jutro' : dayOffset === -1 ? 'wczoraj' : date.toLocaleDateString('pl-PL', { weekday:'long' });
       document.querySelector('#dashRelativeLabel').textContent = rel;
@@ -4177,7 +4174,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const [h,m] = start.split(':').map(Number);
       const endDate = new Date(2000, 0, 1, h, m + 5);
       const end = `${String(endDate.getHours()).padStart(2,'0')}:${String(endDate.getMinutes()).padStart(2,'0')}`;
-      const activeDate = new Date(); activeDate.setDate(activeDate.getDate() + dayOffset);
+      const activeDate = new Date(dashboardBaseDate.getFullYear(), dashboardBaseDate.getMonth(), dashboardBaseDate.getDate()); activeDate.setDate(activeDate.getDate() + dayOffset);
       form.date.value = isoFromDateObj(activeDate);
       form.start.value = start; form.end.value = end; form.employeeId.value = cell.dataset.employeeId || '';
       setDurationAndTotal();

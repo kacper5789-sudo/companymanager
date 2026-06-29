@@ -178,13 +178,13 @@
       <div class="bm-page-head customers-head cm-work-schedule-head">
         <div>
           <h2>Grafik pracy</h2>
-          <p class="bm-muted">Ustaw tygodniowy grafik pracowników. Dashboard stosuje ten grafik automatycznie dla każdej daty wybranej z kalendarza, także na kolejne miesiące.</p>
+          <p class="bm-muted">Ustaw dowolne godziny pracy pracowników. Dashboard korzysta z tych godzin przy tworzeniu slotów wizyt.</p>
         </div>
       </div>
 
       <div class="cm-work-schedule-grid">
         <section class="cm-work-panel cm-work-panel-main">
-          <div class="cm-work-panel-title">Edycja grafiku tygodniowego</div>
+          <div class="cm-work-panel-title">Edycja grafiku</div>
           <div class="cm-work-schedule-controls">
             <label>Pracownik<select id="workScheduleEmployee">${employeeOptions()}</select></label>
             <label>Szybko od<input type="time" id="quickStartTime" value="08:00"></label>
