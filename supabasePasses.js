@@ -218,91 +218,25 @@
     msg.style.display = "block";
   }
 
-  function markPassModal(panel, active) {
-    if (!panel) return;
-
-    // v71: Karnety wracają do bezpiecznych formularzy INLINE.
-    // Powód: globalne modale/overlay/blur kolidowały ze skórkami i blokowały kliknięcia.
-    // Nie ustawiamy fixed, nie dodajemy cm-pass-modal-open, nie używamy cm-as-modal/cm-modal-active.
-    panel.classList.remove("cm-modal-active", "cm-as-modal", "cm-pass-panel-active", "cm-pass-safe-modal");
-    panel.removeAttribute("data-cm-modal-depth");
-
-    if (active) {
-      panel.hidden = false;
-      panel.removeAttribute("hidden");
-      panel.style.display = "block";
-      panel.style.position = "relative";
-      panel.style.top = "auto";
-      panel.style.left = "auto";
-      panel.style.right = "auto";
-      panel.style.bottom = "auto";
-      panel.style.transform = "none";
-      panel.style.width = "";
-      panel.style.maxWidth = "";
-      panel.style.maxHeight = "none";
-      panel.style.overflowY = "visible";
-      panel.style.overflowX = "visible";
-      panel.style.pointerEvents = "auto";
-      panel.style.touchAction = "auto";
-      panel.style.zIndex = "auto";
-      panel.style.opacity = "1";
-      panel.style.visibility = "visible";
-      panel.style.filter = "none";
-      panel.style.backdropFilter = "none";
-      panel.style.webkitBackdropFilter = "none";
-    } else {
-      panel.hidden = true;
-      panel.setAttribute("hidden", "");
-      panel.classList.remove("cm-pass-safe-modal", "cm-pass-panel-active", "cm-modal-active", "cm-as-modal");
-      ["display","position","top","left","right","bottom","transform","width","max-width","max-height","overflow-y","overflow-x","pointer-events","touch-action","z-index","opacity","visibility","filter","backdrop-filter","-webkit-backdrop-filter"].forEach((prop) => panel.style.removeProperty(prop));
-    }
-  }
-
-  function syncPassModalBodyState() {
-    // v71: Karnety nie otwierają globalnego modala. Czyścimy wszystkie stany overlay/blur.
-    document.body?.classList?.remove("cm-modal-open", "cm-pass-modal-open");
-    document.documentElement?.classList?.remove("cm-modal-open", "cm-pass-modal-open");
-    document.body?.removeAttribute?.("data-cm-modal-open");
-    document.documentElement?.removeAttribute?.("data-cm-modal-open");
-
-    const overlay = document.getElementById("cmGlobalFormOverlay");
-    if (overlay) {
-      overlay.hidden = true;
-      overlay.style.display = "none";
-      overlay.style.opacity = "0";
-      overlay.style.pointerEvents = "none";
-      overlay.style.background = "transparent";
-      overlay.style.backdropFilter = "none";
-      overlay.style.webkitBackdropFilter = "none";
-      overlay.style.filter = "none";
-    }
-
-    if (window.cmRefreshGlobalModalState) {
-      setTimeout(() => {
-        try { window.cmRefreshGlobalModalState(); } catch (_) {}
-      }, 0);
-    }
-  }
-
   function showOnlyPanel(target, panels) {
-    const list = (panels || []).filter(Boolean);
-    const shouldOpen = !!target && target.hidden;
-    list.forEach((panel) => markPassModal(panel, false));
-    if (target && shouldOpen) {
-      markPassModal(target, true);
-      setTimeout(() => {
-        try { target.scrollTop = 0; } catch (_) {}
-        target.querySelector("input,select,textarea,button")?.focus?.({ preventScroll: true });
-      }, 0);
-    }
-    syncPassModalBodyState();
+    if (window.cmShowOnlyModalPanel) return window.cmShowOnlyModalPanel(target, panels || []);
+    panels.forEach((panel) => { if (panel) panel.hidden = panel !== target ? true : !panel.hidden; });
   }
 
   function closePassesModals() {
-    document.querySelectorAll("#templatePassPanel, #addPassPanel, #deletePassPanel, #inlinePassCustomerPanel").forEach((panel) => markPassModal(panel, false));
-    document.querySelectorAll(".cm-pass-panel-active").forEach((panel) => markPassModal(panel, false));
-    syncPassModalBodyState();
-    if (window.cmRefreshGlobalModalState) setTimeout(() => window.cmRefreshGlobalModalState(), 0);
+    if (window.cmHardCloseAllModalPanels) {
+      window.cmHardCloseAllModalPanels();
+      return;
+    }
+    if (window.cmCloseAllModalPanels) {
+      window.cmCloseAllModalPanels();
+      return;
+    }
+    document.querySelectorAll(".cm-modal-active, .cm-as-modal").forEach((panel) => {
+      panel.hidden = true;
+      panel.classList.remove("cm-modal-active", "cm-as-modal");
+    });
+    document.body?.classList?.remove("cm-modal-open");
   }
 
   function rerenderPassesAfterSuccess(delay = 450) {
@@ -586,7 +520,7 @@
             <label>Ważność domyślna (dni)<input name="templateValidDays" type="number" min="1" step="1" value="30"></label>
           </div>
           <label class="full">Opis<textarea name="templateDescription" rows="2" placeholder="Opis typu karnetu"></textarea></label>
-          <div class="bm-form-actions full"><button type="submit">Zapisz typ karnetu</button><button type="button" class="bm-light-btn" data-pass-modal-cancel>Anuluj</button></div>
+          <div class="bm-form-actions full"><button type="submit">Zapisz typ karnetu</button></div>
         </form>
         <p id="templatePassMessage" class="panel-message"></p>
         <div class="bm-page-head customers-head"><h3>Aktualna pula karnetów</h3></div>
@@ -616,7 +550,7 @@
             </div>
           </div>
           <label class="full">Opis<textarea name="description" placeholder="Opis"></textarea></label>
-          <div class="full bm-form-actions"><button type="submit">Dodaj</button><button type="button" class="bm-light-btn" data-pass-modal-cancel>Anuluj</button></div>
+          <div class="full"><button type="submit">Dodaj</button></div>
         </form>
         <p id="passFormMessage" class="panel-message"></p>
       </section>
@@ -624,7 +558,7 @@
         <h2>Usuń karnet</h2>
         <div class="bm-form-grid bm-wide-form">
           <label class="full">Wybierz karnet<select id="deletePassSelect"><option value="">Wybierz karnet</option>${passOptions}</select></label>
-          <div class="full bm-form-actions"><button id="deletePassBtn" type="button" class="bm-danger-btn">Usuń</button><button type="button" class="bm-light-btn" data-pass-modal-cancel>Anuluj</button></div>
+          <div class="full"><button id="deletePassBtn" type="button" class="bm-danger-btn">Usuń</button></div>
         </div>
         <p id="passDeleteMessage" class="panel-message"></p>
       </section>
@@ -668,15 +602,6 @@
     document.querySelector("#showTemplatePass")?.addEventListener("click", () => showOnlyPanel(templatePanel, panels));
     document.querySelector("#showAddPass")?.addEventListener("click", () => showOnlyPanel(addPanel, panels));
     document.querySelector("#showDeletePass")?.addEventListener("click", () => showOnlyPanel(deletePanel, panels));
-    document.querySelectorAll("[data-pass-modal-cancel]").forEach((button) => {
-      button.addEventListener("click", (event) => {
-        event.preventDefault();
-        closePassesModals();
-      });
-    });
-    document.addEventListener("keydown", (event) => {
-      if (event.key === "Escape" && document.body?.classList?.contains("cm-pass-modal-open")) closePassesModals();
-    }, { once: true });
     setupModuleLimitDropdowns(document);
 
     const apply = () => {
