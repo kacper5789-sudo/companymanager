@@ -16284,3 +16284,208 @@ html[data-cm-theme="godOfDestruction"] :where(.bm-page-card,.panel-card,.cm-unif
     animation:none!important;
   }
 }
+
+/* CompanyManager v64 — SSJ Blue / God visible aura hard fix
+   Poprzedni efekt był za subtelny. Ten overlay jest celowo mocny, widoczny na całej aplikacji,
+   nie przechwytuje kliknięć i działa stale po wybraniu skórki oraz podczas burstu po kliknięciu. */
+html[data-cm-theme="royalSaiyanBlue"] body::after,
+html[data-cm-theme="godOfDestruction"] body::after{
+  content:"";
+  position:fixed;
+  inset:0;
+  z-index:2147482000;
+  pointer-events:none!important;
+  opacity:.72;
+  mix-blend-mode:screen;
+  will-change:opacity,transform,filter,background-position;
+}
+html[data-cm-theme="royalSaiyanBlue"] body::after{
+  background:
+    radial-gradient(circle at 18% 20%, rgba(106,232,255,.40) 0 2px, transparent 3px 100%),
+    radial-gradient(circle at 78% 38%, rgba(120,228,255,.34) 0 2px, transparent 3px 100%),
+    radial-gradient(circle at 44% 78%, rgba(40,148,255,.30) 0 2px, transparent 3px 100%),
+    radial-gradient(ellipse at 50% 105%, rgba(0,195,255,.36), transparent 44%),
+    radial-gradient(circle at 50% 50%, rgba(0,120,255,.12), transparent 58%);
+  background-size:240px 240px, 310px 310px, 390px 390px, 100% 100%, 100% 100%;
+  filter:saturate(1.75) blur(.15px);
+  animation:cmBlueFullAuraVisible 3.2s ease-in-out infinite;
+}
+html[data-cm-theme="godOfDestruction"] body::after{
+  background:
+    radial-gradient(circle at 20% 82%, rgba(255,206,74,.42) 0 2px, transparent 3px 100%),
+    radial-gradient(circle at 82% 62%, rgba(255,88,24,.42) 0 2px, transparent 3px 100%),
+    radial-gradient(circle at 52% 28%, rgba(239,35,60,.34) 0 2px, transparent 3px 100%),
+    radial-gradient(ellipse at 50% 108%, rgba(255,92,24,.45), transparent 42%),
+    radial-gradient(circle at 50% 55%, rgba(255,0,48,.13), transparent 60%);
+  background-size:220px 220px, 280px 280px, 360px 360px, 100% 100%, 100% 100%;
+  filter:saturate(1.95) blur(.25px);
+  animation:cmGodFullAuraVisible 2.75s ease-in-out infinite;
+}
+@keyframes cmBlueFullAuraVisible{
+  0%,100%{opacity:.36;transform:translate3d(0,0,0) scale(1);background-position:0 0,0 0,0 0,0 0,0 0;}
+  45%{opacity:.82;transform:translate3d(0,-6px,0) scale(1.01);background-position:18px -36px,-26px -48px,30px -58px,0 -18px,0 0;}
+  70%{opacity:.52;transform:translate3d(0,-3px,0) scale(1.005);}
+}
+@keyframes cmGodFullAuraVisible{
+  0%,100%{opacity:.38;transform:translate3d(0,0,0) scale(1) skewX(0deg);background-position:0 0,0 0,0 0,0 0,0 0;}
+  35%{opacity:.86;transform:translate3d(0,-8px,0) scale(1.012) skewX(-.45deg);background-position:-18px -40px,24px -54px,-30px -42px,0 -22px,0 0;}
+  65%{opacity:.56;transform:translate3d(0,-4px,0) scale(1.006) skewX(.35deg);}
+}
+
+/* Mocniejszy burst po kliknięciu kafelka SSJ Blue / God. */
+.cm-power-aura-burst{
+  z-index:2147483000!important;
+  opacity:1!important;
+  animation:cmPowerAuraVisibleBurst 1.85s ease-out forwards!important;
+}
+.cm-power-aura-burst::before,
+.cm-power-aura-burst::after{
+  opacity:1!important;
+  filter:saturate(2.1) blur(.2px)!important;
+}
+.cm-power-aura-blue::before{
+  background:
+    radial-gradient(ellipse at 50% 100%, rgba(0,225,255,.72), transparent 42%),
+    radial-gradient(circle at 25% 36%, rgba(132,241,255,.48), transparent 28%),
+    radial-gradient(circle at 78% 32%, rgba(0,132,255,.42), transparent 30%),
+    linear-gradient(90deg, transparent, rgba(107,230,255,.34), transparent)!important;
+}
+.cm-power-aura-blue::after{
+  background:
+    conic-gradient(from 10deg at 50% 58%, transparent 0 7%, rgba(126,232,255,.62) 11%, transparent 18% 30%, rgba(255,255,255,.46) 34%, transparent 42% 58%, rgba(0,157,255,.52) 64%, transparent 72% 100%)!important;
+}
+.cm-power-aura-god::before{
+  background:
+    radial-gradient(ellipse at 50% 102%, rgba(255,95,20,.78), transparent 43%),
+    radial-gradient(circle at 18% 72%, rgba(255,216,89,.46), transparent 26%),
+    radial-gradient(circle at 82% 60%, rgba(255,35,64,.54), transparent 30%),
+    linear-gradient(180deg, rgba(255,218,104,.28), transparent 36%, rgba(255,56,32,.38))!important;
+}
+.cm-power-aura-god::after{
+  background:
+    repeating-conic-gradient(from 0deg at 50% 92%, transparent 0 7deg, rgba(255,88,24,.44) 10deg 14deg, transparent 17deg 26deg, rgba(255,226,124,.32) 29deg 32deg, transparent 35deg 46deg)!important;
+}
+.cm-power-aura-particle{
+  width:calc(var(--p-size) * 1.9)!important;
+  height:calc(var(--p-size) * 1.9)!important;
+  opacity:0;
+}
+.cm-power-aura-blue .cm-power-aura-particle{
+  background:rgba(156,244,255,1)!important;
+  box-shadow:0 0 16px rgba(87,219,255,1),0 0 38px rgba(28,134,255,.8)!important;
+}
+.cm-power-aura-god .cm-power-aura-particle{
+  background:rgba(255,220,112,1)!important;
+  box-shadow:0 0 16px rgba(255,111,36,1),0 0 42px rgba(239,35,60,.82)!important;
+}
+@keyframes cmPowerAuraVisibleBurst{
+  0%{opacity:0;filter:brightness(1) saturate(1);}
+  10%{opacity:1;filter:brightness(1.75) saturate(2);}
+  62%{opacity:.92;filter:brightness(1.25) saturate(1.7);}
+  100%{opacity:0;filter:brightness(1) saturate(1);}
+}
+
+/* Karty w SSJ Blue / God mają być wyraźnie żywe, nie ledwo widoczne. */
+html[data-cm-theme="royalSaiyanBlue"] :where(.bm-page-card,.panel-card,.cm-unified-card,.bm-current-section,.dashboard-card,.stat-card,.report-card,.summary-card,.settings-card,.employee-card,.client-card,.service-card,.product-card,.appointment-card,.sale-card,.marketing-card,.pass-card,.chart-card,.table-card,.filter-card,.cm-card,.card){
+  box-shadow:0 0 0 1px rgba(115,216,255,.22),0 0 28px rgba(0,163,255,.18),0 18px 45px rgba(0,28,68,.28)!important;
+}
+html[data-cm-theme="godOfDestruction"] :where(.bm-page-card,.panel-card,.cm-unified-card,.bm-current-section,.dashboard-card,.stat-card,.report-card,.summary-card,.settings-card,.employee-card,.client-card,.service-card,.product-card,.appointment-card,.sale-card,.marketing-card,.pass-card,.chart-card,.table-card,.filter-card,.cm-card,.card){
+  box-shadow:0 0 0 1px rgba(255,90,45,.24),0 0 30px rgba(239,35,60,.18),0 18px 45px rgba(68,0,10,.30)!important;
+}
+
+/* CompanyManager v65 — no-blur modal safety fix
+   Usuwa blur z overlayów/formularzy. Efekty skórek nie mogą przyciemniać ani rozmywać modali Karnetów ani żadnych formularzy. */
+html body #cmGlobalFormOverlay,
+html.cm-modal-open body #cmGlobalFormOverlay,
+body.cm-modal-open #cmGlobalFormOverlay,
+html[data-cm-modal-open="true"] body #cmGlobalFormOverlay,
+body[data-cm-modal-open="true"] #cmGlobalFormOverlay,
+html.cm-pass-modal-open body #cmGlobalFormOverlay,
+body.cm-pass-modal-open #cmGlobalFormOverlay{
+  backdrop-filter:none!important;
+  -webkit-backdrop-filter:none!important;
+  filter:none!important;
+  background:rgba(2,6,23,.54)!important;
+  pointer-events:none!important;
+}
+
+html.cm-modal-open body,
+body.cm-modal-open,
+html.cm-pass-modal-open body,
+body.cm-pass-modal-open,
+html.cm-modal-open body .bm-shell,
+body.cm-modal-open .bm-shell,
+html.cm-modal-open body .bm-main,
+body.cm-modal-open .bm-main,
+html.cm-pass-modal-open body .bm-shell,
+body.cm-pass-modal-open .bm-shell,
+html.cm-pass-modal-open body .bm-main,
+body.cm-pass-modal-open .bm-main{
+  filter:none!important;
+  backdrop-filter:none!important;
+  -webkit-backdrop-filter:none!important;
+}
+
+html.cm-modal-open body::before,
+html.cm-modal-open body::after,
+body.cm-modal-open::before,
+body.cm-modal-open::after,
+html.cm-pass-modal-open body::before,
+html.cm-pass-modal-open body::after,
+body.cm-pass-modal-open::before,
+body.cm-pass-modal-open::after,
+html[data-cm-modal-open="true"] body::before,
+html[data-cm-modal-open="true"] body::after,
+body[data-cm-modal-open="true"]::before,
+body[data-cm-modal-open="true"]::after{
+  opacity:0!important;
+  visibility:hidden!important;
+  animation:none!important;
+  pointer-events:none!important;
+  filter:none!important;
+  backdrop-filter:none!important;
+  -webkit-backdrop-filter:none!important;
+}
+
+html[data-cm-theme] body.cm-modal-open :where(.cm-as-modal,.cm-modal-active,#templatePassPanel,#addPassPanel,#deletePassPanel,#inlinePassCustomerPanel),
+html[data-cm-theme] body.cm-pass-modal-open :where(.cm-as-modal,.cm-modal-active,#templatePassPanel,#addPassPanel,#deletePassPanel,#inlinePassCustomerPanel),
+body.cm-modal-open :where(.cm-as-modal,.cm-modal-active,#templatePassPanel,#addPassPanel,#deletePassPanel,#inlinePassCustomerPanel),
+body.cm-pass-modal-open :where(.cm-as-modal,.cm-modal-active,#templatePassPanel,#addPassPanel,#deletePassPanel,#inlinePassCustomerPanel){
+  filter:none!important;
+  backdrop-filter:none!important;
+  -webkit-backdrop-filter:none!important;
+  opacity:1!important;
+  visibility:visible!important;
+  pointer-events:auto!important;
+}
+
+html[data-cm-theme] body.cm-modal-open :where(.cm-as-modal,.cm-modal-active,#templatePassPanel,#addPassPanel,#deletePassPanel,#inlinePassCustomerPanel)::before,
+html[data-cm-theme] body.cm-modal-open :where(.cm-as-modal,.cm-modal-active,#templatePassPanel,#addPassPanel,#deletePassPanel,#inlinePassCustomerPanel)::after,
+html[data-cm-theme] body.cm-pass-modal-open :where(.cm-as-modal,.cm-modal-active,#templatePassPanel,#addPassPanel,#deletePassPanel,#inlinePassCustomerPanel)::before,
+html[data-cm-theme] body.cm-pass-modal-open :where(.cm-as-modal,.cm-modal-active,#templatePassPanel,#addPassPanel,#deletePassPanel,#inlinePassCustomerPanel)::after{
+  content:none!important;
+  display:none!important;
+  opacity:0!important;
+  visibility:hidden!important;
+  animation:none!important;
+  pointer-events:none!important;
+  filter:none!important;
+}
+
+html[data-cm-theme] body.cm-pass-modal-open #templatePassPanel.cm-pass-panel-active,
+html[data-cm-theme] body.cm-pass-modal-open #addPassPanel.cm-pass-panel-active,
+html[data-cm-theme] body.cm-pass-modal-open #deletePassPanel.cm-pass-panel-active{
+  z-index:2147483600!important;
+  max-height:calc(100vh - 36px)!important;
+  overflow-y:auto!important;
+  background:linear-gradient(180deg, rgba(15,23,42,.995), rgba(2,6,23,.985))!important;
+}
+
+html[data-cm-theme] body.cm-pass-modal-open #templatePassPanel.cm-pass-panel-active *,
+html[data-cm-theme] body.cm-pass-modal-open #addPassPanel.cm-pass-panel-active *,
+html[data-cm-theme] body.cm-pass-modal-open #deletePassPanel.cm-pass-panel-active *{
+  filter:none!important;
+  backdrop-filter:none!important;
+  -webkit-backdrop-filter:none!important;
+  pointer-events:auto!important;
+}
