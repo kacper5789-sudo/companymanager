@@ -25,14 +25,14 @@ document.addEventListener('DOMContentLoaded', () => {
     sunset: { label: 'Sunset', swatch: '🧡', category: 'basic' },
     neon: { label: 'Cyber Neon', swatch: '💜', category: 'basic' },
 
-    titanArmor: { label: 'Titan Armor', swatch: '❤️', category: 'heroes' },
-    libertyShield: { label: 'Liberty Shield', swatch: '💙', category: 'heroes' },
+    titanArmor: { label: 'Armor', swatch: '❤️', category: 'heroes' },
+    libertyShield: { label: 'Shield', swatch: '🛡️', category: 'heroes' },
     shadowPanther: { label: 'Shadow Panther', swatch: '⚫', category: 'heroes' },
-    thunderGod: { label: 'Thunder God', swatch: '⚡', category: 'heroes' },
+    thunderGod: { label: 'Thunder', swatch: '⚡', category: 'heroes' },
     gammaForce: { label: 'Gamma Force', swatch: '💚', category: 'heroes' },
-    webHero: { label: 'Web Hero', swatch: '🕸️', category: 'heroes' },
-    scarletSpeed: { label: 'Scarlet Speed', swatch: '⚡', category: 'heroes' },
-    solarHero: { label: 'Solar Hero', swatch: '☀️', category: 'heroes' },
+    webHero: { label: 'Web', swatch: '🕸️', category: 'heroes' },
+    scarletSpeed: { label: 'F', swatch: '⚡', category: 'heroes' },
+    solarHero: { label: 'S', swatch: '☀️', category: 'heroes' },
     chaosSmile: { label: 'Chaos Smile', swatch: '🃏', category: 'heroes' },
     darkKnight: { label: 'Dark Knight', swatch: '🦇', category: 'heroes' },
 
@@ -90,7 +90,7 @@ document.addEventListener('DOMContentLoaded', () => {
     gaming: { label: 'Gaming', swatch: '🎮' },
     custom: { label: 'Moje Projekty', swatch: '🎨' }
   };
-  const CM_THEME_DARK = new Set(['original','blackLuxury','neon','cyberNeon','digitalMatrix','nightRacer','shadowPanther','darkKnight','chaosSmile','thunderGod','godOfDestruction','crimsonGhoul','luxuryPerformance','blueVelocity']);
+  const CM_THEME_DARK = new Set(['original','blackLuxury','neon','cyberNeon','digitalMatrix','nightRacer','shadowPanther','darkKnight','chaosSmile','titanArmor','libertyShield','thunderGod','webHero','scarletSpeed','solarHero','godOfDestruction','crimsonGhoul','luxuryPerformance','blueVelocity']);
   const normalizeCmTheme = (value) => Object.prototype.hasOwnProperty.call(CM_THEME_OPTIONS, value) ? value : CM_THEME_DEFAULT;
   const getStoredCmTheme = () => normalizeCmTheme(localStorage.getItem(CM_THEME_KEY) || CM_THEME_DEFAULT);
   const getCmCustomTheme = () => {

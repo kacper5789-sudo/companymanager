@@ -12860,14 +12860,14 @@ html[data-cm-theme="neon"] .bm-left-info-panel .bm-user-stack .cm-theme-menu{
 @media(max-width:860px){.cm-skin-universe{left:10px!important;right:10px!important;top:74px!important;bottom:10px!important;width:auto!important}.cm-skin-universe-body{grid-template-columns:1fr}.cm-skin-sidebar{display:flex;gap:8px;overflow:auto;border-right:0;border-bottom:1px solid var(--cm-skin-border,rgba(148,163,184,.2));}.cm-skin-category{min-width:max-content}.cm-skin-grid{grid-template-columns:repeat(auto-fill,minmax(150px,1fr));}}
 
 /* New Skin Universe palette tokens. Original remains untouched. */
-html[data-cm-theme="titanArmor"]{--cm-skin-bg-a:#0f1116;--cm-skin-bg-b:#1a1f27;--cm-skin-card:#181c24;--cm-skin-soft:#222934;--cm-skin-text:#eef3f8;--cm-skin-muted:#c7ced8;--cm-skin-accent:#9c1020;--cm-skin-accent-2:#c79a2b;--cm-skin-border:rgba(199,154,43,.30);--cm-skin-shadow:rgba(156,16,32,.30)}
-html[data-cm-theme="libertyShield"]{--cm-skin-bg-a:#101827;--cm-skin-bg-b:#173b7a;--cm-skin-card:#1a2740;--cm-skin-soft:#2d5aa6;--cm-skin-text:#f4f6f9;--cm-skin-muted:#cbd5e1;--cm-skin-accent:#b51e2f;--cm-skin-accent-2:#f4f6f9;--cm-skin-border:rgba(244,246,249,.22);--cm-skin-shadow:rgba(23,59,122,.35)}
+html[data-cm-theme="titanArmor"]{--cm-skin-bg-a:#090b10;--cm-skin-bg-b:#1a1012;--cm-skin-card:#12161d;--cm-skin-soft:#231116;--cm-skin-text:#f7f2ea;--cm-skin-muted:#c7b8a5;--cm-skin-accent:#9c1020;--cm-skin-accent-2:#c79a2b;--cm-skin-border:rgba(199,154,43,.34);--cm-skin-shadow:rgba(156,16,32,.28)}
+html[data-cm-theme="libertyShield"]{--cm-skin-bg-a:#0b1220;--cm-skin-bg-b:#14233d;--cm-skin-card:#101827;--cm-skin-soft:#17294a;--cm-skin-text:#f4f6f9;--cm-skin-muted:#b8c4d8;--cm-skin-accent:#173b7a;--cm-skin-accent-2:#b51e2f;--cm-skin-border:rgba(244,246,249,.22);--cm-skin-shadow:rgba(23,59,122,.26)}
 html[data-cm-theme="shadowPanther"]{--cm-skin-bg-a:#050507;--cm-skin-bg-b:#17111f;--cm-skin-card:#0d0d12;--cm-skin-soft:#1b1426;--cm-skin-text:#f4eaff;--cm-skin-muted:#cbb7df;--cm-skin-accent:#7c3aed;--cm-skin-accent-2:#c084fc;--cm-skin-border:rgba(124,58,237,.34);--cm-skin-shadow:rgba(0,0,0,.55)}
-html[data-cm-theme="thunderGod"]{--cm-skin-bg-a:#12151c;--cm-skin-bg-b:#1e2530;--cm-skin-card:#202938;--cm-skin-soft:#2756c8;--cm-skin-text:#f5f7fa;--cm-skin-muted:#c5ced8;--cm-skin-accent:#2756c8;--cm-skin-accent-2:#c9a13a;--cm-skin-border:rgba(201,161,58,.28);--cm-skin-shadow:rgba(39,86,200,.28)}
+html[data-cm-theme="thunderGod"]{--cm-skin-bg-a:#0d1118;--cm-skin-bg-b:#18202b;--cm-skin-card:#151b24;--cm-skin-soft:#202a38;--cm-skin-text:#f5f7fa;--cm-skin-muted:#b5c0cf;--cm-skin-accent:#2756c8;--cm-skin-accent-2:#c9a13a;--cm-skin-border:rgba(201,161,58,.30);--cm-skin-shadow:rgba(39,86,200,.24)}
 html[data-cm-theme="gammaForce"]{--cm-skin-bg-a:#071507;--cm-skin-bg-b:#123018;--cm-skin-card:#0b1f10;--cm-skin-soft:#15351b;--cm-skin-text:#efffed;--cm-skin-muted:#b4d4af;--cm-skin-accent:#22c55e;--cm-skin-accent-2:#a3e635;--cm-skin-border:rgba(34,197,94,.32);--cm-skin-shadow:rgba(22,101,52,.35)}
-html[data-cm-theme="webHero"]{--cm-skin-bg-a:#111827;--cm-skin-bg-b:#18202d;--cm-skin-card:#1b2433;--cm-skin-soft:#202c3f;--cm-skin-text:#f4f4f4;--cm-skin-muted:#c8d0da;--cm-skin-accent:#b31623;--cm-skin-accent-2:#184c96;--cm-skin-border:rgba(24,76,150,.24);--cm-skin-shadow:rgba(179,22,35,.24)}
-html[data-cm-theme="scarletSpeed"]{--cm-skin-bg-a:#fff8f0;--cm-skin-bg-b:#fee2e2;--cm-skin-card:#ffffff;--cm-skin-soft:#fff1dc;--cm-skin-text:#2b0b0b;--cm-skin-muted:#755555;--cm-skin-accent:#dc2626;--cm-skin-accent-2:#facc15;--cm-skin-border:rgba(220,38,38,.23);--cm-skin-shadow:rgba(220,38,38,.13)}
-html[data-cm-theme="solarHero"]{--cm-skin-bg-a:#f7fbff;--cm-skin-bg-b:#e0f2fe;--cm-skin-card:#ffffff;--cm-skin-soft:#eef8ff;--cm-skin-text:#0f172a;--cm-skin-muted:#607086;--cm-skin-accent:#2563eb;--cm-skin-accent-2:#ef4444;--cm-skin-border:rgba(37,99,235,.25);--cm-skin-shadow:rgba(37,99,235,.14)}
+html[data-cm-theme="webHero"]{--cm-skin-bg-a:#0e1320;--cm-skin-bg-b:#111827;--cm-skin-card:#151d2b;--cm-skin-soft:#1b2740;--cm-skin-text:#f4f4f4;--cm-skin-muted:#aab6cc;--cm-skin-accent:#b31623;--cm-skin-accent-2:#184c96;--cm-skin-border:rgba(244,244,244,.18);--cm-skin-shadow:rgba(179,22,35,.23)}
+html[data-cm-theme="scarletSpeed"]{--cm-skin-bg-a:#120707;--cm-skin-bg-b:#2a0b0e;--cm-skin-card:#1b0b0d;--cm-skin-soft:#2d1012;--cm-skin-text:#fff6cc;--cm-skin-muted:#e8c77a;--cm-skin-accent:#b4141e;--cm-skin-accent-2:#ffd335;--cm-skin-border:rgba(255,211,53,.34);--cm-skin-shadow:rgba(180,20,30,.30)}
+html[data-cm-theme="solarHero"]{--cm-skin-bg-a:#0b1424;--cm-skin-bg-b:#12284a;--cm-skin-card:#122039;--cm-skin-soft:#172e55;--cm-skin-text:#f4f7fa;--cm-skin-muted:#b7c5d9;--cm-skin-accent:#214e9f;--cm-skin-accent-2:#c3222b;--cm-skin-border:rgba(244,197,66,.24);--cm-skin-shadow:rgba(33,78,159,.28)}
 html[data-cm-theme="chaosSmile"]{--cm-skin-bg-a:#0c0612;--cm-skin-bg-b:#1d1028;--cm-skin-card:#13091c;--cm-skin-soft:#251034;--cm-skin-text:#fff5ff;--cm-skin-muted:#d8bae8;--cm-skin-accent:#7e22ce;--cm-skin-accent-2:#22c55e;--cm-skin-border:rgba(126,34,206,.34);--cm-skin-shadow:rgba(0,0,0,.48)}
 html[data-cm-theme="darkKnight"]{--cm-skin-bg-a:#050505;--cm-skin-bg-b:#111827;--cm-skin-card:#0b0f17;--cm-skin-soft:#151b25;--cm-skin-text:#f8fafc;--cm-skin-muted:#a9b4c3;--cm-skin-accent:#facc15;--cm-skin-accent-2:#475569;--cm-skin-border:rgba(250,204,21,.25);--cm-skin-shadow:rgba(0,0,0,.58)}
 html[data-cm-theme="orangeNinja"]{--cm-skin-bg-a:#fff7ed;--cm-skin-bg-b:#ffedd5;--cm-skin-card:#ffffff;--cm-skin-soft:#fff3e6;--cm-skin-text:#2c1608;--cm-skin-muted:#7c5a45;--cm-skin-accent:#f97316;--cm-skin-accent-2:#facc15;--cm-skin-border:rgba(249,115,22,.25);--cm-skin-shadow:rgba(194,65,12,.14)}
@@ -13015,14 +13015,14 @@ html[data-cm-theme] .bm-left-info-panel .bm-user-stack .cm-theme-menu.cm-skin-un
 .cm-skin-preview[data-preview-theme="medical"]{--cm-preview-bg-a:#f8fafc;--cm-preview-bg-b:#eef2ff;--cm-preview-card:#ffffff;--cm-preview-soft:#eef7ff;--cm-preview-accent:#dc2626;--cm-preview-accent-2:#0ea5e9;--cm-preview-border:rgba(220,38,38,.20);}
 .cm-skin-preview[data-preview-theme="sunset"]{--cm-preview-bg-a:#f8fafc;--cm-preview-bg-b:#eef2ff;--cm-preview-card:#ffffff;--cm-preview-soft:#fff0df;--cm-preview-accent:#ea580c;--cm-preview-accent-2:#f59e0b;--cm-preview-border:rgba(234,88,12,.22);}
 .cm-skin-preview[data-preview-theme="neon"]{--cm-preview-bg-a:#f8fafc;--cm-preview-bg-b:#eef2ff;--cm-preview-card:#151028;--cm-preview-soft:#120b24;--cm-preview-accent:#a855f7;--cm-preview-accent-2:#22d3ee;--cm-preview-border:rgba(168,85,247,.34);}
-.cm-skin-preview[data-preview-theme="titanArmor"]{--cm-preview-bg-a:#1b0708;--cm-preview-bg-b:#3a0c0f;--cm-preview-card:#26090b;--cm-preview-soft:#401014;--cm-preview-accent:#dc2626;--cm-preview-accent-2:#fbbf24;--cm-preview-border:rgba(251,191,36,.34);}
-.cm-skin-preview[data-preview-theme="libertyShield"]{--cm-preview-bg-a:#f8fbff;--cm-preview-bg-b:#e5efff;--cm-preview-card:#ffffff;--cm-preview-soft:#eef5ff;--cm-preview-accent:#1d4ed8;--cm-preview-accent-2:#dc2626;--cm-preview-border:rgba(29,78,216,.24);}
+.cm-skin-preview[data-preview-theme="titanArmor"]{--cm-preview-bg-a:#090b10;--cm-preview-bg-b:#1a1012;--cm-preview-card:#12161d;--cm-preview-soft:#231116;--cm-preview-accent:#9c1020;--cm-preview-accent-2:#c79a2b;--cm-preview-border:rgba(199,154,43,.34);}
+.cm-skin-preview[data-preview-theme="libertyShield"]{--cm-preview-bg-a:#0b1220;--cm-preview-bg-b:#14233d;--cm-preview-card:#101827;--cm-preview-soft:#17294a;--cm-preview-accent:#173b7a;--cm-preview-accent-2:#b51e2f;--cm-preview-border:rgba(244,246,249,.22);}
 .cm-skin-preview[data-preview-theme="shadowPanther"]{--cm-preview-bg-a:#050507;--cm-preview-bg-b:#17111f;--cm-preview-card:#0d0d12;--cm-preview-soft:#1b1426;--cm-preview-accent:#7c3aed;--cm-preview-accent-2:#c084fc;--cm-preview-border:rgba(124,58,237,.34);}
-.cm-skin-preview[data-preview-theme="thunderGod"]{--cm-preview-bg-a:#07111f;--cm-preview-bg-b:#111827;--cm-preview-card:#0f172a;--cm-preview-soft:#172554;--cm-preview-accent:#38bdf8;--cm-preview-accent-2:#facc15;--cm-preview-border:rgba(56,189,248,.32);}
+.cm-skin-preview[data-preview-theme="thunderGod"]{--cm-preview-bg-a:#0d1118;--cm-preview-bg-b:#18202b;--cm-preview-card:#151b24;--cm-preview-soft:#202a38;--cm-preview-accent:#2756c8;--cm-preview-accent-2:#c9a13a;--cm-preview-border:rgba(201,161,58,.30);}
 .cm-skin-preview[data-preview-theme="gammaForce"]{--cm-preview-bg-a:#071507;--cm-preview-bg-b:#123018;--cm-preview-card:#0b1f10;--cm-preview-soft:#15351b;--cm-preview-accent:#22c55e;--cm-preview-accent-2:#a3e635;--cm-preview-border:rgba(34,197,94,.32);}
-.cm-skin-preview[data-preview-theme="webHero"]{--cm-preview-bg-a:#fff7f7;--cm-preview-bg-b:#eaf2ff;--cm-preview-card:#ffffff;--cm-preview-soft:#f3f7ff;--cm-preview-accent:#dc2626;--cm-preview-accent-2:#2563eb;--cm-preview-border:rgba(37,99,235,.22);}
-.cm-skin-preview[data-preview-theme="scarletSpeed"]{--cm-preview-bg-a:#fff8f0;--cm-preview-bg-b:#fee2e2;--cm-preview-card:#ffffff;--cm-preview-soft:#fff1dc;--cm-preview-accent:#dc2626;--cm-preview-accent-2:#facc15;--cm-preview-border:rgba(220,38,38,.23);}
-.cm-skin-preview[data-preview-theme="solarHero"]{--cm-preview-bg-a:#f7fbff;--cm-preview-bg-b:#e0f2fe;--cm-preview-card:#ffffff;--cm-preview-soft:#eef8ff;--cm-preview-accent:#2563eb;--cm-preview-accent-2:#ef4444;--cm-preview-border:rgba(37,99,235,.25);}
+.cm-skin-preview[data-preview-theme="webHero"]{--cm-preview-bg-a:#0e1320;--cm-preview-bg-b:#111827;--cm-preview-card:#151d2b;--cm-preview-soft:#1b2740;--cm-preview-accent:#b31623;--cm-preview-accent-2:#184c96;--cm-preview-border:rgba(244,244,244,.18);}
+.cm-skin-preview[data-preview-theme="scarletSpeed"]{--cm-preview-bg-a:#120707;--cm-preview-bg-b:#2a0b0e;--cm-preview-card:#1b0b0d;--cm-preview-soft:#2d1012;--cm-preview-accent:#b4141e;--cm-preview-accent-2:#ffd335;--cm-preview-border:rgba(255,211,53,.34);}
+.cm-skin-preview[data-preview-theme="solarHero"]{--cm-preview-bg-a:#0b1424;--cm-preview-bg-b:#12284a;--cm-preview-card:#122039;--cm-preview-soft:#172e55;--cm-preview-accent:#214e9f;--cm-preview-accent-2:#c3222b;--cm-preview-border:rgba(244,197,66,.24);}
 .cm-skin-preview[data-preview-theme="chaosSmile"]{--cm-preview-bg-a:#0c0612;--cm-preview-bg-b:#1d1028;--cm-preview-card:#13091c;--cm-preview-soft:#251034;--cm-preview-accent:#7e22ce;--cm-preview-accent-2:#22c55e;--cm-preview-border:rgba(126,34,206,.34);}
 .cm-skin-preview[data-preview-theme="darkKnight"]{--cm-preview-bg-a:#050505;--cm-preview-bg-b:#111827;--cm-preview-card:#0b0f17;--cm-preview-soft:#151b25;--cm-preview-accent:#facc15;--cm-preview-accent-2:#475569;--cm-preview-border:rgba(250,204,21,.25);}
 .cm-skin-preview[data-preview-theme="orangeNinja"]{--cm-preview-bg-a:#fff7ed;--cm-preview-bg-b:#ffedd5;--cm-preview-card:#ffffff;--cm-preview-soft:#fff3e6;--cm-preview-accent:#f97316;--cm-preview-accent-2:#facc15;--cm-preview-border:rgba(249,115,22,.25);}
@@ -14996,3 +14996,23 @@ html[data-cm-theme]:not([data-cm-theme="original"]) body[data-panel-page="compan
   background:transparent!important;
   box-shadow:none!important;
 }
+
+/* CompanyManager v3.1 — Hero skins polish: corrected palettes and subtle identity details */
+html[data-cm-theme="titanArmor"] .cm-skin-card,
+html[data-cm-theme="titanArmor"] .card,
+html[data-cm-theme="titanArmor"] .section-card{background-image:linear-gradient(145deg,rgba(255,255,255,.055),rgba(156,16,32,.12) 42%,rgba(199,154,43,.08))!important;}
+html[data-cm-theme="libertyShield"] .cm-skin-card,
+html[data-cm-theme="libertyShield"] .card,
+html[data-cm-theme="libertyShield"] .section-card{background-image:linear-gradient(145deg,rgba(244,246,249,.08),rgba(23,59,122,.18) 50%,rgba(181,30,47,.08))!important;}
+html[data-cm-theme="scarletSpeed"] .cm-skin-card,
+html[data-cm-theme="scarletSpeed"] .card,
+html[data-cm-theme="scarletSpeed"] .section-card{background-image:linear-gradient(135deg,rgba(255,211,53,.10),rgba(180,20,30,.16) 55%,rgba(0,0,0,.08))!important;}
+html[data-cm-theme="solarHero"] .cm-skin-card,
+html[data-cm-theme="solarHero"] .card,
+html[data-cm-theme="solarHero"] .section-card{background-image:linear-gradient(145deg,rgba(244,197,66,.08),rgba(33,78,159,.18) 54%,rgba(195,34,43,.08))!important;}
+html[data-cm-theme="webHero"] .cm-skin-card,
+html[data-cm-theme="webHero"] .card,
+html[data-cm-theme="webHero"] .section-card{background-image:linear-gradient(135deg,rgba(179,22,35,.14),rgba(24,76,150,.14)),repeating-linear-gradient(45deg,rgba(244,244,244,.035) 0 1px,transparent 1px 18px)!important;}
+html[data-cm-theme="thunderGod"] .cm-skin-card,
+html[data-cm-theme="thunderGod"] .card,
+html[data-cm-theme="thunderGod"] .section-card{background-image:linear-gradient(145deg,rgba(201,161,58,.10),rgba(39,86,200,.16) 48%,rgba(183,28,43,.06))!important;}
