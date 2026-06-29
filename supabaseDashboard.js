@@ -68,6 +68,32 @@
     return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
   }
 
+  function normalizeDateIso(value) {
+    const raw = String(value || "").slice(0, 10);
+    const match = raw.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (!match) return "";
+    const d = new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
+    if (Number.isNaN(d.getTime())) return "";
+    return iso(d);
+  }
+
+  function getDashboardSelectedDate() {
+    let urlDate = "";
+    try { urlDate = normalizeDateIso(new URLSearchParams(window.location.search).get("date")); } catch (_) {}
+    if (urlDate) return urlDate;
+    try {
+      const stored = normalizeDateIso(localStorage.getItem("cm_dashboard_selected_date"));
+      if (stored) return stored;
+    } catch (_) {}
+    return iso(new Date());
+  }
+
+  function setDashboardSelectedDate(dateIso) {
+    const normalized = normalizeDateIso(dateIso) || iso(new Date());
+    try { localStorage.setItem("cm_dashboard_selected_date", normalized); } catch (_) {}
+    return normalized;
+  }
+
   function parseIso(value) {
     const [y, m, d] = String(value || "").split("-").map(Number);
     if (!y || !m || !d) return new Date();
@@ -1125,8 +1151,7 @@
       return;
     }
 
-    const params = new URLSearchParams(window.location.search);
-    const selectedDate = params.get("date") || iso(new Date());
+    const selectedDate = setDashboardSelectedDate(getDashboardSelectedDate());
 
     area.innerHTML = `<section class="bm-page-card"><h2>Dashboard</h2><p>Ładuję dane z Supabase...</p></section>`;
 
@@ -1813,6 +1838,16 @@
     };
     tryRender();
   }
+
+  window.addEventListener("cm:dashboard-date-selected", (event) => {
+    const selected = setDashboardSelectedDate(event?.detail?.date);
+    try { window.history.replaceState({}, "", `dashboard.html?date=${encodeURIComponent(selected)}`); } catch (_) {}
+    renderDashboard();
+  });
+
+  window.addEventListener("popstate", () => {
+    renderDashboard();
+  });
 
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot);
   else boot();

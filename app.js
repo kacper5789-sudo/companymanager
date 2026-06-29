@@ -1523,16 +1523,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const panelMenu = (panelUser, page) => {
     const items = [
-      ['positions.html','positions','Stanowiska pracy','🪑'],
-      ['employees.html','employees','Zespół','👥'],
-      ['days-off.html','daysOff','Dni wolne pracowników','🌴'],
+      ['visits.html','visits','Wizyty','📅'],
       ['customers.html','customers','Klienci','👤'],
       ['services.html','services','Usługi','✂️'],
       ['products.html','products','Produkty','📦'],
-      ['visits.html','visits','Wizyty','📅'],
-      ['walkins.html','walkins','Sprzedaż bez wizyty','🛒'],
-      ['marketing.html','marketing','Marketing','📢'],
       ['passes.html','passes','Karnety','🎟️'],
+      ['marketing.html','marketing','Marketing','📢'],
+      ['days-off.html','daysOff','Dni wolne pracowników','🌴'],
+      ['employees.html','employees','Zespół','👥'],
+      ['positions.html','positions','Stanowiska pracy','🪑'],
+      ['walkins.html','walkins','Sprzedaż bez wizyty','🛒'],
       ['sales.html','sales','Sprzedaż','💳']
     ].filter(item => canAccessPage(panelUser, item[1]));
     const links = items.map(([href,id,label,icon]) => `<a href="${href}" class="${page===id?'active':''}"><span class="cm-menu-icon" aria-hidden="true">${icon}</span><span class="cm-menu-label">${label}</span></a>`).join('');
@@ -1861,8 +1861,14 @@ document.addEventListener('DOMContentLoaded', () => {
           renderMiniCalendar();
           const targetUrl = `dashboard.html?date=${encodeURIComponent(selectedIso)}`;
           const currentPath = String(window.location.pathname || '').toLowerCase();
-          if (currentPath.endsWith('/dashboard.html') || currentPath.endsWith('dashboard.html')) {
-            window.location.href = targetUrl;
+          const isDashboard = currentPath.endsWith('/dashboard.html') || currentPath.endsWith('dashboard.html');
+          if (isDashboard) {
+            try { window.history.pushState({}, '', targetUrl); } catch (_) {}
+            try {
+              window.dispatchEvent(new CustomEvent('cm:dashboard-date-selected', { detail: { date: selectedIso } }));
+            } catch (_) {
+              window.location.href = targetUrl;
+            }
           } else {
             window.location.href = targetUrl;
           }
