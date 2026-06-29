@@ -1859,19 +1859,9 @@ document.addEventListener('DOMContentLoaded', () => {
           toggle.querySelector('strong').textContent = formatDisplayDate(d);
           month.hidden = true;
           renderMiniCalendar();
-          const targetUrl = `dashboard.html?date=${encodeURIComponent(selectedIso)}`;
-          const currentPath = String(window.location.pathname || '').toLowerCase();
-          const isDashboard = currentPath.endsWith('/dashboard.html') || currentPath.endsWith('dashboard.html');
-          if (isDashboard) {
-            try { window.history.pushState({}, '', targetUrl); } catch (_) {}
-            try {
-              window.dispatchEvent(new CustomEvent('cm:dashboard-date-selected', { detail: { date: selectedIso } }));
-            } catch (_) {
-              window.location.href = targetUrl;
-            }
-          } else {
-            window.location.href = targetUrl;
-          }
+          const targetUrl = new URL('dashboard.html', window.location.href);
+          targetUrl.searchParams.set('date', selectedIso);
+          window.location.assign(targetUrl.toString());
         }
       }
     });
@@ -3823,7 +3813,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // Usunięto ręcznie dopisane osoby testowe, żeby grafik nie pokazywał kolumn bez realnego użytkownika.
     const employees = dbEmployees;
     const employeeIds = new Set(employees.map(employee => employee.id));
-    const todayIso = currentIsoDate();
+    const dashboardDate = cmGetDashboardUrlDate() || cmSelectedPanelDate || CM_TODAY;
+    cmSelectedPanelDate = dashboardDate;
+    const todayIso = cmPanelDateIso(dashboardDate);
     const allDashboardVisits = (db.dashboardVisits || []).filter(v => v.companyId === company.id && employeeIds.has(v.employeeId));
     const dashVisits = allDashboardVisits;
     const isoFromDateObj = (date) => `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
@@ -3902,11 +3894,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const timeOptions = [];
     for (let hour = 0; hour < 24; hour++) for (let min = 0; min < 60; min += 5) timeOptions.push(`${String(hour).padStart(2,'0')}:${String(min).padStart(2,'0')}`);
     const timeSelectOptions = timeOptions.map(t => `<option value="${t}">${t}</option>`).join('');
-    const selectedDate = new Date();
+    const selectedDate = dashboardDate;
+    const isDashboardToday = sameDay(selectedDate, CM_TODAY);
     const dayHeader = `${selectedDate.toLocaleDateString('pl-PL', { weekday:'long' }).replace(/^./, c => c.toUpperCase())}, ${selectedDate.getDate()} ${monthNamesPL[selectedDate.getMonth()]}, ${selectedDate.getFullYear()}`;
     const dateBar = `<section class="bm-schedule-datebar">
       <button type="button" id="dashPrevDay" aria-label="Poprzedni dzień">‹</button>
-      <strong id="dashRelativeLabel">dzisiaj</strong>
+      <strong id="dashRelativeLabel">${isDashboardToday ? 'dzisiaj' : escapeHtml(formatIsoDatePL(todayIso) || todayIso)}</strong>
       <button type="button" id="dashNextDay" aria-label="Następny dzień">›</button>
       <span id="dashFullDate">${escapeHtml(dayHeader)}</span>
       <span class="bm-dashboard-actions"><button type="button" id="dashEditVisitBtn" class="bm-light-btn">Edytuj</button><button type="button" id="dashEmployeeCount" class="bm-worker-count">(${employees.length})</button></span>
