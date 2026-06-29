@@ -250,6 +250,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const candidates = [
       visit?.cancelReason,
       visit?.cancellationReason,
+      visit?.cancellation_reason,
       visit?.cancel_reason,
       visit?.cancelReasonLabel,
       visit?.statusReason,
@@ -1859,6 +1860,13 @@ document.addEventListener('DOMContentLoaded', () => {
           toggle.querySelector('strong').textContent = formatDisplayDate(d);
           month.hidden = true;
           renderMiniCalendar();
+          try {
+            window.dispatchEvent(new CustomEvent('cm:dashboard-date-selected', { detail: { date: selectedIso } }));
+          } catch (_) {}
+          if (document.body?.dataset?.panelPage === 'dashboard' && typeof window.cmSetDashboardDate === 'function') {
+            window.cmSetDashboardDate(selectedIso);
+            return;
+          }
           const targetUrl = new URL('dashboard.html', window.location.href);
           targetUrl.searchParams.set('date', selectedIso);
           window.location.assign(targetUrl.toString());
