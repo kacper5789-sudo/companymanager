@@ -221,50 +221,49 @@
   function markPassModal(panel, active) {
     if (!panel) return;
 
-    // Karnety mają własny bezpieczny tryb modalny.
-    // NIE używamy klas cm-as-modal/cm-modal-active, bo globalny modal engine
-    // dodaje overlay/blur i w części skórek zasłania formularz oraz blokuje kliknięcia.
-    panel.classList.remove("cm-modal-active", "cm-as-modal");
-    panel.classList.toggle("cm-pass-panel-active", !!active);
-    panel.classList.toggle("cm-pass-safe-modal", !!active);
+    // v71: Karnety wracają do bezpiecznych formularzy INLINE.
+    // Powód: globalne modale/overlay/blur kolidowały ze skórkami i blokowały kliknięcia.
+    // Nie ustawiamy fixed, nie dodajemy cm-pass-modal-open, nie używamy cm-as-modal/cm-modal-active.
+    panel.classList.remove("cm-modal-active", "cm-as-modal", "cm-pass-panel-active", "cm-pass-safe-modal");
+    panel.removeAttribute("data-cm-modal-depth");
 
     if (active) {
+      panel.hidden = false;
       panel.removeAttribute("hidden");
       panel.style.display = "block";
-      panel.style.position = "fixed";
-      panel.style.top = "50%";
-      panel.style.left = "50%";
-      panel.style.transform = "translate(-50%, -50%)";
-      panel.style.width = "min(980px, calc(100vw - 28px))";
-      panel.style.maxHeight = "88vh";
-      panel.style.overflowY = "auto";
-      panel.style.overflowX = "hidden";
+      panel.style.position = "relative";
+      panel.style.top = "auto";
+      panel.style.left = "auto";
+      panel.style.right = "auto";
+      panel.style.bottom = "auto";
+      panel.style.transform = "none";
+      panel.style.width = "";
+      panel.style.maxWidth = "";
+      panel.style.maxHeight = "none";
+      panel.style.overflowY = "visible";
+      panel.style.overflowX = "visible";
       panel.style.pointerEvents = "auto";
       panel.style.touchAction = "auto";
-      panel.style.zIndex = "2147483600";
+      panel.style.zIndex = "auto";
       panel.style.opacity = "1";
+      panel.style.visibility = "visible";
       panel.style.filter = "none";
       panel.style.backdropFilter = "none";
       panel.style.webkitBackdropFilter = "none";
     } else {
       panel.hidden = true;
+      panel.setAttribute("hidden", "");
       panel.classList.remove("cm-pass-safe-modal", "cm-pass-panel-active", "cm-modal-active", "cm-as-modal");
-      ["display","position","top","left","transform","width","max-height","overflow-y","overflow-x","pointer-events","touch-action","z-index","opacity","filter","backdrop-filter","-webkit-backdrop-filter"].forEach((prop) => panel.style.removeProperty(prop));
+      ["display","position","top","left","right","bottom","transform","width","max-width","max-height","overflow-y","overflow-x","pointer-events","touch-action","z-index","opacity","visibility","filter","backdrop-filter","-webkit-backdrop-filter"].forEach((prop) => panel.style.removeProperty(prop));
     }
   }
 
   function syncPassModalBodyState() {
-    const isOpen = !!document.querySelector(".cm-pass-panel-active:not([hidden])");
-
-    // Karnety nie mogą aktywować globalnego cm-modal-open, bo wtedy wchodzą
-    // stare reguły blur/overlay i psują formularze na skórkach.
-    document.body?.classList?.remove("cm-modal-open");
-    document.documentElement?.classList?.remove("cm-modal-open");
+    // v71: Karnety nie otwierają globalnego modala. Czyścimy wszystkie stany overlay/blur.
+    document.body?.classList?.remove("cm-modal-open", "cm-pass-modal-open");
+    document.documentElement?.classList?.remove("cm-modal-open", "cm-pass-modal-open");
     document.body?.removeAttribute?.("data-cm-modal-open");
     document.documentElement?.removeAttribute?.("data-cm-modal-open");
-
-    document.body?.classList?.toggle("cm-pass-modal-open", isOpen);
-    document.documentElement?.classList?.toggle("cm-pass-modal-open", isOpen);
 
     const overlay = document.getElementById("cmGlobalFormOverlay");
     if (overlay) {
@@ -272,8 +271,16 @@
       overlay.style.display = "none";
       overlay.style.opacity = "0";
       overlay.style.pointerEvents = "none";
+      overlay.style.background = "transparent";
       overlay.style.backdropFilter = "none";
       overlay.style.webkitBackdropFilter = "none";
+      overlay.style.filter = "none";
+    }
+
+    if (window.cmRefreshGlobalModalState) {
+      setTimeout(() => {
+        try { window.cmRefreshGlobalModalState(); } catch (_) {}
+      }, 0);
     }
   }
 

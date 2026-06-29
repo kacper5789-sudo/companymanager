@@ -17208,3 +17208,83 @@ html body .passes-module :where(#templatePassPanel,#addPassPanel,#deletePassPane
 html body .passes-module :where(#templatePassPanel,#addPassPanel,#deletePassPanel).cm-pass-safe-modal[hidden]{
   display:none!important;
 }
+
+/* CompanyManager v71 — Karnety: finalny bezpieczny tryb INLINE, bez globalnego modala.
+   Cel: Dodaj typ karnetu / Sprzedaj karnet mają wyglądać jak aktywna skórka,
+   bez przyciemniania, bez blur, bez overlay i bez blokowania kliknięć. */
+html body .passes-module :where(#templatePassPanel,#addPassPanel,#deletePassPanel){
+  position:relative!important;
+  top:auto!important;
+  left:auto!important;
+  right:auto!important;
+  bottom:auto!important;
+  transform:none!important;
+  width:auto!important;
+  max-width:none!important;
+  max-height:none!important;
+  overflow:visible!important;
+  z-index:auto!important;
+  opacity:1!important;
+  visibility:visible!important;
+  filter:none!important;
+  -webkit-filter:none!important;
+  backdrop-filter:none!important;
+  -webkit-backdrop-filter:none!important;
+  pointer-events:auto!important;
+  touch-action:auto!important;
+  isolation:isolate!important;
+  margin-top:16px!important;
+}
+html body .passes-module :where(#templatePassPanel,#addPassPanel,#deletePassPanel)[hidden]{
+  display:none!important;
+}
+html body .passes-module :where(#templatePassPanel,#addPassPanel,#deletePassPanel)::before,
+html body .passes-module :where(#templatePassPanel,#addPassPanel,#deletePassPanel)::after{
+  pointer-events:none!important;
+  z-index:0!important;
+  filter:none!important;
+  -webkit-filter:none!important;
+  backdrop-filter:none!important;
+  -webkit-backdrop-filter:none!important;
+}
+html body .passes-module :where(#templatePassPanel,#addPassPanel,#deletePassPanel) > *,
+html body .passes-module :where(#templatePassPanel,#addPassPanel,#deletePassPanel) form,
+html body .passes-module :where(#templatePassPanel,#addPassPanel,#deletePassPanel) .bm-form-grid,
+html body .passes-module :where(#templatePassPanel,#addPassPanel,#deletePassPanel) .bm-form-actions{
+  position:relative!important;
+  z-index:2!important;
+  opacity:1!important;
+  visibility:visible!important;
+  filter:none!important;
+  -webkit-filter:none!important;
+  pointer-events:auto!important;
+}
+html body .passes-module :where(#templatePassPanel,#addPassPanel,#deletePassPanel) :where(input,select,textarea,button,label,a){
+  pointer-events:auto!important;
+  touch-action:auto!important;
+  opacity:1!important;
+  visibility:visible!important;
+  filter:none!important;
+  -webkit-filter:none!important;
+}
+html body .passes-module :where(#templatePassPanel,#addPassPanel,#deletePassPanel) :where(input,select,textarea){
+  background:var(--cm-skin-input-bg,rgba(15,23,42,.78))!important;
+  color:var(--cm-skin-text,#f8fafc)!important;
+  border-color:var(--cm-skin-border,rgba(148,163,184,.28))!important;
+}
+html body .passes-module :where(#templatePassPanel,#addPassPanel,#deletePassPanel) button{
+  cursor:pointer!important;
+}
+html.cm-pass-modal-open body #cmGlobalFormOverlay,
+body.cm-pass-modal-open #cmGlobalFormOverlay,
+html body #cmGlobalFormOverlay[aria-hidden="true"]{
+  display:none!important;
+  opacity:0!important;
+  visibility:hidden!important;
+  pointer-events:none!important;
+  background:transparent!important;
+  filter:none!important;
+  -webkit-filter:none!important;
+  backdrop-filter:none!important;
+  -webkit-backdrop-filter:none!important;
+}
