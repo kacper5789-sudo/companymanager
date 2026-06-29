@@ -126,17 +126,50 @@ document.addEventListener('DOMContentLoaded', () => {
     return normalized;
   };
 
+  const CM_POWER_LIGHTNING_THEMES = new Set(['mysticWarrior','ssj3']);
+  let cmLastLightningAt = 0;
   const triggerCmPowerLightning = (theme) => {
-    if (!['mysticWarrior','ssj3'].includes(theme)) return;
-    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    if (!CM_POWER_LIGHTNING_THEMES.has(theme)) return;
+    const now = Date.now();
+    if (now - cmLastLightningAt < 120) return;
+    cmLastLightningAt = now;
     const old = document.querySelector('.cm-power-lightning-burst');
     if (old) old.remove();
     const burst = document.createElement('div');
     const strong = theme === 'ssj3';
     burst.className = `cm-power-lightning-burst ${strong ? 'cm-power-lightning-ssj3' : 'cm-power-lightning-ssj2'}`;
     burst.setAttribute('aria-hidden', 'true');
-    const count = strong ? 18 : 8;
+
+    const svgNs = 'http://www.w3.org/2000/svg';
+    const svg = document.createElementNS(svgNs, 'svg');
+    svg.setAttribute('class', 'cm-power-lightning-svg');
+    svg.setAttribute('viewBox', '0 0 100 100');
+    svg.setAttribute('preserveAspectRatio', 'none');
+    const count = strong ? 24 : 10;
     for (let i = 0; i < count; i += 1) {
+      const poly = document.createElementNS(svgNs, 'polyline');
+      poly.setAttribute('class', 'cm-power-svg-bolt');
+      const x = strong ? (4 + Math.random() * 92) : (14 + Math.random() * 72);
+      const y = strong ? (4 + Math.random() * 78) : (12 + Math.random() * 58);
+      const length = strong ? (14 + Math.random() * 26) : (9 + Math.random() * 16);
+      const zig = strong ? (3 + Math.random() * 5) : (2 + Math.random() * 3);
+      const points = [
+        [x, y],
+        [x + zig, y + length * .22],
+        [x - zig * .45, y + length * .40],
+        [x + zig * 1.15, y + length * .62],
+        [x - zig * .25, y + length * .77],
+        [x + zig * .85, y + length]
+      ].map(([a,b]) => `${a.toFixed(2)},${b.toFixed(2)}`).join(' ');
+      poly.setAttribute('points', points);
+      poly.style.setProperty('--bolt-delay', `${(Math.random() * (strong ? .22 : .15)).toFixed(3)}s`);
+      poly.style.setProperty('--bolt-width', `${(strong ? 0.46 + Math.random() * .52 : 0.30 + Math.random() * .34).toFixed(2)}`);
+      svg.appendChild(poly);
+    }
+    burst.appendChild(svg);
+
+    const countSpans = strong ? 18 : 8;
+    for (let i = 0; i < countSpans; i += 1) {
       const bolt = document.createElement('span');
       bolt.className = 'cm-power-bolt';
       const left = strong ? (6 + Math.random() * 88) : (18 + Math.random() * 64);
@@ -154,8 +187,17 @@ document.addEventListener('DOMContentLoaded', () => {
       burst.appendChild(bolt);
     }
     document.body.appendChild(burst);
-    window.setTimeout(() => burst.remove(), strong ? 1150 : 900);
+    window.setTimeout(() => burst.remove(), strong ? 1350 : 1050);
   };
+
+  document.addEventListener('pointerdown', (event) => {
+    const card = event.target.closest?.('[data-cm-theme-choice]');
+    if (!card) return;
+    const theme = card.getAttribute('data-cm-theme-choice');
+    if (CM_POWER_LIGHTNING_THEMES.has(theme)) {
+      window.setTimeout(() => triggerCmPowerLightning(theme), 20);
+    }
+  }, true);
   applyCmTheme(getStoredCmTheme());
 
   const planLabels = {
