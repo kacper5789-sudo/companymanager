@@ -15869,3 +15869,73 @@ html[data-cm-theme="ssj3"] :where(.bm-page-card,.panel-card,.cm-unified-card,.bm
 .cm-skin-card[data-cm-theme-choice="digitalMatrix"]{--cm-icon-glow:#22c55e;}
 .cm-skin-card[data-cm-theme-choice="nightRacer"]{--cm-icon-glow:#818cf8;}
 .cm-skin-card[data-cm-theme-choice="electricYellow"]{--cm-icon-glow:#facc15;}
+
+/* CompanyManager v60 — Theme Engine modal click safety fix
+   Problem: decorative Theme Engine v2 layers (glow/lightning/preview pseudo-elements) could sit inside promoted form panels and steal clicks on modal controls in non-original skins.
+   Fix: modal panels and their controls always stay above decorative layers; effects remain on normal cards. */
+html[data-cm-theme]:not([data-cm-theme="original"]) body.cm-modal-open #cmGlobalFormOverlay,
+html[data-cm-theme]:not([data-cm-theme="original"]).cm-modal-open body #cmGlobalFormOverlay,
+html[data-cm-theme]:not([data-cm-theme="original"])[data-cm-modal-open="true"] body #cmGlobalFormOverlay,
+html[data-cm-theme]:not([data-cm-theme="original"]) body[data-cm-modal-open="true"] #cmGlobalFormOverlay{
+  z-index:9000!important;
+  pointer-events:auto!important;
+}
+
+html[data-cm-theme]:not([data-cm-theme="original"]) body.cm-modal-open .cm-as-modal,
+html[data-cm-theme]:not([data-cm-theme="original"]) body.cm-modal-open .cm-modal-active,
+html[data-cm-theme]:not([data-cm-theme="original"]).cm-modal-open body .cm-as-modal,
+html[data-cm-theme]:not([data-cm-theme="original"]).cm-modal-open body .cm-modal-active,
+html[data-cm-theme]:not([data-cm-theme="original"])[data-cm-modal-open="true"] body .cm-as-modal,
+html[data-cm-theme]:not([data-cm-theme="original"])[data-cm-modal-open="true"] body .cm-modal-active,
+html[data-cm-theme]:not([data-cm-theme="original"]) body[data-cm-modal-open="true"] .cm-as-modal,
+html[data-cm-theme]:not([data-cm-theme="original"]) body[data-cm-modal-open="true"] .cm-modal-active{
+  z-index:50000!important;
+  pointer-events:auto!important;
+  isolation:isolate!important;
+  overflow:auto!important;
+}
+
+html[data-cm-theme]:not([data-cm-theme="original"]) body.cm-modal-open .cm-as-modal[data-cm-modal-depth="2"],
+html[data-cm-theme]:not([data-cm-theme="original"]) body.cm-modal-open .cm-modal-active[data-cm-modal-depth="2"],
+html[data-cm-theme]:not([data-cm-theme="original"]).cm-modal-open body .cm-as-modal[data-cm-modal-depth="2"],
+html[data-cm-theme]:not([data-cm-theme="original"]).cm-modal-open body .cm-modal-active[data-cm-modal-depth="2"]{
+  z-index:50010!important;
+}
+
+/* No decorative pseudo-layer may exist on active modal cards. This specifically protects Karnety forms. */
+html[data-cm-theme]:not([data-cm-theme="original"]) body.cm-modal-open .cm-as-modal::before,
+html[data-cm-theme]:not([data-cm-theme="original"]) body.cm-modal-open .cm-as-modal::after,
+html[data-cm-theme]:not([data-cm-theme="original"]) body.cm-modal-open .cm-modal-active::before,
+html[data-cm-theme]:not([data-cm-theme="original"]) body.cm-modal-open .cm-modal-active::after,
+html[data-cm-theme]:not([data-cm-theme="original"]) body.cm-modal-open .bm-nested-modal::before,
+html[data-cm-theme]:not([data-cm-theme="original"]) body.cm-modal-open .bm-nested-modal::after{
+  content:none!important;
+  display:none!important;
+  pointer-events:none!important;
+  animation:none!important;
+}
+
+/* If a decorative pseudo-element is generated inside a modal by a component, it must be inert. */
+html[data-cm-theme]:not([data-cm-theme="original"]) body.cm-modal-open .cm-as-modal *::before,
+html[data-cm-theme]:not([data-cm-theme="original"]) body.cm-modal-open .cm-as-modal *::after,
+html[data-cm-theme]:not([data-cm-theme="original"]) body.cm-modal-open .cm-modal-active *::before,
+html[data-cm-theme]:not([data-cm-theme="original"]) body.cm-modal-open .cm-modal-active *::after{
+  pointer-events:none!important;
+}
+
+html[data-cm-theme]:not([data-cm-theme="original"]) body.cm-modal-open .cm-as-modal :where(button,a,input,select,textarea,label,[role="button"],.bm-light-btn,.bm-secondary-btn,.bm-danger-btn,.cm-modal-cancel-btn),
+html[data-cm-theme]:not([data-cm-theme="original"]) body.cm-modal-open .cm-modal-active :where(button,a,input,select,textarea,label,[role="button"],.bm-light-btn,.bm-secondary-btn,.bm-danger-btn,.cm-modal-cancel-btn){
+  position:relative!important;
+  z-index:50020!important;
+  pointer-events:auto!important;
+}
+
+html[data-cm-theme]:not([data-cm-theme="original"]) body.cm-modal-open .cm-as-modal .bm-page-head,
+html[data-cm-theme]:not([data-cm-theme="original"]) body.cm-modal-open .cm-modal-active .bm-page-head,
+html[data-cm-theme]:not([data-cm-theme="original"]) body.cm-modal-open .cm-as-modal .bm-form-actions,
+html[data-cm-theme]:not([data-cm-theme="original"]) body.cm-modal-open .cm-modal-active .bm-form-actions,
+html[data-cm-theme]:not([data-cm-theme="original"]) body.cm-modal-open .cm-as-modal .cm-modal-actions,
+html[data-cm-theme]:not([data-cm-theme="original"]) body.cm-modal-open .cm-modal-active .cm-modal-actions{
+  position:relative!important;
+  z-index:50015!important;
+}
