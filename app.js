@@ -3817,7 +3817,7 @@ document.addEventListener('DOMContentLoaded', () => {
       <strong id="dashRelativeLabel">dzisiaj</strong>
       <button type="button" id="dashNextDay" aria-label="Następny dzień">›</button>
       <span id="dashFullDate">${escapeHtml(dayHeader)}</span>
-      <span class="bm-dashboard-actions"><button type="button" id="dashEditVisitBtn" class="bm-light-btn">Edytuj</button><button type="button" id="dashCancelVisitBtn" class="bm-danger-btn">Odwołaj wizytę</button><button type="button" id="dashEmployeeCount" class="bm-worker-count">(${employees.length})</button></span>
+      <span class="bm-dashboard-actions"><button type="button" id="dashEditVisitBtn" class="bm-light-btn">Edytuj</button><button type="button" id="dashEmployeeCount" class="bm-worker-count">(${employees.length})</button></span>
     </section>`;
     const workerChecks = employees.map(employee => `<label data-worker-label="${escapeHtml(employee.id)}"><input type="checkbox" class="dash-worker-toggle" value="${escapeHtml(employee.id)}"> ${getEmployeeLabel(employee)}</label>`).join('');
     const scheduleRows = timeSlots.map(time => {
@@ -3878,6 +3878,9 @@ document.addEventListener('DOMContentLoaded', () => {
         <label>Płatność<select name="payment"><option>gotówka</option><option>karta kredytowa</option><option>karnet</option><option>pakiet</option><option>gratis</option></select></label>
         <label class="bm-full">Opis<textarea name="note" placeholder="Notatka"></textarea></label>
         <button type="submit">Zapisz zmiany</button>
+        <div class="bm-full bm-dashboard-edit-status-actions">
+          <button type="button" id="dashEditCancelVisitBtn" class="bm-danger-btn">Odwołaj wizytę</button>
+        </div>
       </form>
       <p id="dashboardEditVisitMessage" class="panel-message"></p>
     </section>
@@ -3945,7 +3948,10 @@ document.addEventListener('DOMContentLoaded', () => {
     document.querySelector('#dashEditVisitBtn')?.addEventListener('click', () => {
       if (editVisitPanel) { editVisitPanel.hidden = false; editVisitPanel.classList.add('cm-modal-active'); updateGlobalModalState(); }
     });
-    document.querySelector('#dashCancelVisitBtn')?.addEventListener('click', () => {
+    document.querySelector('#dashEditCancelVisitBtn')?.addEventListener('click', () => {
+      const visitId = editVisitForm?.visitId?.value || '';
+      const cancelSelect = cancelVisitForm?.querySelector('select[name="visitId"]');
+      if (cancelSelect) cancelSelect.value = visitId;
       if (cancelVisitPanel) { cancelVisitPanel.hidden = false; cancelVisitPanel.classList.add('cm-modal-active'); updateGlobalModalState(); }
     });
     document.querySelectorAll('.dash-worker-toggle').forEach(input => input.addEventListener('change', () => updateEmployeeCount(true)));

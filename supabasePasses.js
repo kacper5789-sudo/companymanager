@@ -827,17 +827,37 @@
     document.querySelector('#addPassForm [name="passTemplateId"]')?.addEventListener("change", applySelectedPassTemplate);
     applySelectedPassTemplate();
 
+    function setInlinePassCustomerPanelVisible(visible) {
+      const panel = document.querySelector("#inlinePassCustomerPanel");
+      if (!panel) return;
+      panel.hidden = !visible;
+      panel.classList.toggle("bm-nested-modal", !!visible);
+      panel.setAttribute("aria-hidden", visible ? "false" : "true");
+      // Ważne: ukryty panel szybkiego klienta jest wewnątrz #addPassForm.
+      // Jego wymagane pola blokowały submit sprzedaży karnetu, więc muszą być
+      // wyłączone, gdy panel jest schowany.
+      panel.querySelectorAll("input, select, textarea, button").forEach((field) => {
+        if (field.id === "cancelInlinePassCustomer") {
+          field.disabled = !visible;
+          return;
+        }
+        field.disabled = !visible;
+      });
+      if (window.updateGlobalModalState) window.updateGlobalModalState();
+    }
+
+    setInlinePassCustomerPanelVisible(false);
+
     document.querySelector("#showInlinePassCustomer")?.addEventListener("click", (event) => {
       event.preventDefault();
-      const panel = document.querySelector("#inlinePassCustomerPanel");
-      if (panel) { panel.hidden = false; panel.classList.add("bm-nested-modal"); }
-      if (window.updateGlobalModalState) window.updateGlobalModalState();
+      setInlinePassCustomerPanelVisible(true);
+      window.setTimeout(() => {
+        try { document.querySelector("#inlinePassCustomerPanel input:not([type='hidden']), #inlinePassCustomerPanel select")?.focus({ preventScroll: true }); } catch (_) {}
+      }, 0);
     });
     document.querySelector("#cancelInlinePassCustomer")?.addEventListener("click", (event) => {
       event.preventDefault();
-      const panel = document.querySelector("#inlinePassCustomerPanel");
-      if (panel) panel.hidden = true;
-      if (window.updateGlobalModalState) window.updateGlobalModalState();
+      setInlinePassCustomerPanelVisible(false);
     });
     document.querySelector("#addInlinePassCustomer")?.addEventListener("click", async () => {
       const form = document.querySelector("#addPassForm");
@@ -855,9 +875,7 @@
           });
         }
         ["firstName", "lastName", "gender", "phone", "email", "address", "postalCode", "city", "status", "source", "marketingSms", "marketingEmail", "birthDate", "importantInfo"].forEach((name) => { if (form?.[name]) form[name].value = ""; });
-        const panel = document.querySelector("#inlinePassCustomerPanel");
-        if (panel) panel.hidden = true;
-        if (window.updateGlobalModalState) window.updateGlobalModalState();
+        setInlinePassCustomerPanelVisible(false);
       } catch (error) {
         setMessage("#passFormMessage", "Błąd dodania klienta: " + (error.message || JSON.stringify(error)), false);
       }
@@ -865,6 +883,8 @@
 
     document.querySelector("#addPassForm")?.addEventListener("submit", async (event) => {
       event.preventDefault();
+      // Upewniamy się, że schowany panel szybkiego klienta nie blokuje walidacji HTML5.
+      if (document.querySelector("#inlinePassCustomerPanel")?.hidden) setInlinePassCustomerPanelVisible(false);
       const form = event.currentTarget;
       if (form.dataset.saving === "1") return;
       form.dataset.saving = "1";

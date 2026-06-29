@@ -1170,8 +1170,6 @@
           <span class="bm-dashboard-actions">
             <button type="button" id="dashAddVisitBtn" ${allowAdd ? "" : "disabled"}>Dodaj</button>
             <button type="button" id="dashEditVisitBtn" class="bm-light-btn" ${allowEdit ? "" : "disabled"}>Edytuj</button>
-            <button type="button" id="dashFinishVisitBtn" class="bm-light-btn" ${allowFinish ? "" : "disabled"}>Zakończ wizytę</button>
-            <button type="button" id="dashCancelVisitBtn" class="bm-danger-btn" ${allowCancel ? "" : "disabled"}>Odwołaj wizytę</button>
             <button type="button" id="dashEmployeeCount" class="bm-worker-count">(${activeWorkerIds.length})</button>
           </span>
         </section>
@@ -1219,6 +1217,10 @@
           <label>Płatność<select name="payment">${paymentOptionsHtml}</select></label>
           <label class="bm-full">Opis<textarea name="note" placeholder="Notatka"></textarea></label>
           <button type="submit">Zapisz zmiany</button>
+          <div class="bm-full bm-dashboard-edit-status-actions">
+            <button type="button" id="dashEditFinishVisitBtn" class="bm-light-btn" ${allowFinish ? "" : "disabled"}>Zakończ wizytę</button>
+            <button type="button" id="dashEditCancelVisitBtn" class="bm-danger-btn" ${allowCancel ? "" : "disabled"}>Odwołaj wizytę</button>
+          </div>
         </form>
         <p id="dashboardEditVisitMessage" class="panel-message"></p>
       </section>
@@ -1298,8 +1300,6 @@
     document.querySelector("#dashNextDay")?.addEventListener("click", () => { window.location.href = `dashboard.html?date=${encodeURIComponent(addDays(selectedDate, 1))}`; });
     document.querySelector("#dashAddVisitBtn")?.addEventListener("click", () => showOnly(addPanel, panels));
     document.querySelector("#dashEditVisitBtn")?.addEventListener("click", () => showOnly(editPanel, panels));
-    document.querySelector("#dashFinishVisitBtn")?.addEventListener("click", () => showOnly(finishPanel, panels));
-    document.querySelector("#dashCancelVisitBtn")?.addEventListener("click", () => showOnly(cancelPanel, panels));
 
     const workersPopover = document.querySelector("#dashWorkersPopover");
     const employeeCountBtn = document.querySelector("#dashEmployeeCount");
@@ -1637,6 +1637,56 @@
       window.setTimeout(renderDashboard, 180);
     });
 
+
+
+    function selectedEditVisitId() {
+      const form = document.querySelector("#dashboardEditVisitForm");
+      return String(form?.elements?.visitId?.value || "").trim();
+    }
+
+    async function finishVisitFromEditForm() {
+      if (!allowFinish) { setMessage("#dashboardEditVisitMessage", "Brak uprawnienia do zakończenia wizyt.", false); return; }
+      const form = document.querySelector("#dashboardEditVisitForm");
+      const visitId = selectedEditVisitId();
+      if (!form || !visitId) { setMessage("#dashboardEditVisitMessage", "Wybierz wizytę do zakończenia.", false); return; }
+      const before = data.appointments.find((item) => item.id === visitId);
+      if (!before) { setMessage("#dashboardEditVisitMessage", "Nie znaleziono wizyty.", false); return; }
+      const total = moneyNumber(form.elements.total?.value || appointmentTotal(before, lookups));
+      const payload = {
+        p_appointment_id: visitId,
+        p_company_id: ctx.companyId,
+        p_paid_amount: total,
+        p_payment_method: String(form.elements.payment?.value || before.payment_method || "gotówka").trim(),
+        p_note: String(form.elements.note?.value || before.note || "").trim(),
+        p_pass_id: String(form.elements.passId?.value || "").trim() || null
+      };
+      const { data: result, error } = await window.cmSupabase.rpc("finish_appointment_with_sale", payload);
+      if (error) { setMessage("#dashboardEditVisitMessage", `Błąd zakończenia: ${error.message}`, false); return; }
+      await window.cmUndo?.record({ module: "dashboard", actionType: "finish", targetTable: "appointments", targetId: visitId, beforeData: before, afterData: result || payload, companyId: ctx.companyId });
+      setMessage("#dashboardEditVisitMessage", "Wizyta zakończona i sprzedaż zapisana.", true);
+      closeDashboardModals(panels);
+      window.setTimeout(renderDashboard, 180);
+    }
+
+    async function cancelVisitFromEditForm() {
+      if (!allowCancel) { setMessage("#dashboardEditVisitMessage", "Brak uprawnienia do odwołania wizyt.", false); return; }
+      const visitId = selectedEditVisitId();
+      if (!visitId) { setMessage("#dashboardEditVisitMessage", "Wybierz wizytę do odwołania.", false); return; }
+      const before = data.appointments.find((item) => item.id === visitId);
+      if (!before) { setMessage("#dashboardEditVisitMessage", "Nie znaleziono wizyty.", false); return; }
+      const reason = window.prompt("Podaj powód odwołania wizyty:", before.cancellation_reason || "") || "";
+      if (!reason.trim()) { setMessage("#dashboardEditVisitMessage", "Odwołanie przerwane — nie podano powodu.", false); return; }
+      const patch = { status: "odwołane", deleted: false, cancellation_reason: reason.trim(), cancelled_at: new Date().toISOString(), updated_at: new Date().toISOString() };
+      const { data: updated, error } = await window.cmSupabase.from("appointments").update(patch).eq("id", visitId).eq("company_id", ctx.companyId).select("*").single();
+      if (error) { setMessage("#dashboardEditVisitMessage", `Błąd odwołania: ${error.message}`, false); return; }
+      await window.cmUndo?.record({ module: "dashboard", actionType: "update", targetTable: "appointments", targetId: visitId, beforeData: before, afterData: updated || patch, companyId: ctx.companyId });
+      setMessage("#dashboardEditVisitMessage", "Wizyta odwołana.", true);
+      closeDashboardModals(panels);
+      window.setTimeout(renderDashboard, 180);
+    }
+
+    document.querySelector("#dashEditFinishVisitBtn")?.addEventListener("click", (event) => { event.preventDefault(); finishVisitFromEditForm(); });
+    document.querySelector("#dashEditCancelVisitBtn")?.addEventListener("click", (event) => { event.preventDefault(); cancelVisitFromEditForm(); });
 
     document.querySelector("#dashboardFinishVisitForm")?.addEventListener("submit", async (event) => {
       event.preventDefault();

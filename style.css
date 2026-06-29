@@ -16424,3 +16424,23 @@ html[data-cm-theme="goldWhite"] #cmPassPortalRoot .cm-pass-portal-panel:not([hid
 html[data-cm-theme="beautyRose"] #cmPassPortalRoot .cm-pass-portal-panel:not([hidden]){
   pointer-events:auto!important;
 }
+
+/* v81 — Dashboard: zakończenie / odwołanie wizyty przeniesione do formularza Edytuj */
+.bm-dashboard-edit-status-actions{
+  display:flex;
+  flex-wrap:wrap;
+  gap:10px;
+  align-items:center;
+  justify-content:flex-start;
+  margin-top:2px;
+}
+.bm-dashboard-edit-status-actions .bm-light-btn,
+.bm-dashboard-edit-status-actions .bm-danger-btn{
+  min-width:150px;
+}
+@media (max-width: 720px){
+  .bm-dashboard-edit-status-actions .bm-light-btn,
+  .bm-dashboard-edit-status-actions .bm-danger-btn{
+    width:100%;
+  }
+}
