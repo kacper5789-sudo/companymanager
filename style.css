@@ -16156,3 +16156,132 @@ html[data-cm-theme="beautyRose"] body.cm-centered-panel-open:has(.passes-module 
 html[data-cm-theme="beautyRose"] body.cm-centered-panel-open:has(.passes-module #deletePassPanel:not([hidden])){
   overflow:auto!important;
 }
+
+/* CompanyManager v76 — Gold + Beauty Rose Passes centered forms restore
+   Fix after v75: panels must stay hidden until click, then open centered like other skins.
+   Scope: only Karnety forms in goldWhite and beautyRose. */
+html[data-cm-theme="goldWhite"] .passes-module #templatePassPanel[hidden],
+html[data-cm-theme="goldWhite"] .passes-module #addPassPanel[hidden],
+html[data-cm-theme="goldWhite"] .passes-module #deletePassPanel[hidden],
+html[data-cm-theme="beautyRose"] .passes-module #templatePassPanel[hidden],
+html[data-cm-theme="beautyRose"] .passes-module #addPassPanel[hidden],
+html[data-cm-theme="beautyRose"] .passes-module #deletePassPanel[hidden]{
+  display:none!important;
+  visibility:hidden!important;
+  opacity:0!important;
+  pointer-events:none!important;
+}
+
+html[data-cm-theme="goldWhite"] .passes-module #templatePassPanel:not([hidden]),
+html[data-cm-theme="goldWhite"] .passes-module #addPassPanel:not([hidden]),
+html[data-cm-theme="goldWhite"] .passes-module #deletePassPanel:not([hidden]),
+html[data-cm-theme="beautyRose"] .passes-module #templatePassPanel:not([hidden]),
+html[data-cm-theme="beautyRose"] .passes-module #addPassPanel:not([hidden]),
+html[data-cm-theme="beautyRose"] .passes-module #deletePassPanel:not([hidden]){
+  position:fixed!important;
+  top:50%!important;
+  left:50%!important;
+  right:auto!important;
+  bottom:auto!important;
+  inset:auto!important;
+  transform:translate(-50%,-50%)!important;
+  z-index:2147483000!important;
+  display:block!important;
+  visibility:visible!important;
+  opacity:1!important;
+  pointer-events:auto!important;
+  width:min(920px, calc(100vw - 32px))!important;
+  max-width:calc(100vw - 32px)!important;
+  min-width:0!important;
+  max-height:calc(100vh - 32px)!important;
+  overflow:auto!important;
+  margin:0!important;
+  padding:18px!important;
+  border-radius:22px!important;
+  filter:none!important;
+  backdrop-filter:none!important;
+  -webkit-backdrop-filter:none!important;
+  isolation:isolate!important;
+}
+
+html[data-cm-theme="goldWhite"] .passes-module #templatePassPanel:not([hidden]),
+html[data-cm-theme="goldWhite"] .passes-module #addPassPanel:not([hidden]),
+html[data-cm-theme="goldWhite"] .passes-module #deletePassPanel:not([hidden]){
+  background:linear-gradient(180deg,rgba(255,255,255,.99),rgba(255,250,240,.97))!important;
+  color:var(--cm-gw-ink,#111827)!important;
+  border:1px solid var(--cm-gw-line,rgba(180,132,35,.30))!important;
+  box-shadow:0 26px 80px rgba(120,86,18,.20), 0 0 0 1px rgba(255,255,255,.82) inset!important;
+}
+
+html[data-cm-theme="beautyRose"] .passes-module #templatePassPanel:not([hidden]),
+html[data-cm-theme="beautyRose"] .passes-module #addPassPanel:not([hidden]),
+html[data-cm-theme="beautyRose"] .passes-module #deletePassPanel:not([hidden]){
+  background:linear-gradient(180deg,rgba(255,255,255,.99),rgba(255,247,251,.97))!important;
+  color:#111827!important;
+  border:1px solid rgba(219,39,119,.30)!important;
+  box-shadow:0 26px 80px rgba(131,24,67,.18), 0 0 0 1px rgba(255,255,255,.88) inset!important;
+}
+
+html[data-cm-theme="goldWhite"] body.cm-centered-panel-open,
+html[data-cm-theme="goldWhite"] html.cm-centered-panel-open,
+html[data-cm-theme="beautyRose"] body.cm-centered-panel-open,
+html[data-cm-theme="beautyRose"] html.cm-centered-panel-open{
+  overflow:auto!important;
+  filter:none!important;
+  backdrop-filter:none!important;
+  -webkit-backdrop-filter:none!important;
+}
+
+html[data-cm-theme="goldWhite"] body.cm-centered-panel-open #cmGlobalFormOverlay,
+html[data-cm-theme="beautyRose"] body.cm-centered-panel-open #cmGlobalFormOverlay,
+html[data-cm-theme="goldWhite"] body.cm-modal-open #cmGlobalFormOverlay,
+html[data-cm-theme="beautyRose"] body.cm-modal-open #cmGlobalFormOverlay{
+  display:none!important;
+  opacity:0!important;
+  visibility:hidden!important;
+  pointer-events:none!important;
+  filter:none!important;
+  backdrop-filter:none!important;
+  -webkit-backdrop-filter:none!important;
+}
+
+html[data-cm-theme="goldWhite"] body.cm-centered-panel-open .bm-shell,
+html[data-cm-theme="goldWhite"] body.cm-centered-panel-open .bm-main,
+html[data-cm-theme="goldWhite"] body.cm-centered-panel-open main,
+html[data-cm-theme="beautyRose"] body.cm-centered-panel-open .bm-shell,
+html[data-cm-theme="beautyRose"] body.cm-centered-panel-open .bm-main,
+html[data-cm-theme="beautyRose"] body.cm-centered-panel-open main{
+  filter:none!important;
+  backdrop-filter:none!important;
+  -webkit-backdrop-filter:none!important;
+}
+
+html[data-cm-theme="goldWhite"] .passes-module #templatePassPanel:not([hidden]) *,
+html[data-cm-theme="goldWhite"] .passes-module #addPassPanel:not([hidden]) *,
+html[data-cm-theme="goldWhite"] .passes-module #deletePassPanel:not([hidden]) *,
+html[data-cm-theme="beautyRose"] .passes-module #templatePassPanel:not([hidden]) *,
+html[data-cm-theme="beautyRose"] .passes-module #addPassPanel:not([hidden]) *,
+html[data-cm-theme="beautyRose"] .passes-module #deletePassPanel:not([hidden]) *{
+  pointer-events:auto!important;
+  filter:none!important;
+  backdrop-filter:none!important;
+  -webkit-backdrop-filter:none!important;
+}
+
+html[data-cm-theme="goldWhite"] .passes-module #templatePassPanel:not([hidden])::before,
+html[data-cm-theme="goldWhite"] .passes-module #templatePassPanel:not([hidden])::after,
+html[data-cm-theme="goldWhite"] .passes-module #addPassPanel:not([hidden])::before,
+html[data-cm-theme="goldWhite"] .passes-module #addPassPanel:not([hidden])::after,
+html[data-cm-theme="goldWhite"] .passes-module #deletePassPanel:not([hidden])::before,
+html[data-cm-theme="goldWhite"] .passes-module #deletePassPanel:not([hidden])::after,
+html[data-cm-theme="beautyRose"] .passes-module #templatePassPanel:not([hidden])::before,
+html[data-cm-theme="beautyRose"] .passes-module #templatePassPanel:not([hidden])::after,
+html[data-cm-theme="beautyRose"] .passes-module #addPassPanel:not([hidden])::before,
+html[data-cm-theme="beautyRose"] .passes-module #addPassPanel:not([hidden])::after,
+html[data-cm-theme="beautyRose"] .passes-module #deletePassPanel:not([hidden])::before,
+html[data-cm-theme="beautyRose"] .passes-module #deletePassPanel:not([hidden])::after{
+  pointer-events:none!important;
+  filter:none!important;
+  backdrop-filter:none!important;
+  -webkit-backdrop-filter:none!important;
+}
