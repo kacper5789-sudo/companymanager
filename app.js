@@ -7016,6 +7016,17 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     const productRows = [...productStats.values()].map(item => [String(item.count), money(item.value), escapeHtml(item.category), escapeHtml(item.code || '')]);
     const passRows = passSales.length ? passSales.map(p => ['1', money(p.value || 0), escapeHtml(p.number || p.name || 'Karnet')]) : [];
+    const normalizeEmployeeRef = (value) => String(value || '').trim();
+    const passEmployeeRef = (pass) => normalizeEmployeeRef(pass.employeeId || pass.employee_id || pass.sellerEmployeeId || pass.seller_employee_id || pass.userId || pass.user_id || pass.profileId || pass.profile_id);
+    const passEmployeeName = (pass) => String(pass.employeeName || pass.employee_name || pass.sellerName || pass.seller_name || pass.buyer || pass.soldBy || pass.sold_by || '').trim().toLowerCase();
+    const isPassForEmployee = (pass, employee) => {
+      const ref = passEmployeeRef(pass);
+      const employeeId = normalizeEmployeeRef(employee.id || employee.userId || employee.user_id || employee.profileId || employee.profile_id);
+      if (ref && employeeId && ref === employeeId) return true;
+      const name = passEmployeeName(pass);
+      const employeeNames = [employee.fullName, employee.full_name, employee.name, employee.login, employee.email].map(v => String(v || '').trim().toLowerCase()).filter(Boolean);
+      return !!name && employeeNames.includes(name);
+    };
     const employeeRows = employees.map(employee => {
       const ev = billableDashboardVisits.filter(v => v.employeeId === employee.id);
       const regular = periodCompanyVisits.filter(v => v.employeeId === employee.id && !isCancelledVisit(v));
@@ -7026,7 +7037,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const servValue = ev.filter(v => v.serviceId).reduce((sum, v) => sum + Number(v.total || 0), 0) + empServiceWalkins.reduce((sum, w) => sum + Number(w.total || w.amount || 0), 0);
       const prodCount = ev.filter(v => v.productId).length + empProductWalkins.length;
       const prodValue = ev.filter(v => v.productId).reduce((sum, v) => sum + Number(v.total || 0), 0) + empProductWalkins.reduce((sum, w) => sum + Number(w.total || w.amount || 0), 0);
-      const empPasses = passSales.filter(p => p.employeeId === employee.id);
+      const empPasses = passSales.filter(p => isPassForEmployee(p, employee));
       const passValue = empPasses.reduce((sum, p) => sum + Number(p.value || 0), 0);
       return { id: employee.id, cells: [escapeHtml(employee.fullName || employee.login), String(ev.length + regular.length), String(servCount), money(servValue), String(prodCount), money(prodValue), String(empPasses.length), money(passValue), money(0)] };
     });
@@ -8027,6 +8038,17 @@ document.addEventListener('DOMContentLoaded', () => {
     const productRows = [...productStats.values()].map(item => [String(item.count), money(item.value), escapeHtml(item.category), escapeHtml(item.code || '')]);
     const passRows = passes.length ? passes.map(p => ['1', money(p.value || 0), escapeHtml(p.number || p.name || 'Karnet')]) : [];
     const employeeCheckboxes = employees.map(employee => `<label class="cm-period-employee-check"><input type="checkbox" class="periodEmployeeCheck" value="${escapeHtml(employee.id)}" checked> ${escapeHtml(employee.fullName || employee.login)}</label>`).join('') || '<span class="bm-muted">Brak pracowników</span>';
+    const normalizeEmployeeRef = (value) => String(value || '').trim();
+    const passEmployeeRef = (pass) => normalizeEmployeeRef(pass.employeeId || pass.employee_id || pass.sellerEmployeeId || pass.seller_employee_id || pass.userId || pass.user_id || pass.profileId || pass.profile_id);
+    const passEmployeeName = (pass) => String(pass.employeeName || pass.employee_name || pass.sellerName || pass.seller_name || pass.buyer || pass.soldBy || pass.sold_by || '').trim().toLowerCase();
+    const isPassForEmployee = (pass, employee) => {
+      const ref = passEmployeeRef(pass);
+      const employeeId = normalizeEmployeeRef(employee.id || employee.userId || employee.user_id || employee.profileId || employee.profile_id);
+      if (ref && employeeId && ref === employeeId) return true;
+      const name = passEmployeeName(pass);
+      const employeeNames = [employee.fullName, employee.full_name, employee.name, employee.login, employee.email].map(v => String(v || '').trim().toLowerCase()).filter(Boolean);
+      return !!name && employeeNames.includes(name);
+    };
     const employeeRows = employees.map(employee => {
       const ev = billableDashboardVisits.filter(v => v.employeeId === employee.id);
       const regular = companyVisits.filter(v => v.employeeId === employee.id && !isCancelledVisit(v));
@@ -8037,7 +8059,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const servValue = ev.filter(v => v.serviceId).reduce((sum, v) => sum + Number(v.total || 0), 0) + empServiceWalkins.reduce((sum, w) => sum + Number(w.total || w.amount || 0), 0);
       const prodCount = ev.filter(v => v.productId).length + empProductWalkins.length;
       const prodValue = ev.filter(v => v.productId).reduce((sum, v) => sum + Number(v.total || 0), 0) + empProductWalkins.reduce((sum, w) => sum + Number(w.total || w.amount || 0), 0);
-      const empPasses = passes.filter(p => p.employeeId === employee.id);
+      const empPasses = passes.filter(p => isPassForEmployee(p, employee));
       const passValue = empPasses.reduce((sum, p) => sum + Number(p.value || 0), 0);
       return { id: employee.id, cells: [escapeHtml(employee.fullName || employee.login), String(ev.length + regular.length), String(servCount), money(servValue), String(prodCount), money(prodValue), String(empPasses.length), money(passValue), money(0)] };
     });
@@ -9150,8 +9172,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }).filter(r => inRange(r.date) && selectedEmployees.includes(r.employeeId) && selectedProductCategories.includes(r.productCategory) && selectedProductNames.includes(r.productId));
 
     const passRowsRaw = passes.map(p => ({
-      date: p.saleDate || p.date, time: p.saleTime || p.time || '', employeeId: p.employeeId, customerId: p.customerId,
-      employee: userById[p.employeeId]?.fullName || '(brak)', customer: customerById[p.customerId]?.name || p.buyer || '(brak)', value: Number(p.value || p.total || 0), note: p.description || p.name || '', paymentMethod: p.paymentMethod || 'gotówka'
+      date: p.saleDate || p.date || p.createdAt, time: p.saleTime || p.time || '', employeeId: p.employeeId || p.employee_id || p.sellerEmployeeId || p.seller_employee_id || p.userId || p.user_id || p.profileId || p.profile_id, customerId: p.customerId || p.customer_id,
+      employee: userById[p.employeeId || p.employee_id || p.sellerEmployeeId || p.seller_employee_id || p.userId || p.user_id || p.profileId || p.profile_id]?.fullName || p.employeeName || p.employee_name || p.sellerName || p.seller_name || p.buyer || '(brak)', customer: customerById[p.customerId || p.customer_id]?.name || p.customerName || p.customer_name || '(brak)', value: Number(p.value || p.total || p.amount || 0), note: p.description || p.name || 'Karnet', paymentMethod: p.paymentMethod || p.payment_method || p.payment || 'gotówka'
     })).filter(r => inRange(r.date) && selectedEmployees.includes(r.employeeId));
 
     const paymentRowsRaw = [
