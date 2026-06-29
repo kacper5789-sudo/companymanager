@@ -16489,3 +16489,337 @@ html[data-cm-theme] body.cm-pass-modal-open #deletePassPanel.cm-pass-panel-activ
   -webkit-backdrop-filter:none!important;
   pointer-events:auto!important;
 }
+
+/* CompanyManager v66 — Theme FX Engine v3
+   Efekty dla wszystkich kolekcji poza Basic/Original/Exclusive Gold.
+   Zasady bezpieczeństwa: bez blur, bez przechwytywania kliknięć, bez efektów na modalach i formularzach. */
+:root{
+  --cm-fx-a: var(--cm-skin-accent, #2563eb);
+  --cm-fx-b: var(--cm-skin-accent-2, #60a5fa);
+  --cm-fx-c: rgba(255,255,255,.65);
+  --cm-fx-opacity: .28;
+  --cm-fx-card-opacity: .22;
+}
+
+/* Theme-specific FX palettes — Hero Collection */
+html[data-cm-theme="titanArmor"]{--cm-fx-a:#9c1020;--cm-fx-b:#d6a538;--cm-fx-c:#f7f1d2;--cm-fx-opacity:.24;--cm-fx-card-opacity:.26;}
+html[data-cm-theme="libertyShield"]{--cm-fx-a:#173b7a;--cm-fx-b:#b51e2f;--cm-fx-c:#f4f6f9;--cm-fx-opacity:.22;--cm-fx-card-opacity:.22;}
+html[data-cm-theme="shadowPanther"]{--cm-fx-a:#18181b;--cm-fx-b:#7c3aed;--cm-fx-c:#c4b5fd;--cm-fx-opacity:.22;--cm-fx-card-opacity:.22;}
+html[data-cm-theme="thunderGod"]{--cm-fx-a:#2756c8;--cm-fx-b:#c9a13a;--cm-fx-c:#b71c2b;--cm-fx-opacity:.28;--cm-fx-card-opacity:.28;}
+html[data-cm-theme="gammaForce"]{--cm-fx-a:#3f8f2f;--cm-fx-b:#7c3aed;--cm-fx-c:#c8ff7a;--cm-fx-opacity:.24;--cm-fx-card-opacity:.24;}
+html[data-cm-theme="webHero"]{--cm-fx-a:#b31623;--cm-fx-b:#184c96;--cm-fx-c:#f4f4f4;--cm-fx-opacity:.22;--cm-fx-card-opacity:.24;}
+html[data-cm-theme="scarletSpeed"]{--cm-fx-a:#b4141e;--cm-fx-b:#ffd335;--cm-fx-c:#fff6cc;--cm-fx-opacity:.28;--cm-fx-card-opacity:.28;}
+html[data-cm-theme="solarHero"]{--cm-fx-a:#214e9f;--cm-fx-b:#c3222b;--cm-fx-c:#f4c542;--cm-fx-opacity:.24;--cm-fx-card-opacity:.24;}
+html[data-cm-theme="chaosSmile"]{--cm-fx-a:#111827;--cm-fx-b:#facc15;--cm-fx-c:#7c3aed;--cm-fx-opacity:.20;--cm-fx-card-opacity:.20;}
+html[data-cm-theme="darkKnight"]{--cm-fx-a:#1f2937;--cm-fx-b:#f59e0b;--cm-fx-c:#d1d5db;--cm-fx-opacity:.22;--cm-fx-card-opacity:.22;}
+
+/* Shinobi */
+html[data-cm-theme="orangeNinja"]{--cm-fx-a:#f97316;--cm-fx-b:#facc15;--cm-fx-c:#2563eb;--cm-fx-opacity:.26;--cm-fx-card-opacity:.24;}
+html[data-cm-theme="crimsonEye"]{--cm-fx-a:#991b1b;--cm-fx-b:#ef4444;--cm-fx-c:#111827;--cm-fx-opacity:.24;--cm-fx-card-opacity:.22;}
+html[data-cm-theme="lightningAvenger"]{--cm-fx-a:#2563eb;--cm-fx-b:#60a5fa;--cm-fx-c:#f8fafc;--cm-fx-opacity:.28;--cm-fx-card-opacity:.25;}
+html[data-cm-theme="sageMaster"]{--cm-fx-a:#16a34a;--cm-fx-b:#f97316;--cm-fx-c:#fde68a;--cm-fx-opacity:.22;--cm-fx-card-opacity:.22;}
+html[data-cm-theme="blossomHealer"]{--cm-fx-a:#ec4899;--cm-fx-b:#fb7185;--cm-fx-c:#fdf2f8;--cm-fx-opacity:.22;--cm-fx-card-opacity:.22;}
+html[data-cm-theme="purpleIllusion"]{--cm-fx-a:#6d28d9;--cm-fx-b:#a855f7;--cm-fx-c:#c4b5fd;--cm-fx-opacity:.25;--cm-fx-card-opacity:.24;}
+
+/* Pirate */
+html[data-cm-theme="strawCaptain"]{--cm-fx-a:#c62828;--cm-fx-b:#2758c7;--cm-fx-c:#f4c542;--cm-fx-opacity:.22;--cm-fx-card-opacity:.22;}
+html[data-cm-theme="threeBlades"]{--cm-fx-a:#0f766e;--cm-fx-b:#e5e7eb;--cm-fx-c:#111827;--cm-fx-opacity:.20;--cm-fx-card-opacity:.20;}
+html[data-cm-theme="fireCommander"]{--cm-fx-a:#dc2626;--cm-fx-b:#f97316;--cm-fx-c:#facc15;--cm-fx-opacity:.28;--cm-fx-card-opacity:.26;}
+html[data-cm-theme="navigator"]{--cm-fx-a:#f97316;--cm-fx-b:#38bdf8;--cm-fx-c:#fde68a;--cm-fx-opacity:.22;--cm-fx-card-opacity:.22;}
+html[data-cm-theme="ironShipwright"]{--cm-fx-a:#0ea5e9;--cm-fx-b:#ef4444;--cm-fx-c:#f8fafc;--cm-fx-opacity:.22;--cm-fx-card-opacity:.22;}
+html[data-cm-theme="soulMusician"]{--cm-fx-a:#111827;--cm-fx-b:#f8fafc;--cm-fx-c:#38bdf8;--cm-fx-opacity:.18;--cm-fx-card-opacity:.20;}
+html[data-cm-theme="braveSniper"]{--cm-fx-a:#92400e;--cm-fx-b:#16a34a;--cm-fx-c:#facc15;--cm-fx-opacity:.20;--cm-fx-card-opacity:.20;}
+html[data-cm-theme="cottonDoctor"]{--cm-fx-a:#ec4899;--cm-fx-b:#60a5fa;--cm-fx-c:#f8fafc;--cm-fx-opacity:.22;--cm-fx-card-opacity:.22;}
+
+/* Power */
+html[data-cm-theme="ssj"]{--cm-fx-a:#f59e0b;--cm-fx-b:#ffe15a;--cm-fx-c:#214c9a;--cm-fx-opacity:.30;--cm-fx-card-opacity:.28;}
+html[data-cm-theme="mysticWarrior"]{--cm-fx-a:#6a2bbf;--cm-fx-b:#ffd631;--cm-fx-c:#59c8ff;--cm-fx-opacity:.32;--cm-fx-card-opacity:.30;}
+html[data-cm-theme="ssj3"]{--cm-fx-a:#d97a1e;--cm-fx-b:#ffe03a;--cm-fx-c:#7dd8ff;--cm-fx-opacity:.34;--cm-fx-card-opacity:.32;}
+html[data-cm-theme="royalSaiyanBlue"]{--cm-fx-a:#0ea5e9;--cm-fx-b:#73d8ff;--cm-fx-c:#f3f8ff;--cm-fx-opacity:.34;--cm-fx-card-opacity:.30;}
+html[data-cm-theme="godOfDestruction"]{--cm-fx-a:#b91c1c;--cm-fx-b:#f97316;--cm-fx-c:#7f1d1d;--cm-fx-opacity:.34;--cm-fx-card-opacity:.30;}
+html[data-cm-theme="ultraInstinct"]{--cm-fx-a:#f97316;--cm-fx-b:#e5e7eb;--cm-fx-c:#93c5fd;--cm-fx-opacity:.26;--cm-fx-card-opacity:.24;}
+html[data-cm-theme="beast"]{--cm-fx-a:#7c3aed;--cm-fx-b:#d946ef;--cm-fx-c:#f5f3ff;--cm-fx-opacity:.32;--cm-fx-card-opacity:.30;}
+html[data-cm-theme="soulReaper"]{--cm-fx-a:#f97316;--cm-fx-b:#111827;--cm-fx-c:#fbbf24;--cm-fx-opacity:.28;--cm-fx-card-opacity:.26;}
+html[data-cm-theme="crimsonGhoul"]{--cm-fx-a:#991b1b;--cm-fx-b:#ef4444;--cm-fx-c:#f8fafc;--cm-fx-opacity:.30;--cm-fx-card-opacity:.28;}
+
+/* Automotive / Creature / Gaming */
+html[data-cm-theme="italianRacing"]{--cm-fx-a:#dc2626;--cm-fx-b:#111827;--cm-fx-c:#f8fafc;--cm-fx-opacity:.24;--cm-fx-card-opacity:.24;}
+html[data-cm-theme="motorsport"]{--cm-fx-a:#1d4ed8;--cm-fx-b:#38bdf8;--cm-fx-c:#f8fafc;--cm-fx-opacity:.24;--cm-fx-card-opacity:.24;}
+html[data-cm-theme="luxuryPerformance"]{--cm-fx-a:#020617;--cm-fx-b:#d4af37;--cm-fx-c:#f8fafc;--cm-fx-opacity:.18;--cm-fx-card-opacity:.20;}
+html[data-cm-theme="hyperCar"]{--cm-fx-a:#facc15;--cm-fx-b:#111827;--cm-fx-c:#fef3c7;--cm-fx-opacity:.24;--cm-fx-card-opacity:.24;}
+html[data-cm-theme="frenchHyper"]{--cm-fx-a:#2563eb;--cm-fx-b:#ef4444;--cm-fx-c:#f8fafc;--cm-fx-opacity:.22;--cm-fx-card-opacity:.22;}
+html[data-cm-theme="britishLuxury"]{--cm-fx-a:#f8fafc;--cm-fx-b:#111827;--cm-fx-c:#d4af37;--cm-fx-opacity:.18;--cm-fx-card-opacity:.20;}
+html[data-cm-theme="electricMouse"]{--cm-fx-a:#facc15;--cm-fx-b:#2563eb;--cm-fx-c:#fef08a;--cm-fx-opacity:.28;--cm-fx-card-opacity:.26;}
+html[data-cm-theme="fireDragon"]{--cm-fx-a:#dc2626;--cm-fx-b:#f97316;--cm-fx-c:#facc15;--cm-fx-opacity:.30;--cm-fx-card-opacity:.28;}
+html[data-cm-theme="forestSeed"]{--cm-fx-a:#16a34a;--cm-fx-b:#84cc16;--cm-fx-c:#dcfce7;--cm-fx-opacity:.22;--cm-fx-card-opacity:.22;}
+html[data-cm-theme="waterTurtle"]{--cm-fx-a:#0284c7;--cm-fx-b:#38bdf8;--cm-fx-c:#e0f2fe;--cm-fx-opacity:.24;--cm-fx-card-opacity:.22;}
+html[data-cm-theme="blueVelocity"]{--cm-fx-a:#2563eb;--cm-fx-b:#06b6d4;--cm-fx-c:#bfdbfe;--cm-fx-opacity:.28;--cm-fx-card-opacity:.26;}
+html[data-cm-theme="cyberNeon"]{--cm-fx-a:#a855f7;--cm-fx-b:#22d3ee;--cm-fx-c:#f0abfc;--cm-fx-opacity:.30;--cm-fx-card-opacity:.28;}
+html[data-cm-theme="digitalMatrix"]{--cm-fx-a:#22c55e;--cm-fx-b:#84cc16;--cm-fx-c:#bbf7d0;--cm-fx-opacity:.28;--cm-fx-card-opacity:.26;}
+html[data-cm-theme="nightRacer"]{--cm-fx-a:#4f46e5;--cm-fx-b:#0ea5e9;--cm-fx-c:#e0e7ff;--cm-fx-opacity:.26;--cm-fx-card-opacity:.24;}
+html[data-cm-theme="electricYellow"]{--cm-fx-a:#facc15;--cm-fx-b:#0f172a;--cm-fx-c:#fef08a;--cm-fx-opacity:.28;--cm-fx-card-opacity:.26;}
+
+/* Global safe card FX for non-Basic skins. Basic category is intentionally excluded. */
+html[data-cm-theme="titanArmor"],html[data-cm-theme="libertyShield"],html[data-cm-theme="shadowPanther"],html[data-cm-theme="thunderGod"],html[data-cm-theme="gammaForce"],html[data-cm-theme="webHero"],html[data-cm-theme="scarletSpeed"],html[data-cm-theme="solarHero"],html[data-cm-theme="chaosSmile"],html[data-cm-theme="darkKnight"],
+html[data-cm-theme="orangeNinja"],html[data-cm-theme="crimsonEye"],html[data-cm-theme="lightningAvenger"],html[data-cm-theme="sageMaster"],html[data-cm-theme="blossomHealer"],html[data-cm-theme="purpleIllusion"],
+html[data-cm-theme="strawCaptain"],html[data-cm-theme="threeBlades"],html[data-cm-theme="fireCommander"],html[data-cm-theme="navigator"],html[data-cm-theme="ironShipwright"],html[data-cm-theme="soulMusician"],html[data-cm-theme="braveSniper"],html[data-cm-theme="cottonDoctor"],
+html[data-cm-theme="ssj"],html[data-cm-theme="mysticWarrior"],html[data-cm-theme="ssj3"],html[data-cm-theme="royalSaiyanBlue"],html[data-cm-theme="godOfDestruction"],html[data-cm-theme="ultraInstinct"],html[data-cm-theme="beast"],html[data-cm-theme="soulReaper"],html[data-cm-theme="crimsonGhoul"],
+html[data-cm-theme="italianRacing"],html[data-cm-theme="motorsport"],html[data-cm-theme="luxuryPerformance"],html[data-cm-theme="hyperCar"],html[data-cm-theme="frenchHyper"],html[data-cm-theme="britishLuxury"],
+html[data-cm-theme="electricMouse"],html[data-cm-theme="fireDragon"],html[data-cm-theme="forestSeed"],html[data-cm-theme="waterTurtle"],html[data-cm-theme="blueVelocity"],
+html[data-cm-theme="cyberNeon"],html[data-cm-theme="digitalMatrix"],html[data-cm-theme="nightRacer"],html[data-cm-theme="electricYellow"]{
+  --cm-fx-safe-enabled: 1;
+}
+
+/* Ambient glow on page background: behind UI, no blur, no clicks. */
+html[style] body::after,
+html[data-cm-theme="titanArmor"] body::after,html[data-cm-theme="libertyShield"] body::after,html[data-cm-theme="shadowPanther"] body::after,html[data-cm-theme="thunderGod"] body::after,html[data-cm-theme="gammaForce"] body::after,html[data-cm-theme="webHero"] body::after,html[data-cm-theme="scarletSpeed"] body::after,html[data-cm-theme="solarHero"] body::after,html[data-cm-theme="chaosSmile"] body::after,html[data-cm-theme="darkKnight"] body::after,
+html[data-cm-theme="orangeNinja"] body::after,html[data-cm-theme="crimsonEye"] body::after,html[data-cm-theme="lightningAvenger"] body::after,html[data-cm-theme="sageMaster"] body::after,html[data-cm-theme="blossomHealer"] body::after,html[data-cm-theme="purpleIllusion"] body::after,
+html[data-cm-theme="strawCaptain"] body::after,html[data-cm-theme="threeBlades"] body::after,html[data-cm-theme="fireCommander"] body::after,html[data-cm-theme="navigator"] body::after,html[data-cm-theme="ironShipwright"] body::after,html[data-cm-theme="soulMusician"] body::after,html[data-cm-theme="braveSniper"] body::after,html[data-cm-theme="cottonDoctor"] body::after,
+html[data-cm-theme="ssj"] body::after,html[data-cm-theme="mysticWarrior"] body::after,html[data-cm-theme="ssj3"] body::after,html[data-cm-theme="royalSaiyanBlue"] body::after,html[data-cm-theme="godOfDestruction"] body::after,html[data-cm-theme="ultraInstinct"] body::after,html[data-cm-theme="beast"] body::after,html[data-cm-theme="soulReaper"] body::after,html[data-cm-theme="crimsonGhoul"] body::after,
+html[data-cm-theme="italianRacing"] body::after,html[data-cm-theme="motorsport"] body::after,html[data-cm-theme="luxuryPerformance"] body::after,html[data-cm-theme="hyperCar"] body::after,html[data-cm-theme="frenchHyper"] body::after,html[data-cm-theme="britishLuxury"] body::after,
+html[data-cm-theme="electricMouse"] body::after,html[data-cm-theme="fireDragon"] body::after,html[data-cm-theme="forestSeed"] body::after,html[data-cm-theme="waterTurtle"] body::after,html[data-cm-theme="blueVelocity"] body::after,
+html[data-cm-theme="cyberNeon"] body::after,html[data-cm-theme="digitalMatrix"] body::after,html[data-cm-theme="nightRacer"] body::after,html[data-cm-theme="electricYellow"] body::after{
+  content:"";
+  position:fixed;
+  inset:0;
+  pointer-events:none !important;
+  z-index:0;
+  opacity:var(--cm-fx-opacity);
+  background:
+    radial-gradient(circle at 16% 18%, color-mix(in srgb, var(--cm-fx-a) 58%, transparent), transparent 30%),
+    radial-gradient(circle at 84% 20%, color-mix(in srgb, var(--cm-fx-b) 42%, transparent), transparent 34%),
+    radial-gradient(circle at 50% 100%, color-mix(in srgb, var(--cm-fx-c) 26%, transparent), transparent 42%);
+  animation:cmThemeAmbientDrift 9s ease-in-out infinite alternate;
+  filter:none !important;
+  backdrop-filter:none !important;
+}
+body > *{position:relative;z-index:1;}
+
+/* Never let FX touch pass/modals/forms. */
+body.cm-pass-modal-open::after,
+body:has(#templatePassPanel:not([hidden]))::after,
+body:has(#addPassPanel:not([hidden]))::after,
+body:has(#deletePassPanel:not([hidden]))::after{
+  opacity:0 !important;
+  display:none !important;
+}
+
+/* Card FX: lives inside cards only, below content. */
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]):not([data-cm-theme="beautyRose"]):not([data-cm-theme="natureSage"]):not([data-cm-theme="coffeeHouse"]):not([data-cm-theme="royalBlue"]):not([data-cm-theme="blackLuxury"]):not([data-cm-theme="burgundy"]):not([data-cm-theme="ocean"]):not([data-cm-theme="ice"]):not([data-cm-theme="medical"]):not([data-cm-theme="sunset"]):not([data-cm-theme="neon"]):not([data-cm-theme="customProject"])
+:where(.bm-page-card,.panel-card,.cm-unified-card,.bm-current-section,.dashboard-card,.stat-card,.report-card,.summary-card,.settings-card,.employee-card,.client-card,.service-card,.product-card,.appointment-card,.sale-card,.marketing-card,.pass-card,.chart-card,.table-card,.filter-card,.cm-card,.card):not(.modal):not(.modal-card):not(.form-card):not(#templatePassPanel):not(#addPassPanel):not(#deletePassPanel){
+  position:relative;
+  overflow:hidden;
+  isolation:isolate;
+}
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]):not([data-cm-theme="beautyRose"]):not([data-cm-theme="natureSage"]):not([data-cm-theme="coffeeHouse"]):not([data-cm-theme="royalBlue"]):not([data-cm-theme="blackLuxury"]):not([data-cm-theme="burgundy"]):not([data-cm-theme="ocean"]):not([data-cm-theme="ice"]):not([data-cm-theme="medical"]):not([data-cm-theme="sunset"]):not([data-cm-theme="neon"]):not([data-cm-theme="customProject"])
+:where(.bm-page-card,.panel-card,.cm-unified-card,.bm-current-section,.dashboard-card,.stat-card,.report-card,.summary-card,.settings-card,.employee-card,.client-card,.service-card,.product-card,.appointment-card,.sale-card,.marketing-card,.pass-card,.chart-card,.table-card,.filter-card,.cm-card,.card):not(.modal):not(.modal-card):not(.form-card):not(#templatePassPanel):not(#addPassPanel):not(#deletePassPanel)::after{
+  content:"";
+  position:absolute;
+  inset:-2px;
+  pointer-events:none !important;
+  z-index:-1;
+  opacity:var(--cm-fx-card-opacity);
+  background:
+    linear-gradient(115deg, transparent 0 28%, color-mix(in srgb, var(--cm-fx-c) 55%, transparent) 44%, transparent 58% 100%),
+    radial-gradient(circle at 18% 10%, color-mix(in srgb, var(--cm-fx-a) 54%, transparent), transparent 36%),
+    radial-gradient(circle at 90% 84%, color-mix(in srgb, var(--cm-fx-b) 44%, transparent), transparent 44%);
+  transform:translateX(-12%);
+  animation:cmThemeCardEnergy 6.8s ease-in-out infinite alternate;
+}
+
+/* Power collection gets slightly stronger live energy. */
+html[data-cm-theme="ssj"] :where(.bm-page-card,.panel-card,.cm-unified-card,.bm-current-section,.dashboard-card,.stat-card,.report-card,.summary-card,.settings-card,.pass-card,.cm-card,.card):not(.modal):not(.modal-card):not(.form-card)::after,
+html[data-cm-theme="mysticWarrior"] :where(.bm-page-card,.panel-card,.cm-unified-card,.bm-current-section,.dashboard-card,.stat-card,.report-card,.summary-card,.settings-card,.pass-card,.cm-card,.card):not(.modal):not(.modal-card):not(.form-card)::after,
+html[data-cm-theme="ssj3"] :where(.bm-page-card,.panel-card,.cm-unified-card,.bm-current-section,.dashboard-card,.stat-card,.report-card,.summary-card,.settings-card,.pass-card,.cm-card,.card):not(.modal):not(.modal-card):not(.form-card)::after,
+html[data-cm-theme="royalSaiyanBlue"] :where(.bm-page-card,.panel-card,.cm-unified-card,.bm-current-section,.dashboard-card,.stat-card,.report-card,.summary-card,.settings-card,.pass-card,.cm-card,.card):not(.modal):not(.modal-card):not(.form-card)::after,
+html[data-cm-theme="godOfDestruction"] :where(.bm-page-card,.panel-card,.cm-unified-card,.bm-current-section,.dashboard-card,.stat-card,.report-card,.summary-card,.settings-card,.pass-card,.cm-card,.card):not(.modal):not(.modal-card):not(.form-card)::after,
+html[data-cm-theme="ultraInstinct"] :where(.bm-page-card,.panel-card,.cm-unified-card,.bm-current-section,.dashboard-card,.stat-card,.report-card,.summary-card,.settings-card,.pass-card,.cm-card,.card):not(.modal):not(.modal-card):not(.form-card)::after,
+html[data-cm-theme="beast"] :where(.bm-page-card,.panel-card,.cm-unified-card,.bm-current-section,.dashboard-card,.stat-card,.report-card,.summary-card,.settings-card,.pass-card,.cm-card,.card):not(.modal):not(.modal-card):not(.form-card)::after{
+  opacity:calc(var(--cm-fx-card-opacity) + .08);
+  animation-duration:4.8s;
+}
+
+/* Small hover premium glow without layout shift. */
+html[data-cm-theme]:not([data-cm-theme="original"]):not([data-cm-theme="goldWhite"]):not([data-cm-theme="beautyRose"]):not([data-cm-theme="natureSage"]):not([data-cm-theme="coffeeHouse"]):not([data-cm-theme="royalBlue"]):not([data-cm-theme="blackLuxury"]):not([data-cm-theme="burgundy"]):not([data-cm-theme="ocean"]):not([data-cm-theme="ice"]):not([data-cm-theme="medical"]):not([data-cm-theme="sunset"]):not([data-cm-theme="neon"]):not([data-cm-theme="customProject"])
+:where(.btn,.bm-btn,button:not(.cm-skin-card):not(.cm-theme-toggle),.button):not(:disabled):hover{
+  box-shadow:0 0 0 1px color-mix(in srgb, var(--cm-fx-b) 38%, transparent),0 10px 28px color-mix(in srgb, var(--cm-fx-a) 25%, transparent);
+}
+
+@keyframes cmThemeAmbientDrift{
+  0%{transform:translate3d(-1%, -1%, 0) scale(1);opacity:calc(var(--cm-fx-opacity) * .72);}
+  50%{transform:translate3d(1%, .5%, 0) scale(1.02);opacity:var(--cm-fx-opacity);}
+  100%{transform:translate3d(0, 1%, 0) scale(1.04);opacity:calc(var(--cm-fx-opacity) * .82);}
+}
+@keyframes cmThemeCardEnergy{
+  0%{transform:translateX(-18%) translateY(-4%) rotate(0deg);opacity:calc(var(--cm-fx-card-opacity) * .55);}
+  45%{opacity:var(--cm-fx-card-opacity);}
+  100%{transform:translateX(18%) translateY(4%) rotate(1deg);opacity:calc(var(--cm-fx-card-opacity) * .85);}
+}
+@media (prefers-reduced-motion: reduce){
+  html[data-cm-theme] body::after,
+  html[data-cm-theme] :where(.bm-page-card,.panel-card,.cm-unified-card,.bm-current-section,.dashboard-card,.stat-card,.report-card,.summary-card,.settings-card,.employee-card,.client-card,.service-card,.product-card,.appointment-card,.sale-card,.marketing-card,.pass-card,.chart-card,.table-card,.filter-card,.cm-card,.card)::after{
+    animation:none !important;
+  }
+}
+
+/* CompanyManager v67 — PASSES MODAL FINAL HARD RESET
+   Cel: Karnety muszą działać na każdej skórce. Bez blur, bez przyciemniania formularza,
+   bez efektów FX nad modalem, bez blokowania scrolla i kliknięć. */
+html.cm-pass-modal-open,
+body.cm-pass-modal-open,
+html[data-cm-modal-open="true"],
+body[data-cm-modal-open="true"]{
+  overflow:hidden !important;
+}
+
+/* Tło modala: lekko przyciemnione, ale ZERO blur/backdrop-filter. */
+html.cm-pass-modal-open body #cmGlobalFormOverlay,
+body.cm-pass-modal-open #cmGlobalFormOverlay,
+html:has(#templatePassPanel.cm-pass-panel-active:not([hidden])) body #cmGlobalFormOverlay,
+html:has(#addPassPanel.cm-pass-panel-active:not([hidden])) body #cmGlobalFormOverlay,
+html:has(#deletePassPanel.cm-pass-panel-active:not([hidden])) body #cmGlobalFormOverlay,
+html:has(#inlinePassCustomerPanel.cm-pass-panel-active:not([hidden])) body #cmGlobalFormOverlay{
+  display:block !important;
+  opacity:1 !important;
+  visibility:visible !important;
+  position:fixed !important;
+  inset:0 !important;
+  z-index:2147482000 !important;
+  background:rgba(2,6,23,.58) !important;
+  filter:none !important;
+  -webkit-filter:none !important;
+  backdrop-filter:none !important;
+  -webkit-backdrop-filter:none !important;
+  pointer-events:none !important;
+}
+
+/* Absolutny zakaz blur/filtra na aplikacji podczas modali Karnetów. */
+html.cm-pass-modal-open body,
+html.cm-pass-modal-open body *,
+body.cm-pass-modal-open,
+body.cm-pass-modal-open *,
+html:has(#templatePassPanel.cm-pass-panel-active:not([hidden])) body,
+html:has(#addPassPanel.cm-pass-panel-active:not([hidden])) body,
+html:has(#deletePassPanel.cm-pass-panel-active:not([hidden])) body{
+  -webkit-filter:none !important;
+  filter:none !important;
+}
+html.cm-pass-modal-open body .bm-shell,
+html.cm-pass-modal-open body .bm-main,
+html.cm-pass-modal-open body .bm-page-card,
+body.cm-pass-modal-open .bm-shell,
+body.cm-pass-modal-open .bm-main,
+body.cm-pass-modal-open .bm-page-card{
+  -webkit-filter:none !important;
+  filter:none !important;
+  backdrop-filter:none !important;
+  -webkit-backdrop-filter:none !important;
+}
+
+/* FX Engine OFF przy formularzach Karnetów. */
+html.cm-pass-modal-open body::before,
+html.cm-pass-modal-open body::after,
+body.cm-pass-modal-open::before,
+body.cm-pass-modal-open::after,
+html.cm-pass-modal-open :where(.bm-page-card,.panel-card,.cm-unified-card,.bm-current-section,.dashboard-card,.stat-card,.report-card,.summary-card,.settings-card,.employee-card,.client-card,.service-card,.product-card,.appointment-card,.sale-card,.marketing-card,.pass-card,.chart-card,.table-card,.filter-card,.cm-card,.card)::before,
+html.cm-pass-modal-open :where(.bm-page-card,.panel-card,.cm-unified-card,.bm-current-section,.dashboard-card,.stat-card,.report-card,.summary-card,.settings-card,.employee-card,.client-card,.service-card,.product-card,.appointment-card,.sale-card,.marketing-card,.pass-card,.chart-card,.table-card,.filter-card,.cm-card,.card)::after,
+body.cm-pass-modal-open :where(.bm-page-card,.panel-card,.cm-unified-card,.bm-current-section,.dashboard-card,.stat-card,.report-card,.summary-card,.settings-card,.employee-card,.client-card,.service-card,.product-card,.appointment-card,.sale-card,.marketing-card,.pass-card,.chart-card,.table-card,.filter-card,.cm-card,.card)::before,
+body.cm-pass-modal-open :where(.bm-page-card,.panel-card,.cm-unified-card,.bm-current-section,.dashboard-card,.stat-card,.report-card,.summary-card,.settings-card,.employee-card,.client-card,.service-card,.product-card,.appointment-card,.sale-card,.marketing-card,.pass-card,.chart-card,.table-card,.filter-card,.cm-card,.card)::after{
+  display:none !important;
+  opacity:0 !important;
+  animation:none !important;
+  pointer-events:none !important;
+}
+
+/* Same formularze Karnetów — zawsze centrum, zawsze jasne i klikalne. */
+html body.cm-pass-modal-open :where(#templatePassPanel,#addPassPanel,#deletePassPanel),
+html.cm-pass-modal-open body :where(#templatePassPanel,#addPassPanel,#deletePassPanel),
+html:has(#templatePassPanel.cm-pass-panel-active:not([hidden])) body #templatePassPanel,
+html:has(#addPassPanel.cm-pass-panel-active:not([hidden])) body #addPassPanel,
+html:has(#deletePassPanel.cm-pass-panel-active:not([hidden])) body #deletePassPanel{
+  position:fixed !important;
+  top:50% !important;
+  left:50% !important;
+  right:auto !important;
+  bottom:auto !important;
+  transform:translate(-50%,-50%) !important;
+  width:min(940px, calc(100vw - 28px)) !important;
+  max-width:min(940px, calc(100vw - 28px)) !important;
+  max-height:calc(100vh - 36px) !important;
+  min-height:auto !important;
+  overflow-y:auto !important;
+  overflow-x:hidden !important;
+  z-index:2147483000 !important;
+  display:block !important;
+  visibility:visible !important;
+  opacity:1 !important;
+  pointer-events:auto !important;
+  touch-action:auto !important;
+  isolation:isolate !important;
+  margin:0 !important;
+  padding:22px !important;
+  border-radius:22px !important;
+  background:linear-gradient(180deg, rgba(15,23,42,.985), rgba(2,6,23,.975)) !important;
+  border:1px solid rgba(148,163,184,.34) !important;
+  box-shadow:0 28px 90px rgba(0,0,0,.72), 0 0 0 1px rgba(255,255,255,.04) inset !important;
+  color:#e5eefb !important;
+  -webkit-filter:none !important;
+  filter:none !important;
+  backdrop-filter:none !important;
+  -webkit-backdrop-filter:none !important;
+}
+
+html body.cm-pass-modal-open :where(#templatePassPanel,#addPassPanel,#deletePassPanel)[hidden],
+html.cm-pass-modal-open body :where(#templatePassPanel,#addPassPanel,#deletePassPanel)[hidden]{
+  display:none !important;
+}
+
+/* Formularz zagnieżdżony Dodaj klienta w Sprzedaj karnet. */
+html body.cm-pass-modal-open #inlinePassCustomerPanel:not([hidden]),
+html.cm-pass-modal-open body #inlinePassCustomerPanel:not([hidden]){
+  position:relative !important;
+  z-index:2147483001 !important;
+  display:block !important;
+  opacity:1 !important;
+  visibility:visible !important;
+  pointer-events:auto !important;
+  overflow:visible !important;
+  transform:none !important;
+  background:rgba(15,23,42,.96) !important;
+  border:1px solid rgba(148,163,184,.28) !important;
+  box-shadow:0 18px 45px rgba(0,0,0,.45) !important;
+  -webkit-filter:none !important;
+  filter:none !important;
+  backdrop-filter:none !important;
+  -webkit-backdrop-filter:none !important;
+}
+
+/* Wszystko wewnątrz modala ma być ponad dekoracjami i normalnie działać. */
+html body.cm-pass-modal-open :where(#templatePassPanel,#addPassPanel,#deletePassPanel,#inlinePassCustomerPanel) *,
+html.cm-pass-modal-open body :where(#templatePassPanel,#addPassPanel,#deletePassPanel,#inlinePassCustomerPanel) *{
+  position:relative;
+  z-index:auto;
+  opacity:1 !important;
+  visibility:visible !important;
+  pointer-events:auto;
+  -webkit-filter:none !important;
+  filter:none !important;
+  backdrop-filter:none !important;
+  -webkit-backdrop-filter:none !important;
+}
+html body.cm-pass-modal-open :where(#templatePassPanel,#addPassPanel,#deletePassPanel,#inlinePassCustomerPanel) :where(input,select,textarea,button,label),
+html.cm-pass-modal-open body :where(#templatePassPanel,#addPassPanel,#deletePassPanel,#inlinePassCustomerPanel) :where(input,select,textarea,button,label){
+  pointer-events:auto !important;
+  touch-action:auto !important;
+}
+
+/* Formularze Karnetów nie dostają pseudo-elementów z Theme Engine. */
+html body.cm-pass-modal-open :where(#templatePassPanel,#addPassPanel,#deletePassPanel,#inlinePassCustomerPanel)::before,
+html body.cm-pass-modal-open :where(#templatePassPanel,#addPassPanel,#deletePassPanel,#inlinePassCustomerPanel)::after,
+html.cm-pass-modal-open body :where(#templatePassPanel,#addPassPanel,#deletePassPanel,#inlinePassCustomerPanel)::before,
+html.cm-pass-modal-open body :where(#templatePassPanel,#addPassPanel,#deletePassPanel,#inlinePassCustomerPanel)::after{
+  content:none !important;
+  display:none !important;
+  opacity:0 !important;
+  pointer-events:none !important;
+}
