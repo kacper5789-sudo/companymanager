@@ -707,16 +707,14 @@
     document.querySelector("#showAddPass")?.addEventListener("click", () => showOnlyPanel(addPanel, panels));
     document.querySelector("#showDeletePass")?.addEventListener("click", () => showOnlyPanel(deletePanel, panels));
     const closePassPanel = (panel) => {
-      if (!panel) return;
-      panel.hidden = true;
-      panel.classList.remove("cm-modal-active", "cm-as-modal");
-      panel.classList.add("cm-pass-inline-panel", "cm-no-modal");
-      panel.setAttribute("data-cm-no-modal", "true");
-      if (window.cmRefreshGlobalModalState) window.setTimeout(window.cmRefreshGlobalModalState, 0);
+      // v79: Karnety close must use the same hard-close path as the portal opener.
+      // In Exclusive Gold / Beauty Rose the panel can live inside #cmPassPortalRoot,
+      // so a simple hidden=true sometimes leaves theme/portal state active.
+      closeCenteredPanel(panel);
     };
-    document.querySelector("#cancelTemplatePass")?.addEventListener("click", (event) => { event.preventDefault(); closePassPanel(templatePanel); });
-    document.querySelector("#cancelAddPass")?.addEventListener("click", (event) => { event.preventDefault(); closePassPanel(addPanel); });
-    document.querySelector("#cancelDeletePass")?.addEventListener("click", (event) => { event.preventDefault(); closePassPanel(deletePanel); });
+    document.querySelector("#cancelTemplatePass")?.addEventListener("click", (event) => { event.preventDefault(); event.stopPropagation(); closePassPanel(templatePanel); });
+    document.querySelector("#cancelAddPass")?.addEventListener("click", (event) => { event.preventDefault(); event.stopPropagation(); closePassPanel(addPanel); });
+    document.querySelector("#cancelDeletePass")?.addEventListener("click", (event) => { event.preventDefault(); event.stopPropagation(); closePassPanel(deletePanel); });
     setupModuleLimitDropdowns(document);
 
     const apply = () => {
@@ -909,6 +907,20 @@
       rerenderPassesAfterSuccess(450);
     });
   }
+
+
+  // CompanyManager v79 — hard fallback for Karnety cancel buttons.
+  // Scope: only passes page + only pass form cancel buttons. Original/Luxury/other theme visuals untouched.
+  document.addEventListener("click", (event) => {
+    if (!isPassesPage()) return;
+    const btn = event.target?.closest?.("#cancelTemplatePass,#cancelAddPass,#cancelDeletePass,[data-cm-centered-cancel='true']");
+    if (!btn) return;
+    const panel = btn.closest?.("#templatePassPanel,#addPassPanel,#deletePassPanel,.cm-pass-portal-panel");
+    if (!panel) return;
+    event.preventDefault();
+    event.stopPropagation();
+    closeCenteredPanel(panel);
+  }, true);
 
   document.addEventListener("DOMContentLoaded", () => {
     if (!isPassesPage()) return;

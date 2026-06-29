@@ -16400,3 +16400,27 @@ html[data-cm-theme="beautyRose"] #cmPassPortalRoot .cm-pass-portal-panel:not([hi
   display:none!important;
   pointer-events:none!important;
 }
+
+/* CompanyManager v79 — Karnety Gold/Rose cancel button hard click fix
+   Scope: only two problem themes and only pass portal/panels. No changes to Original or other skins. */
+html[data-cm-theme="goldWhite"] #cmPassPortalRoot .cm-pass-portal-panel button,
+html[data-cm-theme="beautyRose"] #cmPassPortalRoot .cm-pass-portal-panel button,
+html[data-cm-theme="goldWhite"] .passes-module #templatePassPanel button,
+html[data-cm-theme="goldWhite"] .passes-module #addPassPanel button,
+html[data-cm-theme="goldWhite"] .passes-module #deletePassPanel button,
+html[data-cm-theme="beautyRose"] .passes-module #templatePassPanel button,
+html[data-cm-theme="beautyRose"] .passes-module #addPassPanel button,
+html[data-cm-theme="beautyRose"] .passes-module #deletePassPanel button{
+  position:relative!important;
+  z-index:2147483002!important;
+  pointer-events:auto!important;
+  cursor:pointer!important;
+}
+html[data-cm-theme="goldWhite"] #cmPassPortalRoot,
+html[data-cm-theme="beautyRose"] #cmPassPortalRoot{
+  pointer-events:none!important;
+}
+html[data-cm-theme="goldWhite"] #cmPassPortalRoot .cm-pass-portal-panel:not([hidden]),
+html[data-cm-theme="beautyRose"] #cmPassPortalRoot .cm-pass-portal-panel:not([hidden]){
+  pointer-events:auto!important;
+}
