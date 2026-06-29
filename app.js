@@ -4017,7 +4017,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     document.querySelector('#dashEditCancelVisitBtn')?.addEventListener('click', () => {
       const box = document.querySelector('#dashEditCancelReasonBox');
-      const visitId = editVisitForm?.visitId?.value || '';
+      const visitId = editVisitForm?.dataset?.activeVisitId || editVisitForm?.visitId?.value || '';
       const selected = allDashboardVisits.find(v => v.id === visitId);
       const select = document.querySelector('#dashEditCancelReasonSelect');
       if (select) select.innerHTML = dashboardCancelReasonOptions(selected?.cancelReason || selected?.cancellationReason || '');
@@ -4044,6 +4044,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const slot = getScheduleCell(employee, cell.dataset.time || '06:00', iso, dayOffset);
         cell.classList.toggle('busy', slot.busy);
         cell.classList.toggle('free', !slot.busy);
+        cell.classList.toggle('cancelled', slot.state === 'cancelled');
+        cell.classList.toggle('finished', slot.state === 'finished');
+        cell.dataset.visitId = slot.visitId || '';
         cell.dataset.slotTooltip = slot.tooltip || '';
         const span = cell.querySelector('span');
         if (span) span.innerHTML = slot.text;
@@ -4094,15 +4097,39 @@ document.addEventListener('DOMContentLoaded', () => {
       cell.addEventListener('mousemove', positionSlotTooltip);
       cell.addEventListener('mouseleave', () => { if (slotTooltip) slotTooltip.hidden = true; });
     });
-    const openDashboardEditForVisit = (visitId) => {
-      const select = document.querySelector('#dashEditVisitSelect');
-      if (!visitId || !select || !editVisitPanel) return false;
-      select.value = visitId;
-      select.dispatchEvent(new Event('change', { bubbles:true }));
-      editVisitPanel.hidden = false;
-      editVisitPanel.classList.add('cm-modal-active');
+    const fillDashboardEditFormFromVisit = (visit) => {
+      if (!visit || !editVisitForm) return false;
+      const visitId = String(visit.id || '');
+      if (editVisitForm.elements.visitId) editVisitForm.elements.visitId.value = visitId;
+      editVisitForm.dataset.activeVisitId = visitId;
+      editVisitForm.date.value = visit.date || todayIso;
+      editVisitForm.start.value = normalizeTimeValue(visit.start || '06:00');
+      editVisitForm.end.value = normalizeTimeValue(visit.end || '06:05');
+      editVisitForm.customerId.value = visit.customerId || '';
+      editVisitForm.employeeId.value = visit.employeeId || '';
+      editVisitForm.serviceId.value = visit.serviceId || '';
+      editVisitForm.productId.value = visit.productId || '';
+      editVisitForm.total.value = visit.total || '0.00';
+      editVisitForm.payment.value = visit.payment || 'gotówka';
+      editVisitForm.note.value = visit.note || '';
       const cancelBox = document.querySelector('#dashEditCancelReasonBox');
       if (cancelBox) cancelBox.hidden = true;
+      const reasonSelect = document.querySelector('#dashEditCancelReasonSelect');
+      if (reasonSelect) reasonSelect.innerHTML = dashboardCancelReasonOptions(visit.cancelReason || visit.cancellationReason || '');
+      const msg = document.querySelector('#dashboardEditVisitMessage');
+      if (msg) { msg.textContent = ''; msg.removeAttribute('style'); }
+      return true;
+    };
+
+    const openDashboardEditForVisit = (visitId) => {
+      if (!visitId || !editVisitPanel) return false;
+      const freshDb = loadDatabase();
+      const freshVisits = (freshDb.dashboardVisits || []).filter(v => v.companyId === company.id);
+      const selected = freshVisits.find(v => String(v.id) === String(visitId)) || allDashboardVisits.find(v => String(v.id) === String(visitId));
+      if (!selected) return false;
+      editVisitPanel.hidden = false;
+      editVisitPanel.classList.add('cm-modal-active');
+      fillDashboardEditFormFromVisit(selected);
       updateGlobalModalState();
       return true;
     };
@@ -4127,21 +4154,11 @@ document.addEventListener('DOMContentLoaded', () => {
     form?.serviceId?.addEventListener('change', setDurationAndTotal);
     form?.productId?.addEventListener('change', setDurationAndTotal);
     document.querySelector('#dashEditVisitSelect')?.addEventListener('change', (event) => {
-      const selected = allDashboardVisits.find(v => v.id === event.target.value);
-      if (!selected || !editVisitForm) return;
-      editVisitForm.date.value = selected.date || todayIso;
-      editVisitForm.start.value = normalizeTimeValue(selected.start || '06:00');
-      editVisitForm.end.value = normalizeTimeValue(selected.end || '06:05');
-      editVisitForm.customerId.value = selected.customerId || '';
-      editVisitForm.employeeId.value = selected.employeeId || '';
-      editVisitForm.serviceId.value = selected.serviceId || '';
-      editVisitForm.productId.value = selected.productId || '';
-      editVisitForm.total.value = selected.total || '0.00';
-      editVisitForm.payment.value = selected.payment || 'gotówka';
-      editVisitForm.note.value = selected.note || '';
+      const selected = allDashboardVisits.find(v => String(v.id) === String(event.target.value));
+      fillDashboardEditFormFromVisit(selected);
     });
     document.querySelector('#dashEditFinishVisitBtn')?.addEventListener('click', () => {
-      const visitId = editVisitForm?.visitId?.value || '';
+      const visitId = editVisitForm?.dataset?.activeVisitId || editVisitForm?.visitId?.value || '';
       const currentDb = loadDatabase();
       const index = (currentDb.dashboardVisits || []).findIndex(v => v.id === visitId && v.companyId === company.id);
       const msg = document.querySelector('#dashboardEditVisitMessage');
@@ -4153,7 +4170,7 @@ document.addEventListener('DOMContentLoaded', () => {
       setTimeout(()=>window.location.reload(),650);
     });
     document.querySelector('#dashEditConfirmCancelVisitBtn')?.addEventListener('click', () => {
-      const visitId = editVisitForm?.visitId?.value || '';
+      const visitId = editVisitForm?.dataset?.activeVisitId || editVisitForm?.visitId?.value || '';
       const reason = String(document.querySelector('#dashEditCancelReasonSelect')?.value || '').trim();
       const currentDb = loadDatabase();
       const index = (currentDb.dashboardVisits || []).findIndex(v => v.id === visitId && v.companyId === company.id);
@@ -4170,7 +4187,8 @@ document.addEventListener('DOMContentLoaded', () => {
       event.preventDefault();
       const data = new FormData(editVisitForm);
       const currentDb = loadDatabase();
-      const index = (currentDb.dashboardVisits || []).findIndex(v => v.id === data.get('visitId') && v.companyId === company.id);
+      const activeVisitId = editVisitForm?.dataset?.activeVisitId || data.get('visitId');
+      const index = (currentDb.dashboardVisits || []).findIndex(v => String(v.id) === String(activeVisitId) && v.companyId === company.id);
       const msg = document.querySelector('#dashboardEditVisitMessage');
       if (index < 0) { if (msg) { msg.textContent = 'Wybierz wizytę do edycji.'; msg.style.color = '#fca5a5'; } return; }
       const customer = (currentDb.customers || []).find(c => c.id === data.get('customerId'));
@@ -4178,7 +4196,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const service = (currentDb.services || []).find(srv => srv.id === data.get('serviceId'));
       const product = (currentDb.products || []).find(prod => prod.id === data.get('productId'));
       saveUndoSnapshot('Edycja wizyty z dashboardu', currentDb);
-      currentDb.dashboardVisits[index] = { ...currentDb.dashboardVisits[index], date:String(data.get('date') || todayIso), start:normalizeTimeValue(String(data.get('start') || '06:00')), end:normalizeTimeValue(String(data.get('end') || '06:05')), customerId:String(data.get('customerId') || ''), clientName:customerName(customer || {}), employeeId:String(data.get('employeeId') || ''), employeeName:employee?.fullName || '', serviceId:String(data.get('serviceId') || ''), serviceName:service?.name || '', productId:String(data.get('productId') || ''), productName:product?.name || '', total:String(data.get('total') || '0.00'), payment:String(data.get('payment') || 'gotówka'), note:String(data.get('note') || ''), updatedAt:new Date().toISOString() };
+      currentDb.dashboardVisits[index] = { ...currentDb.dashboardVisits[index], id:String(activeVisitId), date:String(data.get('date') || todayIso), start:normalizeTimeValue(String(data.get('start') || '06:00')), end:normalizeTimeValue(String(data.get('end') || '06:05')), customerId:String(data.get('customerId') || ''), clientName:customerName(customer || {}), employeeId:String(data.get('employeeId') || ''), employeeName:employee?.fullName || '', serviceId:String(data.get('serviceId') || ''), serviceName:service?.name || '', productId:String(data.get('productId') || ''), productName:product?.name || '', total:String(data.get('total') || '0.00'), payment:String(data.get('payment') || 'gotówka'), note:String(data.get('note') || ''), updatedAt:new Date().toISOString() };
       saveDatabase(currentDb);
       if (msg) { msg.textContent = 'Wizyta zaktualizowana.'; msg.style.color = '#86efac'; }
       setTimeout(()=>window.location.reload(),650);
@@ -4188,7 +4206,8 @@ document.addEventListener('DOMContentLoaded', () => {
       const data = new FormData(cancelVisitForm);
       const reason = String(data.get('reason') || '').trim();
       const currentDb = loadDatabase();
-      const index = (currentDb.dashboardVisits || []).findIndex(v => v.id === data.get('visitId') && v.companyId === company.id);
+      const visitId = data.get('visitId');
+      const index = (currentDb.dashboardVisits || []).findIndex(v => String(v.id) === String(visitId) && v.companyId === company.id);
       const msg = document.querySelector('#dashboardCancelVisitMessage');
       if (index < 0) { if (msg) { msg.textContent = 'Wybierz wizytę do odwołania.'; msg.style.color = '#fca5a5'; } return; }
       if (!dashboardCancelReasons.includes(reason)) { if (msg) { msg.textContent = 'Musisz wybrać powód odwołania wizyty.'; msg.style.color = '#fca5a5'; } return; }

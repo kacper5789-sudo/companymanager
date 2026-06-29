@@ -1064,6 +1064,9 @@
 
   function fillEditForm(form, item) {
     if (!form || !item) return;
+    const visitId = String(item.id || '');
+    if (form.elements.visitId) form.elements.visitId.value = visitId;
+    form.dataset.activeVisitId = visitId;
     form.elements.date.value = appointmentDate(item) || iso(new Date());
     form.elements.start.value = appointmentStart(item) || "06:00";
     form.elements.end.value = appointmentEnd(item) || "06:30";
@@ -1570,13 +1573,14 @@
         setMessage("#dashboardEditVisitMessage", "Brak uprawnienia do edycji wizyt.", false);
         return;
       }
-      const visitId = slot?.dataset?.visitId || "";
-      const selected = data.appointments.find((item) => item.id === visitId);
+      const visitId = String(slot?.dataset?.visitId || "");
+      const selected = data.appointments.find((item) => String(item.id) === visitId);
       if (!selected) return;
       showOnly(editPanel, panels);
-      const select = document.querySelector("#dashEditVisitSelect");
-      if (select) select.value = visitId;
       fillEditForm(document.querySelector("#dashboardEditVisitForm"), selected);
+      const cancelBox = document.querySelector("#dashEditCancelReasonBox");
+      if (cancelBox) cancelBox.hidden = true;
+      setMessage("#dashboardEditVisitMessage", "", true);
       if (typeof window.cmRefreshGlobalModalState === "function") window.cmRefreshGlobalModalState();
     }
 
@@ -1640,7 +1644,7 @@
     });
 
     document.querySelector("#dashEditVisitSelect")?.addEventListener("change", (event) => {
-      const selected = data.appointments.find((item) => item.id === event.currentTarget.value);
+      const selected = data.appointments.find((item) => String(item.id) === String(event.currentTarget.value));
       if (!selected) return;
       fillEditForm(document.querySelector("#dashboardEditVisitForm"), selected);
     });
@@ -1666,7 +1670,7 @@
 
     function selectedEditVisitId() {
       const form = document.querySelector("#dashboardEditVisitForm");
-      return String(form?.elements?.visitId?.value || "").trim();
+      return String(form?.dataset?.activeVisitId || form?.elements?.visitId?.value || "").trim();
     }
 
     async function finishVisitFromEditForm() {
