@@ -682,7 +682,7 @@
     const [appointmentsRes, clientsRes, servicesRes, positionsRes, productsRes, categoriesRes, passesRes, companyRes, usersRes] = await Promise.all([
       window.cmSupabase
         .from("appointments")
-        .select("id, company_id, date, time, start_time, end_time, starts_at, ends_at, appointment_datetime, customer_id, client_id, employee_id, employee_name, service_id, service_name, position_id, product_id, product_name, product_price, product_quantity, pass_id, pass_name, status, deleted, note, price, total, payment_method, created_at, updated_at")
+        .select("id, company_id, date, time, start_time, end_time, starts_at, ends_at, appointment_datetime, customer_id, client_id, employee_id, employee_name, service_id, service_name, position_id, product_id, product_name, product_price, product_quantity, pass_id, pass_name, status, deleted, note, price, total, payment_method, cancellation_reason, cancel_reason, cancelled_at, created_at, updated_at")
         .eq("company_id", ctx.companyId)
         .order("date", { ascending: false })
         .order("time", { ascending: true }),
@@ -749,6 +749,18 @@
 
   function appointmentDate(item) { return item.date || ""; }
   function appointmentTime(item) { return normalizeTime(item.time || item.start_time); }
+  function appointmentCancellationReason(item) {
+    const raw = String(
+      item?.cancellation_reason ||
+      item?.cancel_reason ||
+      item?.cancellationReason ||
+      item?.cancelReason ||
+      item?.cancelReasonLabel ||
+      item?.reason ||
+      ""
+    ).trim();
+    return raw || "-";
+  }
   function appointmentClientId(item) { return item.customer_id || item.client_id || ""; }
 
   function visitLabel(item, lookups) {
@@ -986,7 +998,7 @@
         escapeHtml(personName(user)),
         escapeHtml(service?.name || "-"),
         escapeHtml(item.status || "-"),
-        escapeHtml(item.cancellation_reason || item.cancel_reason || item.cancelReason || "-")
+        escapeHtml(appointmentCancellationReason(item))
       ];
     });
 

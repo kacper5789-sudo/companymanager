@@ -1748,6 +1748,19 @@ document.addEventListener('DOMContentLoaded', () => {
   const getWeekdayShortLabels = () => getCmUiLocale() === 'en-GB' ? ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'] : ['Pn','Wt','Śr','Cz','Pt','So','N'];
   const normalizeDate = (date) => new Date(date.getFullYear(), date.getMonth(), date.getDate());
   const sameDay = (a,b) => normalizeDate(a).getTime() === normalizeDate(b).getTime();
+  const cmPanelDateIso = (date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+  const cmParsePanelDate = (value) => {
+    const raw = String(value || '').slice(0, 10);
+    const match = raw.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (!match) return null;
+    const d = new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
+    return Number.isNaN(d.getTime()) ? null : d;
+  };
+  const cmGetDashboardUrlDate = () => {
+    try { return cmParsePanelDate(new URLSearchParams(window.location.search).get('date')); } catch (_) { return null; }
+  };
+  let cmSelectedPanelDate = cmGetDashboardUrlDate() || CM_TODAY;
+  cmCalendarDate = new Date(cmSelectedPanelDate.getFullYear(), cmSelectedPanelDate.getMonth(), 1);
 
   const buildMonthCalendarHtml = (date) => {
     const year = date.getFullYear();
@@ -1764,7 +1777,8 @@ document.addEventListener('DOMContentLoaded', () => {
         else {
           const d = new Date(year, month, day);
           const isToday = sameDay(d, CM_TODAY);
-          cells += `<td><button type="button" class="bm-date-btn ${isToday ? 'today' : ''}" data-day="${day}">${day}</button></td>`;
+          const isSelected = sameDay(d, cmSelectedPanelDate);
+          cells += `<td><button type="button" class="bm-date-btn ${isToday ? 'today' : ''} ${isSelected ? 'active selected' : ''}" data-day="${day}">${day}</button></td>`;
         }
       }
       rows += `<tr>${cells}</tr>`;
@@ -1821,7 +1835,9 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     };
     updateClock();
-    window.addEventListener('cm:company-settings-changed', () => { updateClock(); renderMiniCalendar(); const strong = toggle?.querySelector('strong'); if (strong) strong.textContent = formatDisplayDate(CM_TODAY); });
+    const syncCalendarLabel = () => { const strong = toggle?.querySelector('strong'); if (strong) strong.textContent = formatDisplayDate(cmSelectedPanelDate); };
+    syncCalendarLabel();
+    window.addEventListener('cm:company-settings-changed', () => { updateClock(); renderMiniCalendar(); syncCalendarLabel(); });
     if (!window.__cmClockStarted) { window.__cmClockStarted = true; setInterval(updateClock, 1000); }
     toggle.addEventListener('click', () => { month.hidden = !month.hidden; if (!month.hidden) renderMiniCalendar(); });
     month.addEventListener('click', (event) => {
@@ -1837,8 +1853,19 @@ document.addEventListener('DOMContentLoaded', () => {
         const selected = Number(target.dataset.day);
         if (!Number.isNaN(selected)) {
           const d = new Date(cmCalendarDate.getFullYear(), cmCalendarDate.getMonth(), selected);
+          cmSelectedPanelDate = d;
+          const selectedIso = cmPanelDateIso(d);
+          try { localStorage.setItem('cm_dashboard_selected_date', selectedIso); } catch (_) {}
           toggle.querySelector('strong').textContent = formatDisplayDate(d);
           month.hidden = true;
+          renderMiniCalendar();
+          const targetUrl = `dashboard.html?date=${encodeURIComponent(selectedIso)}`;
+          const currentPath = String(window.location.pathname || '').toLowerCase();
+          if (currentPath.endsWith('/dashboard.html') || currentPath.endsWith('dashboard.html')) {
+            window.location.href = targetUrl;
+          } else {
+            window.location.href = targetUrl;
+          }
         }
       }
     });
@@ -3265,7 +3292,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <aside class="bm-left-info-panel" aria-label="Informacje panelu">
               <section class="bm-identity-block">
                 <div class="bm-mini-calendar bm-calendar-center" id="miniCalendar">
-                  <button class="bm-today" id="calendarToggle" type="button"><strong>${formatDisplayDate(CM_TODAY)}</strong></button>
+                  <button class="bm-today" id="calendarToggle" type="button"><strong>${formatDisplayDate(cmSelectedPanelDate)}</strong></button>
                   <span class="bm-live-clock" id="liveClock">--:--:--</span>
                   <div class="bm-month" id="monthCalendar" hidden></div>
                 </div>
@@ -5785,7 +5812,7 @@ document.addEventListener('DOMContentLoaded', () => {
         escapeHtml(employee?.fullName || '-'),
         escapeHtml(service?.name || '-'),
         escapeHtml(visit.status || '-'),
-        escapeHtml(visit.cancelReason || visit.cancellationReason || visit.cancel_reason || '-')
+        escapeHtml(visit.cancelReason || visit.cancellationReason || visit.cancel_reason || visit.cancellation_reason || visit.cancelReasonLabel || visit.reason || '-')
       ];
     });
 

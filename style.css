@@ -16486,3 +16486,12 @@ html[data-cm-theme]:not([data-cm-theme="original"]) .bm-schedule-slot.cancelled{
   background:linear-gradient(180deg,color-mix(in srgb,var(--cm-skin-card) 72%,#64748b 28%),color-mix(in srgb,var(--cm-skin-soft) 74%,#111827 26%)) !important;
   border-color:color-mix(in srgb,var(--cm-skin-text) 45%,transparent) !important;
 }
+
+/* v89 — mini calendar selected dashboard date */
+.bm-date-btn.selected,
+.bm-date-btn.active{
+  outline:2px solid rgba(56,189,248,.78);
+  outline-offset:1px;
+  font-weight:900;
+  box-shadow:0 0 0 2px rgba(56,189,248,.18), 0 8px 22px rgba(37,99,235,.22);
+}
