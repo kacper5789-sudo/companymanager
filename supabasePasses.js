@@ -195,6 +195,31 @@
     return user?.full_name || user?.email || "";
   }
 
+  function employeeSnapshot(usersById, employeeId) {
+    const id = String(employeeId || "").trim();
+    const name = id ? String(userName(usersById[id]) || "").trim() : "";
+    return { id: id || null, name: name || null };
+  }
+
+  async function syncPassSaleEmployee(ctx, inserted, employee) {
+    if (!employee?.id) return;
+    const patch = { employee_id: employee.id, employee_name: employee.name || null, updated_at: new Date().toISOString() };
+    const passId = inserted?.pass_id || inserted?.id || inserted?.pass?.id || null;
+    const saleId = inserted?.sale_id || inserted?.sale?.id || null;
+    const tasks = [];
+    if (passId) {
+      tasks.push(window.cmSupabase.from("passes").update(patch).eq("id", passId).eq("company_id", ctx.companyId));
+    }
+    if (saleId) {
+      tasks.push(window.cmSupabase.from("sales").update(patch).eq("id", saleId).eq("company_id", ctx.companyId));
+    }
+    if (tasks.length) {
+      const results = await Promise.all(tasks);
+      const error = results.map((res) => res.error).find(Boolean);
+      if (error) throw error;
+    }
+  }
+
   function table(headers, rows, emptyText = "Nie znaleziono żadnych danych") {
     if (!rows.length) return `<div class="bm-empty-state">${escapeHtml(emptyText)}</div>`;
     return `<div class="bm-table-wrap"><table class="bm-table"><thead><tr>${headers.map((h) => `<th>${escapeHtml(h)}</th>`).join("")}</tr></thead><tbody>${rows.map((row) => `<tr>${row.map((cell) => `<td>${escapeHtml(cell)}</td>`).join("")}</tr>`).join("")}</tbody></table></div>`;
@@ -486,12 +511,14 @@
     const name = String(template?.name || "").trim() || (passType === "units"
       ? `Karnet ${totalUnits || 1}x ${service?.name || "usługa"}`
       : `Karnet kwotowy ${money(passAmount || salePrice || 0)}`);
+    const employee = employeeSnapshot(usersById, employeeId);
     return {
       company_id: ctx.companyId,
       customer_id: beneficiaryClientId,
       buyer_client_id: buyerClientId,
       beneficiary_client_id: beneficiaryClientId,
-      employee_id: employeeId,
+      employee_id: employee.id,
+      employee_name: employee.name,
       service_id: serviceId,
       pass_template_id: templateId,
       name,
@@ -905,6 +932,7 @@
         if (payload.pass_type === "amount" && !payload.pass_amount) throw new Error("Wpisz kwotę karnetu klienta.");
         const { data: inserted, error } = await window.cmSupabase.rpc("cm_create_pass_sale", { p_payload: payload });
         if (error) throw error;
+        await syncPassSaleEmployee(ctx, inserted, { id: payload.employee_id, name: payload.employee_name });
         await window.cmUndo?.record({ module: "passes", actionType: "insert", targetTable: "passes", targetId: inserted?.pass_id, afterData: inserted || payload, companyId: ctx.companyId });
         setMessage("#passFormMessage", "Karnet sprzedany i zapisany w sprzedaży.", true);
         rerenderPassesAfterSuccess(450);

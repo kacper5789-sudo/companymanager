@@ -492,6 +492,9 @@
     const serviceById = Object.fromEntries(data.services.map((service) => [service.id, service]));
     const productById = Object.fromEntries(data.products.map((product) => [product.id, product]));
     const categoryById = Object.fromEntries(data.serviceCategories.map((cat) => [cat.id, cat]));
+    const passById = Object.fromEntries((data.passes || []).map((pass) => [pass.id, pass]));
+    const passBySaleId = {};
+    (data.passes || []).forEach((pass) => { if (pass.sale_id && !passBySaleId[pass.sale_id]) passBySaleId[pass.sale_id] = pass; });
 
     const employeeOptions = data.users.map((u) => ({ value: u.id, label: userName(u) }));
     const serviceOptions = data.services.map((s) => ({ value: s.id, label: s.name || "-" }));
@@ -619,8 +622,9 @@
       .map((item) => {
         const sale = salesById[item.sale_id] || {};
         const appointment = appointmentById[sale.appointment_id] || {};
-        const employeeId = sale.employee_id || appointment.employee_id || "";
-        const clientId = sale.client_id || appointment.client_id || "";
+        const linkedPass = passById[item.pass_id] || passBySaleId[item.sale_id] || {};
+        const employeeId = sale.employee_id || linkedPass.employee_id || appointment.employee_id || "";
+        const clientId = sale.client_id || linkedPass.beneficiary_client_id || linkedPass.buyer_client_id || linkedPass.customer_id || appointment.client_id || "";
         const payment = paymentFor(sale, appointment);
         return {
           sourceKey: item.pass_id ? `pass:${item.pass_id}` : `sale_item:${item.id || item.sale_id}`,
@@ -628,8 +632,8 @@
           time: "",
           employeeId,
           clientId,
-          employee: employeeDisplayName(userById, employeeId, appointment, sale),
-          customer: clientName(clientById[clientId]) || appointment.client_name || "(brak)",
+          employee: userNameOrEmpty(userById[employeeId]) || linkedPass.employee_name || employeeDisplayName(userById, employeeId, appointment, sale),
+          customer: clientName(clientById[clientId]) || linkedPass.customer_name || appointment.client_name || "(brak)",
           value: Number(item.total ?? item.total_price ?? item.unit_price ?? sale.total_gross ?? 0),
           note: item.name || item.name_snapshot || sale.note || "Karnet",
           saleId: item.sale_id || "",
