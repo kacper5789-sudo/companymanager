@@ -80,22 +80,6 @@
     return iso(date);
   }
 
-  function isIsoDate(value) {
-    return /^\d{4}-\d{2}-\d{2}$/.test(String(value || '').slice(0, 10));
-  }
-
-  function getDashboardSelectedDate() {
-    let value = '';
-    try { value = new URLSearchParams(window.location.search).get('date') || ''; } catch (_) {}
-    if (!isIsoDate(value)) {
-      try { value = localStorage.getItem('cm_dashboard_selected_date') || ''; } catch (_) {}
-    }
-    if (!isIsoDate(value)) value = iso(new Date());
-    value = String(value).slice(0, 10);
-    try { localStorage.setItem('cm_dashboard_selected_date', value); } catch (_) {}
-    return value;
-  }
-
   function plDate(value) {
     if (!value) return "";
     const [y, m, d] = String(value).slice(0, 10).split("-");
@@ -1141,11 +1125,8 @@
       return;
     }
 
-    const selectedDate = getDashboardSelectedDate();
-    try {
-      const label = document.querySelector('#calendarToggle strong');
-      if (label) label.textContent = plDate(selectedDate);
-    } catch (_) {}
+    const params = new URLSearchParams(window.location.search);
+    const selectedDate = params.get("date") || iso(new Date());
 
     area.innerHTML = `<section class="bm-page-card"><h2>Dashboard</h2><p>Ładuję dane z Supabase...</p></section>`;
 

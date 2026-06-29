@@ -1522,9 +1522,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }, true);
 
   const panelMenu = (panelUser, page) => {
-    // v93: docelowa kolejność górnego menu operacyjnego.
-    // Nie zmienia linków, uprawnień ani działania modułów — tylko kolejność renderowania.
-    const orderedTopMenuItems = [
+    const items = [
       ['visits.html','visits','Wizyty','📅'],
       ['customers.html','customers','Klienci','👤'],
       ['services.html','services','Usługi','✂️'],
@@ -1536,9 +1534,8 @@ document.addEventListener('DOMContentLoaded', () => {
       ['positions.html','positions','Stanowiska pracy','🪑'],
       ['walkins.html','walkins','Sprzedaż bez wizyty','🛒'],
       ['sales.html','sales','Sprzedaż','💳']
-    ];
-    const items = orderedTopMenuItems.filter(item => canAccessPage(panelUser, item[1]));
-    const links = items.map(([href,id,label,icon]) => `<a href="${href}" class="${page===id?'active':''}" data-menu-id="${id}"><span class="cm-menu-icon" aria-hidden="true">${icon}</span><span class="cm-menu-label">${label}</span></a>`).join('');
+    ].filter(item => canAccessPage(panelUser, item[1]));
+    const links = items.map(([href,id,label,icon]) => `<a href="${href}" class="${page===id?'active':''}"><span class="cm-menu-icon" aria-hidden="true">${icon}</span><span class="cm-menu-label">${label}</span></a>`).join('');
     return links;
   };
 
@@ -3820,8 +3817,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Usunięto ręcznie dopisane osoby testowe, żeby grafik nie pokazywał kolumn bez realnego użytkownika.
     const employees = dbEmployees;
     const employeeIds = new Set(employees.map(employee => employee.id));
-    const dashboardBaseDate = (cmSelectedPanelDate instanceof Date && !Number.isNaN(cmSelectedPanelDate.getTime())) ? cmSelectedPanelDate : CM_TODAY;
-    const todayIso = isoFromDateObj(dashboardBaseDate);
+    const todayIso = currentIsoDate();
     const allDashboardVisits = (db.dashboardVisits || []).filter(v => v.companyId === company.id && employeeIds.has(v.employeeId));
     const dashVisits = allDashboardVisits;
     const isoFromDateObj = (date) => `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
@@ -4018,7 +4014,7 @@ document.addEventListener('DOMContentLoaded', () => {
       workerState[iso] = currentDb.dashboardWorkerState[iso];
       saveDatabase(currentDb);
     };
-    const activeIsoDate = () => { const date = new Date(dashboardBaseDate.getFullYear(), dashboardBaseDate.getMonth(), dashboardBaseDate.getDate()); date.setDate(date.getDate() + dayOffset); return isoFromDateObj(date); };
+    const activeIsoDate = () => { const date = new Date(); date.setDate(date.getDate() + dayOffset); return isoFromDateObj(date); };
     const applyWorkerStateForDate = (iso) => {
       const active = getActiveWorkerIdsForDate(iso);
       const offIds = dayOffEmployeeIds(iso);
@@ -4067,7 +4063,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     let dayOffset = 0;
     const refreshScheduleCells = () => {
-      const date = new Date(dashboardBaseDate.getFullYear(), dashboardBaseDate.getMonth(), dashboardBaseDate.getDate()); date.setDate(date.getDate() + dayOffset);
+      const date = new Date(); date.setDate(date.getDate() + dayOffset);
       const iso = isoFromDateObj(date);
       document.querySelectorAll('.bm-schedule-slot').forEach(cell => {
         const employee = employees.find(emp => emp.id === cell.dataset.employeeId);
@@ -4085,7 +4081,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (form?.date) form.date.value = iso;
     };
     const updateDashDate = () => {
-      const date = new Date(dashboardBaseDate.getFullYear(), dashboardBaseDate.getMonth(), dashboardBaseDate.getDate()); date.setDate(date.getDate() + dayOffset);
+      const date = new Date(); date.setDate(date.getDate() + dayOffset);
       const iso = isoFromDateObj(date);
       const rel = dayOffset === 0 ? 'dzisiaj' : dayOffset === 1 ? 'jutro' : dayOffset === -1 ? 'wczoraj' : date.toLocaleDateString('pl-PL', { weekday:'long' });
       document.querySelector('#dashRelativeLabel').textContent = rel;
@@ -4174,7 +4170,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const [h,m] = start.split(':').map(Number);
       const endDate = new Date(2000, 0, 1, h, m + 5);
       const end = `${String(endDate.getHours()).padStart(2,'0')}:${String(endDate.getMinutes()).padStart(2,'0')}`;
-      const activeDate = new Date(dashboardBaseDate.getFullYear(), dashboardBaseDate.getMonth(), dashboardBaseDate.getDate()); activeDate.setDate(activeDate.getDate() + dayOffset);
+      const activeDate = new Date(); activeDate.setDate(activeDate.getDate() + dayOffset);
       form.date.value = isoFromDateObj(activeDate);
       form.start.value = start; form.end.value = end; form.employeeId.value = cell.dataset.employeeId || '';
       setDurationAndTotal();
