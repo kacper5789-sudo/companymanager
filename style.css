@@ -15016,3 +15016,87 @@ html[data-cm-theme="webHero"] .section-card{background-image:linear-gradient(135
 html[data-cm-theme="thunderGod"] .cm-skin-card,
 html[data-cm-theme="thunderGod"] .card,
 html[data-cm-theme="thunderGod"] .section-card{background-image:linear-gradient(145deg,rgba(201,161,58,.10),rgba(39,86,200,.16) 48%,rgba(183,28,43,.06))!important;}
+
+
+/* CompanyManager v5.2 — Character skin palette correction
+   Real overrides: stronger identity palettes + previews. */
+html[data-cm-theme="titanArmor"]{
+  --cm-skin-bg-a:#06080d;--cm-skin-bg-b:#170709;--cm-skin-card:#10131a;--cm-skin-soft:#1c0b0f;
+  --cm-skin-text:#f7f2ea;--cm-skin-muted:#c9b7a2;--cm-skin-accent:#a60818;--cm-skin-accent-2:#d6b15f;
+  --cm-skin-border:rgba(214,177,95,.38);--cm-skin-shadow:rgba(166,8,24,.34)
+}
+html[data-cm-theme="libertyShield"]{
+  --cm-skin-bg-a:#061126;--cm-skin-bg-b:#102f63;--cm-skin-card:#0b1b36;--cm-skin-soft:#123b78;
+  --cm-skin-text:#f5f8ff;--cm-skin-muted:#c6d2e8;--cm-skin-accent:#234f9c;--cm-skin-accent-2:#f4f6f9;
+  --cm-skin-border:rgba(181,30,47,.38);--cm-skin-shadow:rgba(35,79,156,.34)
+}
+html[data-cm-theme="scarletSpeed"]{
+  --cm-skin-bg-a:#100405;--cm-skin-bg-b:#32080d;--cm-skin-card:#1d070a;--cm-skin-soft:#350b10;
+  --cm-skin-text:#fff4bf;--cm-skin-muted:#f0c85a;--cm-skin-accent:#d31322;--cm-skin-accent-2:#ffd31f;
+  --cm-skin-border:rgba(255,211,31,.46);--cm-skin-shadow:rgba(211,19,34,.40)
+}
+html[data-cm-theme="solarHero"]{
+  --cm-skin-bg-a:#061226;--cm-skin-bg-b:#12356f;--cm-skin-card:#0d2348;--cm-skin-soft:#163b78;
+  --cm-skin-text:#f5f8ff;--cm-skin-muted:#c5d4ec;--cm-skin-accent:#1d4f9f;--cm-skin-accent-2:#c51f2f;
+  --cm-skin-border:rgba(244,197,66,.36);--cm-skin-shadow:rgba(29,79,159,.38)
+}
+html[data-cm-theme="thunderGod"]{
+  --cm-skin-bg-a:#0a0d12;--cm-skin-bg-b:#172131;--cm-skin-card:#121923;--cm-skin-soft:#1e2b3c;
+  --cm-skin-text:#f6f7fb;--cm-skin-muted:#bac3d0;--cm-skin-accent:#245fcb;--cm-skin-accent-2:#d0a83f;
+  --cm-skin-border:rgba(208,168,63,.38);--cm-skin-shadow:rgba(36,95,203,.32)
+}
+html[data-cm-theme="webHero"]{
+  --cm-skin-bg-a:#070b14;--cm-skin-bg-b:#0f2344;--cm-skin-card:#0f1728;--cm-skin-soft:#132a50;
+  --cm-skin-text:#f5f7fb;--cm-skin-muted:#b8c5db;--cm-skin-accent:#c51625;--cm-skin-accent-2:#1e4f9a;
+  --cm-skin-border:rgba(245,247,251,.24);--cm-skin-shadow:rgba(197,22,37,.34)
+}
+html[data-cm-theme="mysticWarrior"]{
+  --cm-skin-bg-a:#090615;--cm-skin-bg-b:#1f0d38;--cm-skin-card:#130b22;--cm-skin-soft:#2a1248;
+  --cm-skin-text:#fff8df;--cm-skin-muted:#d5c5ff;--cm-skin-accent:#6b25b8;--cm-skin-accent-2:#ffd51f;
+  --cm-skin-border:rgba(89,200,255,.42);--cm-skin-shadow:rgba(255,213,31,.36)
+}
+html[data-cm-theme="strawCaptain"]{
+  --cm-skin-bg-a:#091a2d;--cm-skin-bg-b:#0e3159;--cm-skin-card:#111f33;--cm-skin-soft:#173a64;
+  --cm-skin-text:#fff7e6;--cm-skin-muted:#e4c78e;--cm-skin-accent:#d61f2a;--cm-skin-accent-2:#f4c543;
+  --cm-skin-border:rgba(39,88,199,.36);--cm-skin-shadow:rgba(214,31,42,.30)
+}
+
+/* stronger per-theme UI identity */
+html[data-cm-theme="titanArmor"] button:not(.cm-skin-category):not(.cm-skin-card),
+html[data-cm-theme="titanArmor"] .btn,
+html[data-cm-theme="titanArmor"] .cm-primary-action{background:linear-gradient(180deg,#d6b15f,#a60818)!important;color:#fff8ed!important;border-color:rgba(214,177,95,.45)!important;}
+html[data-cm-theme="libertyShield"] button:not(.cm-skin-category):not(.cm-skin-card),
+html[data-cm-theme="libertyShield"] .btn,
+html[data-cm-theme="libertyShield"] .cm-primary-action{background:linear-gradient(180deg,#f4f6f9,#234f9c 58%,#b51e2f)!important;color:#071126!important;border-color:rgba(244,246,249,.42)!important;}
+html[data-cm-theme="scarletSpeed"] button:not(.cm-skin-category):not(.cm-skin-card),
+html[data-cm-theme="scarletSpeed"] .btn,
+html[data-cm-theme="scarletSpeed"] .cm-primary-action{background:linear-gradient(135deg,#d31322 0%,#d31322 55%,#ffd31f 56%,#ffd31f 100%)!important;color:#fff7cf!important;border-color:rgba(255,211,31,.52)!important;}
+html[data-cm-theme="solarHero"] button:not(.cm-skin-category):not(.cm-skin-card),
+html[data-cm-theme="solarHero"] .btn,
+html[data-cm-theme="solarHero"] .cm-primary-action{background:linear-gradient(180deg,#1d4f9f,#12356f 62%,#c51f2f)!important;color:#f5f8ff!important;border-color:rgba(244,197,66,.38)!important;}
+html[data-cm-theme="mysticWarrior"] button:not(.cm-skin-category):not(.cm-skin-card),
+html[data-cm-theme="mysticWarrior"] .btn,
+html[data-cm-theme="mysticWarrior"] .cm-primary-action{background:linear-gradient(135deg,#6b25b8 0%,#6b25b8 50%,#ffd51f 51%,#59c8ff 100%)!important;color:#fff8df!important;border-color:rgba(89,200,255,.48)!important;}
+html[data-cm-theme="strawCaptain"] button:not(.cm-skin-category):not(.cm-skin-card),
+html[data-cm-theme="strawCaptain"] .btn,
+html[data-cm-theme="strawCaptain"] .cm-primary-action{background:linear-gradient(135deg,#d61f2a 0%,#d61f2a 52%,#f4c543 53%,#2758c7 100%)!important;color:#fff7e6!important;border-color:rgba(244,197,67,.42)!important;}
+
+/* identity surfaces */
+html[data-cm-theme="titanArmor"] .bm-page-card,html[data-cm-theme="titanArmor"] .panel-card,html[data-cm-theme="titanArmor"] .cm-unified-card,html[data-cm-theme="titanArmor"] .bm-current-section{background-image:linear-gradient(145deg,rgba(255,255,255,.055),rgba(166,8,24,.19) 48%,rgba(214,177,95,.12))!important;}
+html[data-cm-theme="libertyShield"] .bm-page-card,html[data-cm-theme="libertyShield"] .panel-card,html[data-cm-theme="libertyShield"] .cm-unified-card,html[data-cm-theme="libertyShield"] .bm-current-section{background-image:linear-gradient(145deg,rgba(244,246,249,.13),rgba(35,79,156,.24) 48%,rgba(181,30,47,.12))!important;}
+html[data-cm-theme="scarletSpeed"] .bm-page-card,html[data-cm-theme="scarletSpeed"] .panel-card,html[data-cm-theme="scarletSpeed"] .cm-unified-card,html[data-cm-theme="scarletSpeed"] .bm-current-section{background-image:linear-gradient(135deg,rgba(255,211,31,.15),rgba(211,19,34,.22) 52%,rgba(0,0,0,.14)),repeating-linear-gradient(-35deg,rgba(255,211,31,.12) 0 2px,transparent 2px 34px)!important;}
+html[data-cm-theme="solarHero"] .bm-page-card,html[data-cm-theme="solarHero"] .panel-card,html[data-cm-theme="solarHero"] .cm-unified-card,html[data-cm-theme="solarHero"] .bm-current-section{background-image:linear-gradient(145deg,rgba(244,197,66,.11),rgba(29,79,159,.25) 52%,rgba(197,31,47,.14))!important;}
+html[data-cm-theme="thunderGod"] .bm-page-card,html[data-cm-theme="thunderGod"] .panel-card,html[data-cm-theme="thunderGod"] .cm-unified-card,html[data-cm-theme="thunderGod"] .bm-current-section{background-image:linear-gradient(145deg,rgba(208,168,63,.12),rgba(36,95,203,.20) 50%,rgba(165,25,39,.09))!important;}
+html[data-cm-theme="webHero"] .bm-page-card,html[data-cm-theme="webHero"] .panel-card,html[data-cm-theme="webHero"] .cm-unified-card,html[data-cm-theme="webHero"] .bm-current-section{background-image:linear-gradient(135deg,rgba(197,22,37,.18),rgba(30,79,154,.18)),repeating-linear-gradient(45deg,rgba(245,247,251,.05) 0 1px,transparent 1px 18px),repeating-linear-gradient(-45deg,rgba(245,247,251,.035) 0 1px,transparent 1px 22px)!important;}
+html[data-cm-theme="mysticWarrior"] .bm-page-card,html[data-cm-theme="mysticWarrior"] .panel-card,html[data-cm-theme="mysticWarrior"] .cm-unified-card,html[data-cm-theme="mysticWarrior"] .bm-current-section{background-image:radial-gradient(circle at 80% 0,rgba(255,213,31,.16),transparent 32%),linear-gradient(145deg,rgba(89,200,255,.10),rgba(107,37,184,.24) 50%,rgba(255,213,31,.10))!important;}
+html[data-cm-theme="strawCaptain"] .bm-page-card,html[data-cm-theme="strawCaptain"] .panel-card,html[data-cm-theme="strawCaptain"] .cm-unified-card,html[data-cm-theme="strawCaptain"] .bm-current-section{background-image:linear-gradient(145deg,rgba(214,31,42,.20),rgba(39,88,199,.18) 48%,rgba(244,197,67,.13))!important;}
+
+/* corrected mini previews */
+.cm-skin-preview[data-preview-theme="titanArmor"]{--cm-preview-bg-a:#06080d;--cm-preview-bg-b:#170709;--cm-preview-card:#10131a;--cm-preview-soft:#1c0b0f;--cm-preview-accent:#a60818;--cm-preview-accent-2:#d6b15f;--cm-preview-border:rgba(214,177,95,.38);}
+.cm-skin-preview[data-preview-theme="libertyShield"]{--cm-preview-bg-a:#061126;--cm-preview-bg-b:#102f63;--cm-preview-card:#f4f6f9;--cm-preview-soft:#b51e2f;--cm-preview-accent:#234f9c;--cm-preview-accent-2:#f4f6f9;--cm-preview-border:rgba(181,30,47,.38);}
+.cm-skin-preview[data-preview-theme="scarletSpeed"]{--cm-preview-bg-a:#100405;--cm-preview-bg-b:#32080d;--cm-preview-card:#1d070a;--cm-preview-soft:#350b10;--cm-preview-accent:#d31322;--cm-preview-accent-2:#ffd31f;--cm-preview-border:rgba(255,211,31,.46);}
+.cm-skin-preview[data-preview-theme="solarHero"]{--cm-preview-bg-a:#061226;--cm-preview-bg-b:#12356f;--cm-preview-card:#0d2348;--cm-preview-soft:#c51f2f;--cm-preview-accent:#1d4f9f;--cm-preview-accent-2:#c51f2f;--cm-preview-border:rgba(244,197,66,.36);}
+.cm-skin-preview[data-preview-theme="thunderGod"]{--cm-preview-bg-a:#0a0d12;--cm-preview-bg-b:#172131;--cm-preview-card:#121923;--cm-preview-soft:#a51927;--cm-preview-accent:#245fcb;--cm-preview-accent-2:#d0a83f;--cm-preview-border:rgba(208,168,63,.38);}
+.cm-skin-preview[data-preview-theme="webHero"]{--cm-preview-bg-a:#070b14;--cm-preview-bg-b:#0f2344;--cm-preview-card:#0f1728;--cm-preview-soft:#1e4f9a;--cm-preview-accent:#c51625;--cm-preview-accent-2:#1e4f9a;--cm-preview-border:rgba(245,247,251,.24);}
+.cm-skin-preview[data-preview-theme="mysticWarrior"]{--cm-preview-bg-a:#090615;--cm-preview-bg-b:#1f0d38;--cm-preview-card:#6b25b8;--cm-preview-soft:#59c8ff;--cm-preview-accent:#6b25b8;--cm-preview-accent-2:#ffd51f;--cm-preview-border:rgba(89,200,255,.42);}
+.cm-skin-preview[data-preview-theme="strawCaptain"]{--cm-preview-bg-a:#091a2d;--cm-preview-bg-b:#0e3159;--cm-preview-card:#d61f2a;--cm-preview-soft:#2758c7;--cm-preview-accent:#d61f2a;--cm-preview-accent-2:#f4c543;--cm-preview-border:rgba(39,88,199,.36);}

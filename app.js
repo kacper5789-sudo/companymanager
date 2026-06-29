@@ -55,7 +55,7 @@ document.addEventListener('DOMContentLoaded', () => {
     ultraInstinct: { label: 'Ultra Instinct', swatch: '🟡', category: 'power' },
     royalSaiyanBlue: { label: 'Royal Saiyan Blue', swatch: '🔵', category: 'power' },
     godOfDestruction: { label: 'God of Destruction', swatch: '🟣', category: 'power' },
-    mysticWarrior: { label: 'Mystic Warrior', swatch: '🟢', category: 'power' },
+    mysticWarrior: { label: 'SSJ 2', swatch: '⚡', category: 'power' },
     soulReaper: { label: 'Soul Reaper', swatch: '🟠', category: 'power' },
     crimsonGhoul: { label: 'Crimson Ghoul', swatch: '🔴', category: 'power' },
 
