@@ -16907,3 +16907,136 @@ html.cm-modal-open,
 body.cm-modal-open{
   overflow:auto !important;
 }
+
+/* CompanyManager v69 — Karnety: odseparowany modal bez globalnego blur/overlay.
+   Cel: Dodaj typ karnetu / Sprzedaj karnet mają być zawsze czytelne, klikalne i przewijalne,
+   niezależnie od skórki oraz FX Engine. */
+html.cm-pass-modal-open body #cmGlobalFormOverlay,
+body.cm-pass-modal-open #cmGlobalFormOverlay,
+html.cm-pass-modal-open body::before,
+body.cm-pass-modal-open::before,
+html.cm-pass-modal-open body::after,
+body.cm-pass-modal-open::after{
+  display:none!important;
+  opacity:0!important;
+  visibility:hidden!important;
+  pointer-events:none!important;
+  backdrop-filter:none!important;
+  -webkit-backdrop-filter:none!important;
+  filter:none!important;
+}
+
+html.cm-pass-modal-open,
+body.cm-pass-modal-open{
+  overflow:hidden!important;
+}
+
+html.cm-pass-modal-open body .bm-shell,
+body.cm-pass-modal-open .bm-shell,
+html.cm-pass-modal-open body .bm-main,
+body.cm-pass-modal-open .bm-main,
+html.cm-pass-modal-open body .passes-module,
+body.cm-pass-modal-open .passes-module{
+  filter:none!important;
+  opacity:1!important;
+  pointer-events:auto!important;
+}
+
+html.cm-pass-modal-open body .cm-theme-fx-layer,
+body.cm-pass-modal-open .cm-theme-fx-layer,
+html.cm-pass-modal-open body .cm-theme-fx-particles,
+body.cm-pass-modal-open .cm-theme-fx-particles,
+html.cm-pass-modal-open body .cm-ssj-lightning-layer,
+body.cm-pass-modal-open .cm-ssj-lightning-layer,
+html.cm-pass-modal-open body .cm-aura-layer,
+body.cm-pass-modal-open .cm-aura-layer,
+html.cm-pass-modal-open body [data-cm-fx],
+body.cm-pass-modal-open [data-cm-fx]{
+  display:none!important;
+  opacity:0!important;
+  pointer-events:none!important;
+}
+
+html body .passes-module #templatePassPanel.cm-pass-safe-modal,
+html body .passes-module #addPassPanel.cm-pass-safe-modal,
+html body .passes-module #deletePassPanel.cm-pass-safe-modal{
+  display:block!important;
+  visibility:visible!important;
+  position:fixed!important;
+  top:50%!important;
+  left:50%!important;
+  transform:translate(-50%,-50%)!important;
+  z-index:2147483600!important;
+  width:min(980px, calc(100vw - 28px))!important;
+  max-width:min(980px, calc(100vw - 28px))!important;
+  max-height:88vh!important;
+  overflow-y:auto!important;
+  overflow-x:hidden!important;
+  pointer-events:auto!important;
+  touch-action:auto!important;
+  opacity:1!important;
+  filter:none!important;
+  backdrop-filter:none!important;
+  -webkit-backdrop-filter:none!important;
+  isolation:isolate!important;
+  background:linear-gradient(180deg, rgba(15,23,42,.99), rgba(2,6,23,.98))!important;
+  color:#e5eefb!important;
+  border:1px solid rgba(148,163,184,.34)!important;
+  border-radius:24px!important;
+  box-shadow:0 34px 120px rgba(0,0,0,.62), 0 0 0 1px rgba(255,255,255,.06) inset!important;
+  padding:22px!important;
+}
+
+html body .passes-module #templatePassPanel.cm-pass-safe-modal *,
+html body .passes-module #addPassPanel.cm-pass-safe-modal *,
+html body .passes-module #deletePassPanel.cm-pass-safe-modal *{
+  pointer-events:auto!important;
+  filter:none!important;
+  opacity:1!important;
+  visibility:visible!important;
+}
+
+html body .passes-module #templatePassPanel.cm-pass-safe-modal input,
+html body .passes-module #templatePassPanel.cm-pass-safe-modal select,
+html body .passes-module #templatePassPanel.cm-pass-safe-modal textarea,
+html body .passes-module #addPassPanel.cm-pass-safe-modal input,
+html body .passes-module #addPassPanel.cm-pass-safe-modal select,
+html body .passes-module #addPassPanel.cm-pass-safe-modal textarea,
+html body .passes-module #deletePassPanel.cm-pass-safe-modal select{
+  background:rgba(15,23,42,.96)!important;
+  color:#f8fafc!important;
+  border:1px solid rgba(148,163,184,.34)!important;
+  box-shadow:none!important;
+  opacity:1!important;
+  pointer-events:auto!important;
+}
+
+html body .passes-module #templatePassPanel.cm-pass-safe-modal button,
+html body .passes-module #addPassPanel.cm-pass-safe-modal button,
+html body .passes-module #deletePassPanel.cm-pass-safe-modal button{
+  position:relative!important;
+  z-index:2147483601!important;
+  pointer-events:auto!important;
+  cursor:pointer!important;
+  filter:none!important;
+  opacity:1!important;
+}
+
+html body .passes-module #templatePassPanel.cm-pass-safe-modal::before,
+html body .passes-module #templatePassPanel.cm-pass-safe-modal::after,
+html body .passes-module #addPassPanel.cm-pass-safe-modal::before,
+html body .passes-module #addPassPanel.cm-pass-safe-modal::after,
+html body .passes-module #deletePassPanel.cm-pass-safe-modal::before,
+html body .passes-module #deletePassPanel.cm-pass-safe-modal::after{
+  pointer-events:none!important;
+}
+
+@media(max-width:760px){
+  html body .passes-module #templatePassPanel.cm-pass-safe-modal,
+  html body .passes-module #addPassPanel.cm-pass-safe-modal,
+  html body .passes-module #deletePassPanel.cm-pass-safe-modal{
+    width:calc(100vw - 18px)!important;
+    max-height:90vh!important;
+    padding:16px!important;
+  }
+}

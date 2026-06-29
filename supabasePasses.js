@@ -220,40 +220,60 @@
 
   function markPassModal(panel, active) {
     if (!panel) return;
-    panel.classList.toggle("cm-modal-active", !!active);
-    panel.classList.toggle("cm-as-modal", !!active);
+
+    // Karnety mają własny bezpieczny tryb modalny.
+    // NIE używamy klas cm-as-modal/cm-modal-active, bo globalny modal engine
+    // dodaje overlay/blur i w części skórek zasłania formularz oraz blokuje kliknięcia.
+    panel.classList.remove("cm-modal-active", "cm-as-modal");
     panel.classList.toggle("cm-pass-panel-active", !!active);
+    panel.classList.toggle("cm-pass-safe-modal", !!active);
+
     if (active) {
       panel.removeAttribute("hidden");
-      panel.style.pointerEvents = "auto";
-      panel.style.touchAction = "auto";
+      panel.style.display = "block";
+      panel.style.position = "fixed";
+      panel.style.top = "50%";
+      panel.style.left = "50%";
+      panel.style.transform = "translate(-50%, -50%)";
+      panel.style.width = "min(980px, calc(100vw - 28px))";
+      panel.style.maxHeight = "88vh";
       panel.style.overflowY = "auto";
       panel.style.overflowX = "hidden";
-      panel.style.zIndex = "2147483000";
+      panel.style.pointerEvents = "auto";
+      panel.style.touchAction = "auto";
+      panel.style.zIndex = "2147483600";
+      panel.style.opacity = "1";
+      panel.style.filter = "none";
+      panel.style.backdropFilter = "none";
+      panel.style.webkitBackdropFilter = "none";
     } else {
       panel.hidden = true;
-      panel.style.removeProperty("pointer-events");
-      panel.style.removeProperty("touch-action");
-      panel.style.removeProperty("overflow-y");
-      panel.style.removeProperty("overflow-x");
-      panel.style.removeProperty("z-index");
+      panel.classList.remove("cm-pass-safe-modal", "cm-pass-panel-active", "cm-modal-active", "cm-as-modal");
+      ["display","position","top","left","transform","width","max-height","overflow-y","overflow-x","pointer-events","touch-action","z-index","opacity","filter","backdrop-filter","-webkit-backdrop-filter"].forEach((prop) => panel.style.removeProperty(prop));
     }
   }
 
   function syncPassModalBodyState() {
     const isOpen = !!document.querySelector(".cm-pass-panel-active:not([hidden])");
-    document.body?.classList?.toggle("cm-modal-open", isOpen);
-    document.documentElement?.classList?.toggle("cm-modal-open", isOpen);
+
+    // Karnety nie mogą aktywować globalnego cm-modal-open, bo wtedy wchodzą
+    // stare reguły blur/overlay i psują formularze na skórkach.
+    document.body?.classList?.remove("cm-modal-open");
+    document.documentElement?.classList?.remove("cm-modal-open");
+    document.body?.removeAttribute?.("data-cm-modal-open");
+    document.documentElement?.removeAttribute?.("data-cm-modal-open");
+
     document.body?.classList?.toggle("cm-pass-modal-open", isOpen);
     document.documentElement?.classList?.toggle("cm-pass-modal-open", isOpen);
-    document.body?.setAttribute?.("data-cm-modal-open", isOpen ? "true" : "false");
-    document.documentElement?.setAttribute?.("data-cm-modal-open", isOpen ? "true" : "false");
+
     const overlay = document.getElementById("cmGlobalFormOverlay");
     if (overlay) {
-      overlay.hidden = !isOpen;
-      overlay.style.display = isOpen ? "block" : "none";
-      overlay.style.opacity = isOpen ? "1" : "0";
+      overlay.hidden = true;
+      overlay.style.display = "none";
+      overlay.style.opacity = "0";
       overlay.style.pointerEvents = "none";
+      overlay.style.backdropFilter = "none";
+      overlay.style.webkitBackdropFilter = "none";
     }
   }
 
