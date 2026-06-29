@@ -15702,3 +15702,170 @@ html[data-cm-theme="ssj3"] :where(.bm-page-card,.panel-card,.cm-unified-card,.bm
     opacity:.28!important;
   }
 }
+
+/* CompanyManager v59 — Theme icon identity fix
+   Przywraca czytelne ikonki w Basic oraz dopasowuje ikonki kolekcji do ustalonych inspiracji.
+   Nie zmienia nazw skórek ani działania Theme Engine. */
+.cm-skin-card:is(
+  [data-cm-theme-choice="beautyRose"],
+  [data-cm-theme-choice="natureSage"],
+  [data-cm-theme-choice="coffeeHouse"],
+  [data-cm-theme-choice="royalBlue"],
+  [data-cm-theme-choice="blackLuxury"],
+  [data-cm-theme-choice="burgundy"],
+  [data-cm-theme-choice="ocean"],
+  [data-cm-theme-choice="ice"],
+  [data-cm-theme-choice="medical"],
+  [data-cm-theme-choice="sunset"],
+  [data-cm-theme-choice="neon"],
+  [data-cm-theme-choice="shadowPanther"],
+  [data-cm-theme-choice="gammaForce"],
+  [data-cm-theme-choice="chaosSmile"],
+  [data-cm-theme-choice="darkKnight"],
+  [data-cm-theme-choice="orangeNinja"],
+  [data-cm-theme-choice="crimsonEye"],
+  [data-cm-theme-choice="lightningAvenger"],
+  [data-cm-theme-choice="sageMaster"],
+  [data-cm-theme-choice="blossomHealer"],
+  [data-cm-theme-choice="purpleIllusion"],
+  [data-cm-theme-choice="navigator"],
+  [data-cm-theme-choice="ironShipwright"],
+  [data-cm-theme-choice="soulMusician"],
+  [data-cm-theme-choice="braveSniper"],
+  [data-cm-theme-choice="cottonDoctor"],
+  [data-cm-theme-choice="italianRacing"],
+  [data-cm-theme-choice="motorsport"],
+  [data-cm-theme-choice="luxuryPerformance"],
+  [data-cm-theme-choice="hyperCar"],
+  [data-cm-theme-choice="frenchHyper"],
+  [data-cm-theme-choice="britishLuxury"],
+  [data-cm-theme-choice="electricMouse"],
+  [data-cm-theme-choice="fireDragon"],
+  [data-cm-theme-choice="forestSeed"],
+  [data-cm-theme-choice="waterTurtle"],
+  [data-cm-theme-choice="blueVelocity"],
+  [data-cm-theme-choice="cyberNeon"],
+  [data-cm-theme-choice="digitalMatrix"],
+  [data-cm-theme-choice="nightRacer"],
+  [data-cm-theme-choice="electricYellow"]
+) .cm-skin-card-icon{
+  font-size:21px!important;
+  line-height:1!important;
+  text-shadow:0 0 12px color-mix(in srgb,var(--cm-icon-glow,var(--cm-skin-accent,#38bdf8)) 55%,transparent)!important;
+}
+.cm-skin-card:is(
+  [data-cm-theme-choice="beautyRose"],
+  [data-cm-theme-choice="natureSage"],
+  [data-cm-theme-choice="coffeeHouse"],
+  [data-cm-theme-choice="royalBlue"],
+  [data-cm-theme-choice="blackLuxury"],
+  [data-cm-theme-choice="burgundy"],
+  [data-cm-theme-choice="ocean"],
+  [data-cm-theme-choice="ice"],
+  [data-cm-theme-choice="medical"],
+  [data-cm-theme-choice="sunset"],
+  [data-cm-theme-choice="neon"],
+  [data-cm-theme-choice="shadowPanther"],
+  [data-cm-theme-choice="gammaForce"],
+  [data-cm-theme-choice="chaosSmile"],
+  [data-cm-theme-choice="darkKnight"],
+  [data-cm-theme-choice="orangeNinja"],
+  [data-cm-theme-choice="crimsonEye"],
+  [data-cm-theme-choice="lightningAvenger"],
+  [data-cm-theme-choice="sageMaster"],
+  [data-cm-theme-choice="blossomHealer"],
+  [data-cm-theme-choice="purpleIllusion"],
+  [data-cm-theme-choice="navigator"],
+  [data-cm-theme-choice="ironShipwright"],
+  [data-cm-theme-choice="soulMusician"],
+  [data-cm-theme-choice="braveSniper"],
+  [data-cm-theme-choice="cottonDoctor"],
+  [data-cm-theme-choice="italianRacing"],
+  [data-cm-theme-choice="motorsport"],
+  [data-cm-theme-choice="luxuryPerformance"],
+  [data-cm-theme-choice="hyperCar"],
+  [data-cm-theme-choice="frenchHyper"],
+  [data-cm-theme-choice="britishLuxury"],
+  [data-cm-theme-choice="electricMouse"],
+  [data-cm-theme-choice="fireDragon"],
+  [data-cm-theme-choice="forestSeed"],
+  [data-cm-theme-choice="waterTurtle"],
+  [data-cm-theme-choice="blueVelocity"],
+  [data-cm-theme-choice="cyberNeon"],
+  [data-cm-theme-choice="digitalMatrix"],
+  [data-cm-theme-choice="nightRacer"],
+  [data-cm-theme-choice="electricYellow"]
+) .cm-skin-card-icon::before,
+.cm-skin-card:is(
+  [data-cm-theme-choice="beautyRose"],
+  [data-cm-theme-choice="natureSage"],
+  [data-cm-theme-choice="coffeeHouse"],
+  [data-cm-theme-choice="royalBlue"],
+  [data-cm-theme-choice="blackLuxury"],
+  [data-cm-theme-choice="burgundy"],
+  [data-cm-theme-choice="ocean"],
+  [data-cm-theme-choice="ice"],
+  [data-cm-theme-choice="medical"],
+  [data-cm-theme-choice="sunset"],
+  [data-cm-theme-choice="neon"],
+  [data-cm-theme-choice="shadowPanther"],
+  [data-cm-theme-choice="gammaForce"],
+  [data-cm-theme-choice="chaosSmile"],
+  [data-cm-theme-choice="darkKnight"],
+  [data-cm-theme-choice="orangeNinja"],
+  [data-cm-theme-choice="crimsonEye"],
+  [data-cm-theme-choice="lightningAvenger"],
+  [data-cm-theme-choice="sageMaster"],
+  [data-cm-theme-choice="blossomHealer"],
+  [data-cm-theme-choice="purpleIllusion"],
+  [data-cm-theme-choice="navigator"],
+  [data-cm-theme-choice="ironShipwright"],
+  [data-cm-theme-choice="soulMusician"],
+  [data-cm-theme-choice="braveSniper"],
+  [data-cm-theme-choice="cottonDoctor"],
+  [data-cm-theme-choice="italianRacing"],
+  [data-cm-theme-choice="motorsport"],
+  [data-cm-theme-choice="luxuryPerformance"],
+  [data-cm-theme-choice="hyperCar"],
+  [data-cm-theme-choice="frenchHyper"],
+  [data-cm-theme-choice="britishLuxury"],
+  [data-cm-theme-choice="electricMouse"],
+  [data-cm-theme-choice="fireDragon"],
+  [data-cm-theme-choice="forestSeed"],
+  [data-cm-theme-choice="waterTurtle"],
+  [data-cm-theme-choice="blueVelocity"],
+  [data-cm-theme-choice="cyberNeon"],
+  [data-cm-theme-choice="digitalMatrix"],
+  [data-cm-theme-choice="nightRacer"],
+  [data-cm-theme-choice="electricYellow"]
+) .cm-skin-card-icon::after{
+  content:none!important;
+  display:none!important;
+}
+
+/* identity glows */
+.cm-skin-card[data-cm-theme-choice="shadowPanther"]{--cm-icon-glow:#7c3aed;}
+.cm-skin-card[data-cm-theme-choice="gammaForce"]{--cm-icon-glow:#22c55e;}
+.cm-skin-card[data-cm-theme-choice="chaosSmile"]{--cm-icon-glow:#8b5cf6;}
+.cm-skin-card[data-cm-theme-choice="darkKnight"]{--cm-icon-glow:#facc15;}
+.cm-skin-card[data-cm-theme-choice="lightningAvenger"]{--cm-icon-glow:#60a5fa;}
+.cm-skin-card[data-cm-theme-choice="navigator"]{--cm-icon-glow:#fb923c;}
+.cm-skin-card[data-cm-theme-choice="ironShipwright"]{--cm-icon-glow:#0ea5e9;}
+.cm-skin-card[data-cm-theme-choice="soulMusician"]{--cm-icon-glow:#e5e7eb;}
+.cm-skin-card[data-cm-theme-choice="braveSniper"]{--cm-icon-glow:#d97706;}
+.cm-skin-card[data-cm-theme-choice="cottonDoctor"]{--cm-icon-glow:#f472b6;}
+.cm-skin-card[data-cm-theme-choice="italianRacing"]{--cm-icon-glow:#ef4444;}
+.cm-skin-card[data-cm-theme-choice="motorsport"]{--cm-icon-glow:#3b82f6;}
+.cm-skin-card[data-cm-theme-choice="luxuryPerformance"]{--cm-icon-glow:#d4af37;}
+.cm-skin-card[data-cm-theme-choice="hyperCar"]{--cm-icon-glow:#facc15;}
+.cm-skin-card[data-cm-theme-choice="frenchHyper"]{--cm-icon-glow:#60a5fa;}
+.cm-skin-card[data-cm-theme-choice="britishLuxury"]{--cm-icon-glow:#e5e7eb;}
+.cm-skin-card[data-cm-theme-choice="electricMouse"]{--cm-icon-glow:#facc15;}
+.cm-skin-card[data-cm-theme-choice="fireDragon"]{--cm-icon-glow:#f97316;}
+.cm-skin-card[data-cm-theme-choice="forestSeed"]{--cm-icon-glow:#22c55e;}
+.cm-skin-card[data-cm-theme-choice="waterTurtle"]{--cm-icon-glow:#0ea5e9;}
+.cm-skin-card[data-cm-theme-choice="blueVelocity"]{--cm-icon-glow:#2563eb;}
+.cm-skin-card[data-cm-theme-choice="cyberNeon"]{--cm-icon-glow:#a855f7;}
+.cm-skin-card[data-cm-theme-choice="digitalMatrix"]{--cm-icon-glow:#22c55e;}
+.cm-skin-card[data-cm-theme-choice="nightRacer"]{--cm-icon-glow:#818cf8;}
+.cm-skin-card[data-cm-theme-choice="electricYellow"]{--cm-icon-glow:#facc15;}
