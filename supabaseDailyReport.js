@@ -236,10 +236,30 @@
       if (p.sale_id && !activeSaleIds.has(p.sale_id)) return false;
       return true;
     });
+
+    // v63: Raport dzienny musi umieć rozpoznać pracownika także wtedy,
+    // gdy sprzedaż została zapisana dziś, ale powiązana wizyta ma inną datę
+    // albo appointment_id siedzi w payments, a nie bezpośrednio w sales.
+    let appointments = appointmentsRes.data || [];
+    const appointmentIds = new Set();
+    sales.forEach(s => { if (s.appointment_id) appointmentIds.add(s.appointment_id); });
+    payments.forEach(p => { if (p.appointment_id) appointmentIds.add(p.appointment_id); });
+    const loadedAppointmentIds = new Set(appointments.map(a => a.id).filter(Boolean));
+    const missingAppointmentIds = [...appointmentIds].filter(id => id && !loadedAppointmentIds.has(id));
+    if (missingAppointmentIds.length) {
+      const linkedAppointmentsRes = await sb.from("appointments")
+        .select("id,company_id,client_id,client_name,employee_id,employee_name,service_id,service_name,product_id,product_name,total,price,paid_amount,payment_status,payment_method,status,date,starts_at,appointment_datetime,created_at,cancellation_reason,cancel_reason,cancelled_at")
+        .eq("company_id", ctx.companyId)
+        .in("id", missingAppointmentIds);
+      if (linkedAppointmentsRes.error) throw new Error(linkedAppointmentsRes.error.message);
+      appointments = appointments.concat(linkedAppointmentsRes.data || []);
+    }
+
     return {
+      dayIso: range.dayIso,
       sales,
       payments,
-      appointments: appointmentsRes.data || [],
+      appointments,
       employees: employeesRes.data || [],
       clients: clientsRes.data || [],
       saleItems,
@@ -260,6 +280,14 @@
     const notificationLogs = data.notificationLogs || [];
     const emailRecipients = data.emailRecipients || [];
     const saleMap = new Map(sales.map(s => [s.id, s]));
+    const paymentBySaleId = new Map();
+    payments.forEach(p => { if (p.sale_id && !paymentBySaleId.has(p.sale_id)) paymentBySaleId.set(p.sale_id, p); });
+    const appointmentById = new Map(appointments.map(a => [a.id, a]));
+    const appointmentForSale = (sale) => {
+      const payment = sale?.id ? paymentBySaleId.get(sale.id) : null;
+      const appointmentId = sale?.appointment_id || payment?.appointment_id || "";
+      return appointmentId ? (appointmentById.get(appointmentId) || {}) : {};
+    };
     const passBySaleId = new Map();
     passes.forEach((pass) => { if (pass.sale_id && !passBySaleId.has(pass.sale_id)) passBySaleId.set(pass.sale_id, pass); });
     const passIdsInItems = new Set(saleItems.filter(i => ["pass", "karnet"].includes(String(i.item_type || "").toLowerCase())).map(i => String(i.pass_id || "")).filter(Boolean));
@@ -359,13 +387,15 @@
       return employeeRowsMap.get(resolved.key);
     }
     appointments.forEach((a) => {
+      const apptDay = String(a.date || a.starts_at || a.appointment_datetime || "").slice(0, 10);
+      if (data.dayIso && apptDay && apptDay !== data.dayIso) return;
       const row = ensureEmployee(a.employee_id, a.employee_name);
       row.visits += 1;
     });
     saleItems.forEach((i) => {
       const sale = saleMap.get(i.sale_id) || {};
       const linkedPass = i.pass_id ? passes.find(pass => String(pass.id) === String(i.pass_id)) : passBySaleId.get(i.sale_id) || {};
-      const appointment = appointments.find(a => a.id && a.id === sale.appointment_id) || {};
+      const appointment = appointmentForSale(sale);
       const row = ensureEmployee(sale.employee_id || linkedPass.employee_id || appointment.employee_id, sale.employee_name, linkedPass.employee_name, appointment.employee_name);
       const type = String(i.item_type || "").toLowerCase();
       const qty = Number(i.quantity || 1);

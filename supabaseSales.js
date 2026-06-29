@@ -719,6 +719,10 @@
       .map((row) => makePaymentRow(row, row.paymentMethod))
       .concat(productItemsRaw.map((row) => makePaymentRow(row, row.paymentMethod)))
       .concat(passItemsRaw.map((row) => makePaymentRow(row, row.paymentMethod)))
+      // v63: jeżeli sprzedaż/karnet nie ma sale_items albo tabela passes nie ma
+      // jeszcze pełnego powiązania, brakująca wartość z sales też musi wejść
+      // do widoku Płatności. Inaczej suma płatności gubi np. sprzedaż karnetu.
+      .concat(fallbackSaleRowsRaw.map((row) => makePaymentRow(row, row.paymentMethod)))
       .filter((row) => row.value > 0)
       .filter((row) => passesFilter("employees", selectedEmployees, row.employeeId))
       .filter((row) => passesFilter("paymentTypes", selectedPaymentTypes, row.type));
