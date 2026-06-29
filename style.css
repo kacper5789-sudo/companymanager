@@ -16634,94 +16634,46 @@ html[data-cm-theme]:not([data-cm-theme="original"]) .bm-schedule-slot.cancelled{
 }
 
 
-/* v100 — Dashboard employee colors independent from theme
-   Kolumny Dashboardu, FREE oraz wizyty korzystają z koloru pracownika ustawionego w Zespół,
-   a nie z aktywnej skórki. Ten blok musi być na końcu CSS, bo nadpisuje stare reguły skórek. */
-.bm-schedule-table th.cm-employee-colored-head,
-.bm-schedule-grid th.cm-employee-colored-head,
-th.cm-employee-colored-head{
+/* CompanyManager v100 — Dashboard employee colors independent from skins */
+.cm-employee-colored-head{
   border-top:4px solid var(--cm-employee-color, #64748b) !important;
-  border-color:color-mix(in srgb, var(--cm-employee-color, #64748b) 44%, rgba(148,163,184,.28)) !important;
-  background:
-    linear-gradient(180deg,
-      color-mix(in srgb, var(--cm-employee-color, #64748b) 22%, transparent),
-      color-mix(in srgb, var(--cm-employee-color, #64748b) 7%, transparent) 72%,
-      transparent) !important;
-  color:inherit !important;
+  background:linear-gradient(180deg, rgba(var(--cm-employee-rgb, 100,116,139), .18), rgba(var(--cm-employee-rgb, 100,116,139), .055) 64%, transparent 100%) !important;
 }
-.bm-schedule-table th.cm-employee-colored-head .cm-employee-head-badge,
-.bm-schedule-grid th.cm-employee-colored-head .cm-employee-head-badge,
-th.cm-employee-colored-head .cm-employee-head-badge{
+.cm-employee-head-badge,
+.cm-worker-color-dot{
   background:var(--cm-employee-color, #64748b) !important;
-  color:#fff !important;
-  box-shadow:0 6px 16px color-mix(in srgb, var(--cm-employee-color, #64748b) 35%, transparent) !important;
 }
-.bm-schedule-table td.bm-schedule-slot.cm-employee-colored-slot,
-.bm-schedule-grid td.bm-schedule-slot.cm-employee-colored-slot,
-td.bm-schedule-slot.cm-employee-colored-slot,
 .bm-schedule-slot.cm-employee-colored-slot{
-  border-color:color-mix(in srgb, var(--cm-employee-color, #64748b) 24%, rgba(148,163,184,.22)) !important;
-  background:
-    linear-gradient(90deg,
-      color-mix(in srgb, var(--cm-employee-color, #64748b) 10%, transparent),
-      color-mix(in srgb, var(--cm-employee-color, #64748b) 3%, transparent) 58%,
-      transparent) !important;
-  background-color:color-mix(in srgb, var(--cm-employee-color, #64748b) 5%, var(--bm-card, #ffffff)) !important;
+  background-image:none !important;
+  background-color:rgba(var(--cm-employee-rgb, 100,116,139), .055) !important;
 }
-.bm-schedule-table td.bm-schedule-slot.cm-employee-colored-slot.free,
-.bm-schedule-grid td.bm-schedule-slot.cm-employee-colored-slot.free,
-td.bm-schedule-slot.cm-employee-colored-slot.free,
-.bm-schedule-slot.cm-employee-colored-slot.free{
-  background:
-    linear-gradient(180deg,
-      color-mix(in srgb, var(--cm-employee-color, #64748b) 10%, var(--bm-card, #ffffff)),
-      color-mix(in srgb, var(--cm-employee-color, #64748b) 5%, var(--bm-card, #ffffff))) !important;
-  border-color:color-mix(in srgb, var(--cm-employee-color, #64748b) 32%, transparent) !important;
-  box-shadow:inset 0 0 0 1px color-mix(in srgb, var(--cm-employee-color, #64748b) 10%, transparent) !important;
-}
-.bm-schedule-table td.bm-schedule-slot.cm-employee-colored-slot.free span,
-.bm-schedule-grid td.bm-schedule-slot.cm-employee-colored-slot.free span,
-td.bm-schedule-slot.cm-employee-colored-slot.free span,
-.bm-schedule-slot.cm-employee-colored-slot.free span{
+.bm-schedule-slot.cm-employee-colored-slot.free:not(.inactive-worker)>span{
   color:var(--cm-employee-color, #64748b) !important;
-  font-weight:1000 !important;
-  text-shadow:none !important;
-  opacity:1 !important;
+  font-weight:900 !important;
+  letter-spacing:.04em;
+  text-shadow:0 0 14px rgba(var(--cm-employee-rgb, 100,116,139), .18);
 }
-.bm-schedule-table td.bm-schedule-slot.cm-employee-colored-slot.busy,
-.bm-schedule-grid td.bm-schedule-slot.cm-employee-colored-slot.busy,
-td.bm-schedule-slot.cm-employee-colored-slot.busy,
+.bm-schedule-slot.cm-employee-colored-slot.free:not(.inactive-worker):hover{
+  background-color:rgba(var(--cm-employee-rgb, 100,116,139), .105) !important;
+  box-shadow:inset 0 0 0 2px rgba(var(--cm-employee-rgb, 100,116,139), .42) !important;
+}
 .bm-schedule-slot.cm-employee-colored-slot.busy{
   border-left:5px solid var(--cm-employee-color, #64748b) !important;
-  box-shadow:
-    inset 5px 0 0 var(--cm-employee-color, #64748b),
-    inset 0 0 0 1px color-mix(in srgb, var(--cm-employee-color, #64748b) 20%, transparent) !important;
+  box-shadow:inset 0 0 0 1px rgba(var(--cm-employee-rgb, 100,116,139), .28) !important;
 }
-.bm-schedule-table td.bm-schedule-slot.cm-employee-colored-slot.free:not(.inactive-worker):hover,
-.bm-schedule-grid td.bm-schedule-slot.cm-employee-colored-slot.free:not(.inactive-worker):hover,
-td.bm-schedule-slot.cm-employee-colored-slot.free:not(.inactive-worker):hover,
-.bm-schedule-slot.cm-employee-colored-slot.free:not(.inactive-worker):hover{
-  background:
-    linear-gradient(180deg,
-      color-mix(in srgb, var(--cm-employee-color, #64748b) 16%, var(--bm-card, #ffffff)),
-      color-mix(in srgb, var(--cm-employee-color, #64748b) 7%, var(--bm-card, #ffffff))) !important;
-  box-shadow:inset 0 0 0 2px color-mix(in srgb, var(--cm-employee-color, #64748b) 42%, transparent) !important;
+.bm-schedule-slot.cm-employee-colored-slot.busy:not(.finished):not(.cancelled){
+  background-color:rgba(var(--cm-employee-rgb, 100,116,139), .12) !important;
 }
-.bm-schedule-table td.bm-schedule-slot.cm-employee-colored-slot.inactive-worker,
-.bm-schedule-grid td.bm-schedule-slot.cm-employee-colored-slot.inactive-worker,
-td.bm-schedule-slot.cm-employee-colored-slot.inactive-worker,
-.bm-schedule-slot.cm-employee-colored-slot.inactive-worker{
-  background:
-    linear-gradient(180deg,
-      color-mix(in srgb, var(--cm-employee-color, #64748b) 5%, var(--bm-muted, #f1f5f9)),
-      color-mix(in srgb, var(--cm-employee-color, #64748b) 3%, var(--bm-muted, #f1f5f9))) !important;
-  opacity:.72;
+.bm-schedule-slot.cm-employee-colored-slot.finished,
+.bm-schedule-slot.cm-employee-colored-slot.cancelled{
+  border-left-color:var(--cm-employee-color, #64748b) !important;
 }
 .cm-edit-employee-stripe{
   border-left-color:var(--cm-employee-color, #64748b) !important;
-  background:linear-gradient(90deg, color-mix(in srgb, var(--cm-employee-color, #64748b) 18%, transparent), transparent 82%) !important;
+  background:linear-gradient(90deg, rgba(var(--cm-employee-rgb, 100,116,139), .16), transparent 80%) !important;
 }
-@supports not (background: color-mix(in srgb, #000 10%, transparent)){
-  .bm-schedule-slot.cm-employee-colored-slot.free span{color:var(--cm-employee-color, #64748b) !important;}
-  .bm-schedule-slot.cm-employee-colored-slot.busy{border-left-color:var(--cm-employee-color, #64748b) !important;}
+html[data-cm-theme] .cm-employee-colored-head,
+html[data-cm-theme] .bm-schedule-slot.cm-employee-colored-slot,
+html[data-cm-theme] .bm-schedule-slot.cm-employee-colored-slot.free:not(.inactive-worker)>span{
+  --bm-primary:var(--cm-employee-color, #64748b);
 }
