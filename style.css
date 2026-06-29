@@ -16823,3 +16823,87 @@ html.cm-pass-modal-open body :where(#templatePassPanel,#addPassPanel,#deletePass
   opacity:0 !important;
   pointer-events:none !important;
 }
+
+/* CompanyManager v68 — GLOBAL FORM RECOVERY / NO BLUR
+   Awaryjne domknięcie po FX Engine: żaden overlay, blur ani efekt skórki
+   nie może przykrywać formularzy, modali, inputów ani przycisków. */
+html body #cmGlobalFormOverlay,
+html.cm-modal-open body #cmGlobalFormOverlay,
+body.cm-modal-open #cmGlobalFormOverlay,
+html[data-cm-modal-open="true"] body #cmGlobalFormOverlay,
+body[data-cm-modal-open="true"] #cmGlobalFormOverlay{
+  display:none !important;
+  visibility:hidden !important;
+  opacity:0 !important;
+  pointer-events:none !important;
+  background:transparent !important;
+  -webkit-backdrop-filter:none !important;
+  backdrop-filter:none !important;
+  -webkit-filter:none !important;
+  filter:none !important;
+}
+html.cm-modal-open body,
+html.cm-modal-open body *,
+body.cm-modal-open,
+body.cm-modal-open *,
+html[data-cm-modal-open="true"] body,
+html[data-cm-modal-open="true"] body *,
+body[data-cm-modal-open="true"],
+body[data-cm-modal-open="true"] *{
+  -webkit-filter:none !important;
+  filter:none !important;
+}
+html.cm-modal-open body .bm-shell,
+html.cm-modal-open body .bm-main,
+html.cm-modal-open body main,
+body.cm-modal-open .bm-shell,
+body.cm-modal-open .bm-main,
+body.cm-modal-open main,
+html[data-cm-modal-open="true"] body .bm-shell,
+html[data-cm-modal-open="true"] body .bm-main,
+html[data-cm-modal-open="true"] body main{
+  -webkit-filter:none !important;
+  filter:none !important;
+  -webkit-backdrop-filter:none !important;
+  backdrop-filter:none !important;
+}
+html.cm-modal-open body::before,
+html.cm-modal-open body::after,
+body.cm-modal-open::before,
+body.cm-modal-open::after,
+html[data-cm-modal-open="true"] body::before,
+html[data-cm-modal-open="true"] body::after,
+body[data-cm-modal-open="true"]::before,
+body[data-cm-modal-open="true"]::after{
+  display:none !important;
+  opacity:0 !important;
+  animation:none !important;
+  pointer-events:none !important;
+}
+html.cm-modal-open :where(.cm-as-modal,.cm-modal-active,.bm-modal:not([hidden]),.modal:not([hidden]),.bm-nested-modal:not([hidden]),.cm-modal:not([hidden])),
+body.cm-modal-open :where(.cm-as-modal,.cm-modal-active,.bm-modal:not([hidden]),.modal:not([hidden]),.bm-nested-modal:not([hidden]),.cm-modal:not([hidden])),
+html[data-cm-modal-open="true"] :where(.cm-as-modal,.cm-modal-active,.bm-modal:not([hidden]),.modal:not([hidden]),.bm-nested-modal:not([hidden]),.cm-modal:not([hidden])),
+body[data-cm-modal-open="true"] :where(.cm-as-modal,.cm-modal-active,.bm-modal:not([hidden]),.modal:not([hidden]),.bm-nested-modal:not([hidden]),.cm-modal:not([hidden])){
+  opacity:1 !important;
+  visibility:visible !important;
+  pointer-events:auto !important;
+  -webkit-filter:none !important;
+  filter:none !important;
+  -webkit-backdrop-filter:none !important;
+  backdrop-filter:none !important;
+  z-index:2147483000 !important;
+}
+html.cm-modal-open :where(.cm-as-modal,.cm-modal-active,.bm-modal:not([hidden]),.modal:not([hidden]),.bm-nested-modal:not([hidden]),.cm-modal:not([hidden])) :where(input,select,textarea,button,label,a),
+body.cm-modal-open :where(.cm-as-modal,.cm-modal-active,.bm-modal:not([hidden]),.modal:not([hidden]),.bm-nested-modal:not([hidden]),.cm-modal:not([hidden])) :where(input,select,textarea,button,label,a),
+html[data-cm-modal-open="true"] :where(.cm-as-modal,.cm-modal-active,.bm-modal:not([hidden]),.modal:not([hidden]),.bm-nested-modal:not([hidden]),.cm-modal:not([hidden])) :where(input,select,textarea,button,label,a),
+body[data-cm-modal-open="true"] :where(.cm-as-modal,.cm-modal-active,.bm-modal:not([hidden]),.modal:not([hidden]),.bm-nested-modal:not([hidden]),.cm-modal:not([hidden])) :where(input,select,textarea,button,label,a){
+  pointer-events:auto !important;
+  touch-action:auto !important;
+}
+/* Nie wyłączamy scrolla całej aplikacji globalnie; scroll formularza ma działać normalnie. */
+html[data-cm-modal-open="true"],
+body[data-cm-modal-open="true"],
+html.cm-modal-open,
+body.cm-modal-open{
+  overflow:auto !important;
+}

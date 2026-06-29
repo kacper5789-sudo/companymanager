@@ -146,7 +146,9 @@
   }
 
   function refreshBlurState() {
-    promoteOpenFormPanels();
+    // v68: NIE promujemy automatycznie widocznych formularzy do modala.
+    // Poprzedni mechanizm wykrywał zwykłe formularze jako aktywne modale,
+    // przez co overlay zasłaniał przyciski i przyciemniał całe strony.
     syncModalDepths();
     const isOpen = anyOpenModal();
     document.body.classList.toggle(BODY_OPEN, isOpen);
@@ -154,11 +156,14 @@
     document.body.setAttribute('data-cm-modal-open', isOpen ? 'true' : 'false');
     document.documentElement.setAttribute('data-cm-modal-open', isOpen ? 'true' : 'false');
     const overlay = ensureOverlay();
-    overlay.setAttribute('aria-hidden', isOpen ? 'false' : 'true');
-    overlay.hidden = !isOpen;
-    overlay.style.display = isOpen ? 'block' : 'none';
-    overlay.style.pointerEvents = isOpen ? 'auto' : 'none';
-    overlay.style.opacity = isOpen ? '1' : '0';
+    overlay.setAttribute('aria-hidden', 'true');
+    overlay.hidden = true;
+    overlay.style.display = 'none';
+    overlay.style.pointerEvents = 'none';
+    overlay.style.opacity = '0';
+    overlay.style.backdropFilter = 'none';
+    overlay.style.webkitBackdropFilter = 'none';
+    overlay.style.filter = 'none';
   }
 
   function cleanupBlur() {
