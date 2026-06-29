@@ -15286,3 +15286,49 @@ html[data-cm-theme="ssj3"] .bm-page-card,html[data-cm-theme="ssj3"] .panel-card,
 .cm-skin-preview[data-preview-theme="beast"]{--cm-preview-bg-a:#0d0615;--cm-preview-bg-b:#25103b;--cm-preview-card:#f4f0ff;--cm-preview-soft:#b026ff;--cm-preview-accent:#b026ff;--cm-preview-accent-2:#e9d5ff;--cm-preview-border:rgba(176,38,255,.44)}
 .cm-skin-preview[data-preview-theme="soulReaper"]{--cm-preview-bg-a:#070707;--cm-preview-bg-b:#1b1008;--cm-preview-card:#101010;--cm-preview-soft:#f97316;--cm-preview-accent:#f97316;--cm-preview-accent-2:#facc15;--cm-preview-border:rgba(249,115,22,.44)}
 .cm-skin-preview[data-preview-theme="crimsonGhoul"]{--cm-preview-bg-a:#050506;--cm-preview-bg-b:#1c050b;--cm-preview-card:#0e0a0c;--cm-preview-soft:#e11d48;--cm-preview-accent:#e11d48;--cm-preview-accent-2:#fff;--cm-preview-border:rgba(225,29,72,.46)}
+
+
+/* CompanyManager v54 — Period report employee pills included in Theme Engine v2
+   Sekcja: Raport z okresu → Pracownicy → Zaznacz wszystkich / lista pracowników.
+   Cel: nowy filtr .cm-period-employee-filter/.cm-period-employee-pill ma dziedziczyć kolory skórek tak samo jak starszy .cm-period-employee-picker/.cm-period-employee-check. */
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-period-report-card .cm-period-employee-filter,
+html[data-cm-theme]:not([data-cm-theme="original"]) [data-period-employee-filter].cm-period-employee-filter{
+  background:transparent!important;
+  background-image:none!important;
+  border:none!important;
+  outline:none!important;
+  box-shadow:none!important;
+}
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-period-report-card .cm-period-employee-filter-title,
+html[data-cm-theme]:not([data-cm-theme="original"]) [data-period-employee-filter] .cm-period-employee-filter-title{
+  color:var(--cm-skin-accent,#2563eb)!important;
+  text-shadow:0 10px 26px color-mix(in srgb,var(--cm-skin-accent,#2563eb) 18%,transparent)!important;
+}
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-period-report-card .cm-period-employee-pill,
+html[data-cm-theme]:not([data-cm-theme="original"]) [data-period-employee-filter] .cm-period-employee-pill{
+  background:linear-gradient(180deg,
+    color-mix(in srgb,var(--cm-skin-accent-2,var(--cm-skin-accent,#2563eb)) 20%,var(--cm-skin-card,#ffffff) 80%),
+    color-mix(in srgb,var(--cm-skin-accent,var(--cm-skin-accent-2,#2563eb)) 14%,var(--cm-skin-soft,var(--cm-skin-card,#ffffff)) 86%)
+  )!important;
+  border:1px solid color-mix(in srgb,var(--cm-skin-accent,#2563eb) 34%,transparent)!important;
+  outline:none!important;
+  border-radius:999px!important;
+  color:var(--cm-skin-text,#0f172a)!important;
+  box-shadow:0 10px 24px color-mix(in srgb,var(--cm-skin-shadow,rgba(0,0,0,.16)) 22%,transparent),
+             inset 0 1px 0 color-mix(in srgb,var(--cm-skin-accent-2,var(--cm-skin-accent,#2563eb)) 18%,rgba(255,255,255,.42))!important;
+}
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-period-report-card .cm-period-employee-pill:hover,
+html[data-cm-theme]:not([data-cm-theme="original"]) [data-period-employee-filter] .cm-period-employee-pill:hover{
+  background:linear-gradient(180deg,
+    color-mix(in srgb,var(--cm-skin-accent-2,var(--cm-skin-accent,#2563eb)) 34%,var(--cm-skin-card,#ffffff) 66%),
+    color-mix(in srgb,var(--cm-skin-accent,var(--cm-skin-accent-2,#2563eb)) 24%,var(--cm-skin-soft,var(--cm-skin-card,#ffffff)) 76%)
+  )!important;
+  border-color:color-mix(in srgb,var(--cm-skin-accent,#2563eb) 54%,transparent)!important;
+  transform:translateY(-1px);
+}
+html[data-cm-theme]:not([data-cm-theme="original"]) .cm-period-report-card .cm-period-employee-pill input,
+html[data-cm-theme]:not([data-cm-theme="original"]) [data-period-employee-filter] .cm-period-employee-pill input,
+html[data-cm-theme]:not([data-cm-theme="original"]) [data-period-employee-all],
+html[data-cm-theme]:not([data-cm-theme="original"]) [data-period-employee-check]{
+  accent-color:var(--cm-skin-accent,#2563eb)!important;
+}
