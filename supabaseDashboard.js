@@ -721,16 +721,6 @@
       || defaultEmployeeColor(employee, index);
   }
 
-  function employeeColorRgb(color) {
-    const hex = normalizeEmployeeColor(color) || "#64748B";
-    return [1, 3, 5].map((start) => parseInt(hex.slice(start, start + 2), 16)).join(",");
-  }
-
-  function employeeColorStyle(color) {
-    const hex = normalizeEmployeeColor(color) || "#64748B";
-    return `--cm-employee-color:${escapeHtml(hex)};--cm-employee-rgb:${employeeColorRgb(hex)}`;
-  }
-
   async function fetchEmployeeColorMap(ctx) {
     if (!window.cmSupabase || !ctx?.companyId) return {};
     try {
@@ -997,7 +987,7 @@
     return rows.map((slot) => {
       const cells = data.users.map((employee, employeeIndex) => {
         const employeeColor = getEmployeeColor(employee, employeeIndex);
-        const employeeStyle = employeeColorStyle(employeeColor);
+        const employeeStyle = `--cm-employee-color:${escapeHtml(employeeColor)}`;
         const slotMin = minutesFromTime(slot.start);
         const windowForEmployee = windows.get(employee.id) || employeeWorkWindow(data, employee, dateIso, settings);
         const windowStart = minutesFromTime(windowForEmployee.start);
@@ -1290,13 +1280,13 @@
     const workerChecks = data.users.map((employee) => {
       const checked = activeSet.has(employee.id) ? "checked" : "";
       const color = getEmployeeColor(employee);
-      return `<label data-worker-label="${escapeHtml(employee.id)}" class="cm-worker-color-toggle" style="${employeeColorStyle(color)}"><input type="checkbox" class="dash-worker-toggle" value="${escapeHtml(employee.id)}" ${checked}> <span class="cm-worker-color-dot"></span>${escapeHtml(personName(employee))}</label>`;
+      return `<label data-worker-label="${escapeHtml(employee.id)}" class="cm-worker-color-toggle" style="--cm-employee-color:${escapeHtml(color)}"><input type="checkbox" class="dash-worker-toggle" value="${escapeHtml(employee.id)}" ${checked}> <span class="cm-worker-color-dot"></span>${escapeHtml(personName(employee))}</label>`;
     }).join("") || `<span class="bm-muted">Brak pracowników</span>`;
     const allWorkersChecked = data.users.length > 0 && activeWorkerIds.length === data.users.length;
 
     const employeeCount = Math.max(data.users.length, 1);
     const scheduleWidth = `${82 + (employeeCount * 180)}px`;
-    const scheduleHead = `<thead><tr><th class="bm-time-head">Godzina</th>${data.users.map((employee, employeeIndex) => { const color = getEmployeeColor(employee, employeeIndex); return `<th data-employee-head="${escapeHtml(employee.id)}" class="cm-employee-colored-head ${activeSet.has(employee.id) ? "" : "inactive-worker"}" style="${employeeColorStyle(color)}"><span class="cm-employee-head-badge">${escapeHtml(employeeInitials(employee))}</span><span>${escapeHtml(personName(employee))}</span></th>`; }).join("")}</tr></thead>`;
+    const scheduleHead = `<thead><tr><th class="bm-time-head">Godzina</th>${data.users.map((employee, employeeIndex) => { const color = getEmployeeColor(employee, employeeIndex); return `<th data-employee-head="${escapeHtml(employee.id)}" class="cm-employee-colored-head ${activeSet.has(employee.id) ? "" : "inactive-worker"}" style="--cm-employee-color:${escapeHtml(color)}"><span class="cm-employee-head-badge">${escapeHtml(employeeInitials(employee))}</span><span>${escapeHtml(personName(employee))}</span></th>`; }).join("")}</tr></thead>`;
     const scheduleColgroup = `<colgroup><col class="bm-time-colgroup">${data.users.map(() => `<col class="bm-worker-colgroup">`).join("")}</colgroup>`;
 
     area.innerHTML = `
