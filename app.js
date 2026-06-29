@@ -223,6 +223,58 @@ document.addEventListener('DOMContentLoaded', () => {
     const now = new Date();
     return `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
   };
+  const CM_CANCEL_REASONS = ['Klient odwołał','Klient nie przyszedł','Klient przełożył wizytę','Pomyłka','Inne'];
+  const normalizeCancelReason = (value) => {
+    const raw = String(value || '').trim();
+    if (!raw) return '';
+    const compact = raw.toLowerCase().replace(/\s+/g, ' ');
+    const aliases = {
+      'klient odwolal': 'Klient odwołał',
+      'klient odwołał': 'Klient odwołał',
+      'client cancelled': 'Klient odwołał',
+      'klient nie przyszedl': 'Klient nie przyszedł',
+      'klient nie przyszedł': 'Klient nie przyszedł',
+      'no show': 'Klient nie przyszedł',
+      'klient przelozyl wizyte': 'Klient przełożył wizytę',
+      'klient przełożył wizytę': 'Klient przełożył wizytę',
+      'klient przelozyl wizytę': 'Klient przełożył wizytę',
+      'pomyłka': 'Pomyłka',
+      'pomylka': 'Pomyłka',
+      'inne': 'Inne',
+      'inny': 'Inne',
+      'other': 'Inne'
+    };
+    return aliases[compact] || CM_CANCEL_REASONS.find(reason => reason.toLowerCase() === compact) || '';
+  };
+  const getVisitCancelReason = (visit) => {
+    const candidates = [
+      visit?.cancelReason,
+      visit?.cancellationReason,
+      visit?.cancel_reason,
+      visit?.cancelReasonLabel,
+      visit?.statusReason,
+      visit?.reason
+    ];
+    for (const candidate of candidates) {
+      const normalized = normalizeCancelReason(candidate);
+      if (normalized) return normalized;
+    }
+    return 'Inne';
+  };
+  const applyVisitCancellation = (visit, reason) => {
+    const normalized = normalizeCancelReason(reason) || 'Inne';
+    return {
+      ...visit,
+      status: 'odwołana',
+      cancelled: true,
+      cancelReason: normalized,
+      cancellationReason: normalized,
+      cancel_reason: normalized,
+      cancelReasonLabel: normalized,
+      cancelledAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+  };
   const parseIsoDate = (value) => {
     if (!value) return null;
     const match = String(value).match(/^(\d{4})-(\d{2})-(\d{2})/);
@@ -3757,7 +3809,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!match) return '';
       return `${String(Number(match[1])).padStart(2,'0')}:${match[2]}`;
     };
-    const dashboardCancelReasons = ['Klient odwołał','Klient nie przyszedł','Klient przełożył wizytę','Pomyłka','Inne'];
+    const dashboardCancelReasons = CM_CANCEL_REASONS;
     const dashboardCancelReasonOptions = (selected = '') => `<option value="">Wybierz powód</option>${dashboardCancelReasons.map(reason => `<option value="${escapeHtml(reason)}" ${reason === selected ? 'selected' : ''}>${escapeHtml(reason)}</option>`).join('')}`;
     const isDashboardVisitCancelled = (visit) => ['odwołane','odwołana','odwołany','usunięte','usunięta'].includes(String(visit?.status || '').toLowerCase()) || visit?.cancelled === true;
     const isDashboardVisitFinished = (visit) => ['zakończone','zakończona','zakończony','completed','done'].includes(String(visit?.status || '').toLowerCase()) || visit?.finished === true;
@@ -4109,7 +4161,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (index < 0) { if (msg) { msg.textContent = 'Wybierz wizytę do odwołania.'; msg.style.color = '#fca5a5'; } return; }
       if (!dashboardCancelReasons.includes(reason)) { if (msg) { msg.textContent = 'Musisz wybrać powód odwołania wizyty.'; msg.style.color = '#fca5a5'; } return; }
       saveUndoSnapshot('Odwołanie wizyty z dashboardu', currentDb);
-      currentDb.dashboardVisits[index] = { ...currentDb.dashboardVisits[index], status:'odwołana', cancelled:true, cancelReason:reason, cancelledAt:new Date().toISOString(), updatedAt:new Date().toISOString() };
+      currentDb.dashboardVisits[index] = applyVisitCancellation(currentDb.dashboardVisits[index], reason);
       saveDatabase(currentDb);
       if (msg) { msg.textContent = 'Wizyta odwołana.'; msg.style.color = '#86efac'; }
       setTimeout(()=>window.location.reload(),650);
@@ -4141,7 +4193,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (index < 0) { if (msg) { msg.textContent = 'Wybierz wizytę do odwołania.'; msg.style.color = '#fca5a5'; } return; }
       if (!dashboardCancelReasons.includes(reason)) { if (msg) { msg.textContent = 'Musisz wybrać powód odwołania wizyty.'; msg.style.color = '#fca5a5'; } return; }
       saveUndoSnapshot('Odwołanie wizyty z dashboardu', currentDb);
-      currentDb.dashboardVisits[index] = { ...currentDb.dashboardVisits[index], status:'odwołana', cancelled:true, cancelReason:reason, cancelledAt:new Date().toISOString() };
+      currentDb.dashboardVisits[index] = applyVisitCancellation(currentDb.dashboardVisits[index], reason);
       saveDatabase(currentDb);
       if (msg) { msg.textContent = 'Wizyta odwołana.'; msg.style.color = '#86efac'; }
       setTimeout(()=>window.location.reload(),650);
@@ -6810,14 +6862,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const cancelledVisits = cancelledVisitItems.length;
     const cancelReasonStats = new Map();
     cancelledVisitItems.forEach(visit => {
-      const rawReason = visit.cancelReason || visit.cancellationReason || visit.reason || visit.cancelNote || visit.statusReason || visit.description || visit.note || 'inne';
-      const reason = String(rawReason || 'inne').trim() || 'inne';
+      const reason = getVisitCancelReason(visit);
       cancelReasonStats.set(reason, (cancelReasonStats.get(reason) || 0) + 1);
     });
-    const cancelReasonRows = [...cancelReasonStats.entries()]
-      .sort((a,b) => b[1] - a[1])
-      .map(([reason,count]) => `<div><b>${count}</b><span>${escapeHtml(reason)}</span></div>`)
-      .join('') || '<div><b>0</b><span>brak odwołanych wizyt</span></div>';
+    const cancelReasonRows = CM_CANCEL_REASONS.filter(reason => cancelReasonStats.has(reason)).map(reason => `<div><b>${cancelReasonStats.get(reason)}</b><span>${escapeHtml(reason)}</span></div>`).join('') || '<div><b>0</b><span>brak odwołanych wizyt</span></div>';
     const serviceSales = [
       ...billableDashboardVisits.filter(v => v.serviceId),
       ...walkins.filter(w => inRange(w.date || w.saleDate, currentStart, currentEnd) && (w.serviceId || w.serviceCustom || (!w.productId && !w.productName)))
@@ -7048,7 +7096,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const isCancelled = (visit) => ['odwołane','odwołana','odwołany','usunięte','usunięta'].includes(String(visit.status || '').toLowerCase()) || visit.cancelled === true;
     const isFinished = (visit) => ['zakończone','zakończona','zakończony'].includes(String(visit.status || '').toLowerCase());
     const isPlanned = (visit) => !isCancelled(visit) && !isFinished(visit);
-    let filteredVisits = allVisits.filter(mode === 'finishedVisits' ? isFinished : isPlanned);
+    let filteredVisits = allVisits.filter(mode === 'finishedVisits' ? isFinished : mode === 'cancelledVisits' ? isCancelled : isPlanned);
     if (selectedEmployees.length) filteredVisits = filteredVisits.filter(v => selectedEmployees.includes(v.employeeId));
     if (selectedCategories.length) filteredVisits = filteredVisits.filter(v => {
       const service = servicesById[v.serviceId];
@@ -7064,8 +7112,15 @@ document.addEventListener('DOMContentLoaded', () => {
         const customer = customersById[visit.customerId];
         const label = customerLabel(customer) || visit.clientName || '-';
         const key = visit.customerId || label;
-        const prev = map.get(key) || { label, visits:0, services:0, value:0 };
-        prev.visits += 1; if (visit.serviceId) prev.services += 1; prev.value += serviceValue(visit); map.set(key, prev);
+        const prev = map.get(key) || { label, visits:0, services:0, value:0, reasonStats:new Map() };
+        prev.visits += 1;
+        if (visit.serviceId) prev.services += 1;
+        if (!isCancelled(visit)) prev.value += serviceValue(visit);
+        if (isCancelled(visit)) {
+          const reason = getVisitCancelReason(visit);
+          prev.reasonStats.set(reason, (prev.reasonStats.get(reason) || 0) + 1);
+        }
+        map.set(key, prev);
       });
       return [...map.values()].sort((a,b) => b.visits - a.visits || b.value - a.value);
     };
@@ -7085,8 +7140,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const limitNumber = Number(limitValue) || 50;
     const rowsLimited = rowsFiltered;
     const totals = rowsRaw.reduce((acc,row) => { acc.visits += row.visits; acc.services += row.services; acc.value += row.value; return acc; }, { visits:0, services:0, value:0 });
-    const headers = mode === 'plannedCategories' ? ['Kategoria usług','L. wizyt','L. usług','Wartość'] : ['Klient','L. wizyt','L. usług','Wartość'];
-    const tableRows = rowsLimited.map(row => [escapeHtml(row.label), String(row.visits), String(row.services), money(row.value)]);
+    const headers = mode === 'plannedCategories' ? ['Kategoria usług','L. wizyt','L. usług','Wartość'] : mode === 'cancelledVisits' ? ['Klient','L. odwołań','Powody odwołania'] : ['Klient','L. wizyt','L. usług','Wartość'];
+    const tableRows = rowsLimited.map(row => {
+      if (mode === 'cancelledVisits') {
+        const reasons = row.reasonStats instanceof Map ? CM_CANCEL_REASONS.filter(reason => row.reasonStats.has(reason)).map(reason => `${reason}: ${row.reasonStats.get(reason)}`).join(', ') : '';
+        return [escapeHtml(row.label), String(row.visits), escapeHtml(reasons || 'Inne')];
+      }
+      return [escapeHtml(row.label), String(row.visits), String(row.services), money(row.value)];
+    });
     const totalRowsCount = rowsFiltered.length;
     const shownFrom = totalRowsCount ? 1 : 0;
     const shownTo = Math.min(limitNumber, totalRowsCount);
@@ -7094,7 +7155,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const titles = {
       plannedClients: 'Planowane wizyty według klientów',
       plannedCategories: 'Planowane wizyty według kategorii usług',
-      finishedVisits: 'Zakończone wizyty'
+      finishedVisits: 'Zakończone wizyty',
+      cancelledVisits: 'Odwołane wizyty'
     };
     const content = `<section class="bm-page-card cm-customers-reports-page">
       <div class="cm-customer-report-switcher" aria-label="Widok raportu klientów">
@@ -7123,7 +7185,7 @@ document.addEventListener('DOMContentLoaded', () => {
     </section>`;
     renderPanelFrame(ctx, 'customersReports', content, '', '');
     addReportExportButton('.cm-customer-report-card .bm-page-head', `klienci-${(titles[mode] || titles.plannedClients).toLowerCase().replace(/\s+/g, '-')}`, '.cm-customer-report-card');
-    const modes = ['plannedClients','plannedCategories','finishedVisits'];
+    const modes = ['plannedClients','plannedCategories','finishedVisits','cancelledVisits'];
     const moveView = (step) => {
       const index = modes.indexOf(mode);
       const next = modes[(index + step + modes.length) % modes.length] || 'plannedClients';
@@ -7815,11 +7877,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const cancelledVisits = cancelledVisitItems.length;
     const cancelReasonStats = new Map();
     cancelledVisitItems.forEach(visit => {
-      const rawReason = visit.cancelReason || visit.cancellationReason || visit.reason || visit.cancelNote || visit.statusReason || visit.description || visit.note || 'inne';
-      const reason = String(rawReason || 'inne').trim() || 'inne';
+      const reason = getVisitCancelReason(visit);
       cancelReasonStats.set(reason, (cancelReasonStats.get(reason) || 0) + 1);
     });
-    const cancelReasonRows = [...cancelReasonStats.entries()].sort((a,b)=>b[1]-a[1]).map(([reason,count]) => `<div><b>${count}</b><span>${escapeHtml(reason)}</span></div>`).join('') || '<div><b>0</b><span>brak odwołanych wizyt</span></div>';
+    const cancelReasonRows = CM_CANCEL_REASONS.filter(reason => cancelReasonStats.has(reason)).map(reason => `<div><b>${cancelReasonStats.get(reason)}</b><span>${escapeHtml(reason)}</span></div>`).join('') || '<div><b>0</b><span>brak odwołanych wizyt</span></div>';
     const serviceSales = [
       ...billableDashboardVisits.filter(v => v.serviceId),
       ...walkins.filter(w => (w.serviceId || w.serviceCustom || (!w.productId && !w.productName)))
