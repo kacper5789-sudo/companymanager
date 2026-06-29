@@ -15334,7 +15334,7 @@ html[data-cm-theme]:not([data-cm-theme="original"]) [data-period-employee-check]
 }
 
 /* CompanyManager v55 — SSJ2 / SSJ3 click lightning burst
-   Efekt uruchamia się tylko po kliknięciu skórki SSJ2 albo SSJ3. */
+   Efekt pełnoekranowy uruchamia się po kliknięciu, a v58 dodaje stałe pioruny na kartach. */
 .cm-power-lightning-burst{
   position:fixed;
   inset:0;
@@ -15607,3 +15607,98 @@ html[data-cm-theme]:not([data-cm-theme="original"]) [data-period-employee-check]
 /* Ikony w miniaturach: mocniejszy efekt aktywnej karty */
 .cm-skin-card.active .cm-skin-card-icon::before{filter:saturate(1.18) contrast(1.08);}
 .cm-skin-card.active .cm-skin-card-name{color:color-mix(in srgb,var(--cm-icon-glow,var(--cm-skin-accent,#fbbf24)) 85%,#fff 15%)!important;}
+
+/* CompanyManager v58 — SSJ2 / SSJ3 lightning on cards
+   Efekt nie odpala się już tylko po kliknięciu skórki. Gdy aktywna jest skórka SSJ2 albo SSJ3,
+   każda karta w aplikacji dostaje własne pioruny i glow. CSS działa też na dynamicznie renderowanych kartach. */
+html[data-cm-theme="mysticWarrior"] :where(.bm-page-card,.panel-card,.cm-unified-card,.bm-current-section,.dashboard-card,.stat-card,.report-card,.summary-card,.settings-card,.employee-card,.client-card,.service-card,.product-card,.appointment-card,.sale-card,.marketing-card,.pass-card,.chart-card,.table-card,.filter-card,.form-card,.modal-card,.cm-card,.card),
+html[data-cm-theme="ssj3"] :where(.bm-page-card,.panel-card,.cm-unified-card,.bm-current-section,.dashboard-card,.stat-card,.report-card,.summary-card,.settings-card,.employee-card,.client-card,.service-card,.product-card,.appointment-card,.sale-card,.marketing-card,.pass-card,.chart-card,.table-card,.filter-card,.form-card,.modal-card,.cm-card,.card){
+  position:relative;
+  overflow:hidden;
+  isolation:isolate;
+}
+html[data-cm-theme="mysticWarrior"] :where(.bm-page-card,.panel-card,.cm-unified-card,.bm-current-section,.dashboard-card,.stat-card,.report-card,.summary-card,.settings-card,.employee-card,.client-card,.service-card,.product-card,.appointment-card,.sale-card,.marketing-card,.pass-card,.chart-card,.table-card,.filter-card,.form-card,.modal-card,.cm-card,.card)::before,
+html[data-cm-theme="ssj3"] :where(.bm-page-card,.panel-card,.cm-unified-card,.bm-current-section,.dashboard-card,.stat-card,.report-card,.summary-card,.settings-card,.employee-card,.client-card,.service-card,.product-card,.appointment-card,.sale-card,.marketing-card,.pass-card,.chart-card,.table-card,.filter-card,.form-card,.modal-card,.cm-card,.card)::before{
+  content:"";
+  position:absolute;
+  inset:-35%;
+  z-index:0;
+  pointer-events:none;
+  opacity:0;
+  mix-blend-mode:screen;
+  background:
+    linear-gradient(112deg, transparent 0 43%, var(--cm-card-lightning-a, rgba(94,211,255,.85)) 44% 45%, #fff 45.5% 46.2%, var(--cm-card-lightning-b, rgba(255,217,54,.92)) 46.8% 48%, transparent 49% 100%),
+    linear-gradient(68deg, transparent 0 57%, var(--cm-card-lightning-a, rgba(94,211,255,.72)) 58% 59%, #fff 59.5% 60%, transparent 61% 100%),
+    radial-gradient(circle at 78% 20%, var(--cm-card-lightning-glow, rgba(89,200,255,.16)), transparent 35%);
+  filter:blur(.15px) drop-shadow(0 0 10px var(--cm-card-lightning-a, rgba(94,211,255,.8)));
+  transform:translate3d(-18%,-10%,0) rotate(0.001deg);
+  animation:cmCardLightningSweep var(--cm-card-lightning-speed, 4.8s) ease-in-out infinite;
+}
+html[data-cm-theme="mysticWarrior"] :where(.bm-page-card,.panel-card,.cm-unified-card,.bm-current-section,.dashboard-card,.stat-card,.report-card,.summary-card,.settings-card,.employee-card,.client-card,.service-card,.product-card,.appointment-card,.sale-card,.marketing-card,.pass-card,.chart-card,.table-card,.filter-card,.form-card,.modal-card,.cm-card,.card)::after,
+html[data-cm-theme="ssj3"] :where(.bm-page-card,.panel-card,.cm-unified-card,.bm-current-section,.dashboard-card,.stat-card,.report-card,.summary-card,.settings-card,.employee-card,.client-card,.service-card,.product-card,.appointment-card,.sale-card,.marketing-card,.pass-card,.chart-card,.table-card,.filter-card,.form-card,.modal-card,.cm-card,.card)::after{
+  content:"";
+  position:absolute;
+  inset:0;
+  z-index:0;
+  pointer-events:none;
+  opacity:.72;
+  border-radius:inherit;
+  background:
+    radial-gradient(circle at 12% 18%, var(--cm-card-energy-a, rgba(255,214,49,.12)), transparent 28%),
+    radial-gradient(circle at 90% 78%, var(--cm-card-energy-b, rgba(89,200,255,.12)), transparent 30%);
+  box-shadow:inset 0 0 0 1px var(--cm-card-energy-line, rgba(125,216,255,.16)), inset 0 0 30px var(--cm-card-energy-soft, rgba(89,200,255,.07));
+  animation:cmCardEnergyPulse var(--cm-card-energy-speed, 3.4s) ease-in-out infinite;
+}
+html[data-cm-theme="mysticWarrior"]{
+  --cm-card-lightning-a:rgba(89,200,255,.82);
+  --cm-card-lightning-b:rgba(255,214,49,.86);
+  --cm-card-lightning-glow:rgba(89,200,255,.15);
+  --cm-card-lightning-speed:5.4s;
+  --cm-card-energy-a:rgba(255,214,49,.12);
+  --cm-card-energy-b:rgba(89,200,255,.13);
+  --cm-card-energy-line:rgba(89,200,255,.15);
+  --cm-card-energy-soft:rgba(89,200,255,.07);
+  --cm-card-energy-speed:3.8s;
+}
+html[data-cm-theme="ssj3"]{
+  --cm-card-lightning-a:rgba(125,216,255,.95);
+  --cm-card-lightning-b:rgba(255,224,58,1);
+  --cm-card-lightning-glow:rgba(255,224,58,.22);
+  --cm-card-lightning-speed:3.7s;
+  --cm-card-energy-a:rgba(255,224,58,.18);
+  --cm-card-energy-b:rgba(125,216,255,.16);
+  --cm-card-energy-line:rgba(255,224,58,.20);
+  --cm-card-energy-soft:rgba(255,224,58,.10);
+  --cm-card-energy-speed:2.7s;
+}
+html[data-cm-theme="ssj3"] :where(.bm-page-card,.panel-card,.cm-unified-card,.bm-current-section,.dashboard-card,.stat-card,.report-card,.summary-card,.settings-card,.employee-card,.client-card,.service-card,.product-card,.appointment-card,.sale-card,.marketing-card,.pass-card,.chart-card,.table-card,.filter-card,.form-card,.modal-card,.cm-card,.card)::before{
+  background:
+    linear-gradient(112deg, transparent 0 36%, var(--cm-card-lightning-a) 37% 38.4%, #fff 38.8% 39.5%, var(--cm-card-lightning-b) 40% 42%, transparent 43% 100%),
+    linear-gradient(74deg, transparent 0 54%, var(--cm-card-lightning-b) 55% 56.4%, #fff 56.8% 57.2%, var(--cm-card-lightning-a) 58% 59.4%, transparent 60.2% 100%),
+    linear-gradient(34deg, transparent 0 68%, var(--cm-card-lightning-a) 69% 70.2%, #fff 70.6% 71.1%, transparent 72% 100%),
+    radial-gradient(circle at 72% 18%, var(--cm-card-lightning-glow), transparent 38%);
+  filter:blur(0) drop-shadow(0 0 12px var(--cm-card-lightning-a)) drop-shadow(0 0 24px var(--cm-card-lightning-b));
+}
+html[data-cm-theme="mysticWarrior"] :where(.bm-page-card,.panel-card,.cm-unified-card,.bm-current-section,.dashboard-card,.stat-card,.report-card,.summary-card,.settings-card,.employee-card,.client-card,.service-card,.product-card,.appointment-card,.sale-card,.marketing-card,.pass-card,.chart-card,.table-card,.filter-card,.form-card,.modal-card,.cm-card,.card) > *,
+html[data-cm-theme="ssj3"] :where(.bm-page-card,.panel-card,.cm-unified-card,.bm-current-section,.dashboard-card,.stat-card,.report-card,.summary-card,.settings-card,.employee-card,.client-card,.service-card,.product-card,.appointment-card,.sale-card,.marketing-card,.pass-card,.chart-card,.table-card,.filter-card,.form-card,.modal-card,.cm-card,.card) > *{
+  position:relative;
+  z-index:1;
+}
+@keyframes cmCardLightningSweep{
+  0%,62%,100%{opacity:0;transform:translate3d(-30%,-18%,0) scale(1.02) rotate(0.001deg);}
+  67%{opacity:.82;transform:translate3d(-12%,-8%,0) scale(1.04) rotate(0.001deg);}
+  71%{opacity:0;transform:translate3d(12%,8%,0) scale(1.06) rotate(0.001deg);}
+}
+@keyframes cmCardEnergyPulse{
+  0%,100%{opacity:.48;filter:saturate(1);}
+  50%{opacity:.86;filter:saturate(1.45);}
+}
+@media (prefers-reduced-motion: reduce){
+  html[data-cm-theme="mysticWarrior"] :where(.bm-page-card,.panel-card,.cm-unified-card,.bm-current-section,.dashboard-card,.stat-card,.report-card,.summary-card,.settings-card,.employee-card,.client-card,.service-card,.product-card,.appointment-card,.sale-card,.marketing-card,.pass-card,.chart-card,.table-card,.filter-card,.form-card,.modal-card,.cm-card,.card)::before,
+  html[data-cm-theme="ssj3"] :where(.bm-page-card,.panel-card,.cm-unified-card,.bm-current-section,.dashboard-card,.stat-card,.report-card,.summary-card,.settings-card,.employee-card,.client-card,.service-card,.product-card,.appointment-card,.sale-card,.marketing-card,.pass-card,.chart-card,.table-card,.filter-card,.form-card,.modal-card,.cm-card,.card)::before,
+  html[data-cm-theme="mysticWarrior"] :where(.bm-page-card,.panel-card,.cm-unified-card,.bm-current-section,.dashboard-card,.stat-card,.report-card,.summary-card,.settings-card,.employee-card,.client-card,.service-card,.product-card,.appointment-card,.sale-card,.marketing-card,.pass-card,.chart-card,.table-card,.filter-card,.form-card,.modal-card,.cm-card,.card)::after,
+  html[data-cm-theme="ssj3"] :where(.bm-page-card,.panel-card,.cm-unified-card,.bm-current-section,.dashboard-card,.stat-card,.report-card,.summary-card,.settings-card,.employee-card,.client-card,.service-card,.product-card,.appointment-card,.sale-card,.marketing-card,.pass-card,.chart-card,.table-card,.filter-card,.form-card,.modal-card,.cm-card,.card)::after{
+    animation:none!important;
+    opacity:.28!important;
+  }
+}
