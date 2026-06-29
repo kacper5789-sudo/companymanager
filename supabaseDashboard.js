@@ -1062,28 +1062,55 @@
     return "";
   }
 
-  function fillEditForm(form, item) {
+  function fillEditForm(form, item, lookupsArg = {}) {
     if (!form || !item) return;
+    const safeLookups = lookupsArg || {};
     const visitId = String(item.id || '');
     if (form.elements.visitId) form.elements.visitId.value = visitId;
     form.dataset.activeVisitId = visitId;
     form.elements.date.value = appointmentDate(item) || iso(new Date());
     form.elements.start.value = appointmentStart(item) || "06:00";
     form.elements.end.value = appointmentEnd(item) || "06:30";
-    setClientSearchValue(form, appointmentClientId(item) || "", lookups.clientsById || {});
-    setEntitySearchValue(form, "employeeId", item.employee_id || "", { users: Object.values(lookups.usersById || {}) });
+
+    const clientId = appointmentClientId(item) || "";
+    setClientSearchValue(form, clientId, safeLookups.clientsById || {});
+
+    const clientInput = form.querySelector('[data-client-search]');
+    const clientFallback = item.customer_name || item.client_name || item.customer_full_name || item.client_full_name || "";
+    if (clientInput && !clientInput.value && clientFallback) clientInput.value = clientFallback;
+
+    setEntitySearchValue(form, "employeeId", item.employee_id || "", { users: Object.values(safeLookups.usersById || {}) });
     if (!form.elements.employeeId?.value && item.employee_name && form.elements.employeeId) {
+      form.elements.employeeId.value = item.employee_id || "";
       form.elements.employeeId.dataset.name = item.employee_name;
+      form.elements.employeeId.dataset.label = item.employee_name;
       const input = form.querySelector('[data-entity-name="employeeId"]');
       if (input) input.value = item.employee_name;
     }
-    setEntitySearchValue(form, "serviceId", item.service_id || "", { services: Object.values(lookups.servicesById || {}) });
-    setEntitySearchValue(form, "productId", item.product_id || "", { products: Object.values(lookups.productsById || {}) });
+
+    setEntitySearchValue(form, "serviceId", item.service_id || "", { services: Object.values(safeLookups.servicesById || {}) });
+    if (!form.elements.serviceId?.value && item.service_name && form.elements.serviceId) {
+      form.elements.serviceId.value = item.service_id || "";
+      form.elements.serviceId.dataset.name = item.service_name;
+      form.elements.serviceId.dataset.label = item.service_name;
+      const input = form.querySelector('[data-entity-name="serviceId"]');
+      if (input) input.value = item.service_name;
+    }
+
+    setEntitySearchValue(form, "productId", item.product_id || "", { products: Object.values(safeLookups.productsById || {}) });
+    if (!form.elements.productId?.value && item.product_name && form.elements.productId) {
+      form.elements.productId.value = item.product_id || "";
+      form.elements.productId.dataset.name = item.product_name;
+      form.elements.productId.dataset.label = item.product_name;
+      const input = form.querySelector('[data-entity-name="productId"]');
+      if (input) input.value = item.product_name;
+    }
+
     if (form.elements.passId) {
-      form.elements.passId.innerHTML = passOptionsFor({ passes: Object.values(lookups.passesById || {}) }, appointmentClientId(item), item.service_id || "", item.pass_id || "");
+      form.elements.passId.innerHTML = passOptionsFor({ passes: Object.values(safeLookups.passesById || {}) }, clientId, item.service_id || "", item.pass_id || "");
       form.elements.passId.value = item.pass_id || "";
     }
-    const savedTotal = appointmentTotal(item, lookups);
+    const savedTotal = appointmentTotal(item, safeLookups);
     form.elements.total.value = savedTotal ? savedTotal.toFixed(2) : "0.00";
     if (!savedTotal) form.elements.serviceId?.dispatchEvent(new Event("change", { bubbles: true }));
     form.elements.payment.value = item.payment_method || "gotówka";
@@ -1577,7 +1604,7 @@
       const selected = data.appointments.find((item) => String(item.id) === visitId);
       if (!selected) return;
       showOnly(editPanel, panels);
-      fillEditForm(document.querySelector("#dashboardEditVisitForm"), selected);
+      fillEditForm(document.querySelector("#dashboardEditVisitForm"), selected, lookups);
       const cancelBox = document.querySelector("#dashEditCancelReasonBox");
       if (cancelBox) cancelBox.hidden = true;
       setMessage("#dashboardEditVisitMessage", "", true);
@@ -1646,7 +1673,7 @@
     document.querySelector("#dashEditVisitSelect")?.addEventListener("change", (event) => {
       const selected = data.appointments.find((item) => String(item.id) === String(event.currentTarget.value));
       if (!selected) return;
-      fillEditForm(document.querySelector("#dashboardEditVisitForm"), selected);
+      fillEditForm(document.querySelector("#dashboardEditVisitForm"), selected, lookups);
     });
 
     document.querySelector("#dashboardEditVisitForm")?.addEventListener("submit", async (event) => {
