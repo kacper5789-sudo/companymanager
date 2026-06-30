@@ -1,4 +1,4 @@
-// CompanyManager — 096 Grafik: każdy wpis dni wolnych nadpisuje grafik wynikowy
+// CompanyManager — 098 Grafik: zakresy miesięczne, paginacja, nowoczesny układ
 // work-schedule.html: flexible work hours, edit/delete, download schedule.
 (function () {
   function isPage() {
@@ -71,6 +71,10 @@
   function monthEndIso(date) { return toIsoDate(new Date(date.getFullYear(), date.getMonth() + 1, 0)); }
   function yearStartIso(date) { return toIsoDate(new Date(date.getFullYear(), 0, 1)); }
   function yearEndIso(date) { return toIsoDate(new Date(date.getFullYear(), 11, 31)); }
+  function shiftedMonthIso(date, offset, end = false) {
+    const d = new Date(date.getFullYear(), date.getMonth() + Number(offset || 0), 1);
+    return end ? monthEndIso(d) : monthStartIso(d);
+  }
   function startOfWeekIso(date) {
     const d = new Date(date.getFullYear(), date.getMonth(), date.getDate());
     const offset = (d.getDay() + 6) % 7;
@@ -134,7 +138,9 @@
     daysOff: [],
     selectedEmployeeId: "",
     finalFrom: monthStartIso(new Date()),
-    finalTo: monthEndIso(new Date())
+    finalTo: monthEndIso(new Date()),
+    finalPage: 1,
+    finalPageSize: 50
   };
 
   function area() { return $(".bm-panel-area") || $("#dashboardRoot"); }
@@ -282,7 +288,12 @@
   function finalScheduleRowsHtml() {
     const dates = dateRange(state.finalFrom, state.finalTo, 370);
     if (!dates.length) return `<tr><td colspan="${state.employees.length + 2}">Wybierz poprawny zakres dat.</td></tr>`;
-    return dates.map((date) => {
+    const pageSize = Number(state.finalPageSize || 50);
+    const totalPages = Math.max(1, Math.ceil(dates.length / pageSize));
+    state.finalPage = Math.min(Math.max(1, Number(state.finalPage || 1)), totalPages);
+    const startIndex = (state.finalPage - 1) * pageSize;
+    const visibleDates = dates.slice(startIndex, startIndex + pageSize);
+    return visibleDates.map((date) => {
       const iso = toIsoDate(date);
       return `<tr>
         <td><strong>${escapeHtml(formatDatePL(iso))}</strong></td>
@@ -298,26 +309,54 @@
     }).join("");
   }
 
+  function finalSchedulePagerHtml() {
+    const dates = dateRange(state.finalFrom, state.finalTo, 370);
+    const total = dates.length;
+    const pageSize = Number(state.finalPageSize || 50);
+    const totalPages = Math.max(1, Math.ceil(total / pageSize));
+    state.finalPage = Math.min(Math.max(1, Number(state.finalPage || 1)), totalPages);
+    const from = total ? ((state.finalPage - 1) * pageSize + 1) : 0;
+    const to = Math.min(total, state.finalPage * pageSize);
+    return `<div class="cm-work-final-pager">
+      <div class="cm-work-page-size">
+        <label>Na stronę
+          <select id="finalSchedulePageSize">
+            ${[50, 100, 200].map((size) => `<option value="${size}" ${Number(state.finalPageSize) === size ? "selected" : ""}>${size}</option>`).join("")}
+          </select>
+        </label>
+      </div>
+      <div class="cm-work-page-status">Pozycje od ${from} do ${to} z ${total}</div>
+      <div class="cm-work-page-buttons">
+        <button type="button" id="finalSchedulePrevPage" class="bm-light-btn cm-work-btn" ${state.finalPage <= 1 ? "disabled" : ""}>‹</button>
+        <span>${state.finalPage} z ${totalPages}</span>
+        <button type="button" id="finalScheduleNextPage" class="bm-light-btn cm-work-btn" ${state.finalPage >= totalPages ? "disabled" : ""}>›</button>
+      </div>
+    </div>`;
+  }
+
   function finalScheduleTableHtml() {
     return `<section class="cm-work-final-section">
       <div class="cm-section-title-row">
         <h3 class="cm-section-title">Grafik wynikowy</h3>
       </div>
-      <p class="bm-muted">To jest finalny grafik po połączeniu szablonu tygodniowego z dniami wolnymi. Każdy wpis w Dni wolne nadpisuje plan pracy: urlop, zwolnienie, szkolenie, inne lub własny powód.</p>
+      <p class="bm-muted">Finalny grafik po połączeniu szablonu tygodniowego z dniami wolnymi. Każdy wpis w Dni wolne nadpisuje plan pracy: urlop, zwolnienie, szkolenie, inne lub własny powód.</p>
       <div class="cm-work-schedule-controls cm-work-final-controls">
-        <label>Od<input type="date" id="finalScheduleFrom" value="${escapeHtml(state.finalFrom)}"></label>
-        <label>Do<input type="date" id="finalScheduleTo" value="${escapeHtml(state.finalTo)}"></label>
-        <button type="button" id="finalScheduleWeekBtn" class="bm-light-btn cm-work-btn">Ten tydzień</button>
-        <button type="button" id="finalScheduleMonthBtn" class="bm-light-btn cm-work-btn">Ten miesiąc</button>
+        <label>Od<input type="date" class="cm-modern-date" id="finalScheduleFrom" value="${escapeHtml(state.finalFrom)}"></label>
+        <label>Do<input type="date" class="cm-modern-date" id="finalScheduleTo" value="${escapeHtml(state.finalTo)}"></label>
+        <button type="button" id="finalSchedulePrevMonthBtn" class="bm-light-btn cm-work-btn">Poprzedni miesiąc</button>
+        <button type="button" id="finalScheduleCurrentMonthBtn" class="bm-light-btn cm-work-btn">Obecny miesiąc</button>
+        <button type="button" id="finalScheduleNextMonthBtn" class="bm-light-btn cm-work-btn">Kolejny miesiąc</button>
         <button type="button" id="finalScheduleYearBtn" class="bm-light-btn cm-work-btn">Ten rok</button>
         <button type="button" id="downloadFinalScheduleBtn" class="bm-light-btn cm-work-btn cm-work-btn-download">Pobierz grafik wynikowy</button>
       </div>
+      ${finalSchedulePagerHtml()}
       <div class="bm-table-wrap cm-work-final-wrap">
         <table class="bm-table cm-work-final-table">
           <thead><tr><th>Data</th><th>Dzień</th>${state.employees.map((e) => `<th>${escapeHtml(employeeName(e))}</th>`).join("")}</tr></thead>
           <tbody>${finalScheduleRowsHtml()}</tbody>
         </table>
       </div>
+      ${finalSchedulePagerHtml()}
     </section>`;
   }
 
@@ -343,8 +382,8 @@
           <div class="cm-work-panel-title">Edycja grafiku</div>
           <div class="cm-work-schedule-controls">
             <label>Pracownik<select id="workScheduleEmployee">${employeeOptions()}</select></label>
-            <label>Szybko od<input type="time" id="quickStartTime" value="08:00"></label>
-            <label>Szybko do<input type="time" id="quickEndTime" value="16:00"></label>
+            <label>Pracuje od<input type="time" id="quickStartTime" value="08:00"></label>
+            <label>Pracuje do<input type="time" id="quickEndTime" value="16:00"></label>
             <label>Przerwa od<input type="time" id="quickBreakStart" value=""></label>
             <label>Przerwa do<input type="time" id="quickBreakEnd" value=""></label>
           </div>
@@ -360,7 +399,7 @@
 
       <div class="bm-table-wrap cm-work-schedule-editor-wrap">
         <table class="bm-table cm-work-schedule-editor">
-          <thead><tr><th>Dzień</th><th>Status</th><th>Od</th><th>Do</th><th>Przerwa od</th><th>Przerwa do</th><th>Czas</th></tr></thead>
+          <thead><tr><th>Dzień</th><th>Status</th><th>Pracuje od</th><th>Pracuje do</th><th>Przerwa od</th><th>Przerwa do</th><th>Czas</th></tr></thead>
           <tbody>${DAYS.map((day) => dayRow(employee, day)).join("")}</tbody>
         </table>
       </div>
@@ -554,6 +593,7 @@
   function updateFinalRange(from, to) {
     if (from) state.finalFrom = from;
     if (to) state.finalTo = to;
+    state.finalPage = 1;
     render();
     document.querySelector(".cm-work-final-section")?.scrollIntoView({ behavior: "smooth", block: "start" });
   }
@@ -569,11 +609,15 @@
     $("#applyAllDaysBtn")?.addEventListener("click", () => applyToRows("all"));
     $("#clearScheduleBtn")?.addEventListener("click", setFree);
     $("#downloadWorkScheduleBtn")?.addEventListener("click", downloadCsv);
-    $("#finalScheduleFrom")?.addEventListener("change", (event) => { state.finalFrom = event.currentTarget.value; render(); });
-    $("#finalScheduleTo")?.addEventListener("change", (event) => { state.finalTo = event.currentTarget.value; render(); });
-    $("#finalScheduleWeekBtn")?.addEventListener("click", () => { const now = new Date(); updateFinalRange(startOfWeekIso(now), endOfWeekIso(now)); });
-    $("#finalScheduleMonthBtn")?.addEventListener("click", () => { const now = new Date(); updateFinalRange(monthStartIso(now), monthEndIso(now)); });
+    $("#finalScheduleFrom")?.addEventListener("change", (event) => { state.finalFrom = event.currentTarget.value; state.finalPage = 1; render(); });
+    $("#finalScheduleTo")?.addEventListener("change", (event) => { state.finalTo = event.currentTarget.value; state.finalPage = 1; render(); });
+    $("#finalSchedulePrevMonthBtn")?.addEventListener("click", () => { const now = new Date(); updateFinalRange(shiftedMonthIso(now, -1), shiftedMonthIso(now, -1, true)); });
+    $("#finalScheduleCurrentMonthBtn")?.addEventListener("click", () => { const now = new Date(); updateFinalRange(monthStartIso(now), monthEndIso(now)); });
+    $("#finalScheduleNextMonthBtn")?.addEventListener("click", () => { const now = new Date(); updateFinalRange(shiftedMonthIso(now, 1), shiftedMonthIso(now, 1, true)); });
     $("#finalScheduleYearBtn")?.addEventListener("click", () => { const now = new Date(); updateFinalRange(yearStartIso(now), yearEndIso(now)); });
+    $("#finalSchedulePageSize")?.addEventListener("change", (event) => { state.finalPageSize = Number(event.currentTarget.value || 50); state.finalPage = 1; render(); document.querySelector(".cm-work-final-section")?.scrollIntoView({ behavior: "smooth", block: "start" }); });
+    $("#finalSchedulePrevPage")?.addEventListener("click", () => { state.finalPage = Math.max(1, Number(state.finalPage || 1) - 1); render(); document.querySelector(".cm-work-final-section")?.scrollIntoView({ behavior: "smooth", block: "start" }); });
+    $("#finalScheduleNextPage")?.addEventListener("click", () => { state.finalPage = Number(state.finalPage || 1) + 1; render(); document.querySelector(".cm-work-final-section")?.scrollIntoView({ behavior: "smooth", block: "start" }); });
     $("#downloadFinalScheduleBtn")?.addEventListener("click", downloadFinalCsv);
     $$(".cm-work-schedule-editor input").forEach((input) => input.addEventListener("change", refreshDurations));
     $$('[data-edit-employee]').forEach((button) => button.addEventListener("click", () => {

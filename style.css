@@ -17003,3 +17003,115 @@ body[data-panel-page="workSchedule"] .cm-work-final-section{
     padding:14px !important;
   }
 }
+
+
+/* 098 — Grafik: nazwy, nowoczesne daty, zakresy miesięczne i paginacja */
+body[data-panel-page="workSchedule"] .cm-supabase-work-schedule{
+  width:calc(100vw - 44px) !important;
+  max-width:none !important;
+}
+body[data-panel-page="workSchedule"] .cm-work-final-controls{
+  grid-template-columns:minmax(150px,.55fr) minmax(150px,.55fr) repeat(5, auto) !important;
+  align-items:end !important;
+}
+body[data-panel-page="workSchedule"] .cm-supabase-work-schedule input[type="date"],
+body[data-panel-page="workSchedule"] .cm-supabase-work-schedule .cm-modern-date{
+  width:100% !important;
+  height:44px !important;
+  min-height:44px !important;
+  border-radius:14px !important;
+  background:linear-gradient(135deg, rgba(2,6,23,.50), rgba(15,23,42,.34)) !important;
+  border:1px solid rgba(255,255,255,.16) !important;
+  color:#f8fafc !important;
+  padding:0 12px !important;
+  font-weight:900 !important;
+  color-scheme:dark !important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.05), 0 12px 26px rgba(2,6,23,.16) !important;
+}
+body[data-panel-page="workSchedule"] .cm-work-final-pager{
+  display:flex !important;
+  justify-content:space-between !important;
+  align-items:center !important;
+  gap:12px !important;
+  flex-wrap:wrap !important;
+  margin:12px 0 !important;
+  padding:12px 14px !important;
+  border:1px solid rgba(255,255,255,.10) !important;
+  background:rgba(15,23,42,.28) !important;
+  border-radius:18px !important;
+}
+body[data-panel-page="workSchedule"] .cm-work-page-size label{
+  display:flex !important;
+  align-items:center !important;
+  gap:8px !important;
+  color:rgba(226,232,240,.88) !important;
+  font-weight:900 !important;
+}
+body[data-panel-page="workSchedule"] .cm-work-page-size select{
+  height:36px !important;
+  min-height:36px !important;
+  min-width:86px !important;
+  border-radius:12px !important;
+}
+body[data-panel-page="workSchedule"] .cm-work-page-status,
+body[data-panel-page="workSchedule"] .cm-work-page-buttons span{
+  color:rgba(226,232,240,.92) !important;
+  font-weight:900 !important;
+}
+body[data-panel-page="workSchedule"] .cm-work-page-buttons{
+  display:flex !important;
+  align-items:center !important;
+  gap:10px !important;
+}
+body[data-panel-page="workSchedule"] .cm-work-page-buttons .cm-work-btn{
+  min-width:42px !important;
+  width:42px !important;
+  padding:0 !important;
+  font-size:1.25rem !important;
+}
+body[data-panel-page="workSchedule"] .cm-work-page-buttons .cm-work-btn:disabled{
+  opacity:.42 !important;
+  cursor:not-allowed !important;
+}
+body[data-panel-page="workSchedule"] .cm-work-final-wrap{
+  border-radius:22px !important;
+  border:1px solid rgba(255,255,255,.10) !important;
+  background:rgba(15,23,42,.30) !important;
+  box-shadow:0 18px 45px rgba(0,0,0,.18) !important;
+  overflow:auto !important;
+}
+body[data-panel-page="workSchedule"] .cm-work-final-table{
+  min-width:980px !important;
+  width:100% !important;
+}
+body[data-panel-page="workSchedule"] .cm-work-final-table th,
+body[data-panel-page="workSchedule"] .cm-work-final-table td{
+  padding:11px 12px !important;
+  text-align:center !important;
+  border-bottom:1px solid rgba(255,255,255,.07) !important;
+  white-space:nowrap !important;
+}
+body[data-panel-page="workSchedule"] .cm-work-final-table th:first-child,
+body[data-panel-page="workSchedule"] .cm-work-final-table td:first-child{
+  text-align:left !important;
+  width:130px !important;
+}
+body[data-panel-page="workSchedule"] .cm-work-final-table th{
+  background:rgba(255,255,255,.045) !important;
+  color:rgba(226,232,240,.90) !important;
+  font-weight:900 !important;
+}
+@media(max-width:1320px){
+  body[data-panel-page="workSchedule"] .cm-work-final-controls{
+    grid-template-columns:repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+@media(max-width:760px){
+  body[data-panel-page="workSchedule"] .cm-supabase-work-schedule{
+    width:calc(100vw - 24px) !important;
+  }
+  body[data-panel-page="workSchedule"] .cm-work-final-pager{
+    align-items:stretch !important;
+    flex-direction:column !important;
+  }
+}
