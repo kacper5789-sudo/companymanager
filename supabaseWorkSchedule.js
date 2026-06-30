@@ -498,7 +498,6 @@
             ${canEdit(state.ctx) ? `<button type="button" id="copyCompanyHoursBtn" class="bm-light-btn cm-work-btn cm-work-btn-neutral">Zastosuj pn-pt</button>` : ""}
             ${canEdit(state.ctx) ? `<button type="button" id="applyAllDaysBtn" class="bm-light-btn cm-work-btn cm-work-btn-neutral">Zastosuj cały tydzień</button>` : ""}
             ${canDelete(state.ctx) ? `<button type="button" id="clearScheduleBtn" class="bm-danger-btn cm-work-btn cm-work-btn-danger">Ustaw wolne</button>` : ""}
-            ${canEdit(state.ctx) ? `<button type="button" id="saveWorkScheduleBtn" class="bm-primary-btn cm-save-schedule-btn cm-work-btn cm-work-btn-save">Zapisz grafik w zakresie</button>` : ""}
           </div>
           <div id="workSchedulePreview" class="cm-work-preview-box">Przed zapisem zobaczysz podsumowanie: dni pracy, godziny, dni wolne oraz istniejące wpisy w wybranym zakresie.</div><p id="workScheduleMessage" class="panel-message"></p>
         </section>
@@ -637,13 +636,21 @@
   function maxIso(a, b) { return a > b ? a : b; }
 
   function selectedApplyDates() {
-    const from = $("#workScheduleApplyFrom")?.value || state.applyFrom;
-    const to = $("#workScheduleApplyTo")?.value || state.applyTo;
+    const fromInput = document.getElementById("workScheduleApplyFrom");
+    const toInput = document.getElementById("workScheduleApplyTo");
+    const from = String(fromInput?.value || state.applyFrom || "").slice(0, 10);
+    const to = String(toInput?.value || state.applyTo || "").slice(0, 10);
     const min = minEditableIso();
+
+    if (!from || !to) throw new Error("Wybierz zakres dat: Od i Do.");
     if (from < min) {
       throw new Error(`Nie można edytować grafiku starszego niż ${formatDatePL(min)}. Starsze wpisy są zablokowane, bo wpływają na raporty.`);
     }
     if (to < from) throw new Error("Data 'Do' nie może być wcześniejsza niż data 'Od'.");
+
+    state.applyFrom = from;
+    state.applyTo = to;
+
     const dates = dateRange(from, to, 370);
     if (!dates.length) throw new Error("Wybierz poprawny zakres dat dla ustawianego grafiku.");
     return { from, to, dates };
@@ -730,13 +737,26 @@
     $$(".cm-work-schedule-editor tbody tr").forEach((tr) => {
       const day = Number(tr.dataset.day);
       const weekend = day === 0 || day === 6;
-      if (mode === "week" && weekend) return;
       const working = $("[data-working]", tr);
+      const start = $("[data-start]", tr);
+      const end = $("[data-end]", tr);
+      const bs = $("[data-break-start]", tr);
+      const be = $("[data-break-end]", tr);
+
+      if (mode === "week" && weekend) {
+        if (working) working.checked = false;
+        if (start) start.value = q.start;
+        if (end) end.value = q.end;
+        if (bs) bs.value = "";
+        if (be) be.value = "";
+        return;
+      }
+
       if (working) working.checked = true;
-      const start = $("[data-start]", tr); if (start) start.value = q.start;
-      const end = $("[data-end]", tr); if (end) end.value = q.end;
-      const bs = $("[data-break-start]", tr); if (bs) bs.value = q.breakStart;
-      const be = $("[data-break-end]", tr); if (be) be.value = q.breakEnd;
+      if (start) start.value = q.start;
+      if (end) end.value = q.end;
+      if (bs) bs.value = q.breakStart;
+      if (be) be.value = q.breakEnd;
     });
     refreshDurations();
   }
@@ -842,7 +862,6 @@
       state.selectedEmployeeIds = $$('[data-employee-multi]:checked').map((el) => el.value);
     }));
     $$('input[name="workScheduleSaveMode"]').forEach((input) => input.addEventListener("change", (event) => { state.saveMode = event.currentTarget.value; }));
-    $("#saveWorkScheduleBtn")?.addEventListener("click", save);
     $("#saveWorkScheduleBottomBtn")?.addEventListener("click", save);
     $("#workScheduleApplyFrom")?.addEventListener("change", (event) => { state.applyFrom = event.currentTarget.value; });
     $("#workScheduleApplyTo")?.addEventListener("change", (event) => { state.applyTo = event.currentTarget.value; });
