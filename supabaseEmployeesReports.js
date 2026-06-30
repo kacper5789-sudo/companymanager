@@ -1,4 +1,4 @@
-// CompanyManager — 236 Employees reports pass-free worker value fix
+// CompanyManager — 237 Employees reports pass columns only removed
 // employeesraports.html: realne dane z profiles / clients / appointments / sales / sale_items / days_off.
 (function () {
   if (document.body?.dataset?.panelPage !== "employeesReports") return;
@@ -770,11 +770,11 @@
       <div class="cm-er-grid">
         <div class="cm-er-card"><span>Pracownicy</span><strong>${stats.length}</strong></div>
         <div class="cm-er-card"><span>Wizyty zakończone</span><strong>${totals.finishedVisits}</strong></div>
-        <div class="cm-er-card"><span>Pozycje pracy/sprzedaży</span><strong>${totals.services + totals.products}</strong></div>
-        <div class="cm-er-card"><span>Wartość pracy</span><strong>${money(totals.revenue)}</strong></div>
+        <div class="cm-er-card"><span>Pozycje sprzedaży</span><strong>${totals.services + totals.products}</strong></div>
+        <div class="cm-er-card"><span>Przychód pracowników</span><strong>${money(totals.revenue)}</strong></div>
       </div>
       ${tableModule('customer-service', 'Obsługa klientów', ['Pracownik','L. usług','L. klientów','Czas wizyt','Nowi k.','Nowi k. %','K. powracający','K. powracający %'], customerServiceRows, ['SUMA', totals.services, totals.clients, formatMinutes(totals.visitMinutes), totals.newClients, percent(totals.newClients, totals.clients), totals.returningClients, percent(totals.returningClients, totals.clients)])}
-      ${tableModule('sales', 'Wartość pracy według pracowników', ['Pracownik','Usługi','Wartość usług','Produkty','Wartość produktów','Razem'], salesRows, ['SUMA', totals.services, money(totals.serviceValue), totals.products, money(totals.productValue), money(totals.revenue)])}
+      ${tableModule('sales', 'Sprzedaż według pracowników', ['Pracownik','Usługi','Wartość usług','Produkty','Wartość produktów','Razem'], salesRows, ['SUMA', totals.services, money(totals.serviceValue), totals.products, money(totals.productValue), money(totals.revenue)])}
       ${tableModule('absences', 'Dni wolne według pracowników', ['Pracownik','Dni wolne','Urlop','Zwolnienie','Inne'], absenceRows, ['SUMA', totals.daysOff, totals.vacation, totals.sick, totals.free])}
       ${tableModule('work-hours', 'Godziny pracy', ['Pracownik','Liczba wizyt','Czas pracy','Czas wyznaczony','Grafik %'], workHoursRows, ['SUMA', totals.visits, formatMinutes(totals.workMinutes || totals.visitMinutes), formatMinutes(totals.scheduledMinutes), percent(totals.workMinutes || totals.visitMinutes, totals.scheduledMinutes)])}
     </section>`;
