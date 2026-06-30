@@ -344,7 +344,13 @@
         ["odwołane", "odwolane", "odwołana", "odwolana", "odwołany", "odwolany", "cancelled", "canceled", "anulowane", "anulowana", "usunięte", "usuniete", "usunięta", "usunieta", "deleted"].includes(status);
     };
     const isFinished = (a) => ["zakończone", "zakonczone", "zakończona", "zakonczona", "completed"].includes(statusOf(a)) || a?.finished === true;
-    const isPlanned = (a) => !isCancelled(a) && !isFinished(a);
+    const isDeletedOnly = (a) => {
+      const status = statusOf(a);
+      return a?.deleted === true || ["usunięte", "usuniete", "usunięta", "usunieta", "deleted"].includes(status);
+    };
+    // Raportowa liczba zaplanowanych wizyt = wszystkie wizyty wpisane w grafiku na ten dzień,
+    // również te później zakończone albo odwołane. Nie liczymy tylko technicznie usuniętych.
+    const isReportPlanned = (a) => !isDeletedOnly(a);
     const isSaleLinkedToCancelledAppointment = (sale) => {
       const appointment = appointmentForSale(sale) || {};
       return Boolean(appointment?.id && isCancelled(appointment));
@@ -457,7 +463,7 @@
     const cancelledAppointments = appointments.filter(isCancelled);
 
     return {
-      plannedVisits: appointments.filter(isPlanned).length,
+      plannedVisits: appointments.filter(isReportPlanned).length,
       finishedVisits: appointments.filter(isFinished).length,
       cancelledVisits: cancelledAppointments.length,
       cancellationReasons: cancellationBreakdownRows(cancelledAppointments),

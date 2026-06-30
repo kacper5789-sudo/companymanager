@@ -240,7 +240,7 @@
     let visits;
     if (filters.mode === "finishedVisits") visits = baseVisits.filter((a) => isFinished(a) && !isCancelled(a));
     else if (filters.mode === "cancelledVisits") visits = cancelledVisitsInSelection;
-    else visits = baseVisits.filter((a) => !isFinished(a) && !isCancelled(a));
+    else visits = baseVisits; // Tryby planowanych wizyt pokazują wszystkie wizyty wpisane w grafiku, także zakończone/odwołane.
 
     const salesInRange = (raw.sales || []).filter((sale) => inRange(sale.created_at || sale.sale_date || sale.paid_at, filters.from, filters.to));
     const salesById = Object.fromEntries((raw.sales || []).map((sale) => [String(sale.id), sale]));

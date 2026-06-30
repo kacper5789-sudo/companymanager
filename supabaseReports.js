@@ -415,6 +415,43 @@
     </table></div>`;
   }
 
+
+
+  function reportAppointmentDate(row) {
+    return String(row?.date || row?.starts_at || row?.appointment_datetime || row?.created_at || "").slice(0, 10);
+  }
+
+  function isDeletedReportAppointment(row) {
+    const status = String(row?.status || "").trim().toLowerCase();
+    return row?.deleted === true || ["usunięte", "usuniete", "usunięta", "usunieta", "deleted"].includes(status);
+  }
+
+  function bucketKeyForDate(value, group) {
+    const parsed = parseIsoDate(value);
+    if (!parsed) return String(value || "").slice(0, 10);
+    return isoFromDate(startOfBucket(parsed, group || "days"));
+  }
+
+  function applyPlannedVisitsFromAppointments(reportData, appointments, filters) {
+    const group = filters.group || "days";
+    const plannedByBucket = new Map();
+    (appointments || []).forEach((appointment) => {
+      if (isDeletedReportAppointment(appointment)) return;
+      const date = reportAppointmentDate(appointment);
+      if (!date) return;
+      const key = bucketKeyForDate(date, group);
+      plannedByBucket.set(key, (plannedByBucket.get(key) || 0) + 1);
+    });
+    const patched = { ...(reportData || {}) };
+    patched.series = (Array.isArray(reportData?.series) ? reportData.series : []).map((row) => {
+      const key = normalizePeriodStart(row.period_start, group);
+      return { ...row, planned_visits: Number(plannedByBucket.get(key) || 0) };
+    });
+    const plannedTotal = Array.from(plannedByBucket.values()).reduce((sum, value) => sum + Number(value || 0), 0);
+    patched.summary = { ...(reportData?.summary || {}), planned_visits: plannedTotal };
+    return patched;
+  }
+
   function renderLayout(data, filters) {
     const root = getRoot();
     const summary = data?.summary || {};
@@ -515,7 +552,15 @@
         p_group: filters.group
       });
       if (error) throw error;
-      renderLayout(data || {}, filters);
+      const { data: appointmentRows, error: appointmentsError } = await window.cmSupabase
+        .from("appointments")
+        .select("id,status,date,starts_at,appointment_datetime,created_at,deleted")
+        .eq("company_id", ctx.companyId)
+        .gte("date", filters.from)
+        .lte("date", filters.to);
+      if (appointmentsError) throw appointmentsError;
+      const patchedData = applyPlannedVisitsFromAppointments(data || {}, appointmentRows || [], filters);
+      renderLayout(patchedData, filters);
     } catch (error) {
       renderError(error?.message || String(error));
     }

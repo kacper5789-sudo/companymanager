@@ -549,7 +549,13 @@
     });
     const revenue = activeSalesForFinance.reduce((sum, sale) => sum + saleValue(sale), 0);
     const finished = data.appointments.filter(a => !isCancelled(a) && isFinished(a));
-    const planned = data.appointments.filter(a => !isCancelled(a) && !isFinished(a));
+    const isDeletedOnly = (a) => {
+      const status = String(a?.status || "").trim().toLowerCase();
+      return a?.deleted === true || ["usunięte", "usuniete", "usunięta", "usunieta", "deleted"].includes(status);
+    };
+    // Raportowa liczba zaplanowanych wizyt = wszystkie wizyty, które były wpisane w grafiku w okresie,
+    // niezależnie od tego, czy finalnie są zakończone czy odwołane.
+    const planned = data.appointments.filter(a => !isDeletedOnly(a));
     const cancelled = data.appointments.filter(isCancelled);
     const newClients = data.clients.filter(c => {
       const d = c.created_at ? new Date(c.created_at) : null;

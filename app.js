@@ -6958,12 +6958,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const currentEnd = parseDate(urlTo) || lastDay;
     const isCancelledVisit = (visit) => ['odwołane','odwołana','odwołany','usunięte','usunięta'].includes(String(visit.status || '').toLowerCase()) || visit.cancelled === true;
     const isFinishedVisit = (visit) => ['zakończone','zakończona','zakończony'].includes(String(visit.status || '').toLowerCase());
-    const isPlannedVisit = (visit) => !isCancelledVisit(visit) && !isFinishedVisit(visit) && ['zaplanowane','niezakończone',''].includes(String(visit.status || '').toLowerCase());
+    const isDeletedVisit = (visit) => ['usunięte','usuniete','usunięta','usunieta','deleted'].includes(String(visit.status || '').toLowerCase()) || visit.deleted === true;
+    const isPlannedVisit = (visit) => !isDeletedVisit(visit);
     const periodCompanyVisits = companyVisits.filter(v => inRange(v.date, currentStart, currentEnd));
     const periodDashboardVisits = dashboardVisits.filter(v => inRange(v.date, currentStart, currentEnd));
     const activeDashboardVisits = periodDashboardVisits.filter(v => !isCancelledVisit(v));
     const billableDashboardVisits = periodDashboardVisits.filter(v => !isCancelledVisit(v));
-    const plannedVisits = periodCompanyVisits.filter(isPlannedVisit).length + activeDashboardVisits.filter(isPlannedVisit).length;
+    const plannedVisits = periodCompanyVisits.filter(isPlannedVisit).length + periodDashboardVisits.filter(isPlannedVisit).length;
     const finishedVisits = periodCompanyVisits.filter(isFinishedVisit).length + periodDashboardVisits.filter(isFinishedVisit).length;
     const cancelledVisitItems = [...periodCompanyVisits.filter(isCancelledVisit), ...periodDashboardVisits.filter(isCancelledVisit)];
     const cancelledVisits = cancelledVisitItems.length;
@@ -7223,7 +7224,8 @@ document.addEventListener('DOMContentLoaded', () => {
     ].filter(v => inRange(v.date));
     const isCancelled = (visit) => ['odwołane','odwołana','odwołany','usunięte','usunięta'].includes(String(visit.status || '').toLowerCase()) || visit.cancelled === true;
     const isFinished = (visit) => ['zakończone','zakończona','zakończony'].includes(String(visit.status || '').toLowerCase());
-    const isPlanned = (visit) => !isCancelled(visit) && !isFinished(visit);
+    const isDeletedVisit = (visit) => ['usunięte','usuniete','usunięta','usunieta','deleted'].includes(String(visit.status || '').toLowerCase()) || visit.deleted === true;
+    const isPlanned = (visit) => !isDeletedVisit(visit);
     let filteredVisits = allVisits.filter(mode === 'finishedVisits' ? isFinished : mode === 'cancelledVisits' ? isCancelled : isPlanned);
     if (selectedEmployees.length) filteredVisits = filteredVisits.filter(v => selectedEmployees.includes(v.employeeId));
     if (selectedCategories.length) filteredVisits = filteredVisits.filter(v => {
@@ -7996,10 +7998,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const categories = getServiceCategories(db, company.id);
     const isCancelledVisit = (visit) => ['odwołane','odwołana','odwołany','usunięte','usunięta'].includes(String(visit.status || '').toLowerCase()) || visit.cancelled === true;
     const isFinishedVisit = (visit) => ['zakończone','zakończona','zakończony'].includes(String(visit.status || '').toLowerCase());
-    const isPlannedVisit = (visit) => !isCancelledVisit(visit) && !isFinishedVisit(visit) && ['zaplanowane','niezakończone',''].includes(String(visit.status || '').toLowerCase());
+    const isDeletedVisit = (visit) => ['usunięte','usuniete','usunięta','usunieta','deleted'].includes(String(visit.status || '').toLowerCase()) || visit.deleted === true;
+    const isPlannedVisit = (visit) => !isDeletedVisit(visit);
     const activeDashboardVisits = dashboardVisits.filter(v => !isCancelledVisit(v));
     const billableDashboardVisits = dashboardVisits.filter(v => !isCancelledVisit(v));
-    const plannedVisits = companyVisits.filter(isPlannedVisit).length + activeDashboardVisits.filter(isPlannedVisit).length;
+    const plannedVisits = companyVisits.filter(isPlannedVisit).length + dashboardVisits.filter(isPlannedVisit).length;
     const finishedVisits = companyVisits.filter(isFinishedVisit).length + dashboardVisits.filter(isFinishedVisit).length;
     const cancelledVisitItems = [...companyVisits.filter(isCancelledVisit), ...dashboardVisits.filter(isCancelledVisit)];
     const cancelledVisits = cancelledVisitItems.length;
