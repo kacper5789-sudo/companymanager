@@ -1478,7 +1478,7 @@ document.addEventListener('DOMContentLoaded', () => {
     ['karnety — usuwanie', ['#showDeletePass', '#deletePassBtn', '.delete-pass-btn']],
     ['raport dzienny — dziś', ['#dailyReportTodayBtn']],
     ['raport dzienny — inne dni', ['#dailyReportDate', '#dailyPrevDay', '#dailyNextDay']],
-    ['grafik pracy — edycja', ['#showEditWorkScheduleBtn', ''#saveWorkScheduleBottomBtn', '#copyCompanyHoursBtn', '#applyAllDaysBtn', '.cm-save-schedule-btn', '[data-edit-employee]']],
+    ['grafik pracy — edycja', ['#showEditWorkScheduleBtn', '#saveWorkScheduleBtn', '#saveWorkScheduleBottomBtn', '#copyCompanyHoursBtn', '#applyAllDaysBtn', '.cm-save-schedule-btn', '[data-edit-employee]']],
     ['grafik pracy — usuwanie', ['#showDeleteWorkScheduleBtn', '#clearScheduleBtn', '[data-delete-employee]']],
   ];
 
