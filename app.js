@@ -6978,39 +6978,18 @@ document.addEventListener('DOMContentLoaded', () => {
       ...walkins.filter(w => inRange(w.date || w.saleDate, currentStart, currentEnd) && (w.serviceId || w.serviceCustom || (!w.productId && !w.productName)))
     ];
     const productSales = [...billableDashboardVisits.filter(v => v.productId), ...walkins.filter(w => inRange(w.date || w.saleDate, currentStart, currentEnd) && (w.productId || w.productName))];
-    const passSalesFromPasses = passes.filter(p => inRange(p.saleDate || p.createdAt || p.date || currentIsoDate(), currentStart, currentEnd));
-    const passSalesFromSales = (db.sales || []).filter(sale => {
-      if (sale.companyId !== company.id && sale.company_id !== company.id) return false;
-      if (isSeedDemoRecord(sale)) return false;
-      const saleKind = String(sale.type || sale.kind || sale.category || sale.saleType || sale.sale_type || sale.itemType || sale.item_type || '').toLowerCase();
-      const saleName = String(sale.name || sale.itemName || sale.item_name || sale.productName || sale.product_name || sale.serviceName || sale.service_name || sale.note || sale.description || '').toLowerCase();
-      const looksLikePass = saleKind.includes('pass') || saleKind.includes('karnet') || saleName.includes('karnet') || sale.passId || sale.pass_id;
-      return looksLikePass && inRange(sale.saleDate || sale.sale_date || sale.date || String(sale.createdAt || sale.created_at || '').slice(0,10), currentStart, currentEnd);
-    }).map(sale => ({
-      ...sale,
-      id: sale.id || sale.saleId || sale.sale_id,
-      saleDate: sale.saleDate || sale.sale_date || sale.date || String(sale.createdAt || sale.created_at || '').slice(0,10),
-      saleTime: sale.saleTime || sale.sale_time || sale.time || '',
-      employeeId: sale.employeeId || sale.employee_id || sale.sellerEmployeeId || sale.seller_employee_id || sale.userId || sale.user_id || sale.profileId || sale.profile_id,
-      employeeName: sale.employeeName || sale.employee_name || sale.sellerName || sale.seller_name || sale.workerName || sale.worker_name,
-      customerId: sale.customerId || sale.customer_id,
-      customerName: sale.customerName || sale.customer_name,
-      value: sale.value || sale.total || sale.amount || sale.price || 0,
-      paymentMethod: sale.paymentMethod || sale.payment_method || sale.payment || 'gotówka',
-      name: sale.name || sale.itemName || sale.item_name || 'Karnet'
-    }));
-    const seenPassSales = new Set();
-    const passSales = [...passSalesFromPasses, ...passSalesFromSales].filter(pass => {
-      const key = String(pass.id || pass.passId || pass.pass_id || `${pass.saleDate || pass.date}|${pass.employeeId || pass.employee_id}|${pass.customerId || pass.customer_id}|${pass.value || pass.total || pass.amount}`);
-      if (seenPassSales.has(key)) return false;
-      seenPassSales.add(key);
-      return true;
+    // Raport z okresu: karnet finansowo liczymy WYŁĄCZNIE w momencie sprzedaży karnetu.
+    // Nie wolno doliczać użycia wejścia z karnetu jako kolejnej sprzedaży/płatności.
+    // Źródłem sprzedaży karnetu jest tabela `passes` z datą sprzedaży (`saleDate`).
+    const passSales = passes.filter(p => {
+      const passSaleDate = p.saleDate || p.sale_date;
+      return !!passSaleDate && inRange(passSaleDate, currentStart, currentEnd) && Number(p.value || p.total || p.amount || 0) > 0;
     });
     const allPayments = [
-      ...billableDashboardVisits.map(v => ({ amount:Number(v.total || 0), method:v.payment || 'gotówka' })),
-      ...walkins.filter(w => inRange(w.date || w.saleDate, currentStart, currentEnd)).map(w => ({ amount:Number(w.amount || w.total || 0), method:w.paymentMethod || w.payment || 'gotówka' })),
-      ...passSales.map(p => ({ amount:Number(p.value || 0), method:p.paymentMethod || 'gotówka' }))
-    ];
+      ...billableDashboardVisits.map(v => ({ amount:Number(v.total ?? v.amount ?? 0), method:v.payment || v.paymentMethod || 'gotówka' })),
+      ...walkins.filter(w => inRange(w.date || w.saleDate, currentStart, currentEnd)).map(w => ({ amount:Number(w.amount ?? w.total ?? 0), method:w.paymentMethod || w.payment || 'gotówka' })),
+      ...passSales.map(p => ({ amount:Number(p.value ?? p.total ?? p.amount ?? 0), method:p.paymentMethod || p.payment_method || p.payment || 'gotówka' }))
+    ].filter(payment => Number(payment.amount || 0) > 0);
     const totalPayments = allPayments.reduce((sum, item) => sum + item.amount, 0);
     const cashPayments = allPayments.filter(p => String(p.method).toLowerCase().includes('gotówka')).reduce((sum, item) => sum + item.amount, 0);
     const paymentMethodStats = paymentMethods.map(method => {
@@ -7029,7 +7008,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const key = `${category}||${code}`;
       const prev = serviceCategoryStats.get(key) || { count:0, value:0, category, code };
       prev.count += 1;
-      prev.value += Number(sale.total || sale.amount || service?.priceTo || service?.priceFrom || 0);
+      prev.value += Number((sale.total ?? sale.amount ?? service?.priceTo ?? service?.priceFrom ?? 0));
       serviceCategoryStats.set(key, prev);
     });
     const serviceRows = [...serviceCategoryStats.values()].map(item => [String(item.count), money(item.value), escapeHtml(item.category), escapeHtml(item.code || '')]);
@@ -7041,11 +7020,11 @@ document.addEventListener('DOMContentLoaded', () => {
       const key = `${category}||${code}`;
       const prev = productStats.get(key) || { count:0, value:0, category, code };
       prev.count += 1;
-      prev.value += Number(sale.amount || sale.total || product?.price || 0);
+      prev.value += Number((sale.amount ?? sale.total ?? product?.price ?? 0));
       productStats.set(key, prev);
     });
     const productRows = [...productStats.values()].map(item => [String(item.count), money(item.value), escapeHtml(item.category), escapeHtml(item.code || '')]);
-    const passRows = passSales.length ? passSales.map(p => ['1', money(p.value || 0), escapeHtml(p.number || p.name || 'Karnet')]) : [];
+    const passRows = passSales.length ? passSales.map(p => ['1', money(p.value ?? p.total ?? p.amount ?? 0), escapeHtml(p.number || p.name || 'Karnet')]) : [];
     const normalizeEmployeeRef = (value) => String(value || '').trim();
     const passEmployeeRef = (pass) => normalizeEmployeeRef(pass.employeeId || pass.employee_id || pass.sellerEmployeeId || pass.seller_employee_id || pass.userId || pass.user_id || pass.profileId || pass.profile_id || pass.createdBy || pass.created_by || pass.soldById || pass.sold_by_id);
     const passEmployeeName = (pass) => String(pass.employeeName || pass.employee_name || pass.sellerName || pass.seller_name || pass.workerName || pass.worker_name || pass.soldBy || pass.sold_by || '').trim().toLowerCase();
@@ -7068,7 +7047,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const prodCount = ev.filter(v => v.productId).length + empProductWalkins.length;
       const prodValue = ev.filter(v => v.productId).reduce((sum, v) => sum + Number(v.total || 0), 0) + empProductWalkins.reduce((sum, w) => sum + Number(w.total || w.amount || 0), 0);
       const empPasses = passSales.filter(p => isPassForEmployee(p, employee));
-      const passValue = empPasses.reduce((sum, p) => sum + Number(p.value || 0), 0);
+      const passValue = empPasses.reduce((sum, p) => sum + Number(p.value ?? p.total ?? p.amount ?? 0), 0);
       return { id: employee.id, cells: [escapeHtml(employee.fullName || employee.login), String(ev.length + regular.length), String(servCount), money(servValue), String(prodCount), money(prodValue), String(empPasses.length), money(passValue), money(0)] };
     });
     const employeeTable = employeeRows.length
@@ -8054,7 +8033,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const code = service?.code || '';
       const key = `${category}||${code}`;
       const prev = serviceCategoryStats.get(key) || { count:0, value:0, category, code };
-      prev.count += 1; prev.value += Number(sale.total || sale.amount || service?.priceTo || service?.priceFrom || 0); serviceCategoryStats.set(key, prev);
+      prev.count += 1; prev.value += Number((sale.total ?? sale.amount ?? service?.priceTo ?? service?.priceFrom ?? 0)); serviceCategoryStats.set(key, prev);
     });
     const serviceRows = [...serviceCategoryStats.values()].map(item => [String(item.count), money(item.value), escapeHtml(item.category), escapeHtml(item.code || '')]);
     const productStats = new Map();
@@ -8064,7 +8043,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const code = product?.code || '';
       const key = `${category}||${code}`;
       const prev = productStats.get(key) || { count:0, value:0, category, code };
-      prev.count += 1; prev.value += Number(sale.amount || sale.total || product?.price || 0); productStats.set(key, prev);
+      prev.count += 1; prev.value += Number((sale.amount ?? sale.total ?? product?.price ?? 0)); productStats.set(key, prev);
     });
     const productRows = [...productStats.values()].map(item => [String(item.count), money(item.value), escapeHtml(item.category), escapeHtml(item.code || '')]);
     const passRows = passes.length ? passes.map(p => ['1', money(p.value || 0), escapeHtml(p.number || p.name || 'Karnet')]) : [];
@@ -8091,7 +8070,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const prodCount = ev.filter(v => v.productId).length + empProductWalkins.length;
       const prodValue = ev.filter(v => v.productId).reduce((sum, v) => sum + Number(v.total || 0), 0) + empProductWalkins.reduce((sum, w) => sum + Number(w.total || w.amount || 0), 0);
       const empPasses = passes.filter(p => isPassForEmployee(p, employee));
-      const passValue = empPasses.reduce((sum, p) => sum + Number(p.value || 0), 0);
+      const passValue = empPasses.reduce((sum, p) => sum + Number(p.value ?? p.total ?? p.amount ?? 0), 0);
       return { id: employee.id, cells: [escapeHtml(employee.fullName || employee.login), String(ev.length + regular.length), String(servCount), money(servValue), String(prodCount), money(prodValue), String(empPasses.length), money(passValue), money(0)] };
     });
     const employeeTable = employeeRows.length ? `<div class="bm-table-wrap"><table class="bm-table" id="periodEmployeesTable"><thead><tr>${['Pracownik','Wizyty','Usługi liczba','Usługi wartość','Produkty liczba','Produkty wartość','Karnety liczba','Karnety wartość','Prowizja'].map(h=>`<th>${escapeHtml(h)}</th>`).join('')}</tr></thead><tbody>${employeeRows.map(row=>`<tr data-employee-id="${escapeHtml(row.id)}">${row.cells.map(c=>`<td>${c}</td>`).join('')}</tr>`).join('')}</tbody></table></div>` : table(['Pracownik','Wizyty','Usługi liczba','Usługi wartość','Produkty liczba','Produkty wartość','Karnety liczba','Karnety wartość','Prowizja'], [['-','0','0','0.00 PLN','0','0.00 PLN','0','0.00 PLN','0.00 PLN']]);
