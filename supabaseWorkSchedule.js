@@ -1,4 +1,4 @@
-// CompanyManager — 098 Grafik: zakresy miesięczne, paginacja, nowoczesny układ
+// CompanyManager — 099 Grafik: zakres ustawiania, kompaktowa data/dzień
 // work-schedule.html: flexible work hours, edit/delete, download schedule.
 (function () {
   function isPage() {
@@ -139,6 +139,8 @@
     selectedEmployeeId: "",
     finalFrom: monthStartIso(new Date()),
     finalTo: monthEndIso(new Date()),
+    applyFrom: startOfWeekIso(new Date()),
+    applyTo: endOfWeekIso(new Date()),
     finalPage: 1,
     finalPageSize: 50
   };
@@ -287,7 +289,7 @@
 
   function finalScheduleRowsHtml() {
     const dates = dateRange(state.finalFrom, state.finalTo, 370);
-    if (!dates.length) return `<tr><td colspan="${state.employees.length + 2}">Wybierz poprawny zakres dat.</td></tr>`;
+    if (!dates.length) return `<tr><td colspan="${state.employees.length + 1}">Wybierz poprawny zakres dat.</td></tr>`;
     const pageSize = Number(state.finalPageSize || 50);
     const totalPages = Math.max(1, Math.ceil(dates.length / pageSize));
     state.finalPage = Math.min(Math.max(1, Number(state.finalPage || 1)), totalPages);
@@ -296,8 +298,7 @@
     return visibleDates.map((date) => {
       const iso = toIsoDate(date);
       return `<tr>
-        <td><strong>${escapeHtml(formatDatePL(iso))}</strong></td>
-        <td>${escapeHtml(dayLabel(date))}</td>
+        <td class="cm-work-date-day"><strong>${escapeHtml(formatDatePL(iso))}</strong><span>${escapeHtml(dayLabel(date))}</span></td>
         ${state.employees.map((employee) => {
           const off = dayOffFor(employee, iso);
           const cell = off ? dayOffCell(off) : finalCell(employee, date);
@@ -352,7 +353,7 @@
       ${finalSchedulePagerHtml()}
       <div class="bm-table-wrap cm-work-final-wrap">
         <table class="bm-table cm-work-final-table">
-          <thead><tr><th>Data</th><th>Dzień</th>${state.employees.map((e) => `<th>${escapeHtml(employeeName(e))}</th>`).join("")}</tr></thead>
+          <thead><tr><th class="cm-work-date-day-head">Data / dzień</th>${state.employees.map((e) => `<th>${escapeHtml(employeeName(e))}</th>`).join("")}</tr></thead>
           <tbody>${finalScheduleRowsHtml()}</tbody>
         </table>
       </div>
@@ -380,6 +381,17 @@
       <div class="cm-work-schedule-grid">
         <section class="cm-work-panel cm-work-panel-main">
           <div class="cm-work-panel-title">Edycja grafiku</div>
+          <div class="cm-work-apply-range-card">
+            <div class="cm-work-apply-range-title">Zakres ustawiania grafiku</div>
+            <div class="cm-work-schedule-controls cm-work-range-controls">
+              <label>Od<input type="date" class="cm-modern-date" id="workScheduleApplyFrom" value="${escapeHtml(state.applyFrom)}"></label>
+              <label>Do<input type="date" class="cm-modern-date" id="workScheduleApplyTo" value="${escapeHtml(state.applyTo)}"></label>
+              <button type="button" id="applyRangeWeekBtn" class="bm-light-btn cm-work-btn cm-work-btn-neutral">Ustaw na ten tydzień</button>
+              <button type="button" id="applyRangeMonthBtn" class="bm-light-btn cm-work-btn cm-work-btn-neutral">Ustaw na ten miesiąc</button>
+              <button type="button" id="applyRangeYearBtn" class="bm-light-btn cm-work-btn cm-work-btn-neutral">Ustaw na ten rok</button>
+            </div>
+            <p class="bm-muted cm-work-range-hint">Ten zakres mówi, w jakich datach wybrany tygodniowy układ ma obowiązywać dla pracownika. Dni wolne nadal automatycznie nadpisują grafik.</p>
+          </div>
           <div class="cm-work-schedule-controls">
             <label>Pracownik<select id="workScheduleEmployee">${employeeOptions()}</select></label>
             <label>Pracuje od<input type="time" id="quickStartTime" value="08:00"></label>
@@ -391,7 +403,7 @@
             ${canEdit(state.ctx) ? `<button type="button" id="copyCompanyHoursBtn" class="bm-light-btn cm-work-btn cm-work-btn-neutral">Zastosuj pn-pt</button>` : ""}
             ${canEdit(state.ctx) ? `<button type="button" id="applyAllDaysBtn" class="bm-light-btn cm-work-btn cm-work-btn-neutral">Zastosuj cały tydzień</button>` : ""}
             ${canDelete(state.ctx) ? `<button type="button" id="clearScheduleBtn" class="bm-danger-btn cm-work-btn cm-work-btn-danger">Ustaw wolne</button>` : ""}
-            ${canEdit(state.ctx) ? `<button type="button" id="saveWorkScheduleBtn" class="bm-primary-btn cm-save-schedule-btn cm-work-btn cm-work-btn-save">Zapisz grafik</button>` : ""}
+            ${canEdit(state.ctx) ? `<button type="button" id="saveWorkScheduleBtn" class="bm-primary-btn cm-save-schedule-btn cm-work-btn cm-work-btn-save">Zapisz grafik w zakresie</button>` : ""}
           </div>
           <p id="workScheduleMessage" class="panel-message"></p>
         </section>
@@ -405,7 +417,7 @@
       </div>
 
       <div class="cm-work-bottom-actions">
-        ${canEdit(state.ctx) ? `<button type="button" id="saveWorkScheduleBottomBtn" class="bm-primary-btn cm-save-schedule-btn cm-work-btn cm-work-btn-save">Zapisz grafik</button>` : ""}
+        ${canEdit(state.ctx) ? `<button type="button" id="saveWorkScheduleBottomBtn" class="bm-primary-btn cm-save-schedule-btn cm-work-btn cm-work-btn-save">Zapisz grafik w zakresie</button>` : ""}
       </div>
 
       <div class="cm-section-title-row">
@@ -468,12 +480,19 @@
     }));
     try {
       validateRows(rows);
+      const range = selectedApplyDates();
+      state.applyFrom = range.from;
+      state.applyTo = range.to;
       const { error } = await window.cmSupabase
         .from("employee_work_schedules")
         .upsert(rows, { onConflict: "company_id,employee_id,day_of_week" });
       if (error) throw error;
+      await saveConcreteSchedule(employee, rows, range.dates);
       state.schedules = await fetchSchedules(state.ctx);
-      message("Grafik pracy zapisany.");
+      state.daysOff = await fetchDaysOff(state.ctx);
+      state.finalFrom = range.from;
+      state.finalTo = range.to;
+      message(`Grafik pracy zapisany dla zakresu ${formatDatePL(range.from)} – ${formatDatePL(range.to)}.`);
       render();
     } catch (error) {
       message(`Błąd zapisu grafiku: ${error.message || error}`, false);
@@ -487,6 +506,66 @@
       breakStart: $("#quickBreakStart")?.value || "",
       breakEnd: $("#quickBreakEnd")?.value || ""
     };
+  }
+
+
+  function setApplyRange(from, to) {
+    if (from) state.applyFrom = from;
+    if (to) state.applyTo = to;
+    render();
+    document.querySelector("#workScheduleApplyFrom")?.focus?.();
+  }
+
+  function applyRangePreset(kind) {
+    const now = new Date();
+    if (kind === "week") return setApplyRange(startOfWeekIso(now), endOfWeekIso(now));
+    if (kind === "month") return setApplyRange(monthStartIso(now), monthEndIso(now));
+    if (kind === "year") return setApplyRange(yearStartIso(now), yearEndIso(now));
+  }
+
+  function selectedApplyDates() {
+    const from = $("#workScheduleApplyFrom")?.value || state.applyFrom;
+    const to = $("#workScheduleApplyTo")?.value || state.applyTo;
+    const dates = dateRange(from, to, 370);
+    if (!dates.length) throw new Error("Wybierz poprawny zakres dat dla ustawianego grafiku.");
+    return { from, to, dates };
+  }
+
+  async function saveConcreteSchedule(employee, weeklyRows, dates) {
+    // Jeśli w bazie istnieje tabela work_schedule, zapisujemy również konkretne dni pracy dla wybranego zakresu.
+    // Jeśli tabela nie istnieje albo RLS ją blokuje, tygodniowy szablon dalej działa i grafik wynikowy liczy się w UI.
+    const rows = [];
+    dates.forEach((date) => {
+      const dayIndex = date.getDay();
+      const template = weeklyRows.find((row) => Number(row.day_of_week) === Number(dayIndex));
+      if (!template) return;
+      rows.push({
+        company_id: state.ctx.companyId,
+        employee_id: employee.id,
+        date: toIsoDate(date),
+        start_time: template.is_working ? template.start_time : null,
+        end_time: template.is_working ? template.end_time : null,
+        is_working: !!template.is_working,
+        employee_name: employeeName(employee),
+        updated_at: new Date().toISOString()
+      });
+    });
+    if (!rows.length) return;
+    try {
+      await window.cmSupabase
+        .from("work_schedule")
+        .delete()
+        .eq("company_id", state.ctx.companyId)
+        .eq("employee_id", employee.id)
+        .gte("date", toIsoDate(dates[0]))
+        .lte("date", toIsoDate(dates[dates.length - 1]));
+      const { error } = await window.cmSupabase
+        .from("work_schedule")
+        .insert(rows);
+      if (error) throw error;
+    } catch (error) {
+      console.warn("Concrete work_schedule skipped", error?.message || error);
+    }
   }
 
   function applyToRows(mode) {
@@ -573,10 +652,10 @@
 
   function downloadFinalCsv() {
     const dates = dateRange(state.finalFrom, state.finalTo, 370);
-    const header = ["Data", "Dzień", ...state.employees.map(employeeName)];
+    const header = ["Data / dzień", ...state.employees.map(employeeName)];
     const rows = [header];
     dates.forEach((date) => {
-      rows.push([formatDatePL(date), dayLabel(date), ...state.employees.map((employee) => finalCell(employee, date))]);
+      rows.push([`${formatDatePL(date)} ${dayLabel(date)}`, ...state.employees.map((employee) => finalCell(employee, date))]);
     });
     const csv = "\ufeff" + rows.map((row) => row.map(csvCell).join(";")).join("\n");
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
@@ -605,6 +684,11 @@
     });
     $("#saveWorkScheduleBtn")?.addEventListener("click", save);
     $("#saveWorkScheduleBottomBtn")?.addEventListener("click", save);
+    $("#workScheduleApplyFrom")?.addEventListener("change", (event) => { state.applyFrom = event.currentTarget.value; });
+    $("#workScheduleApplyTo")?.addEventListener("change", (event) => { state.applyTo = event.currentTarget.value; });
+    $("#applyRangeWeekBtn")?.addEventListener("click", () => applyRangePreset("week"));
+    $("#applyRangeMonthBtn")?.addEventListener("click", () => applyRangePreset("month"));
+    $("#applyRangeYearBtn")?.addEventListener("click", () => applyRangePreset("year"));
     $("#copyCompanyHoursBtn")?.addEventListener("click", () => applyToRows("week"));
     $("#applyAllDaysBtn")?.addEventListener("click", () => applyToRows("all"));
     $("#clearScheduleBtn")?.addEventListener("click", setFree);
