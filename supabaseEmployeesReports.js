@@ -1,4 +1,4 @@
-// CompanyManager — 235 Employees reports employee mapping + pass dedup fix
+// CompanyManager — 236 Employees reports pass-free worker value fix
 // employeesraports.html: realne dane z profiles / clients / appointments / sales / sale_items / days_off.
 (function () {
   if (document.body?.dataset?.panelPage !== "employeesReports") return;
@@ -193,6 +193,11 @@
   }
 
   function appointmentServiceValue(row) {
+    // Raport pracowników pokazuje wartość wykonanej pracy, nie tylko płatność z wizyty.
+    // Przy użyciu karnetu płatność wizyty wynosi 0 PLN, ale pracownik wykonał usługę
+    // o wartości zapisanej w pass_used_value.
+    const passWorkValue = Number(row?.pass_used_value || row?.passUsedValue || 0) || 0;
+    if ((row?.pass_id || row?.passId) && passWorkValue > 0) return passWorkValue;
     return Number(row?.service_price || row?.price || row?.total_gross || row?.total_net || row?.total || row?.paid_amount || 0) || 0;
   }
 
@@ -556,25 +561,20 @@
       const emp = ensure(employeeId, empName);
       if (!emp) return;
       const type = itemType(item);
+      // Karnety są przychodem firmy, ale nie są wynikiem pracy konkretnego pracownika.
+      // Dlatego raport pracowników całkowicie pomija sprzedaż karnetów.
+      if (type === "pass") return;
       const qty = itemQty(item);
       const value = itemValue(item, sale);
       emp.revenue += value;
       touchClient(emp, sale.client_id || sale.customer_id || appointment.client_id || appointment.customer_id || "");
       if (type === "product") { emp.products += qty; emp.productValue += value; }
-      else if (type === "pass") { emp.passes += qty; emp.passValue += value; }
       else { emp.services += qty; emp.serviceValue += value; }
     });
 
-    (data.passes || []).forEach((pass) => {
-      if (pass?.id && passSaleItemIds.has(pass.id)) return;
-      const emp = ensure(pass.employee_id || pass.employeeId, pass.employee_name || pass.employeeName || "");
-      if (!emp) return;
-      const value = Number(pass.value || pass.total || pass.price || 0) || 0;
-      emp.passes += 1;
-      emp.passValue += value;
-      emp.revenue += value;
-      touchClient(emp, pass.customer_id || pass.client_id || pass.buyer_client_id || pass.beneficiary_client_id || "");
-    });
+    // Celowo nie agregujemy public.passes do pracowników.
+    // Sprzedaż karnetu jest finansowo przychodem firmy, a wartość pracy pracownika
+    // pojawia się dopiero przy wykonanej usłudze, także gdy została opłacona karnetem.
 
     data.daysOff.forEach((d) => {
       const emp = ensure(d.employee_id || d.employeeId, d.employee_name || "");
@@ -753,7 +753,7 @@
     }, { visits:0, finishedVisits:0, cancelledVisits:0, services:0, serviceValue:0, products:0, productValue:0, passes:0, passValue:0, revenue:0, daysOff:0, vacation:0, sick:0, free:0, visitMinutes:0, clients:0, newClients:0, returningClients:0, workMinutes:0, scheduledMinutes:0 });
 
     const customerServiceRows = stats.map((r) => [esc(r.name), String(r.services), String(r.clients), formatMinutes(r.visitMinutes), String(r.newClients), r.newClientsPct, String(r.returningClients), r.returningClientsPct]);
-    const salesRows = stats.map((r) => [esc(r.name), String(r.services), money(r.serviceValue), String(r.products), money(r.productValue), String(r.passes), money(r.passValue), money(r.revenue)]);
+    const salesRows = stats.map((r) => [esc(r.name), String(r.services), money(r.serviceValue), String(r.products), money(r.productValue), money(r.revenue)]);
     const absenceRows = stats.map((r) => [esc(r.name), String(r.daysOff), String(r.vacation), String(r.sick), String(r.free)]);
     const workHoursRows = stats.map((r) => [esc(r.name), String(r.visits), formatMinutes(r.workMinutes || r.visitMinutes), formatMinutes(r.scheduledMinutes), r.workPct || percent(r.workMinutes || r.visitMinutes, r.scheduledMinutes)]);
 
@@ -770,11 +770,11 @@
       <div class="cm-er-grid">
         <div class="cm-er-card"><span>Pracownicy</span><strong>${stats.length}</strong></div>
         <div class="cm-er-card"><span>Wizyty zakończone</span><strong>${totals.finishedVisits}</strong></div>
-        <div class="cm-er-card"><span>Pozycje sprzedaży</span><strong>${totals.services + totals.products + totals.passes}</strong></div>
-        <div class="cm-er-card"><span>Przychód</span><strong>${money(totals.revenue)}</strong></div>
+        <div class="cm-er-card"><span>Pozycje pracy/sprzedaży</span><strong>${totals.services + totals.products}</strong></div>
+        <div class="cm-er-card"><span>Wartość pracy</span><strong>${money(totals.revenue)}</strong></div>
       </div>
       ${tableModule('customer-service', 'Obsługa klientów', ['Pracownik','L. usług','L. klientów','Czas wizyt','Nowi k.','Nowi k. %','K. powracający','K. powracający %'], customerServiceRows, ['SUMA', totals.services, totals.clients, formatMinutes(totals.visitMinutes), totals.newClients, percent(totals.newClients, totals.clients), totals.returningClients, percent(totals.returningClients, totals.clients)])}
-      ${tableModule('sales', 'Sprzedaż według pracowników', ['Pracownik','Usługi','Wartość usług','Produkty','Wartość produktów','Karnety','Wartość karnetów','Razem'], salesRows, ['SUMA', totals.services, money(totals.serviceValue), totals.products, money(totals.productValue), totals.passes, money(totals.passValue), money(totals.revenue)])}
+      ${tableModule('sales', 'Wartość pracy według pracowników', ['Pracownik','Usługi','Wartość usług','Produkty','Wartość produktów','Razem'], salesRows, ['SUMA', totals.services, money(totals.serviceValue), totals.products, money(totals.productValue), money(totals.revenue)])}
       ${tableModule('absences', 'Dni wolne według pracowników', ['Pracownik','Dni wolne','Urlop','Zwolnienie','Inne'], absenceRows, ['SUMA', totals.daysOff, totals.vacation, totals.sick, totals.free])}
       ${tableModule('work-hours', 'Godziny pracy', ['Pracownik','Liczba wizyt','Czas pracy','Czas wyznaczony','Grafik %'], workHoursRows, ['SUMA', totals.visits, formatMinutes(totals.workMinutes || totals.visitMinutes), formatMinutes(totals.scheduledMinutes), percent(totals.workMinutes || totals.visitMinutes, totals.scheduledMinutes)])}
     </section>`;
