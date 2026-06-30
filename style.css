@@ -17288,3 +17288,11 @@ html[data-cm-theme="goldWhite"] body[data-panel-page="workSchedule"] .cm-work-ap
     grid-template-columns: 1fr !important;
   }
 }
+
+/* CM105: hide obsolete work-schedule weekly summary only in Grafik module */
+.cm-work-summary-wrap,
+.cm-work-schedule-summary,
+.cm-work-export-actions,
+#downloadWorkScheduleBtn {
+  display: none !important;
+}
