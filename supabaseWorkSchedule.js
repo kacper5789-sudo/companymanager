@@ -436,7 +436,6 @@
           <tbody>${finalScheduleRowsHtml()}</tbody>
         </table>
       </div>
-      ${finalSchedulePagerHtml()}
     </section>`;
   }
 
@@ -488,7 +487,6 @@
             </div>
           </div>
           <div class="cm-work-schedule-controls cm-work-solid-controls">
-            <label>Pracownik<select id="workScheduleEmployee">${employeeOptions()}</select></label>
             <label>Pracuje od<input type="time" id="quickStartTime" value="08:00"></label>
             <label>Pracuje do<input type="time" id="quickEndTime" value="16:00"></label>
             <label>Przerwa od<input type="time" id="quickBreakStart" value=""></label>
@@ -498,7 +496,6 @@
             ${canEdit(state.ctx) ? `<button type="button" id="copyCompanyHoursBtn" class="bm-light-btn cm-work-btn cm-work-btn-neutral">Zastosuj pn-pt</button>` : ""}
             ${canEdit(state.ctx) ? `<button type="button" id="applyAllDaysBtn" class="bm-light-btn cm-work-btn cm-work-btn-neutral">Zastosuj cały tydzień</button>` : ""}
             ${canDelete(state.ctx) ? `<button type="button" id="clearScheduleBtn" class="bm-danger-btn cm-work-btn cm-work-btn-danger">Ustaw wolne</button>` : ""}
-            ${canEdit(state.ctx) ? `<button type="button" id="saveWorkScheduleBtn" class="bm-primary-btn cm-save-schedule-btn cm-work-btn cm-work-btn-save">Zapisz grafik w zakresie</button>` : ""}
           </div>
           <div id="workSchedulePreview" class="cm-work-preview-box">Przed zapisem zobaczysz podsumowanie: dni pracy, godziny, dni wolne oraz istniejące wpisy w wybranym zakresie.</div><p id="workScheduleMessage" class="panel-message"></p>
         </section>
@@ -515,18 +512,6 @@
         ${canEdit(state.ctx) ? `<button type="button" id="saveWorkScheduleBottomBtn" class="bm-primary-btn cm-save-schedule-btn cm-work-btn cm-work-btn-save">Zapisz grafik w zakresie</button>` : ""}
       </div>
 
-      <div class="cm-section-title-row">
-        <h3 class="cm-section-title">Podsumowanie grafików</h3>
-      </div>
-      <div class="bm-table-wrap cm-work-summary-wrap">
-        <table class="bm-table cm-work-schedule-summary">
-          <thead><tr><th>Pracownik</th>${DAYS.map((day) => `<th>${escapeHtml(day.short)}</th>`).join("")}<th>Akcje</th></tr></thead>
-          <tbody>${summaryRows()}</tbody>
-        </table>
-      </div>
-      <div class="cm-work-export-actions">
-        <button type="button" id="downloadWorkScheduleBtn" class="bm-light-btn cm-work-btn cm-work-btn-download">Pobierz szablon tygodniowy</button>
-      </div>
       ${finalScheduleTableHtml()}
     </section>`;
     bindEvents();
@@ -730,13 +715,24 @@
     $$(".cm-work-schedule-editor tbody tr").forEach((tr) => {
       const day = Number(tr.dataset.day);
       const weekend = day === 0 || day === 6;
-      if (mode === "week" && weekend) return;
       const working = $("[data-working]", tr);
+      const start = $("[data-start]", tr);
+      const end = $("[data-end]", tr);
+      const bs = $("[data-break-start]", tr);
+      const be = $("[data-break-end]", tr);
+      if (mode === "week" && weekend) {
+        if (working) working.checked = false;
+        if (start) start.value = q.start;
+        if (end) end.value = q.end;
+        if (bs) bs.value = q.breakStart;
+        if (be) be.value = q.breakEnd;
+        return;
+      }
       if (working) working.checked = true;
-      const start = $("[data-start]", tr); if (start) start.value = q.start;
-      const end = $("[data-end]", tr); if (end) end.value = q.end;
-      const bs = $("[data-break-start]", tr); if (bs) bs.value = q.breakStart;
-      const be = $("[data-break-end]", tr); if (be) be.value = q.breakEnd;
+      if (start) start.value = q.start;
+      if (end) end.value = q.end;
+      if (bs) bs.value = q.breakStart;
+      if (be) be.value = q.breakEnd;
     });
     refreshDurations();
   }
@@ -834,15 +830,10 @@
   }
 
   function bindEvents() {
-    $("#workScheduleEmployee")?.addEventListener("change", (event) => {
-      state.selectedEmployeeId = event.currentTarget.value;
-      render();
-    });
     $$('[data-employee-multi]').forEach((input) => input.addEventListener("change", () => {
       state.selectedEmployeeIds = $$('[data-employee-multi]:checked').map((el) => el.value);
     }));
     $$('input[name="workScheduleSaveMode"]').forEach((input) => input.addEventListener("change", (event) => { state.saveMode = event.currentTarget.value; }));
-    $("#saveWorkScheduleBtn")?.addEventListener("click", save);
     $("#saveWorkScheduleBottomBtn")?.addEventListener("click", save);
     $("#workScheduleApplyFrom")?.addEventListener("change", (event) => { state.applyFrom = event.currentTarget.value; });
     $("#workScheduleApplyTo")?.addEventListener("change", (event) => { state.applyTo = event.currentTarget.value; });
@@ -852,7 +843,6 @@
     $("#copyCompanyHoursBtn")?.addEventListener("click", () => applyToRows("week"));
     $("#applyAllDaysBtn")?.addEventListener("click", () => applyToRows("all"));
     $("#clearScheduleBtn")?.addEventListener("click", setFree);
-    $("#downloadWorkScheduleBtn")?.addEventListener("click", downloadCsv);
     $("#finalScheduleFrom")?.addEventListener("change", (event) => { state.finalFrom = event.currentTarget.value; state.finalPage = 1; render(); });
     $("#finalScheduleTo")?.addEventListener("change", (event) => { state.finalTo = event.currentTarget.value; state.finalPage = 1; render(); });
     $("#finalSchedulePrevMonthBtn")?.addEventListener("click", () => { const now = new Date(); updateFinalRange(shiftedMonthIso(now, -1), shiftedMonthIso(now, -1, true)); });

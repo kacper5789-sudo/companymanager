@@ -17290,33 +17290,41 @@ html[data-cm-theme="goldWhite"] body[data-panel-page="workSchedule"] .cm-work-ap
 }
 
 
-/* CompanyManager 106 — Grafik pracy: dopasowanie do lewewego menu/sidebaru
-   Poprawia sytuację, w której karta grafiku używała szerokości 100vw i nachodziła na menu po lewej stronie.
-   Od teraz grafik mieści się wyłącznie w prawej kolumnie aplikacji, a szerokie tabele przewijają się wewnątrz karty. */
+/* CM107 — Grafik pracy: final containment/scroll/sidebar-safe cleanup */
 body[data-panel-page="workSchedule"]{
   overflow-x:hidden !important;
+  overflow-y:auto !important;
 }
 body[data-panel-page="workSchedule"] .bm-main,
+body[data-panel-page="workSchedule"] .bm-main-top{
+  min-width:0 !important;
+  overflow-x:hidden !important;
+}
+body[data-panel-page="workSchedule"] .bm-panel-workspace{
+  display:grid !important;
+  grid-template-columns:minmax(220px,260px) minmax(0,1fr) !important;
+  gap:18px !important;
+  width:100% !important;
+  max-width:100% !important;
+  min-width:0 !important;
+  overflow:visible !important;
+  box-sizing:border-box !important;
+}
+body[data-panel-page="workSchedule"] .bm-left-info-panel{
+  position:relative !important;
+  z-index:3 !important;
+  min-width:0 !important;
+  max-width:260px !important;
+  width:100% !important;
+}
 body[data-panel-page="workSchedule"] .bm-panel-area,
 body[data-panel-page="workSchedule"] .dashboard-shell,
 body[data-panel-page="workSchedule"] #dashboardRoot{
   min-width:0 !important;
-  width:100% !important;
   max-width:100% !important;
-  box-sizing:border-box !important;
-  overflow-x:hidden !important;
-}
-body[data-panel-page="workSchedule"] .bm-panel-workspace{
   width:100% !important;
-  max-width:100% !important;
-  min-width:0 !important;
-  box-sizing:border-box !important;
-  grid-template-columns:minmax(240px,260px) minmax(0,1fr) !important;
   overflow:visible !important;
-}
-body[data-panel-page="workSchedule"] .bm-left-info-panel,
-body[data-panel-page="workSchedule"] .bm-sidebar{
-  z-index:5 !important;
+  box-sizing:border-box !important;
 }
 body[data-panel-page="workSchedule"] .bm-page-card.cm-supabase-work-schedule,
 body[data-panel-page="workSchedule"] .cm-supabase-work-schedule{
@@ -17325,37 +17333,62 @@ body[data-panel-page="workSchedule"] .cm-supabase-work-schedule{
   min-width:0 !important;
   margin:0 !important;
   box-sizing:border-box !important;
-  overflow:hidden !important;
+  overflow:visible !important;
 }
 body[data-panel-page="workSchedule"] .cm-work-panel,
 body[data-panel-page="workSchedule"] .cm-work-panel-main,
-body[data-panel-page="workSchedule"] .cm-work-final-section,
-body[data-panel-page="workSchedule"] .cm-work-apply-range-card,
-body[data-panel-page="workSchedule"] .cm-work-solid-card{
-  width:100% !important;
+body[data-panel-page="workSchedule"] .cm-work-schedule-grid,
+body[data-panel-page="workSchedule"] .cm-work-final-section{
   max-width:100% !important;
+  width:100% !important;
   min-width:0 !important;
   box-sizing:border-box !important;
 }
 body[data-panel-page="workSchedule"] .cm-work-schedule-editor-wrap,
-body[data-panel-page="workSchedule"] .cm-work-summary-wrap,
 body[data-panel-page="workSchedule"] .cm-work-final-wrap{
   width:100% !important;
   max-width:100% !important;
-  min-width:0 !important;
-  box-sizing:border-box !important;
   overflow-x:auto !important;
   overflow-y:visible !important;
+  -webkit-overflow-scrolling:touch !important;
+  box-sizing:border-box !important;
 }
-body[data-panel-page="workSchedule"] .cm-work-schedule-editor,
 body[data-panel-page="workSchedule"] .cm-work-schedule-summary,
+body[data-panel-page="workSchedule"] .cm-work-summary-wrap,
+body[data-panel-page="workSchedule"] .cm-work-export-actions{
+  display:none !important;
+}
+body[data-panel-page="workSchedule"] .cm-work-schedule-editor{
+  width:100% !important;
+  min-width:760px !important;
+  table-layout:auto !important;
+}
 body[data-panel-page="workSchedule"] .cm-work-final-table{
   width:max-content !important;
   min-width:100% !important;
-  max-width:none !important;
+  table-layout:auto !important;
+}
+body[data-panel-page="workSchedule"] .cm-work-final-pager + .cm-work-final-wrap + .cm-work-final-pager{
+  display:none !important;
+}
+body[data-panel-page="workSchedule"] #saveWorkScheduleBtn,
+body[data-panel-page="workSchedule"] #workScheduleEmployee,
+body[data-panel-page="workSchedule"] label:has(> #workScheduleEmployee){
+  display:none !important;
+}
+body[data-panel-page="workSchedule"] .cm-work-solid-controls{
+  grid-template-columns:repeat(4,minmax(130px,1fr)) !important;
 }
 @media(max-width:1050px){
   body[data-panel-page="workSchedule"] .bm-panel-workspace{
+    grid-template-columns:1fr !important;
+  }
+  body[data-panel-page="workSchedule"] .bm-left-info-panel{
+    max-width:none !important;
+  }
+}
+@media(max-width:760px){
+  body[data-panel-page="workSchedule"] .cm-work-solid-controls{
     grid-template-columns:1fr !important;
   }
 }
