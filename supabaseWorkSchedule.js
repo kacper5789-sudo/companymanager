@@ -436,7 +436,6 @@
           <tbody>${finalScheduleRowsHtml()}</tbody>
         </table>
       </div>
-      ${finalSchedulePagerHtml()}
     </section>`;
   }
 
@@ -488,7 +487,6 @@
             </div>
           </div>
           <div class="cm-work-schedule-controls cm-work-solid-controls">
-            <label>Pracownik<select id="workScheduleEmployee">${employeeOptions()}</select></label>
             <label>Pracuje od<input type="time" id="quickStartTime" value="08:00"></label>
             <label>Pracuje do<input type="time" id="quickEndTime" value="16:00"></label>
             <label>Przerwa od<input type="time" id="quickBreakStart" value=""></label>
@@ -512,19 +510,6 @@
 
       <div class="cm-work-bottom-actions">
         ${canEdit(state.ctx) ? `<button type="button" id="saveWorkScheduleBottomBtn" class="bm-primary-btn cm-save-schedule-btn cm-work-btn cm-work-btn-save">Zapisz grafik w zakresie</button>` : ""}
-      </div>
-
-      <div class="cm-section-title-row">
-        <h3 class="cm-section-title">Podsumowanie grafików</h3>
-      </div>
-      <div class="bm-table-wrap cm-work-summary-wrap">
-        <table class="bm-table cm-work-schedule-summary">
-          <thead><tr><th>Pracownik</th>${DAYS.map((day) => `<th>${escapeHtml(day.short)}</th>`).join("")}<th>Akcje</th></tr></thead>
-          <tbody>${summaryRows()}</tbody>
-        </table>
-      </div>
-      <div class="cm-work-export-actions">
-        <button type="button" id="downloadWorkScheduleBtn" class="bm-light-btn cm-work-btn cm-work-btn-download">Pobierz szablon tygodniowy</button>
       </div>
       ${finalScheduleTableHtml()}
     </section>`;
