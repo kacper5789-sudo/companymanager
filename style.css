@@ -17198,3 +17198,93 @@ body[data-panel-page="workSchedule"] .cm-work-final-table{
     grid-template-columns:1fr !important;
   }
 }
+
+/* CompanyManager 101 — bezpieczny kreator grafiku pracy */
+body[data-panel-page="workSchedule"] .cm-work-solid-card,
+body[data-panel-page="workSchedule"] .cm-work-solid-controls,
+body[data-panel-page="workSchedule"] .cm-work-preview-box{
+  background: var(--panel-bg, #111827) !important;
+  border: 1px solid rgba(148,163,184,.28) !important;
+  border-radius: 18px !important;
+  box-shadow: 0 16px 40px rgba(2,6,23,.18) !important;
+}
+body[data-panel-page="workSchedule"] .cm-work-solid-card{
+  padding: 16px !important;
+  margin-bottom: 14px !important;
+}
+body[data-panel-page="workSchedule"] .cm-work-solid-controls{
+  padding: 14px !important;
+  margin-top: 12px !important;
+}
+body[data-panel-page="workSchedule"] .cm-work-employee-multi{
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 10px !important;
+  margin-top: 10px !important;
+}
+body[data-panel-page="workSchedule"] .cm-work-employee-pill{
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  padding: 9px 12px !important;
+  border-radius: 999px !important;
+  border: 1px solid rgba(148,163,184,.28) !important;
+  background: rgba(15,23,42,.7) !important;
+  color: #e5e7eb !important;
+  font-weight: 700 !important;
+  cursor: pointer !important;
+}
+body[data-panel-page="workSchedule"] .cm-work-employee-pill input,
+body[data-panel-page="workSchedule"] .cm-work-save-modes input{
+  width: auto !important;
+  accent-color: #facc15 !important;
+}
+body[data-panel-page="workSchedule"] .cm-work-save-modes{
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(180px, 1fr)) !important;
+  gap: 10px !important;
+  margin-top: 10px !important;
+}
+body[data-panel-page="workSchedule"] .cm-work-save-modes label{
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  padding: 12px !important;
+  border: 1px solid rgba(148,163,184,.24) !important;
+  border-radius: 14px !important;
+  background: rgba(15,23,42,.55) !important;
+  color: #e5e7eb !important;
+  font-weight: 700 !important;
+}
+body[data-panel-page="workSchedule"] .cm-work-preview-box{
+  padding: 12px 14px !important;
+  margin: 14px 0 4px !important;
+  color: #cbd5e1 !important;
+  line-height: 1.45 !important;
+}
+body[data-panel-page="workSchedule"] .cm-work-range-hint{
+  margin: 10px 0 0 !important;
+}
+body[data-panel-page="workSchedule"] .cm-work-apply-range-title{
+  color: #f8fafc !important;
+  font-size: 1rem !important;
+  font-weight: 900 !important;
+  letter-spacing: .01em !important;
+}
+html[data-cm-theme="goldWhite"] body[data-panel-page="workSchedule"] .cm-work-solid-card,
+html[data-cm-theme="goldWhite"] body[data-panel-page="workSchedule"] .cm-work-solid-controls,
+html[data-cm-theme="goldWhite"] body[data-panel-page="workSchedule"] .cm-work-preview-box,
+html[data-cm-theme="goldWhite"] body[data-panel-page="workSchedule"] .cm-work-employee-pill,
+html[data-cm-theme="goldWhite"] body[data-panel-page="workSchedule"] .cm-work-save-modes label{
+  background: #fff !important;
+  color: #111827 !important;
+  border-color: rgba(17,24,39,.14) !important;
+}
+html[data-cm-theme="goldWhite"] body[data-panel-page="workSchedule"] .cm-work-apply-range-title{
+  color: #111827 !important;
+}
+@media (max-width: 900px){
+  body[data-panel-page="workSchedule"] .cm-work-save-modes{
+    grid-template-columns: 1fr !important;
+  }
+}

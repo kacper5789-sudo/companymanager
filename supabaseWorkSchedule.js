@@ -1,4 +1,4 @@
-// CompanyManager — 099 Grafik: zakres ustawiania, kompaktowa data/dzień
+// CompanyManager — 101 Grafik: bezpieczny kreator zakresów, masowa edycja, podgląd zapisu
 // work-schedule.html: flexible work hours, edit/delete, download schedule.
 (function () {
   function isPage() {
@@ -71,6 +71,8 @@
   function monthEndIso(date) { return toIsoDate(new Date(date.getFullYear(), date.getMonth() + 1, 0)); }
   function yearStartIso(date) { return toIsoDate(new Date(date.getFullYear(), 0, 1)); }
   function yearEndIso(date) { return toIsoDate(new Date(date.getFullYear(), 11, 31)); }
+  function todayIso() { return toIsoDate(new Date()); }
+  function minEditableIso() { return toIsoDate(addDays(new Date(), -7)); }
   function shiftedMonthIso(date, offset, end = false) {
     const d = new Date(date.getFullYear(), date.getMonth() + Number(offset || 0), 1);
     return end ? monthEndIso(d) : monthStartIso(d);
@@ -131,12 +133,89 @@
   }
 
 
+  function selectedEmployees() {
+    const selected = Array.isArray(state.selectedEmployeeIds) ? state.selectedEmployeeIds.map(String) : [];
+    const list = state.employees.filter((employee) => selected.includes(String(employee.id)));
+    if (list.length) return list;
+    const one = state.employees.find((employee) => String(employee.id) === String(state.selectedEmployeeId));
+    return one ? [one] : [];
+  }
+
+  function collectWeeklyRowsFor(employee) {
+    return $$(".cm-work-schedule-editor tbody tr").map((tr) => ({
+      company_id: state.ctx.companyId,
+      employee_id: employee.id,
+      employee_name: employeeName(employee),
+      day_of_week: Number(tr.dataset.day),
+      is_working: !!$("[data-working]", tr)?.checked,
+      start_time: $("[data-start]", tr)?.value || "08:00",
+      end_time: $("[data-end]", tr)?.value || "16:00",
+      break_start: $("[data-break-start]", tr)?.value || null,
+      break_end: $("[data-break-end]", tr)?.value || null,
+      updated_at: new Date().toISOString()
+    }));
+  }
+
+  function calculatePreviewForEmployee(employee, weeklyRows, dates) {
+    let workingDays = 0;
+    let workingMinutes = 0;
+    let daysOff = 0;
+    dates.forEach((date) => {
+      const iso = toIsoDate(date);
+      const template = weeklyRows.find((row) => Number(row.day_of_week) === Number(date.getDay()));
+      if (!template || !template.is_working) return;
+      if (dayOffFor(employee, iso)) { daysOff += 1; return; }
+      const start = minutes(template.start_time);
+      const end = minutes(template.end_time);
+      if (start != null && end != null && end > start) {
+        workingDays += 1;
+        workingMinutes += end - start;
+      }
+    });
+    return { workingDays, workingMinutes, daysOff };
+  }
+
+  function previewText(employees, weeklyRowsByEmployee, dates, existingCount, mode) {
+    const from = formatDatePL(toIsoDate(dates[0]));
+    const to = formatDatePL(toIsoDate(dates[dates.length - 1]));
+    const summary = employees.map((employee) => {
+      const rows = weeklyRowsByEmployee.get(String(employee.id)) || [];
+      const p = calculatePreviewForEmployee(employee, rows, dates);
+      const hours = Math.round((p.workingMinutes / 60) * 100) / 100;
+      return `${employeeName(employee)}: ${p.workingDays} dni pracy, ${hours}h, dni wolne w zakresie: ${p.daysOff}`;
+    }).join("\n");
+    const modeLabel = mode === "overwrite" ? "NADPISZ cały zakres" : mode === "fill" ? "UZUPEŁNIJ tylko puste dni" : "USUŃ grafik w zakresie";
+    return `Zakres: ${from} – ${to}\nTryb: ${modeLabel}\nPracownicy: ${employees.length}\n\n${summary}\n\nIstniejące wpisy grafiku w tym zakresie: ${existingCount}.\n\nKontynuować?`;
+  }
+
+  async function countExistingConcreteSchedules(employees, dates) {
+    if (!employees.length || !dates.length) return 0;
+    try {
+      const ids = employees.map((e) => e.id);
+      const { data, error } = await window.cmSupabase
+        .from("work_schedule")
+        .select("id, employee_id, date")
+        .eq("company_id", state.ctx.companyId)
+        .in("employee_id", ids)
+        .gte("date", toIsoDate(dates[0]))
+        .lte("date", toIsoDate(dates[dates.length - 1]));
+      if (error) throw error;
+      return (data || []).length;
+    } catch (error) {
+      console.warn("work_schedule existing count skipped", error?.message || error);
+      return 0;
+    }
+  }
+
+
   let state = {
     ctx: null,
     employees: [],
     schedules: [],
     daysOff: [],
     selectedEmployeeId: "",
+    selectedEmployeeIds: [],
+    saveMode: "fill",
     finalFrom: monthStartIso(new Date()),
     finalTo: monthEndIso(new Date()),
     applyFrom: startOfWeekIso(new Date()),
@@ -369,6 +448,7 @@
       return;
     }
     if (!state.selectedEmployeeId) state.selectedEmployeeId = state.employees[0].id;
+    if (!Array.isArray(state.selectedEmployeeIds) || !state.selectedEmployeeIds.length) state.selectedEmployeeIds = [state.selectedEmployeeId];
     const employee = state.employees.find((row) => String(row.id) === String(state.selectedEmployeeId)) || state.employees[0];
     target.innerHTML = `<section class="bm-page-card cm-work-schedule-page cm-supabase-work-schedule">
       <div class="bm-page-head customers-head cm-work-schedule-head">
@@ -380,19 +460,34 @@
 
       <div class="cm-work-schedule-grid">
         <section class="cm-work-panel cm-work-panel-main">
-          <div class="cm-work-panel-title">Edycja grafiku</div>
-          <div class="cm-work-apply-range-card">
+          <div class="cm-work-panel-title">Kreator ustawiania grafiku</div>
+          <div class="cm-work-apply-range-card cm-work-solid-card">
+            <div class="cm-work-apply-range-title">Pracownicy do aktualizacji</div>
+            <div class="cm-work-employee-multi" id="workScheduleEmployeeMulti">
+              ${state.employees.map((emp) => `<label class="cm-work-employee-pill"><input type="checkbox" data-employee-multi value="${escapeHtml(emp.id)}" ${(state.selectedEmployeeIds || []).map(String).includes(String(emp.id)) ? "checked" : ""}> <span>${escapeHtml(employeeName(emp))}</span></label>`).join("")}
+            </div>
+            <p class="bm-muted cm-work-range-hint">Możesz zastosować ten sam grafik dla jednego lub wielu pracowników naraz.</p>
+          </div>
+          <div class="cm-work-apply-range-card cm-work-solid-card">
             <div class="cm-work-apply-range-title">Zakres ustawiania grafiku</div>
             <div class="cm-work-schedule-controls cm-work-range-controls">
-              <label>Od<input type="date" class="cm-modern-date" id="workScheduleApplyFrom" value="${escapeHtml(state.applyFrom)}"></label>
-              <label>Do<input type="date" class="cm-modern-date" id="workScheduleApplyTo" value="${escapeHtml(state.applyTo)}"></label>
+              <label>Od<input type="date" class="cm-modern-date" id="workScheduleApplyFrom" min="${escapeHtml(minEditableIso())}" value="${escapeHtml(state.applyFrom)}"></label>
+              <label>Do<input type="date" class="cm-modern-date" id="workScheduleApplyTo" min="${escapeHtml(minEditableIso())}" value="${escapeHtml(state.applyTo)}"></label>
               <button type="button" id="applyRangeWeekBtn" class="bm-light-btn cm-work-btn cm-work-btn-neutral">Ustaw na ten tydzień</button>
               <button type="button" id="applyRangeMonthBtn" class="bm-light-btn cm-work-btn cm-work-btn-neutral">Ustaw na ten miesiąc</button>
               <button type="button" id="applyRangeYearBtn" class="bm-light-btn cm-work-btn cm-work-btn-neutral">Ustaw na ten rok</button>
             </div>
-            <p class="bm-muted cm-work-range-hint">Ten zakres mówi, w jakich datach wybrany tygodniowy układ ma obowiązywać dla pracownika. Dni wolne nadal automatycznie nadpisują grafik.</p>
+            <p class="bm-muted cm-work-range-hint">Edycja jest bezpieczna: można ustawiać grafik od maksymalnie 7 dni wstecz względem dzisiejszej daty. Starszy grafik jest chroniony, bo wpływa na raporty.</p>
           </div>
-          <div class="cm-work-schedule-controls">
+          <div class="cm-work-apply-range-card cm-work-solid-card">
+            <div class="cm-work-apply-range-title">Tryb zapisu</div>
+            <div class="cm-work-save-modes">
+              <label><input type="radio" name="workScheduleSaveMode" value="fill" ${state.saveMode === "fill" ? "checked" : ""}> Uzupełnij tylko puste dni</label>
+              <label><input type="radio" name="workScheduleSaveMode" value="overwrite" ${state.saveMode === "overwrite" ? "checked" : ""}> Nadpisz cały zakres</label>
+              <label><input type="radio" name="workScheduleSaveMode" value="delete" ${state.saveMode === "delete" ? "checked" : ""}> Usuń grafik w zakresie</label>
+            </div>
+          </div>
+          <div class="cm-work-schedule-controls cm-work-solid-controls">
             <label>Pracownik<select id="workScheduleEmployee">${employeeOptions()}</select></label>
             <label>Pracuje od<input type="time" id="quickStartTime" value="08:00"></label>
             <label>Pracuje do<input type="time" id="quickEndTime" value="16:00"></label>
@@ -405,7 +500,7 @@
             ${canDelete(state.ctx) ? `<button type="button" id="clearScheduleBtn" class="bm-danger-btn cm-work-btn cm-work-btn-danger">Ustaw wolne</button>` : ""}
             ${canEdit(state.ctx) ? `<button type="button" id="saveWorkScheduleBtn" class="bm-primary-btn cm-save-schedule-btn cm-work-btn cm-work-btn-save">Zapisz grafik w zakresie</button>` : ""}
           </div>
-          <p id="workScheduleMessage" class="panel-message"></p>
+          <div id="workSchedulePreview" class="cm-work-preview-box">Przed zapisem zobaczysz podsumowanie: dni pracy, godziny, dni wolne oraz istniejące wpisy w wybranym zakresie.</div><p id="workScheduleMessage" class="panel-message"></p>
         </section>
       </div>
 
@@ -464,35 +559,51 @@
 
   async function save() {
     if (!canEdit(state.ctx)) return message("Brak uprawnienia: grafik pracy — edycja", false);
-    const employee = state.employees.find((row) => String(row.id) === String(state.selectedEmployeeId));
-    if (!employee) return message("Wybierz pracownika.", false);
-    const rows = $$(".cm-work-schedule-editor tbody tr").map((tr) => ({
-      company_id: state.ctx.companyId,
-      employee_id: employee.id,
-      employee_name: employeeName(employee),
-      day_of_week: Number(tr.dataset.day),
-      is_working: !!$("[data-working]", tr)?.checked,
-      start_time: $("[data-start]", tr)?.value || "08:00",
-      end_time: $("[data-end]", tr)?.value || "16:00",
-      break_start: $("[data-break-start]", tr)?.value || null,
-      break_end: $("[data-break-end]", tr)?.value || null,
-      updated_at: new Date().toISOString()
-    }));
+    const employees = selectedEmployees();
+    if (!employees.length) return message("Wybierz przynajmniej jednego pracownika.", false);
+    const mode = document.querySelector('input[name="workScheduleSaveMode"]:checked')?.value || state.saveMode || "fill";
+    state.saveMode = mode;
     try {
-      validateRows(rows);
       const range = selectedApplyDates();
       state.applyFrom = range.from;
       state.applyTo = range.to;
-      const { error } = await window.cmSupabase
-        .from("employee_work_schedules")
-        .upsert(rows, { onConflict: "company_id,employee_id,day_of_week" });
-      if (error) throw error;
-      await saveConcreteSchedule(employee, rows, range.dates);
+      const weeklyRowsByEmployee = new Map();
+      employees.forEach((employee) => {
+        const rows = collectWeeklyRowsFor(employee);
+        validateRows(rows);
+        weeklyRowsByEmployee.set(String(employee.id), rows);
+      });
+      const existingCount = await countExistingConcreteSchedules(employees, range.dates);
+      if (!confirm(previewText(employees, weeklyRowsByEmployee, range.dates, existingCount, mode))) {
+        message("Zapis grafiku anulowany.", false);
+        return;
+      }
+
+      let totalInserted = 0;
+      let totalSkippedDaysOff = 0;
+      let totalOverwritten = 0;
+      let totalDeleted = 0;
+
+      for (const employee of employees) {
+        const rows = weeklyRowsByEmployee.get(String(employee.id));
+        if (mode !== "delete") {
+          const { error } = await window.cmSupabase
+            .from("employee_work_schedules")
+            .upsert(rows, { onConflict: "company_id,employee_id,day_of_week" });
+          if (error) throw error;
+        }
+        const result = await saveConcreteSchedule(employee, rows, range.dates, mode);
+        totalInserted += result.inserted || 0;
+        totalSkippedDaysOff += result.daysOff || 0;
+        totalOverwritten += result.overwritten || 0;
+        totalDeleted += result.deleted || 0;
+      }
+
       state.schedules = await fetchSchedules(state.ctx);
       state.daysOff = await fetchDaysOff(state.ctx);
       state.finalFrom = range.from;
       state.finalTo = range.to;
-      message(`Grafik pracy zapisany dla zakresu ${formatDatePL(range.from)} – ${formatDatePL(range.to)}.`);
+      message(`Gotowe. Zapisano ${totalInserted} dni pracy. Pominięto/nadpisano wolnym ${totalSkippedDaysOff} dni wolnych. Nadpisano ${totalOverwritten} wpisów. Usunięto ${totalDeleted} wpisów.`);
       render();
     } catch (error) {
       message(`Błąd zapisu grafiku: ${error.message || error}`, false);
@@ -518,53 +629,98 @@
 
   function applyRangePreset(kind) {
     const now = new Date();
-    if (kind === "week") return setApplyRange(startOfWeekIso(now), endOfWeekIso(now));
-    if (kind === "month") return setApplyRange(monthStartIso(now), monthEndIso(now));
-    if (kind === "year") return setApplyRange(yearStartIso(now), yearEndIso(now));
+    const min = minEditableIso();
+    if (kind === "week") return setApplyRange(maxIso(startOfWeekIso(now), min), endOfWeekIso(now));
+    if (kind === "month") return setApplyRange(maxIso(monthStartIso(now), min), monthEndIso(now));
+    if (kind === "year") return setApplyRange(maxIso(yearStartIso(now), min), yearEndIso(now));
   }
+  function maxIso(a, b) { return a > b ? a : b; }
 
   function selectedApplyDates() {
     const from = $("#workScheduleApplyFrom")?.value || state.applyFrom;
     const to = $("#workScheduleApplyTo")?.value || state.applyTo;
+    const min = minEditableIso();
+    if (from < min) {
+      throw new Error(`Nie można edytować grafiku starszego niż ${formatDatePL(min)}. Starsze wpisy są zablokowane, bo wpływają na raporty.`);
+    }
+    if (to < from) throw new Error("Data 'Do' nie może być wcześniejsza niż data 'Od'.");
     const dates = dateRange(from, to, 370);
     if (!dates.length) throw new Error("Wybierz poprawny zakres dat dla ustawianego grafiku.");
     return { from, to, dates };
   }
 
-  async function saveConcreteSchedule(employee, weeklyRows, dates) {
-    // Jeśli w bazie istnieje tabela work_schedule, zapisujemy również konkretne dni pracy dla wybranego zakresu.
-    // Jeśli tabela nie istnieje albo RLS ją blokuje, tygodniowy szablon dalej działa i grafik wynikowy liczy się w UI.
-    const rows = [];
-    dates.forEach((date) => {
-      const dayIndex = date.getDay();
-      const template = weeklyRows.find((row) => Number(row.day_of_week) === Number(dayIndex));
-      if (!template) return;
-      rows.push({
-        company_id: state.ctx.companyId,
-        employee_id: employee.id,
-        date: toIsoDate(date),
-        start_time: template.is_working ? template.start_time : null,
-        end_time: template.is_working ? template.end_time : null,
-        is_working: !!template.is_working,
-        employee_name: employeeName(employee),
-        updated_at: new Date().toISOString()
-      });
-    });
-    if (!rows.length) return;
+  async function saveConcreteSchedule(employee, weeklyRows, dates, mode = "fill") {
+    const fromIso = toIsoDate(dates[0]);
+    const toIso = toIsoDate(dates[dates.length - 1]);
+    const result = { inserted: 0, daysOff: 0, overwritten: 0, deleted: 0 };
     try {
-      await window.cmSupabase
+      const existingResponse = await window.cmSupabase
         .from("work_schedule")
-        .delete()
+        .select("id, date")
         .eq("company_id", state.ctx.companyId)
         .eq("employee_id", employee.id)
-        .gte("date", toIsoDate(dates[0]))
-        .lte("date", toIsoDate(dates[dates.length - 1]));
-      const { error } = await window.cmSupabase
-        .from("work_schedule")
-        .insert(rows);
-      if (error) throw error;
+        .gte("date", fromIso)
+        .lte("date", toIso);
+      if (existingResponse.error) throw existingResponse.error;
+      const existing = existingResponse.data || [];
+      result.overwritten = existing.length;
+
+      if (mode === "delete") {
+        const { error } = await window.cmSupabase
+          .from("work_schedule")
+          .delete()
+          .eq("company_id", state.ctx.companyId)
+          .eq("employee_id", employee.id)
+          .gte("date", fromIso)
+          .lte("date", toIso);
+        if (error) throw error;
+        result.deleted = existing.length;
+        return result;
+      }
+
+      const existingDates = new Set(existing.map((row) => String(row.date || "").slice(0, 10)));
+      const rows = [];
+      dates.forEach((date) => {
+        const iso = toIsoDate(date);
+        if (mode === "fill" && existingDates.has(iso)) return;
+        const template = weeklyRows.find((row) => Number(row.day_of_week) === Number(date.getDay()));
+        if (!template) return;
+        const off = dayOffFor(employee, iso);
+        if (off) result.daysOff += 1;
+        rows.push({
+          company_id: state.ctx.companyId,
+          employee_id: employee.id,
+          date: iso,
+          start_time: off || !template.is_working ? null : template.start_time,
+          end_time: off || !template.is_working ? null : template.end_time,
+          is_working: off ? false : !!template.is_working,
+          employee_name: employeeName(employee),
+          updated_at: new Date().toISOString()
+        });
+      });
+
+      if (mode === "overwrite") {
+        const { error } = await window.cmSupabase
+          .from("work_schedule")
+          .delete()
+          .eq("company_id", state.ctx.companyId)
+          .eq("employee_id", employee.id)
+          .gte("date", fromIso)
+          .lte("date", toIso);
+        if (error) throw error;
+      }
+
+      if (rows.length) {
+        const { error } = await window.cmSupabase
+          .from("work_schedule")
+          .insert(rows);
+        if (error) throw error;
+      }
+      result.inserted = rows.filter((row) => row.is_working).length;
+      return result;
     } catch (error) {
       console.warn("Concrete work_schedule skipped", error?.message || error);
+      return result;
     }
   }
 
@@ -682,6 +838,10 @@
       state.selectedEmployeeId = event.currentTarget.value;
       render();
     });
+    $$('[data-employee-multi]').forEach((input) => input.addEventListener("change", () => {
+      state.selectedEmployeeIds = $$('[data-employee-multi]:checked').map((el) => el.value);
+    }));
+    $$('input[name="workScheduleSaveMode"]').forEach((input) => input.addEventListener("change", (event) => { state.saveMode = event.currentTarget.value; }));
     $("#saveWorkScheduleBtn")?.addEventListener("click", save);
     $("#saveWorkScheduleBottomBtn")?.addEventListener("click", save);
     $("#workScheduleApplyFrom")?.addEventListener("change", (event) => { state.applyFrom = event.currentTarget.value; });
@@ -721,6 +881,7 @@
         state.schedules = schedules;
         state.daysOff = daysOff;
         state.selectedEmployeeId = employees[0]?.id || "";
+        state.selectedEmployeeIds = state.selectedEmployeeId ? [state.selectedEmployeeId] : [];
         render();
       } catch (error) {
         showError(error.message || String(error));
