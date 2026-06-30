@@ -698,7 +698,6 @@
       const off = dayOffFor(employee, iso);
       if (off) { result.daysOff += 1; return; }
       rows.push({
-        id: window.crypto?.randomUUID ? window.crypto.randomUUID() : undefined,
         company_id: state.ctx.companyId,
         employee_id: employeeId,
         date: iso,
@@ -721,11 +720,10 @@
     }
 
     if (rows.length) {
-      const cleanRows = rows.map((row) => {
-        const copy = { ...row };
-        if (!copy.id) delete copy.id;
-        return copy;
-      });
+      // Nie wysyłamy własnego id. work_schedule ma id generowane po stronie bazy.
+      // Dzięki temu upsert działa wyłącznie po company_id + employee_id + date
+      // i nie wpada w konflikt primary key/id.
+      const cleanRows = rows.map(({ id, ...row }) => row);
       const { error } = await window.cmSupabase
         .from("work_schedule")
         .upsert(cleanRows, { onConflict: "company_id,employee_id,date" });
