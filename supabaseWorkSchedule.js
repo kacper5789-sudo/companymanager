@@ -723,7 +723,7 @@
     if (rows.length) {
       const cleanRows = rows.map((row) => {
         const copy = { ...row };
-        delete copy.id;
+        if (!copy.id) delete copy.id;
         return copy;
       });
       const { error } = await window.cmSupabase
