@@ -195,6 +195,17 @@
     return user?.full_name || user?.email || "";
   }
 
+  function getPassCompanyOwnerSeller(ctx, data) {
+    const users = Array.isArray(data?.users) ? data.users : [];
+    // Karnety przypisujemy automatycznie do właściciela firmy: pierwszego ADMINA firmy.
+    // Firma nie jest użytkownikiem, więc pozostajemy przy normalnym profilu/pracowniku w raportach.
+    const admins = users.filter((u) => String(u?.role || "").trim().toUpperCase() === "ADMIN");
+    const owner = admins[0] || users[0] || null;
+    if (owner?.id) return { id: String(owner.id), name: userName(owner) || "Właściciel firmy" };
+    const access = ctx?.access || {};
+    return { id: access.id || access.user_id || null, name: access.full_name || access.email || "Właściciel firmy" };
+  }
+
   function employeeSnapshot(usersById, employeeId) {
     const id = String(employeeId || "").trim();
     const name = id ? String(userName(usersById[id]) || "").trim() : "";
@@ -212,6 +223,7 @@
     if (!employee?.id) return;
     const row = normalizeRpcInserted(inserted);
     const patch = { employee_id: employee.id, employee_name: employee.name || null, updated_at: new Date().toISOString() };
+    const salePatch = { employee_name: employee.name || null, updated_at: new Date().toISOString() };
     let passId = row?.pass_id || row?.id || row?.pass?.id || row?.passId || null;
     let saleId = row?.sale_id || row?.sale?.id || row?.saleId || null;
 
@@ -230,7 +242,9 @@
 
     const tasks = [];
     if (passId) tasks.push(window.cmSupabase.from("passes").update(patch).eq("id", passId).eq("company_id", ctx.companyId));
-    if (saleId) tasks.push(window.cmSupabase.from("sales").update(patch).eq("id", saleId).eq("company_id", ctx.companyId));
+    // Nie wymuszamy sales.employee_id, bo w części baz FK sales.employee_id nie wskazuje na profiles.
+    // Raporty i historia karnetów biorą sprzedawcę z passes.employee_id/employee_name.
+    if (saleId) tasks.push(window.cmSupabase.from("sales").update(salePatch).eq("id", saleId).eq("company_id", ctx.companyId));
 
     if (tasks.length) {
       const results = await Promise.all(tasks);
@@ -589,9 +603,11 @@
 
     const clientsById = Object.fromEntries(data.clients.map((c) => [c.id, c]));
     const usersById = Object.fromEntries(data.users.map((u) => [u.id, u]));
+    const passOwnerSeller = getPassCompanyOwnerSeller(ctx, data);
     const servicesById = Object.fromEntries((data.services || []).map((svc) => [svc.id, svc]));
     const customerOptions = data.clients.map((c) => `<option value="${escapeHtml(c.id)}">${escapeHtml(clientName(c) || "-")}</option>`).join("");
     const employeeOptions = data.users.map((u) => `<option value="${escapeHtml(u.id)}">${escapeHtml(userName(u) || "-")}</option>`).join("");
+    const passOwnerSellerName = passOwnerSeller.name || "Właściciel firmy";
     const serviceOptions = (data.services || []).map((svc) => `<option value="${escapeHtml(svc.id)}">${escapeHtml(svc.name || "Usługa")}</option>`).join("");
     const templatesById = Object.fromEntries((data.templates || []).map((tpl) => [tpl.id, tpl]));
     const templateOptions = (data.templates || []).map((tpl) => {
@@ -680,7 +696,7 @@
         <h2>Dodaj karnet</h2>
         <form id="addPassForm" class="bm-form-grid bm-wide-form">
           <div class="bm-form-row-2 full"><label>Data i godzina sprzedaży<input name="saleDate" type="date" value="${isoToday()}" required></label><label>Godzina<input name="saleTime" type="time" value="06:00" required></label></div>
-          <label>Sprzedawca<select name="employeeId"><option value="">Automatycznie / brak</option>${employeeOptions}</select></label>
+          <label>Sprzedawca karnetów<input type="text" value="${escapeHtml(passOwnerSellerName)}" readonly><input name="employeeId" type="hidden" value="${escapeHtml(passOwnerSeller.id || "")}"></label>
           <label class="full">Wybierz karnet z puli<select name="passTemplateId" required><option value="">Wybierz typ karnetu</option>${templateOptions}</select></label>
           <label>Typ<input name="passTypeLabel" type="text" value="-" readonly><input name="passType" type="hidden" value="amount"></label>
           <label>Kupujący<select name="buyerClientId" required><option value="">Wybierz kupującego</option>${customerOptions}</select></label>
@@ -937,7 +953,12 @@
       const submit = form.querySelector('button[type="submit"]');
       if (submit) submit.disabled = true;
       try {
+        if (form.employeeId && !form.employeeId.value && passOwnerSeller.id) form.employeeId.value = passOwnerSeller.id;
         const payload = passPayload(ctx, new FormData(form), usersById, clientsById, servicesById, null, templatesById);
+        if (!payload.employee_id && passOwnerSeller.id) {
+          payload.employee_id = passOwnerSeller.id;
+          payload.employee_name = passOwnerSeller.name || "Właściciel firmy";
+        }
         if (!payload.buyer_client_id) throw new Error("Wybierz kupującego.");
         if (!payload.beneficiary_client_id) throw new Error("Wybierz osobę korzystającą.");
         if (!payload.pass_template_id) throw new Error("Wybierz typ karnetu z puli.");
