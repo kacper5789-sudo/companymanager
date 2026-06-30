@@ -246,7 +246,7 @@
   });
 
   async function fetchData(ctx, fromDate, toDate) {
-    const [salesRes, itemsRes, paymentsRes, clientsRes, servicesRes, productsRes, categoriesRes, usersRes, appointmentsRes, passesRes] = await Promise.all([
+    const [salesRes, itemsRes, paymentsRes, clientsRes, servicesRes, productsRes, categoriesRes, usersRes, appointmentsRes, passesRes, companyRes] = await Promise.all([
       window.cmSupabase.from("sales").select("id, company_id, client_id, appointment_id, employee_id, employee_name, sale_number, status, total_net, total_tax, total_gross, discount_value, payment_status, payment_method, note, created_at, updated_at").eq("company_id", ctx.companyId).gte("created_at", `${fromDate}T00:00:00`).lte("created_at", `${toDate}T23:59:59`).order("created_at", { ascending: false }),
       window.cmSupabase.from("sale_items").select("id, company_id, sale_id, item_type, service_id, product_id, pass_id, name, name_snapshot, quantity, unit_price, discount, total, total_price, created_at").eq("company_id", ctx.companyId),
       window.cmSupabase.from("payments").select("id, company_id, sale_id, appointment_id, amount, method, status, paid_at, created_at").eq("company_id", ctx.companyId).gte("paid_at", `${fromDate}T00:00:00`).lte("paid_at", `${toDate}T23:59:59`).order("paid_at", { ascending: false }),
@@ -256,7 +256,8 @@
       window.cmSupabase.from("service_categories").select("id, name, active").eq("company_id", ctx.companyId).eq("active", true),
       window.cmSupabase.rpc("company_users_for_dropdown", { target_company_id: ctx.companyId }),
       window.cmSupabase.from("appointments").select("id, client_id, client_name, service_id, service_name, product_id, product_name, employee_id, employee_name, payment_method, payment_status, status, finished, total, price, starts_at, appointment_datetime, date, start_time, created_at").eq("company_id", ctx.companyId),
-      window.cmSupabase.from("passes").select("id, company_id, customer_id, buyer_client_id, beneficiary_client_id, employee_id, service_id, service_name, pass_type, sale_id, name, number, sale_date, sale_time, valid_until, payment_method, buyer, customer_name, employee_name, value, remaining, total_units, remaining_units, description, status, active, created_at").eq("company_id", ctx.companyId).order("created_at", { ascending: false })
+      window.cmSupabase.from("passes").select("id, company_id, customer_id, buyer_client_id, beneficiary_client_id, employee_id, service_id, service_name, pass_type, sale_id, name, number, sale_date, sale_time, valid_until, payment_method, buyer, customer_name, employee_name, value, remaining, total_units, remaining_units, description, status, active, created_at").eq("company_id", ctx.companyId).order("created_at", { ascending: false }),
+      window.cmSupabase.rpc("company_panel_get")
     ]);
     const errors = [salesRes, itemsRes, paymentsRes, clientsRes, servicesRes, productsRes, categoriesRes, usersRes, appointmentsRes, passesRes].map((res) => res.error).filter(Boolean);
     if (errors.length) throw errors[0];
@@ -270,7 +271,8 @@
       serviceCategories: categoriesRes.data || [],
       users: usersRes.data || [],
       appointments: appointmentsRes.data || [],
-      passes: passesRes.data || []
+      passes: passesRes.data || [],
+      company: companyRes.data?.company || companyRes.data || {}
     };
   }
 
@@ -289,6 +291,11 @@
 
   function employeeDisplayName(userById, employeeId, appointment, sale) {
     return userNameOrEmpty(userById[employeeId]) || appointment?.employee_name || sale?.employee_name || "(brak)";
+  }
+
+  function companyDisplayName(company, ctx) {
+    const c = company?.company || company || ctx?.context?.company || {};
+    return c.name || c.company_name || c.display_name || ctx?.context?.company_name || "Firma";
   }
 
 
@@ -593,6 +600,7 @@
         .filter(Boolean)
         .map(String)
     );
+    const companySellerName = companyDisplayName(data.company, ctx);
     const passRowsFromPasses = (data.passes || [])
       .filter((pass) => !passIdsRepresentedBySaleItems.has(String(pass.id || "")))
       .filter((pass) => pass.active !== false && !inactivePassStatuses.includes(String(pass.status || "").toLowerCase()))
@@ -600,7 +608,7 @@
       .map((pass) => {
         const linkedSale = pass.sale_id ? salesById[pass.sale_id] : null;
         const linkedAppointment = linkedSale?.appointment_id ? appointmentById[linkedSale.appointment_id] : null;
-        const employeeId = pass.employee_id || linkedSale?.employee_id || linkedAppointment?.employee_id || "";
+        const employeeId = "";
         const clientId = pass.beneficiary_client_id || pass.buyer_client_id || pass.customer_id || linkedSale?.client_id || linkedAppointment?.client_id || "";
         return {
           sourceKey: pass.id || pass.sale_id || `${pass.number || ""}:${pass.created_at || ""}`,
@@ -608,7 +616,7 @@
           time: pass.sale_time || "",
           employeeId,
           clientId,
-          employee: userNameOrEmpty(userById[employeeId]) || pass.employee_name || linkedSale?.employee_name || linkedAppointment?.employee_name || "(brak)",
+          employee: companySellerName,
           customer: clientName(clientById[clientId]) || pass.customer_name || linkedAppointment?.client_name || "(brak)",
           value: Number(pass.value || linkedSale?.total_gross || 0),
           note: [pass.name || "Karnet", pass.number || "", pass.service_name || "", pass.description || ""].filter(Boolean).join(" — "),
@@ -623,7 +631,7 @@
         const sale = salesById[item.sale_id] || {};
         const appointment = appointmentById[sale.appointment_id] || {};
         const linkedPass = passById[item.pass_id] || passBySaleId[item.sale_id] || {};
-        const employeeId = sale.employee_id || linkedPass.employee_id || appointment.employee_id || "";
+        const employeeId = "";
         const clientId = sale.client_id || linkedPass.beneficiary_client_id || linkedPass.buyer_client_id || linkedPass.customer_id || appointment.client_id || "";
         const payment = paymentFor(sale, appointment);
         return {
@@ -632,7 +640,7 @@
           time: "",
           employeeId,
           clientId,
-          employee: userNameOrEmpty(userById[employeeId]) || linkedPass.employee_name || employeeDisplayName(userById, employeeId, appointment, sale),
+          employee: companySellerName,
           customer: clientName(clientById[clientId]) || linkedPass.customer_name || appointment.client_name || "(brak)",
           value: Number(item.total ?? item.total_price ?? item.unit_price ?? sale.total_gross ?? 0),
           note: item.name || item.name_snapshot || sale.note || "Karnet",
