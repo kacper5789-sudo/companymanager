@@ -614,16 +614,17 @@
       addPaymentEvent(method, qty, value);
     });
 
-    // Fallback: jeśli istnieje sprzedaż opłacona, ale nie ma sale_items albo część wartości
-    // nie jest pokryta pozycjami, doliczamy brak jako osobne zdarzenie płatności.
+    // Fallback tylko dla sprzedaży, które NIE mają żadnej policzonej pozycji.
+    // Nie doliczamy różnicy `sales.total_gross - suma pozycji`, bo wtedy Raport z okresu
+    // pokazuje np. 5 płatności / 600 PLN mimo że realnie było 5 zdarzeń po 100 PLN.
+    // Jeśli sprzedaż ma już pozycję usługi/produktu/karnetu, płatność jest liczona z tej pozycji.
     activeSalesForFinance.forEach((sale) => {
       const total = saleValue(sale);
       const represented = representedSaleValue.get(sale.id) || 0;
-      const missing = Math.max(0, total - represented);
-      if (missing <= 0.009) return;
+      if (represented > 0.009 || total <= 0.009) return;
       const appointment = appointmentById.get(sale.appointment_id) || {};
       const payment = paymentBySaleId.get(sale.id) || paymentByAppointmentId.get(appointment.id) || {};
-      addPaymentEvent(payment.method || sale.payment_method || appointment.payment_method || 'gotówka', 1, missing);
+      addPaymentEvent(payment.method || sale.payment_method || appointment.payment_method || 'gotówka', 1, total);
     });
 
     // Fallback awaryjny: surowe rekordy payments bez sale_id/appointment_id też są płatnościami.
