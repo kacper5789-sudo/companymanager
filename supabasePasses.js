@@ -195,11 +195,6 @@
     return user?.full_name || user?.email || "";
   }
 
-  function companyDisplayName(company, ctx) {
-    const c = company?.company || company || ctx?.context?.company || {};
-    return c.name || c.company_name || c.display_name || c.title || ctx?.context?.company_name || "Firma";
-  }
-
   function employeeSnapshot(usersById, employeeId) {
     const id = String(employeeId || "").trim();
     const name = id ? String(userName(usersById[id]) || "").trim() : "";
@@ -214,9 +209,9 @@
   }
 
   async function syncPassSaleEmployee(ctx, inserted, employee) {
+    if (!employee?.id) return;
     const row = normalizeRpcInserted(inserted);
-    const sellerName = String(employee?.name || "Firma").trim() || "Firma";
-    const patch = { employee_id: null, employee_name: sellerName, updated_at: new Date().toISOString() };
+    const patch = { employee_id: employee.id, employee_name: employee.name || null, updated_at: new Date().toISOString() };
     let passId = row?.pass_id || row?.id || row?.pass?.id || row?.passId || null;
     let saleId = row?.sale_id || row?.sale?.id || row?.saleId || null;
 
@@ -436,8 +431,7 @@
       users: usersRes.data || [],
       services: (servicesRes.data || []).filter((s) => s.active !== false),
       templates: templatesRes.data || [],
-      paymentMethods: normalizePaymentMethods(companyRes.data || {}),
-      company: companyRes.data?.company || companyRes.data || {}
+      paymentMethods: normalizePaymentMethods(companyRes.data || {})
     };
   }
 
@@ -521,8 +515,7 @@
   }
 
   function passPayload(ctx, formData, usersById, clientsById, servicesById, number, templatesById = {}) {
-    const employeeId = null;
-    const companySellerName = String(formData.get("employeeName") || ctx?.context?.company_name || "Firma").trim() || "Firma";
+    const employeeId = String(formData.get("employeeId") || "").trim() || null;
     const buyerClientId = String(formData.get("buyerClientId") || "").trim() || null;
     const beneficiaryClientId = String(formData.get("beneficiaryClientId") || "").trim() || buyerClientId;
     const templateId = String(formData.get("passTemplateId") || "").trim() || null;
@@ -537,7 +530,7 @@
     const name = String(template?.name || "").trim() || (passType === "units"
       ? `Karnet ${totalUnits || 1}x ${service?.name || "usługa"}`
       : `Karnet kwotowy ${money(passAmount || salePrice || 0)}`);
-    const employee = { id: null, name: companySellerName };
+    const employee = employeeSnapshot(usersById, employeeId);
     return {
       company_id: ctx.companyId,
       customer_id: beneficiaryClientId,
@@ -598,7 +591,6 @@
     const usersById = Object.fromEntries(data.users.map((u) => [u.id, u]));
     const servicesById = Object.fromEntries((data.services || []).map((svc) => [svc.id, svc]));
     const customerOptions = data.clients.map((c) => `<option value="${escapeHtml(c.id)}">${escapeHtml(clientName(c) || "-")}</option>`).join("");
-    const companySellerName = companyDisplayName(data.company, ctx);
     const employeeOptions = data.users.map((u) => `<option value="${escapeHtml(u.id)}">${escapeHtml(userName(u) || "-")}</option>`).join("");
     const serviceOptions = (data.services || []).map((svc) => `<option value="${escapeHtml(svc.id)}">${escapeHtml(svc.name || "Usługa")}</option>`).join("");
     const templatesById = Object.fromEntries((data.templates || []).map((tpl) => [tpl.id, tpl]));
@@ -688,7 +680,7 @@
         <h2>Dodaj karnet</h2>
         <form id="addPassForm" class="bm-form-grid bm-wide-form">
           <div class="bm-form-row-2 full"><label>Data i godzina sprzedaży<input name="saleDate" type="date" value="${isoToday()}" required></label><label>Godzina<input name="saleTime" type="time" value="06:00" required></label></div>
-          <label>Sprzedawca<input name="employeeNameDisplay" type="text" value="${escapeHtml(companySellerName)}" readonly><input name="employeeId" type="hidden" value=""><input name="employeeName" type="hidden" value="${escapeHtml(companySellerName)}"></label>
+          <label>Sprzedawca<select name="employeeId"><option value="">Automatycznie / brak</option>${employeeOptions}</select></label>
           <label class="full">Wybierz karnet z puli<select name="passTemplateId" required><option value="">Wybierz typ karnetu</option>${templateOptions}</select></label>
           <label>Typ<input name="passTypeLabel" type="text" value="-" readonly><input name="passType" type="hidden" value="amount"></label>
           <label>Kupujący<select name="buyerClientId" required><option value="">Wybierz kupującego</option>${customerOptions}</select></label>
@@ -959,7 +951,7 @@
         if (payload.pass_type === "amount" && !payload.pass_amount) throw new Error("Wpisz kwotę karnetu klienta.");
         const { data: inserted, error } = await window.cmSupabase.rpc("cm_create_pass_sale", { p_payload: payload });
         if (error) throw error;
-        await syncPassSaleEmployee(ctx, inserted, { id: null, name: payload.employee_name });
+        await syncPassSaleEmployee(ctx, inserted, { id: payload.employee_id, name: payload.employee_name });
         await window.cmUndo?.record({ module: "passes", actionType: "insert", targetTable: "passes", targetId: inserted?.pass_id, afterData: inserted || payload, companyId: ctx.companyId });
         setMessage("#passFormMessage", "Karnet sprzedany i zapisany w sprzedaży.", true);
         rerenderPassesAfterSuccess(450);

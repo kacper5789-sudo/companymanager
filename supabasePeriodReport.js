@@ -6,10 +6,6 @@
   const $ = (selector, root = document) => root.querySelector(selector);
   const $$ = (selector, root = document) => Array.from(root.querySelectorAll(selector));
   const esc = (value) => String(value ?? "").replace(/[&<>'"]/g, (c) => ({"&":"&amp;","<":"&lt;",">":"&gt;","'":"&#39;",'"':"&quot;"}[c]));
-  function companyDisplayName(company, ctx) {
-    const c = company?.company || company || ctx?.context?.company || {};
-    return c.name || c.company_name || c.display_name || ctx?.context?.company_name || "Firma";
-  }
   const money = (value) => `${Number(value || 0).toFixed(2)} PLN`;
   const pad = (n) => String(n).padStart(2, "0");
   const isoDate = (date) => `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
@@ -415,15 +411,14 @@
 
   async function fetchPeriodData(ctx, range) {
     const sb = window.cmSupabase;
-    const [salesRes, paymentsRes, appointmentsRes, clientsRes, employeesRes, employeesTableRes, passesRes, companyRes] = await Promise.all([
+    const [salesRes, paymentsRes, appointmentsRes, clientsRes, employeesRes, employeesTableRes, passesRes] = await Promise.all([
       sb.from("sales").select("id,company_id,client_id,employee_id,employee_name,appointment_id,total_gross,total_net,payment_status,payment_method,status,created_at,updated_at").eq("company_id", ctx.companyId).gte("created_at", range.startIso).lt("created_at", range.endIso),
       sb.from("payments").select("id,company_id,sale_id,appointment_id,amount,method,status,paid_at,created_at").eq("company_id", ctx.companyId),
       sb.from("appointments").select("id,company_id,client_id,client_name,employee_id,employee_name,service_id,service_name,product_id,product_name,total,price,paid_amount,payment_status,payment_method,status,finished,date,starts_at,appointment_datetime,created_at,cancellation_reason,cancel_reason,cancelled_at,pass_id,pass_name,pass_used_value,pass_used_units").eq("company_id", ctx.companyId).gte("date", range.fromIso).lte("date", range.toIso),
       sb.from("clients").select("id,first_name,last_name,created_at,company_id").eq("company_id", ctx.companyId).lte("created_at", range.endIso),
       sb.from("profiles").select("id,full_name,email,role,company_id").eq("company_id", ctx.companyId),
       sb.from("employees").select("id,profile_id,user_id,full_name,employee_name,name,email,active,is_active,status,company_id").eq("company_id", ctx.companyId),
-      sb.from("passes").select("id,company_id,sale_id,employee_id,employee_name,buyer_client_id,beneficiary_client_id,customer_id,name,number,value,payment_method,sale_date,sale_time,created_at,active,status").eq("company_id", ctx.companyId).gte("created_at", range.startIso).lt("created_at", range.endIso),
-      sb.rpc("company_panel_get")
+      sb.from("passes").select("id,company_id,sale_id,employee_id,employee_name,buyer_client_id,beneficiary_client_id,customer_id,name,number,value,payment_method,sale_date,sale_time,created_at,active,status").eq("company_id", ctx.companyId).gte("created_at", range.startIso).lt("created_at", range.endIso)
     ]);
     const errors = [salesRes.error, paymentsRes.error, appointmentsRes.error, clientsRes.error, employeesRes.error, passesRes.error].filter(Boolean);
     if (errors.length) throw new Error(errors.map(e => e.message).join(" | "));
@@ -465,8 +460,7 @@
       employees: employeesRes.data || [],
       employeesTable: employeesTableRes.error ? [] : (employeesTableRes.data || []),
       saleItems,
-      passes: passesRes.data || [],
-      company: companyRes.data?.company || companyRes.data || {}
+      passes: passesRes.data || []
     };
   }
 
@@ -644,7 +638,6 @@
       addPaymentEvent(payment.method || 'gotówka', 1, Number(payment.amount || 0));
     });
 
-    const companySellerName = companyDisplayName(data.company, ctx);
     const employeeRowsMap = new Map();
     function ensureEmployee(id, ...fallbacks) {
       const resolved = employeeResolver.resolve(id, ...fallbacks);
@@ -663,8 +656,7 @@
     });
     activeSalesForFinance.forEach(s => {
       const appointment = appointmentById.get(s.appointment_id) || {};
-      const saleHasPass = passBySaleId.has(s.id) || items.some((it) => String(it.sale_id || "") === String(s.id || "") && normalizeItemType(it.item_type) === "pass");
-      const row = saleHasPass ? ensureEmployee(null, companySellerName) : ensureEmployee(s.employee_id || appointment.employee_id, s.employee_name, appointment.employee_name);
+      const row = ensureEmployee(s.employee_id || appointment.employee_id, s.employee_name, appointment.employee_name);
       row.sales += 1;
       row.revenue += saleValue(s);
     });
@@ -672,10 +664,8 @@
       const sale = item.sale || {};
       const linkedPass = item.__linkedPass || (item.pass_id ? rawPasses.find(pass => String(pass.id) === String(item.pass_id)) : passBySaleId.get(item.sale_id)) || {};
       const appointment = appointmentById.get(sale.appointment_id) || {};
+      const row = ensureEmployee(sale.employee_id || linkedPass.employee_id || appointment.employee_id, sale.employee_name, linkedPass.employee_name, appointment.employee_name);
       const type = normalizeItemType(item.item_type);
-      const row = type === 'pass'
-        ? ensureEmployee(null, companySellerName)
-        : ensureEmployee(sale.employee_id || appointment.employee_id, sale.employee_name, appointment.employee_name);
       const qty = itemQty(item);
       const value = reportItemValue(item);
       if (type === 'service') { row.services += qty; row.serviceValue += value; }

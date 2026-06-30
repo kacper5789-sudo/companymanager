@@ -6,10 +6,6 @@
   const $ = (selector, root = document) => root.querySelector(selector);
   const $$ = (selector, root = document) => Array.from(root.querySelectorAll(selector));
   const esc = (value) => String(value ?? "").replace(/[&<>'"]/g, (c) => ({"&":"&amp;","<":"&lt;",">":"&gt;","'":"&#39;",'"':"&quot;"}[c]));
-  function companyDisplayName(company, ctx) {
-    const c = company?.company || company || ctx?.context?.company || {};
-    return c.name || c.company_name || c.display_name || ctx?.context?.company_name || "Firma";
-  }
   const money = (value) => `${Number(value || 0).toFixed(2)} PLN`;
   const normalize = (value) => String(value || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
   function employeeKeyByName(value) {
@@ -337,7 +333,7 @@
 
   async function fetchData(companyId, from, to) {
     const sb = window.cmSupabase;
-    const [profiles, employeesTable, positions, clients, appointments, sales, saleItems, passes, daysOff, workSchedules, workScheduleTemplates, employeeWorkSchedules, companyRes] = await Promise.all([
+    const [profiles, employeesTable, positions, clients, appointments, sales, saleItems, passes, daysOff, workSchedules, workScheduleTemplates, employeeWorkSchedules] = await Promise.all([
       safeSelect("profiles", sb.from("profiles").select("*").eq("company_id", companyId)),
       safeSelect("employees", sb.from("employees").select("*").eq("company_id", companyId)),
       safeSelect("positions", sb.from("positions").select("*").eq("company_id", companyId)),
@@ -349,8 +345,7 @@
       safeSelect("days_off", sb.from("days_off").select("*").eq("company_id", companyId)),
       safeSelect("work_schedule", sb.from("work_schedule").select("*").eq("company_id", companyId)),
       safeSelect("work_schedule_templates", sb.from("work_schedule_templates").select("*").eq("company_id", companyId)),
-      safeSelect("employee_work_schedules", sb.from("employee_work_schedules").select("*").eq("company_id", companyId)),
-      sb.rpc("company_panel_get")
+      safeSelect("employee_work_schedules", sb.from("employee_work_schedules").select("*").eq("company_id", companyId))
     ]);
 
     const filteredAppointments = appointments.filter((row) => inRange(appointmentDate(row), from, to));
@@ -370,7 +365,7 @@
     const filteredDaysOff = daysOff.filter((row) => inRange(row.date || row.start_date || row.date_from || row.from_date || row.created_at, from, to));
     const filteredWorkSchedules = workSchedules.filter((row) => inRange(row.date || row.work_date || row.day || row.created_at, from, to));
 
-    return { profiles, employeesTable, positions, clients, appointments: filteredAppointments, sales: filteredSales, saleItems: filteredItems, passes: filteredPasses, daysOff: filteredDaysOff, workSchedules: filteredWorkSchedules, workScheduleTemplates, employeeWorkSchedules, from, to, company: companyRes.data?.company || companyRes.data || {} };
+    return { profiles, employeesTable, positions, clients, appointments: filteredAppointments, sales: filteredSales, saleItems: filteredItems, passes: filteredPasses, daysOff: filteredDaysOff, workSchedules: filteredWorkSchedules, workScheduleTemplates, employeeWorkSchedules, from, to };
   }
 
   function calcStats(data) {
@@ -433,7 +428,6 @@
     const saleById = new Map(data.sales.map((s) => [s.id, s]));
     const appointmentById = new Map(data.appointments.map((a) => [a.id, a]));
     const appointmentItemTypes = new Map();
-    const companySellerName = companyDisplayName(data.company, ctx);
     const passSaleItemIds = new Set(data.saleItems.filter((item) => itemType(item) === "pass").map((item) => item.pass_id || item.passId || "").filter(Boolean));
 
     data.saleItems.forEach((item) => {
@@ -567,13 +561,13 @@
       emp.revenue += value;
       touchClient(emp, sale.client_id || sale.customer_id || appointment.client_id || appointment.customer_id || "");
       if (type === "product") { emp.products += qty; emp.productValue += value; }
-      else if (type === "pass") { const companyEmp = ensure(null, companySellerName); companyEmp.passes += qty; companyEmp.passValue += value; }
+      else if (type === "pass") { emp.passes += qty; emp.passValue += value; }
       else { emp.services += qty; emp.serviceValue += value; }
     });
 
     (data.passes || []).forEach((pass) => {
       if (pass?.id && passSaleItemIds.has(pass.id)) return;
-      const emp = ensure(null, companySellerName);
+      const emp = ensure(pass.employee_id || pass.employeeId, pass.employee_name || pass.employeeName || "");
       if (!emp) return;
       const value = Number(pass.value || pass.total || pass.price || 0) || 0;
       emp.passes += 1;
