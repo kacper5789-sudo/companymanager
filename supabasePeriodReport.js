@@ -410,7 +410,7 @@
     const [salesRes, paymentsRes, appointmentsRes, clientsRes, employeesRes, employeesTableRes, passesRes] = await Promise.all([
       sb.from("sales").select("id,company_id,client_id,employee_id,employee_name,appointment_id,total_gross,total_net,payment_status,payment_method,status,created_at,updated_at").eq("company_id", ctx.companyId).gte("created_at", range.startIso).lt("created_at", range.endIso),
       sb.from("payments").select("id,company_id,sale_id,appointment_id,amount,method,status,paid_at,created_at").eq("company_id", ctx.companyId),
-      sb.from("appointments").select("id,company_id,client_id,client_name,employee_id,employee_name,service_id,service_name,product_id,product_name,total,price,paid_amount,payment_status,payment_method,status,finished,date,starts_at,appointment_datetime,created_at,cancellation_reason,cancel_reason,cancelled_at").eq("company_id", ctx.companyId).gte("date", range.fromIso).lte("date", range.toIso),
+      sb.from("appointments").select("id,company_id,client_id,client_name,employee_id,employee_name,service_id,service_name,product_id,product_name,total,price,paid_amount,payment_status,payment_method,status,finished,date,starts_at,appointment_datetime,created_at,cancellation_reason,cancel_reason,cancelled_at,pass_id,pass_name,pass_used_value,pass_used_units").eq("company_id", ctx.companyId).gte("date", range.fromIso).lte("date", range.toIso),
       sb.from("clients").select("id,first_name,last_name,created_at,company_id").eq("company_id", ctx.companyId).lte("created_at", range.endIso),
       sb.from("profiles").select("id,full_name,email,role,company_id").eq("company_id", ctx.companyId),
       sb.from("employees").select("id,profile_id,user_id,full_name,employee_name,name,email,active,is_active,status,company_id").eq("company_id", ctx.companyId),
@@ -471,10 +471,27 @@
     const appointmentById = new Map((data.appointments || []).map(a => [a.id, a]));
     const clientMap = new Map(data.clients.map(c => [c.id, c]));
     let items = data.saleItems.map(item => ({ ...item, sale: saleMap.get(item.sale_id) || {} }));
+    const rangeStartMs = new Date(range.startIso).getTime();
+    const rangeEndMs = new Date(range.endIso).getTime();
+    const inReportRange = (value) => {
+      if (!value) return false;
+      const d = new Date(value);
+      const t = d.getTime();
+      return Number.isFinite(t) && t >= rangeStartMs && t < rangeEndMs;
+    };
+
     const passIdsInItems = new Set(items.filter(i => normalizeItemType(i.item_type) === 'pass').map(i => String(i.pass_id || '')).filter(Boolean));
+    const passSaleIdsInItems = new Set(items.filter(i => normalizeItemType(i.item_type) === 'pass').map(i => String(i.sale_id || '')).filter(Boolean));
+
+    // Karnet w raporcie finansowym = tylko sprzedaż karnetu.
+    // Użycie wejścia z karnetu na wizycie NIE jest sprzedażą i nie może tworzyć drugiej pozycji 200 zł.
     rawPasses.forEach((pass) => {
-      if (pass.id && passIdsInItems.has(String(pass.id))) return;
       const sale = pass.sale_id ? saleMap.get(pass.sale_id) : null;
+      const saleMoment = pass.sale_date ? `${pass.sale_date}T${String(pass.sale_time || '00:00').slice(0,5)}:00` : (sale?.created_at || pass.created_at);
+      const isSoldInRange = Boolean(Number(pass.value || sale?.total_gross || 0) > 0 && inReportRange(saleMoment));
+      if (!isSoldInRange) return;
+      if (pass.id && passIdsInItems.has(String(pass.id))) return;
+      if (pass.sale_id && passSaleIdsInItems.has(String(pass.sale_id))) return;
       const syntheticSaleId = pass.sale_id || `pass-sale-${pass.id}`;
       if (!saleMap.has(syntheticSaleId)) {
         saleMap.set(syntheticSaleId, {
@@ -484,7 +501,7 @@
           total_gross: Number(pass.value || 0),
           total_net: Number(pass.value || 0),
           payment_method: pass.payment_method || 'gotówka',
-          created_at: pass.created_at
+          created_at: saleMoment || pass.created_at
         });
       }
       items.push({
@@ -499,11 +516,26 @@
         unit_price: Number(pass.value || sale?.total_gross || 0),
         total: Number(pass.value || sale?.total_gross || 0),
         total_price: Number(pass.value || sale?.total_gross || 0),
-        created_at: pass.created_at,
+        created_at: saleMoment || pass.created_at,
         __linkedPass: pass,
         sale: saleMap.get(syntheticSaleId) || sale || {}
       });
     });
+
+    const appointmentUsesPass = (appointment) => {
+      if (!appointment) return false;
+      const method = String(appointment.payment_method || appointment.payment_status || '').toLowerCase();
+      return Boolean(appointment.pass_id || Number(appointment.pass_used_value || 0) > 0 || Number(appointment.pass_used_units || 0) > 0 || method.includes('karnet') || method.includes('pass'));
+    };
+    const reportItemValue = (item) => {
+      const sale = item.sale || saleMap.get(item.sale_id) || {};
+      const appointment = appointmentById.get(sale.appointment_id) || {};
+      const type = normalizeItemType(item.item_type);
+      // Realizacja usługi z wcześniej opłaconego karnetu ma wartość finansową 0 zł.
+      if (type === 'service' && appointmentUsesPass(appointment)) return 0;
+      return itemValue(item, saleMap);
+    };
+
     const services = items.filter(i => normalizeItemType(i.item_type) === 'service');
     const products = items.filter(i => normalizeItemType(i.item_type) === 'product');
     const passes = items.filter(i => normalizeItemType(i.item_type) === 'pass');
@@ -524,7 +556,7 @@
         if (!map.has(name)) map.set(name, { name, qty: 0, value: 0 });
         const row = map.get(name);
         row.qty += itemQty(item);
-        row.value += itemValue(item, saleMap);
+        row.value += reportItemValue(item);
       });
       return Array.from(map.values()).sort((a, b) => b.value - a.value);
     };
@@ -563,7 +595,7 @@
       const payment = paymentBySaleId.get(sale.id) || paymentByAppointmentId.get(appointment.id) || {};
       const method = payment.method || linkedPass.payment_method || sale.payment_method || appointment.payment_method || 'gotówka';
       const qty = itemQty(item);
-      const value = itemValue(item, saleMap);
+      const value = reportItemValue(item);
       if (item.sale_id) representedSaleValue.set(item.sale_id, (representedSaleValue.get(item.sale_id) || 0) + value);
       addPaymentEvent(method, qty, value);
     });
@@ -620,7 +652,7 @@
       const row = ensureEmployee(sale.employee_id || linkedPass.employee_id || appointment.employee_id, sale.employee_name, linkedPass.employee_name, appointment.employee_name);
       const type = normalizeItemType(item.item_type);
       const qty = itemQty(item);
-      const value = itemValue(item, saleMap);
+      const value = reportItemValue(item);
       if (type === 'service') { row.services += qty; row.serviceValue += value; }
       else if (type === 'product') { row.products += qty; row.productValue += value; }
       else { row.passes += qty; row.passValue += value; }
