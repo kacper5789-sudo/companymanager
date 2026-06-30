@@ -874,6 +874,36 @@
     return [plDate(appointmentDate(item)), appointmentStart(item), appointmentEnd(item), customerName(client), personName(employee), itemName].filter(Boolean).join(" — ");
   }
 
+  function appointmentStatusValue(item) {
+    return String(item?.status || "").trim().toLowerCase();
+  }
+
+  function isAppointmentCancelled(item) {
+    const status = appointmentStatusValue(item);
+    return ["odwołana", "odwolana", "odwołane", "odwolane", "odwołany", "odwolany", "cancelled", "canceled", "cancelled_by_client", "cancelled_by_company"].includes(status)
+      || Boolean(item?.cancelled_at || item?.cancellation_reason);
+  }
+
+  function isAppointmentFinished(item) {
+    const status = appointmentStatusValue(item);
+    return ["zakończone", "zakonczone", "zakończona", "zakonczona", "zakończony", "zakonczony", "completed", "complete", "done", "finished"].includes(status);
+  }
+
+  function isAppointmentDeleted(item) {
+    const status = appointmentStatusValue(item);
+    return item?.deleted === true || ["usunięte", "usuniete", "deleted", "void"].includes(status);
+  }
+
+  function isAppointmentClosed(item) {
+    return isAppointmentFinished(item) || isAppointmentCancelled(item) || isAppointmentDeleted(item);
+  }
+
+  function closedAppointmentEditMessage(item) {
+    if (isAppointmentFinished(item)) return "Ta wizyta jest zakończona i nie można jej już edytować z Dashboardu.";
+    if (isAppointmentCancelled(item)) return "Ta wizyta jest odwołana i nie można jej już edytować z Dashboardu.";
+    return "Tej wizyty nie można już edytować z Dashboardu.";
+  }
+
   function buildLookups(data) {
     return {
       clientsById: Object.fromEntries(data.clients.map((item) => [item.id, item])),
@@ -1018,9 +1048,8 @@
         const client = lookups.clientsById[appointmentClientId(visit)];
         const service = lookups.servicesById[visit.service_id];
         const product = lookups.productsById[visit.product_id];
-        const statusValue = String(visit.status || "").toLowerCase();
-        const visitCancelled = ["odwołana", "odwołane", "odwołany", "cancelled", "canceled"].includes(statusValue) || Boolean(visit.cancelled_at || visit.cancellation_reason);
-        const visitFinished = ["zakończone", "zakończona", "zakończony", "completed", "done"].includes(statusValue);
+        const visitCancelled = isAppointmentCancelled(visit);
+        const visitFinished = isAppointmentFinished(visit);
         const stateClass = visitCancelled ? " cancelled" : visitFinished ? " finished" : "";
         const stateLabel = visitCancelled ? "ODWOŁANA" : visitFinished ? "ZAKOŃCZONA" : "";
         const isStart = appointmentStart(visit) === slot.start;
@@ -1266,9 +1295,9 @@
       .map((p) => `<option value="${escapeHtml(p.id)}">${escapeHtml(p.name || p.title || "Stanowisko")}</option>`)
       .join("");
     const allPassOptions = passOptionsFor(data);
-    const visibleVisits = data.appointments.filter((item) => item.deleted !== true && !["odwołana", "odwołane", "usunięte"].includes(String(item.status || "").toLowerCase()));
-    const visitOptions = visibleVisits.map((item) => `<option value="${escapeHtml(item.id)}">${escapeHtml(appointmentLabel(item, lookups))}</option>`).join("");
-    const finishableVisits = visibleVisits.filter((item) => !["zakończone", "odwołane", "usunięte"].includes(String(item.status || "").toLowerCase()));
+    const editableVisits = data.appointments.filter((item) => !isAppointmentClosed(item));
+    const visitOptions = editableVisits.map((item) => `<option value="${escapeHtml(item.id)}">${escapeHtml(appointmentLabel(item, lookups))}</option>`).join("");
+    const finishableVisits = editableVisits;
     const finishVisitOptions = finishableVisits.map((item) => `<option value="${escapeHtml(item.id)}">${escapeHtml(appointmentLabel(item, lookups))}</option>`).join("");
 
     // Dashboard nie pokazuje już globalnej listy „najbliższych wizyt”.
@@ -1694,6 +1723,10 @@
       const visitId = String(slot?.dataset?.visitId || "");
       const selected = data.appointments.find((item) => String(item.id) === visitId);
       if (!selected) return;
+      if (isAppointmentClosed(selected)) {
+        alert(closedAppointmentEditMessage(selected));
+        return;
+      }
       showOnly(editPanel, panels);
       fillEditForm(document.querySelector("#dashboardEditVisitForm"), selected, lookups);
       const cancelBox = document.querySelector("#dashEditCancelReasonBox");
@@ -1764,6 +1797,11 @@
     document.querySelector("#dashEditVisitSelect")?.addEventListener("change", (event) => {
       const selected = data.appointments.find((item) => String(item.id) === String(event.currentTarget.value));
       if (!selected) return;
+      if (isAppointmentClosed(selected)) {
+        event.currentTarget.value = "";
+        setMessage("#dashboardEditVisitMessage", closedAppointmentEditMessage(selected), false);
+        return;
+      }
       fillEditForm(document.querySelector("#dashboardEditVisitForm"), selected, lookups);
     });
 
@@ -1776,6 +1814,7 @@
       const validation = validatePayload(payload);
       if (validation) { setMessage("#dashboardEditVisitMessage", validation, false); return; }
       const before = data.appointments.find((item) => item.id === visitId);
+      if (isAppointmentClosed(before)) { setMessage("#dashboardEditVisitMessage", closedAppointmentEditMessage(before), false); return; }
       const { data: updated, error } = await window.cmSupabase.from("appointments").update(payload).eq("id", visitId).eq("company_id", ctx.companyId).select("*").single();
       if (error) { setMessage("#dashboardEditVisitMessage", `Błąd edycji: ${error.message}`, false); return; }
       await window.cmUndo?.record({ module: "dashboard", actionType: "update", targetTable: "appointments", targetId: visitId, beforeData: before, afterData: updated || payload, companyId: ctx.companyId });
@@ -1798,6 +1837,7 @@
       if (!form || !visitId) { setMessage("#dashboardEditVisitMessage", "Wybierz wizytę do zakończenia.", false); return; }
       const before = data.appointments.find((item) => item.id === visitId);
       if (!before) { setMessage("#dashboardEditVisitMessage", "Nie znaleziono wizyty.", false); return; }
+      if (isAppointmentClosed(before)) { setMessage("#dashboardEditVisitMessage", closedAppointmentEditMessage(before), false); return; }
       const total = moneyNumber(form.elements.total?.value || appointmentTotal(before, lookups));
       const payload = {
         p_appointment_id: visitId,
@@ -1820,6 +1860,7 @@
       const visitId = selectedEditVisitId();
       if (!visitId) { setMessage("#dashboardEditVisitMessage", "Wybierz wizytę do odwołania.", false); return; }
       const before = data.appointments.find((item) => item.id === visitId);
+      if (isAppointmentClosed(before)) { setMessage("#dashboardEditVisitMessage", closedAppointmentEditMessage(before), false); return; }
       const box = document.querySelector("#dashEditCancelReasonBox");
       const select = document.querySelector("#dashEditCancelReasonSelect");
       if (select) select.innerHTML = cancellationReasonOptions(before?.cancellation_reason || "");
@@ -1833,6 +1874,7 @@
       if (!visitId) { setMessage("#dashboardEditVisitMessage", "Wybierz wizytę do odwołania.", false); return; }
       const before = data.appointments.find((item) => item.id === visitId);
       if (!before) { setMessage("#dashboardEditVisitMessage", "Nie znaleziono wizyty.", false); return; }
+      if (isAppointmentClosed(before)) { setMessage("#dashboardEditVisitMessage", closedAppointmentEditMessage(before), false); return; }
       const reason = String(document.querySelector("#dashEditCancelReasonSelect")?.value || "").trim();
       if (!CANCELLATION_REASONS.includes(reason)) { setMessage("#dashboardEditVisitMessage", "Musisz wybrać powód odwołania wizyty.", false); return; }
       const patch = { status: "odwołane", deleted: false, cancellation_reason: reason, cancelled_at: new Date().toISOString(), updated_at: new Date().toISOString() };
@@ -1860,6 +1902,7 @@
       if (!visitId) { setMessage("#dashboardFinishVisitMessage", "Wybierz wizytę do zakończenia.", false); return; }
       const before = data.appointments.find((item) => item.id === visitId);
       if (!before) { setMessage("#dashboardFinishVisitMessage", "Nie znaleziono wizyty.", false); return; }
+      if (isAppointmentClosed(before)) { setMessage("#dashboardFinishVisitMessage", closedAppointmentEditMessage(before), false); return; }
       const payload = {
         p_appointment_id: visitId,
         p_company_id: ctx.companyId,
@@ -1884,6 +1927,7 @@
       const reason = String(formData.get("reason") || "").trim();
       if (!visitId || !reason) { setMessage("#dashboardCancelVisitMessage", "Wybierz wizytę i wpisz powód.", false); return; }
       const before = data.appointments.find((item) => item.id === visitId);
+      if (isAppointmentClosed(before)) { setMessage("#dashboardCancelVisitMessage", closedAppointmentEditMessage(before), false); return; }
       const patch = { status: "odwołane", deleted: false, cancellation_reason: reason, cancelled_at: new Date().toISOString(), updated_at: new Date().toISOString() };
       const { data: updated, error } = await window.cmSupabase.from("appointments").update(patch).eq("id", visitId).eq("company_id", ctx.companyId).select("*").single();
       if (error) { setMessage("#dashboardCancelVisitMessage", `Błąd odwołania: ${error.message}`, false); return; }
