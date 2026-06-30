@@ -716,23 +716,15 @@
       const day = Number(tr.dataset.day);
       const weekend = day === 0 || day === 6;
       const working = $("[data-working]", tr);
-      const start = $("[data-start]", tr);
-      const end = $("[data-end]", tr);
-      const bs = $("[data-break-start]", tr);
-      const be = $("[data-break-end]", tr);
       if (mode === "week" && weekend) {
         if (working) working.checked = false;
-        if (start) start.value = q.start;
-        if (end) end.value = q.end;
-        if (bs) bs.value = q.breakStart;
-        if (be) be.value = q.breakEnd;
         return;
       }
       if (working) working.checked = true;
-      if (start) start.value = q.start;
-      if (end) end.value = q.end;
-      if (bs) bs.value = q.breakStart;
-      if (be) be.value = q.breakEnd;
+      const start = $("[data-start]", tr); if (start) start.value = q.start;
+      const end = $("[data-end]", tr); if (end) end.value = q.end;
+      const bs = $("[data-break-start]", tr); if (bs) bs.value = q.breakStart;
+      const be = $("[data-break-end]", tr); if (be) be.value = q.breakEnd;
     });
     refreshDurations();
   }
@@ -843,6 +835,7 @@
     $("#copyCompanyHoursBtn")?.addEventListener("click", () => applyToRows("week"));
     $("#applyAllDaysBtn")?.addEventListener("click", () => applyToRows("all"));
     $("#clearScheduleBtn")?.addEventListener("click", setFree);
+    $("#downloadWorkScheduleBtn")?.addEventListener("click", downloadCsv);
     $("#finalScheduleFrom")?.addEventListener("change", (event) => { state.finalFrom = event.currentTarget.value; state.finalPage = 1; render(); });
     $("#finalScheduleTo")?.addEventListener("change", (event) => { state.finalTo = event.currentTarget.value; state.finalPage = 1; render(); });
     $("#finalSchedulePrevMonthBtn")?.addEventListener("click", () => { const now = new Date(); updateFinalRange(shiftedMonthIso(now, -1), shiftedMonthIso(now, -1, true)); });
