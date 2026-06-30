@@ -723,12 +723,12 @@
     if (rows.length) {
       const cleanRows = rows.map((row) => {
         const copy = { ...row };
-        if (!copy.id) delete copy.id;
+        delete copy.id;
         return copy;
       });
       const { error } = await window.cmSupabase
         .from("work_schedule")
-        .insert(cleanRows);
+        .upsert(cleanRows, { onConflict: "company_id,employee_id,date" });
       if (error) throw error;
     }
 
