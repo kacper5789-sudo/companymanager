@@ -290,21 +290,18 @@
   }
 
   async function fetchConcreteSchedules(ctx) {
-    const from = yearStartIso(new Date());
-    const to = yearEndIso(new Date());
-    const { data, error } = await window.cmSupabase
-      .from("work_schedule")
-      .select("id, company_id, employee_id, employee_name, date, is_working, start_time, end_time, break_start, break_end, created_at, updated_at")
-      .eq("company_id", ctx.companyId)
-      .gte("date", from)
-      .lte("date", to)
-      .order("date", { ascending: true })
-      .order("employee_name", { ascending: true });
-    if (error) {
-      console.warn("Grafik wynikowy work_schedule skipped", error.message || error);
+    try {
+      const { data, error } = await window.cmSupabase
+        .from("work_schedule")
+        .select("id, company_id, employee_id, date, start_time, end_time, created_at, updated_at")
+        .eq("company_id", ctx.companyId)
+        .order("date", { ascending: true });
+      if (error) throw error;
+      return data || [];
+    } catch (error) {
+      console.warn("Grafik pracy work_schedule skipped", error?.message || error);
       return [];
     }
-    return data || [];
   }
 
 
@@ -324,6 +321,14 @@
 
   function scheduleByEmployeeAndDay(employeeId, day) {
     return state.schedules.find((row) => String(row.employee_id) === String(employeeId) && Number(row.day_of_week) === Number(day.idx));
+  }
+
+  function concreteScheduleFor(employeeId, iso) {
+    return state.concreteSchedules.find((row) => String(row.employee_id) === String(employeeId) && String(row.date || "").slice(0, 10) === String(iso).slice(0, 10));
+  }
+
+  function scheduleEmployeeId(employee) {
+    return employee?.employee_id || employee?.id;
   }
 
   function employeeOptions() {
@@ -371,23 +376,16 @@
   }
 
 
-  function concreteScheduleFor(employee, iso) {
-    return (state.concreteSchedules || []).find((row) =>
-      String(row.employee_id || "") === String(employee.id || "") && String(row.date || "").slice(0, 10) === iso
-    ) || null;
-  }
-
   function finalCell(employee, date) {
     const iso = toIsoDate(date);
     const off = dayOffFor(employee, iso);
     if (off) return dayOffCell(off);
-    const schedule = concreteScheduleFor(employee, iso);
+    const schedule = concreteScheduleFor(scheduleEmployeeId(employee), iso);
     if (!schedule) return "—";
-    if (schedule.is_working === false) return "WOLNE";
-    const start = time(schedule.start_time, "08:00");
-    const end = time(schedule.end_time, "16:00");
-    const br = schedule.break_start && schedule.break_end ? `; przerwa ${time(schedule.break_start, "")}-${time(schedule.break_end, "")}` : "";
-    return `${start}-${end}${br}`;
+    const start = time(schedule.start_time, "");
+    const end = time(schedule.end_time, "");
+    if (!start || !end) return "WOLNE";
+    return `${start}-${end}`;
   }
 
   function finalScheduleRowsHtml() {
@@ -662,76 +660,80 @@
   async function saveConcreteSchedule(employee, weeklyRows, dates, mode = "fill") {
     const fromIso = toIsoDate(dates[0]);
     const toIso = toIsoDate(dates[dates.length - 1]);
+    const employeeId = scheduleEmployeeId(employee);
     const result = { inserted: 0, daysOff: 0, overwritten: 0, deleted: 0 };
-    try {
-      const existingResponse = await window.cmSupabase
+
+    const existingResponse = await window.cmSupabase
+      .from("work_schedule")
+      .select("id, date")
+      .eq("company_id", state.ctx.companyId)
+      .eq("employee_id", employeeId)
+      .gte("date", fromIso)
+      .lte("date", toIso);
+    if (existingResponse.error) throw existingResponse.error;
+
+    const existing = existingResponse.data || [];
+    const existingDates = new Set(existing.map((row) => String(row.date || "").slice(0, 10)));
+    result.overwritten = existing.length;
+
+    if (mode === "delete") {
+      const { error } = await window.cmSupabase
         .from("work_schedule")
-        .select("id, date")
+        .delete()
         .eq("company_id", state.ctx.companyId)
-        .eq("employee_id", employee.id)
+        .eq("employee_id", employeeId)
         .gte("date", fromIso)
         .lte("date", toIso);
-      if (existingResponse.error) throw existingResponse.error;
-      const existing = existingResponse.data || [];
-      result.overwritten = existing.length;
-
-      if (mode === "delete") {
-        const { error } = await window.cmSupabase
-          .from("work_schedule")
-          .delete()
-          .eq("company_id", state.ctx.companyId)
-          .eq("employee_id", employee.id)
-          .gte("date", fromIso)
-          .lte("date", toIso);
-        if (error) throw error;
-        result.deleted = existing.length;
-        return result;
-      }
-
-      const existingDates = new Set(existing.map((row) => String(row.date || "").slice(0, 10)));
-      const rows = [];
-      dates.forEach((date) => {
-        const iso = toIsoDate(date);
-        if (mode === "fill" && existingDates.has(iso)) return;
-        const template = weeklyRows.find((row) => Number(row.day_of_week) === Number(date.getDay()));
-        if (!template) return;
-        const off = dayOffFor(employee, iso);
-        if (off) result.daysOff += 1;
-        rows.push({
-          company_id: state.ctx.companyId,
-          employee_id: employee.id,
-          date: iso,
-          start_time: off || !template.is_working ? null : template.start_time,
-          end_time: off || !template.is_working ? null : template.end_time,
-          is_working: off ? false : !!template.is_working,
-          employee_name: employeeName(employee),
-          updated_at: new Date().toISOString()
-        });
-      });
-
-      if (mode === "overwrite") {
-        const { error } = await window.cmSupabase
-          .from("work_schedule")
-          .delete()
-          .eq("company_id", state.ctx.companyId)
-          .eq("employee_id", employee.id)
-          .gte("date", fromIso)
-          .lte("date", toIso);
-        if (error) throw error;
-      }
-
-      if (rows.length) {
-        const { error } = await window.cmSupabase
-          .from("work_schedule")
-          .insert(rows);
-        if (error) throw error;
-      }
-      result.inserted = rows.filter((row) => row.is_working).length;
-      return result;
-    } catch (error) {
-      console.warn("Concrete work_schedule skipped", error?.message || error);
+      if (error) throw error;
+      result.deleted = existing.length;
       return result;
     }
+
+    const rows = [];
+    dates.forEach((date) => {
+      const iso = toIsoDate(date);
+      if (mode === "fill" && existingDates.has(iso)) return;
+      const template = weeklyRows.find((row) => Number(row.day_of_week) === Number(date.getDay()));
+      if (!template || !template.is_working) return;
+      const off = dayOffFor(employee, iso);
+      if (off) { result.daysOff += 1; return; }
+      rows.push({
+        id: window.crypto?.randomUUID ? window.crypto.randomUUID() : undefined,
+        company_id: state.ctx.companyId,
+        employee_id: employeeId,
+        date: iso,
+        start_time: template.start_time,
+        end_time: template.end_time,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      });
+    });
+
+    if (mode === "overwrite") {
+      const { error } = await window.cmSupabase
+        .from("work_schedule")
+        .delete()
+        .eq("company_id", state.ctx.companyId)
+        .eq("employee_id", employeeId)
+        .gte("date", fromIso)
+        .lte("date", toIso);
+      if (error) throw error;
+    }
+
+    if (rows.length) {
+      const cleanRows = rows.map((row) => {
+        const copy = { ...row };
+        if (!copy.id) delete copy.id;
+        return copy;
+      });
+      const { error } = await window.cmSupabase
+        .from("work_schedule")
+        .insert(cleanRows);
+      if (error) throw error;
+    }
+
+    result.inserted = rows.length;
+    return result;
   }
 
   function applyToRows(mode) {
@@ -785,6 +787,7 @@
         .eq("employee_id", employee.id);
       if (error) throw error;
       state.schedules = await fetchSchedules(state.ctx);
+      state.concreteSchedules = await fetchConcreteSchedules(state.ctx);
       if (String(state.selectedEmployeeId) === String(employee.id)) state.selectedEmployeeId = employee.id;
       render();
     } catch (error) {
