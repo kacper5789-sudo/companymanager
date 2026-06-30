@@ -16843,3 +16843,163 @@ html[data-cm-theme] .cm-employee-color-popover{
 html[data-cm-theme] .cm-employee-color-grid{
   grid-template-columns:repeat(10, 18px)!important;
 }
+
+/* CompanyManager v97 — Grafik pracy: pełny układ strony jak pozostałe moduły */
+body[data-panel-page="workSchedule"]{
+  overflow-x:auto !important;
+}
+body[data-panel-page="workSchedule"] .bm-panel-workspace{
+  width:100% !important;
+  max-width:none !important;
+  grid-template-columns:260px minmax(0,1fr) !important;
+  gap:18px !important;
+  align-items:start !important;
+}
+body[data-panel-page="workSchedule"] .bm-panel-area,
+body[data-panel-page="workSchedule"] .dashboard-shell,
+body[data-panel-page="workSchedule"] #dashboardRoot{
+  width:100% !important;
+  max-width:none !important;
+  min-width:0 !important;
+  margin:0 !important;
+  padding:0 !important;
+  overflow:visible !important;
+  box-sizing:border-box !important;
+}
+body[data-panel-page="workSchedule"] .bm-page-card.cm-supabase-work-schedule,
+body[data-panel-page="workSchedule"] .cm-supabase-work-schedule{
+  width:100% !important;
+  max-width:none !important;
+  min-width:0 !important;
+  margin:0 !important;
+  padding:22px !important;
+  box-sizing:border-box !important;
+}
+body[data-panel-page="workSchedule"] .cm-work-schedule-head{
+  width:100% !important;
+  max-width:none !important;
+  margin-bottom:22px !important;
+}
+body[data-panel-page="workSchedule"] .cm-work-panel,
+body[data-panel-page="workSchedule"] .cm-work-panel-main{
+  width:100% !important;
+  max-width:none !important;
+  box-sizing:border-box !important;
+}
+body[data-panel-page="workSchedule"] .cm-supabase-work-schedule .cm-work-schedule-controls{
+  width:100% !important;
+  max-width:none !important;
+  grid-template-columns:minmax(260px,1.25fr) repeat(4,minmax(130px,.75fr)) !important;
+}
+body[data-panel-page="workSchedule"] .cm-work-schedule-editor-wrap,
+body[data-panel-page="workSchedule"] .cm-work-summary-wrap,
+body[data-panel-page="workSchedule"] .cm-work-final-wrap{
+  width:100% !important;
+  max-width:none !important;
+  overflow-x:auto !important;
+  overflow-y:visible !important;
+  border-radius:18px !important;
+}
+body[data-panel-page="workSchedule"] .cm-work-schedule-editor,
+body[data-panel-page="workSchedule"] .cm-work-schedule-summary,
+body[data-panel-page="workSchedule"] .cm-work-final-table{
+  width:100% !important;
+  table-layout:auto !important;
+  border-collapse:collapse !important;
+}
+body[data-panel-page="workSchedule"] .cm-work-schedule-editor{
+  min-width:980px !important;
+}
+body[data-panel-page="workSchedule"] .cm-work-schedule-summary{
+  min-width:1120px !important;
+}
+body[data-panel-page="workSchedule"] .cm-work-final-table{
+  min-width:1180px !important;
+}
+body[data-panel-page="workSchedule"] .cm-work-schedule-editor th,
+body[data-panel-page="workSchedule"] .cm-work-schedule-editor td,
+body[data-panel-page="workSchedule"] .cm-work-schedule-summary th,
+body[data-panel-page="workSchedule"] .cm-work-schedule-summary td,
+body[data-panel-page="workSchedule"] .cm-work-final-table th,
+body[data-panel-page="workSchedule"] .cm-work-final-table td{
+  padding:12px 14px !important;
+  font-size:13px !important;
+  line-height:1.3 !important;
+  white-space:nowrap !important;
+  vertical-align:middle !important;
+}
+body[data-panel-page="workSchedule"] .cm-work-schedule-editor th:first-child,
+body[data-panel-page="workSchedule"] .cm-work-schedule-editor td:first-child,
+body[data-panel-page="workSchedule"] .cm-work-schedule-summary th:first-child,
+body[data-panel-page="workSchedule"] .cm-work-schedule-summary td:first-child,
+body[data-panel-page="workSchedule"] .cm-work-final-table th:first-child,
+body[data-panel-page="workSchedule"] .cm-work-final-table td:first-child{
+  width:auto !important;
+  min-width:150px !important;
+  text-align:left !important;
+}
+body[data-panel-page="workSchedule"] .cm-work-schedule-editor th:nth-child(2),
+body[data-panel-page="workSchedule"] .cm-work-schedule-editor td:nth-child(2){
+  width:auto !important;
+  min-width:130px !important;
+}
+body[data-panel-page="workSchedule"] .cm-work-schedule-editor input[type="time"]{
+  width:112px !important;
+  min-width:112px !important;
+  max-width:130px !important;
+  padding:0 10px !important;
+  font-size:13px !important;
+}
+body[data-panel-page="workSchedule"] .cm-work-toggle{
+  min-width:112px !important;
+  max-width:none !important;
+  width:auto !important;
+  padding:0 12px !important;
+  font-size:13px !important;
+}
+body[data-panel-page="workSchedule"] .cm-work-actions{
+  display:flex !important;
+  flex-direction:row !important;
+  align-items:center !important;
+  justify-content:center !important;
+  gap:8px !important;
+  width:auto !important;
+  max-width:none !important;
+  margin:0 !important;
+}
+body[data-panel-page="workSchedule"] .cm-work-actions button{
+  width:auto !important;
+  min-width:74px !important;
+  height:34px !important;
+  min-height:34px !important;
+  padding:0 12px !important;
+  font-size:12px !important;
+}
+body[data-panel-page="workSchedule"] .cm-section-title-row,
+body[data-panel-page="workSchedule"] .cm-work-export-actions,
+body[data-panel-page="workSchedule"] .cm-work-bottom-actions{
+  width:100% !important;
+  max-width:none !important;
+}
+body[data-panel-page="workSchedule"] .cm-work-final-section{
+  width:100% !important;
+  max-width:none !important;
+  margin-top:24px !important;
+}
+@media(max-width:980px){
+  body[data-panel-page="workSchedule"] .bm-panel-workspace{
+    grid-template-columns:1fr !important;
+  }
+  body[data-panel-page="workSchedule"] .cm-supabase-work-schedule .cm-work-schedule-controls{
+    grid-template-columns:1fr 1fr !important;
+  }
+}
+@media(max-width:720px){
+  body[data-panel-page="workSchedule"] .cm-supabase-work-schedule .cm-work-schedule-controls{
+    grid-template-columns:1fr !important;
+  }
+  body[data-panel-page="workSchedule"] .bm-page-card.cm-supabase-work-schedule,
+  body[data-panel-page="workSchedule"] .cm-supabase-work-schedule{
+    padding:14px !important;
+  }
+}

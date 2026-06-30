@@ -1,4 +1,4 @@
-// CompanyManager — 095 Najlepszy grafik: szablon + zakres + dni wolne + eksport zbiorczy
+// CompanyManager — 096 Grafik: każdy wpis dni wolnych nadpisuje grafik wynikowy
 // work-schedule.html: flexible work hours, edit/delete, download schedule.
 (function () {
   function isPage() {
@@ -117,10 +117,12 @@
     }) || null;
   }
   function dayOffCell(row) {
-    const raw = `${row?.type || ""} ${row?.reason || ""} ${row?.description || ""}`.toLowerCase();
-    if (raw.includes("zwol") || raw.includes("chorob") || raw.includes("lekars")) return "ZWOLNIENIE";
-    if (raw.includes("urlop")) return "URLOP";
-    if (raw.includes("szkol")) return "SZKOLENIE";
+    const source = `${row?.type || ""} ${row?.reason || ""} ${row?.description || ""}`;
+    const raw = source.toLowerCase();
+    if (raw.includes("zwol") || raw.includes("chorob") || raw.includes("lekars") || raw.includes("l4") || raw.includes("sick")) return "ZWOLNIENIE";
+    if (raw.includes("urlop") || raw.includes("vacation") || raw.includes("holiday") || raw.includes("leave")) return "URLOP";
+    const custom = String(row?.reason || row?.type || row?.description || "").trim();
+    if (custom) return custom.toUpperCase().slice(0, 32);
     return "WOLNE";
   }
 
@@ -286,9 +288,11 @@
         <td><strong>${escapeHtml(formatDatePL(iso))}</strong></td>
         <td>${escapeHtml(dayLabel(date))}</td>
         ${state.employees.map((employee) => {
-          const cell = finalCell(employee, date);
-          const cls = /URLOP|ZWOLNIENIE|WOLNE|SZKOLENIE/.test(cell) ? " cm-work-final-off" : "";
-          return `<td class="${cls}">${escapeHtml(cell)}</td>`;
+          const off = dayOffFor(employee, iso);
+          const cell = off ? dayOffCell(off) : finalCell(employee, date);
+          const cls = off || /URLOP|ZWOLNIENIE|WOLNE/.test(cell) ? " cm-work-final-off" : "";
+          const title = off ? `Dni wolne: ${dayOffCell(off)}` : "";
+          return `<td class="${cls}" title="${escapeHtml(title)}">${escapeHtml(cell)}</td>`;
         }).join("")}
       </tr>`;
     }).join("");
@@ -299,7 +303,7 @@
       <div class="cm-section-title-row">
         <h3 class="cm-section-title">Grafik wynikowy</h3>
       </div>
-      <p class="bm-muted">To jest finalny grafik po połączeniu szablonu tygodniowego z dniami wolnymi. Urlop/zwolnienie zawsze wygrywa z planem pracy.</p>
+      <p class="bm-muted">To jest finalny grafik po połączeniu szablonu tygodniowego z dniami wolnymi. Każdy wpis w Dni wolne nadpisuje plan pracy: urlop, zwolnienie, szkolenie, inne lub własny powód.</p>
       <div class="cm-work-schedule-controls cm-work-final-controls">
         <label>Od<input type="date" id="finalScheduleFrom" value="${escapeHtml(state.finalFrom)}"></label>
         <label>Do<input type="date" id="finalScheduleTo" value="${escapeHtml(state.finalTo)}"></label>

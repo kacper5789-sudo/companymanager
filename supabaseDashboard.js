@@ -977,18 +977,31 @@
     }) || null;
   }
 
-  function employeeDayOffForDate(data, employee, dateIso) {
+  function employeeDayOffRowForDate(data, employee, dateIso) {
     const date = String(dateIso || "").slice(0, 10);
-    return (data.daysOff || []).some((row) => {
+    return (data.daysOff || []).find((row) => {
       const status = String(row.status || "").toLowerCase();
-      if (["deleted", "usunięte", "void"].includes(status)) return false;
-      const start = String(row.start_date || row.date || row.created_at || "").slice(0, 10);
-      const end = String(row.end_date || row.start_date || row.date || "").slice(0, 10) || start;
+      if (["deleted", "usunięte", "usuniete", "void"].includes(status)) return false;
+      const start = String(row.start_date || row.date_from || row.date || row.created_at || "").slice(0, 10);
+      const end = String(row.end_date || row.date_to || row.start_date || row.date_from || row.date || "").slice(0, 10) || start;
       if (!start || date < start || date > end) return false;
       if (row.employee_id && employee?.id && String(row.employee_id) === String(employee.id)) return true;
-      const savedName = String(row.employee_name || "").trim().toLowerCase();
+      const savedName = String(row.employee_name || row.full_name || "").trim().toLowerCase();
       return savedName && savedName === String(personName(employee)).trim().toLowerCase();
-    });
+    }) || null;
+  }
+
+  function employeeDayOffForDate(data, employee, dateIso) {
+    return !!employeeDayOffRowForDate(data, employee, dateIso);
+  }
+
+  function employeeDayOffLabel(row) {
+    const source = `${row?.type || ""} ${row?.reason || ""} ${row?.description || ""}`;
+    const raw = source.toLowerCase();
+    if (raw.includes("zwol") || raw.includes("chorob") || raw.includes("lekars") || raw.includes("l4") || raw.includes("sick")) return "ZWOLNIENIE";
+    if (raw.includes("urlop") || raw.includes("vacation") || raw.includes("holiday") || raw.includes("leave")) return "URLOP";
+    const custom = String(row?.reason || row?.type || row?.description || "").trim();
+    return custom ? custom.toUpperCase().slice(0, 32) : "WOLNE";
   }
 
   function employeeWorkWindow(data, employee, dateIso, settings) {
@@ -1032,7 +1045,8 @@
         const windowForEmployee = windows.get(employee.id) || employeeWorkWindow(data, employee, dateIso, settings);
         const windowStart = minutesFromTime(windowForEmployee.start);
         const windowEnd = minutesFromTime(windowForEmployee.end);
-        const isDayOff = employeeDayOffForDate(data, employee, dateIso);
+        const dayOffRow = employeeDayOffRowForDate(data, employee, dateIso);
+        const isDayOff = !!dayOffRow;
         const outsideWork = windowForEmployee.off || isDayOff || slotMin == null || windowStart == null || windowEnd == null || slotMin < windowStart || (slotMin + visitDuration) > windowEnd;
         const visit = active.find((item) => {
           if (!appointmentEmployeeMatches(item, employee)) return false;
@@ -1042,7 +1056,7 @@
         });
         const inactiveClass = outsideWork || !activeWorkerIds.includes(employee.id) ? " inactive-worker" : "";
         if (!visit) {
-          const label = outsideWork ? (isDayOff ? "WOLNE" : "POZA GRAFIKIEM") : "FREE";
+          const label = outsideWork ? (isDayOff ? employeeDayOffLabel(dayOffRow) : "POZA GRAFIKIEM") : "FREE";
           return `<td class="bm-schedule-slot free cm-employee-colored-slot${inactiveClass}" style="${employeeStyle}" data-employee-color="${escapeHtml(employeeColor)}" data-employee-id="${escapeHtml(employee.id)}" data-time="${escapeHtml(slot.start)}" data-date="${escapeHtml(dateIso)}" data-outside-work="${outsideWork ? "1" : "0"}"><span>${label}</span></td>`;
         }
         const client = lookups.clientsById[appointmentClientId(visit)];
