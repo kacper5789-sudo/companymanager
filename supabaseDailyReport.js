@@ -292,12 +292,16 @@
     passes.forEach((pass) => { if (pass.sale_id && !passBySaleId.has(pass.sale_id)) passBySaleId.set(pass.sale_id, pass); });
     const passIdsInItems = new Set(saleItems.filter(i => ["pass", "karnet"].includes(String(i.item_type || "").toLowerCase())).map(i => String(i.pass_id || "")).filter(Boolean));
     passes.forEach((pass) => {
+      // Karnet w raportach finansowych = wyłącznie realna sprzedaż karnetu.
+      // Wykorzystanie wejścia z istniejącego karnetu zmienia pulę wejść, ale nie jest kolejną płatnością.
+      if (!pass.sale_id) return;
+      const sale = saleMap.get(pass.sale_id);
+      if (!sale || saleValue(sale) <= 0) return;
       if (pass.id && passIdsInItems.has(String(pass.id))) return;
-      const sale = pass.sale_id ? saleMap.get(pass.sale_id) : null;
       saleItems.push({
         id: `pass-fallback-${pass.id}`,
         company_id: pass.company_id,
-        sale_id: pass.sale_id || `pass-sale-${pass.id}`,
+        sale_id: pass.sale_id,
         item_type: "pass",
         pass_id: pass.id,
         name: pass.name || pass.number || "Karnet",
@@ -308,9 +312,6 @@
         total_price: Number(pass.value || sale?.total_gross || 0),
         created_at: pass.created_at
       });
-      if (!sale && pass.sale_id) {
-        saleMap.set(pass.sale_id, { id: pass.sale_id, employee_id: pass.employee_id, employee_name: pass.employee_name, total_gross: Number(pass.value || 0), payment_method: pass.payment_method || "gotówka", created_at: pass.created_at });
-      }
     });
     const employeeMap = new Map(employees.map(e => [e.id, e]));
     const employeeNameKey = (value) => String(value || "").trim().toLowerCase().replace(/\s+/g, " ");
@@ -352,13 +353,31 @@
       const sale = saleMap.get(item?.sale_id) || item?.sale || {};
       return isSaleLinkedToCancelledAppointment(sale);
     };
+    const appointmentUsesPass = (appointment) => {
+      if (!appointment) return false;
+      const method = String(appointment.payment_method || appointment.payment_status || "").toLowerCase();
+      return Boolean(appointment.pass_id || Number(appointment.pass_used_value || 0) > 0 || Number(appointment.pass_used_units || 0) > 0 || method.includes("karnet") || method.includes("pass"));
+    };
+    const reportItemValue = (item) => {
+      const sale = saleMap.get(item?.sale_id) || item?.sale || {};
+      const appointment = appointmentForSale(sale) || {};
+      const type = String(item?.item_type || "").toLowerCase();
+      // Użycie usługi z wcześniej opłaconego karnetu ma wartość finansową 0 zł.
+      if (type === "service" && appointmentUsesPass(appointment)) return 0;
+      return itemValue(item, saleMap);
+    };
 
     // Odwołane/usunięte wizyty nie są finansami ani realizacją usługi w statystykach.
     const activeSaleItems = saleItems.filter(i => !isItemLinkedToCancelledAppointment(i));
     const activeSales = sales.filter(sale => !isSaleLinkedToCancelledAppointment(sale));
     const serviceItems = activeSaleItems.filter(i => String(i.item_type || "").toLowerCase() === "service");
     const productItems = activeSaleItems.filter(i => String(i.item_type || "").toLowerCase() === "product");
-    const passItems = activeSaleItems.filter(i => ["pass", "karnet"].includes(String(i.item_type || "").toLowerCase()));
+    const passItems = activeSaleItems.filter(i => {
+      const type = String(i.item_type || "").toLowerCase();
+      const sale = saleMap.get(i.sale_id) || {};
+      const appointment = appointmentForSale(sale) || {};
+      return ["pass", "karnet"].includes(type) && !appointmentUsesPass(appointment) && reportItemValue(i) > 0;
+    });
 
     const revenue = activeSales.reduce((sum, sale) => sum + saleValue(sale), 0);
     const paidSaleIds = new Set(payments.map(p => p.sale_id).filter(Boolean));
@@ -384,9 +403,9 @@
 
     const paymentsByMethod = groupBy(reportPayments, p => String(p.method || "gotówka").trim() || "gotówka", (_, key) => ({ method: key, count: 0, value: 0 }), (row, p) => { row.count += 1; row.value += Number(p.amount || 0); });
 
-    const serviceRows = groupBy(serviceItems, i => i.name_snapshot || i.name || "Usługa", (_, key) => ({ name: key, count: 0, value: 0 }), (row, i) => { row.count += Number(i.quantity || 1); row.value += itemValue(i, saleMap); });
-    const productRows = groupBy(productItems, i => i.name_snapshot || i.name || "Produkt", (_, key) => ({ name: key, count: 0, value: 0 }), (row, i) => { row.count += Number(i.quantity || 1); row.value += itemValue(i, saleMap); });
-    const passRows = groupBy(passItems, i => i.name_snapshot || i.name || "Karnet", (_, key) => ({ name: key, count: 0, value: 0 }), (row, i) => { row.count += Number(i.quantity || 1); row.value += itemValue(i, saleMap); });
+    const serviceRows = groupBy(serviceItems, i => i.name_snapshot || i.name || "Usługa", (_, key) => ({ name: key, count: 0, value: 0 }), (row, i) => { row.count += Number(i.quantity || 1); row.value += reportItemValue(i); });
+    const productRows = groupBy(productItems, i => i.name_snapshot || i.name || "Produkt", (_, key) => ({ name: key, count: 0, value: 0 }), (row, i) => { row.count += Number(i.quantity || 1); row.value += reportItemValue(i); });
+    const passRows = groupBy(passItems, i => i.name_snapshot || i.name || "Karnet", (_, key) => ({ name: key, count: 0, value: 0 }), (row, i) => { row.count += Number(i.quantity || 1); row.value += reportItemValue(i); });
 
     const employeeRowsMap = new Map();
     function ensureEmployee(id, ...fallbacks) {
@@ -420,7 +439,7 @@
       const row = ensureEmployee(sale.employee_id || linkedPass.employee_id || appointment.employee_id, sale.employee_name, linkedPass.employee_name, appointment.employee_name);
       const type = String(i.item_type || "").toLowerCase();
       const qty = Number(i.quantity || 1);
-      const val = itemValue(i, saleMap);
+      const val = reportItemValue(i);
       if (type === "product") { row.productCount += qty; row.productValue += val; }
       else if (["pass", "karnet"].includes(type)) { row.passCount += qty; row.passValue += val; }
       else { row.serviceCount += qty; row.serviceValue += val; }

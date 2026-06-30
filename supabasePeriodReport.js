@@ -497,39 +497,31 @@
     // Karnet w raporcie finansowym = tylko sprzedaż karnetu.
     // Użycie wejścia z karnetu na wizycie NIE jest sprzedażą i nie może tworzyć drugiej pozycji 200 zł.
     rawPasses.forEach((pass) => {
-      const sale = pass.sale_id ? saleMap.get(pass.sale_id) : null;
-      const saleMoment = pass.sale_date ? `${pass.sale_date}T${String(pass.sale_time || '00:00').slice(0,5)}:00` : (sale?.created_at || pass.created_at);
-      const isSoldInRange = Boolean(Number(pass.value || sale?.total_gross || 0) > 0 && inReportRange(saleMoment));
+      // Karnet w raporcie finansowym = tylko realna sprzedaż powiązana ze sprzedażą.
+      // Samo wykorzystanie wejścia z karnetu nie może generować kolejnej pozycji 200 zł.
+      if (!pass.sale_id) return;
+      const sale = saleMap.get(pass.sale_id);
+      if (!sale || saleValue(sale) <= 0) return;
+      const saleMoment = pass.sale_date ? `${pass.sale_date}T${String(pass.sale_time || '00:00').slice(0,5)}:00` : (sale.created_at || pass.created_at);
+      const isSoldInRange = Boolean(inReportRange(saleMoment));
       if (!isSoldInRange) return;
       if (pass.id && passIdsInItems.has(String(pass.id))) return;
       if (pass.sale_id && passSaleIdsInItems.has(String(pass.sale_id))) return;
-      const syntheticSaleId = pass.sale_id || `pass-sale-${pass.id}`;
-      if (!saleMap.has(syntheticSaleId)) {
-        saleMap.set(syntheticSaleId, {
-          id: syntheticSaleId,
-          employee_id: pass.employee_id,
-          employee_name: pass.employee_name,
-          total_gross: Number(pass.value || 0),
-          total_net: Number(pass.value || 0),
-          payment_method: pass.payment_method || 'gotówka',
-          created_at: saleMoment || pass.created_at
-        });
-      }
       items.push({
         id: `pass-fallback-${pass.id}`,
         company_id: pass.company_id,
-        sale_id: syntheticSaleId,
+        sale_id: pass.sale_id,
         item_type: 'pass',
         pass_id: pass.id,
         name: pass.name || pass.number || 'Karnet',
         name_snapshot: pass.name || pass.number || 'Karnet',
         quantity: 1,
-        unit_price: Number(pass.value || sale?.total_gross || 0),
-        total: Number(pass.value || sale?.total_gross || 0),
-        total_price: Number(pass.value || sale?.total_gross || 0),
+        unit_price: Number(pass.value || sale.total_gross || 0),
+        total: Number(pass.value || sale.total_gross || 0),
+        total_price: Number(pass.value || sale.total_gross || 0),
         created_at: saleMoment || pass.created_at,
         __linkedPass: pass,
-        sale: saleMap.get(syntheticSaleId) || sale || {}
+        sale
       });
     });
 
@@ -549,7 +541,12 @@
 
     const services = items.filter(i => normalizeItemType(i.item_type) === 'service');
     const products = items.filter(i => normalizeItemType(i.item_type) === 'product');
-    const passes = items.filter(i => normalizeItemType(i.item_type) === 'pass');
+    const passes = items.filter(i => {
+      if (normalizeItemType(i.item_type) !== 'pass') return false;
+      const sale = i.sale || saleMap.get(i.sale_id) || {};
+      const appointment = appointmentById.get(sale.appointment_id) || {};
+      return !appointmentUsesPass(appointment) && reportItemValue(i) > 0;
+    });
     const revenue = activeSalesForFinance.reduce((sum, sale) => sum + saleValue(sale), 0);
     const finished = data.appointments.filter(a => !isCancelled(a) && isFinished(a));
     const planned = data.appointments.filter(a => !isCancelled(a) && !isFinished(a));
