@@ -289,23 +289,22 @@
     return data || [];
   }
 
-  async function fetchConcreteSchedules(ctx, fromIso = state.finalFrom, toIso = state.finalTo) {
-    if (!ctx?.companyId || !fromIso || !toIso) return [];
-    try {
-      const { data, error } = await window.cmSupabase
-        .from("work_schedule")
-        .select("id, company_id, employee_id, employee_name, date, start_time, end_time, is_working, created_at, updated_at")
-        .eq("company_id", ctx.companyId)
-        .gte("date", fromIso)
-        .lte("date", toIso)
-        .order("date", { ascending: true })
-        .order("updated_at", { ascending: false });
-      if (error) throw error;
-      return data || [];
-    } catch (error) {
-      console.warn("Grafik wynikowy work_schedule skipped", error?.message || error);
+  async function fetchConcreteSchedules(ctx) {
+    const from = yearStartIso(new Date());
+    const to = yearEndIso(new Date());
+    const { data, error } = await window.cmSupabase
+      .from("work_schedule")
+      .select("id, company_id, employee_id, employee_name, date, is_working, start_time, end_time, break_start, break_end, created_at, updated_at")
+      .eq("company_id", ctx.companyId)
+      .gte("date", from)
+      .lte("date", to)
+      .order("date", { ascending: true })
+      .order("employee_name", { ascending: true });
+    if (error) {
+      console.warn("Grafik wynikowy work_schedule skipped", error.message || error);
       return [];
     }
+    return data || [];
   }
 
 
@@ -325,14 +324,6 @@
 
   function scheduleByEmployeeAndDay(employeeId, day) {
     return state.schedules.find((row) => String(row.employee_id) === String(employeeId) && Number(row.day_of_week) === Number(day.idx));
-  }
-
-  function concreteScheduleFor(employee, iso) {
-    const employeeId = String(employee?.id || "");
-    if (!employeeId || !iso) return null;
-    return (state.concreteSchedules || []).find((row) => {
-      return String(row.employee_id || "") === employeeId && String(row.date || "").slice(0, 10) === iso;
-    }) || null;
   }
 
   function employeeOptions() {
@@ -380,20 +371,21 @@
   }
 
 
+  function concreteScheduleFor(employee, iso) {
+    return (state.concreteSchedules || []).find((row) =>
+      String(row.employee_id || "") === String(employee.id || "") && String(row.date || "").slice(0, 10) === iso
+    ) || null;
+  }
+
   function finalCell(employee, date) {
     const iso = toIsoDate(date);
     const off = dayOffFor(employee, iso);
     if (off) return dayOffCell(off);
-
-    // Grafik wynikowy MUSI pokazywać konkretnie zapisane dni z tabeli work_schedule.
-    // Nie używamy tu już szablonu tygodniowego jako fallbacku, bo wtedy widok „Ten rok”
-    // pokazywał te same godziny w całym roku mimo zapisania różnych zakresów.
     const schedule = concreteScheduleFor(employee, iso);
     if (!schedule) return "—";
     if (schedule.is_working === false) return "WOLNE";
-    const start = time(schedule.start_time, "");
-    const end = time(schedule.end_time, "");
-    if (!start || !end) return "WOLNE";
+    const start = time(schedule.start_time, "08:00");
+    const end = time(schedule.end_time, "16:00");
     const br = schedule.break_start && schedule.break_end ? `; przerwa ${time(schedule.break_start, "")}-${time(schedule.break_end, "")}` : "";
     return `${start}-${end}${br}`;
   }
@@ -468,7 +460,6 @@
           <tbody>${finalScheduleRowsHtml()}</tbody>
         </table>
       </div>
-      ${finalSchedulePagerHtml()}
     </section>`;
   }
 
@@ -520,7 +511,6 @@
             </div>
           </div>
           <div class="cm-work-schedule-controls cm-work-solid-controls">
-            <label>Pracownik<select id="workScheduleEmployee">${employeeOptions()}</select></label>
             <label>Pracuje od<input type="time" id="quickStartTime" value="08:00"></label>
             <label>Pracuje do<input type="time" id="quickEndTime" value="16:00"></label>
             <label>Przerwa od<input type="time" id="quickBreakStart" value=""></label>
@@ -530,7 +520,6 @@
             ${canEdit(state.ctx) ? `<button type="button" id="copyCompanyHoursBtn" class="bm-light-btn cm-work-btn cm-work-btn-neutral">Zastosuj pn-pt</button>` : ""}
             ${canEdit(state.ctx) ? `<button type="button" id="applyAllDaysBtn" class="bm-light-btn cm-work-btn cm-work-btn-neutral">Zastosuj cały tydzień</button>` : ""}
             ${canDelete(state.ctx) ? `<button type="button" id="clearScheduleBtn" class="bm-danger-btn cm-work-btn cm-work-btn-danger">Ustaw wolne</button>` : ""}
-            ${canEdit(state.ctx) ? `<button type="button" id="saveWorkScheduleBtn" class="bm-primary-btn cm-save-schedule-btn cm-work-btn cm-work-btn-save">Zapisz grafik w zakresie</button>` : ""}
           </div>
           <div id="workSchedulePreview" class="cm-work-preview-box">Przed zapisem zobaczysz podsumowanie: dni pracy, godziny, dni wolne oraz istniejące wpisy w wybranym zakresie.</div><p id="workScheduleMessage" class="panel-message"></p>
         </section>
@@ -547,18 +536,6 @@
         ${canEdit(state.ctx) ? `<button type="button" id="saveWorkScheduleBottomBtn" class="bm-primary-btn cm-save-schedule-btn cm-work-btn cm-work-btn-save">Zapisz grafik w zakresie</button>` : ""}
       </div>
 
-      <div class="cm-section-title-row">
-        <h3 class="cm-section-title">Podsumowanie grafików</h3>
-      </div>
-      <div class="bm-table-wrap cm-work-summary-wrap">
-        <table class="bm-table cm-work-schedule-summary">
-          <thead><tr><th>Pracownik</th>${DAYS.map((day) => `<th>${escapeHtml(day.short)}</th>`).join("")}<th>Akcje</th></tr></thead>
-          <tbody>${summaryRows()}</tbody>
-        </table>
-      </div>
-      <div class="cm-work-export-actions">
-        <button type="button" id="downloadWorkScheduleBtn" class="bm-light-btn cm-work-btn cm-work-btn-download">Pobierz szablon tygodniowy</button>
-      </div>
       ${finalScheduleTableHtml()}
     </section>`;
     bindEvents();
@@ -632,11 +609,10 @@
       }
 
       state.schedules = await fetchSchedules(state.ctx);
+      state.concreteSchedules = await fetchConcreteSchedules(state.ctx);
       state.daysOff = await fetchDaysOff(state.ctx);
       state.finalFrom = range.from;
       state.finalTo = range.to;
-      state.finalPage = 1;
-      state.concreteSchedules = await fetchConcreteSchedules(state.ctx, state.finalFrom, state.finalTo);
       message(`Gotowe. Zapisano ${totalInserted} dni pracy. Pominięto/nadpisano wolnym ${totalSkippedDaysOff} dni wolnych. Nadpisano ${totalOverwritten} wpisów. Usunięto ${totalDeleted} wpisów.`);
       render();
     } catch (error) {
@@ -767,10 +743,6 @@
       const working = $("[data-working]", tr);
       if (mode === "week" && weekend) {
         if (working) working.checked = false;
-        const start = $("[data-start]", tr); if (start) start.value = q.start;
-        const end = $("[data-end]", tr); if (end) end.value = q.end;
-        const bs = $("[data-break-start]", tr); if (bs) bs.value = "";
-        const be = $("[data-break-end]", tr); if (be) be.value = "";
         return;
       }
       if (working) working.checked = true;
@@ -813,7 +785,6 @@
         .eq("employee_id", employee.id);
       if (error) throw error;
       state.schedules = await fetchSchedules(state.ctx);
-      state.concreteSchedules = await fetchConcreteSchedules(state.ctx, state.finalFrom, state.finalTo);
       if (String(state.selectedEmployeeId) === String(employee.id)) state.selectedEmployeeId = employee.id;
       render();
     } catch (error) {
@@ -867,25 +838,19 @@
     URL.revokeObjectURL(url);
   }
 
-  async function updateFinalRange(from, to) {
+  function updateFinalRange(from, to) {
     if (from) state.finalFrom = from;
     if (to) state.finalTo = to;
     state.finalPage = 1;
-    state.concreteSchedules = await fetchConcreteSchedules(state.ctx, state.finalFrom, state.finalTo);
     render();
     document.querySelector(".cm-work-final-section")?.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
   function bindEvents() {
-    $("#workScheduleEmployee")?.addEventListener("change", (event) => {
-      state.selectedEmployeeId = event.currentTarget.value;
-      render();
-    });
     $$('[data-employee-multi]').forEach((input) => input.addEventListener("change", () => {
       state.selectedEmployeeIds = $$('[data-employee-multi]:checked').map((el) => el.value);
     }));
     $$('input[name="workScheduleSaveMode"]').forEach((input) => input.addEventListener("change", (event) => { state.saveMode = event.currentTarget.value; }));
-    $("#saveWorkScheduleBtn")?.addEventListener("click", save);
     $("#saveWorkScheduleBottomBtn")?.addEventListener("click", save);
     $("#workScheduleApplyFrom")?.addEventListener("change", (event) => { state.applyFrom = event.currentTarget.value; });
     $("#workScheduleApplyTo")?.addEventListener("change", (event) => { state.applyTo = event.currentTarget.value; });
@@ -896,8 +861,8 @@
     $("#applyAllDaysBtn")?.addEventListener("click", () => applyToRows("all"));
     $("#clearScheduleBtn")?.addEventListener("click", setFree);
     $("#downloadWorkScheduleBtn")?.addEventListener("click", downloadCsv);
-    $("#finalScheduleFrom")?.addEventListener("change", (event) => updateFinalRange(event.currentTarget.value, state.finalTo));
-    $("#finalScheduleTo")?.addEventListener("change", (event) => updateFinalRange(state.finalFrom, event.currentTarget.value));
+    $("#finalScheduleFrom")?.addEventListener("change", (event) => { state.finalFrom = event.currentTarget.value; state.finalPage = 1; render(); });
+    $("#finalScheduleTo")?.addEventListener("change", (event) => { state.finalTo = event.currentTarget.value; state.finalPage = 1; render(); });
     $("#finalSchedulePrevMonthBtn")?.addEventListener("click", () => { const now = new Date(); updateFinalRange(shiftedMonthIso(now, -1), shiftedMonthIso(now, -1, true)); });
     $("#finalScheduleCurrentMonthBtn")?.addEventListener("click", () => { const now = new Date(); updateFinalRange(monthStartIso(now), monthEndIso(now)); });
     $("#finalScheduleNextMonthBtn")?.addEventListener("click", () => { const now = new Date(); updateFinalRange(shiftedMonthIso(now, 1), shiftedMonthIso(now, 1, true)); });
@@ -919,16 +884,11 @@
     setTimeout(async () => {
       try {
         state.ctx = await getContext();
-        const [employees, schedules, daysOff, concreteSchedules] = await Promise.all([
-          fetchEmployees(state.ctx),
-          fetchSchedules(state.ctx),
-          fetchDaysOff(state.ctx),
-          fetchConcreteSchedules(state.ctx, state.finalFrom, state.finalTo)
-        ]);
+        const [employees, schedules, concreteSchedules, daysOff] = await Promise.all([fetchEmployees(state.ctx), fetchSchedules(state.ctx), fetchConcreteSchedules(state.ctx), fetchDaysOff(state.ctx)]);
         state.employees = employees;
         state.schedules = schedules;
-        state.daysOff = daysOff;
         state.concreteSchedules = concreteSchedules;
+        state.daysOff = daysOff;
         state.selectedEmployeeId = employees[0]?.id || "";
         state.selectedEmployeeIds = state.selectedEmployeeId ? [state.selectedEmployeeId] : [];
         render();
