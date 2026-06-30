@@ -1,4 +1,4 @@
-// CompanyManager — 237 Employees reports pass columns only removed
+// CompanyManager — 095 Employee reports generated schedule + days off overlay
 // employeesraports.html: realne dane z profiles / clients / appointments / sales / sale_items / days_off.
 (function () {
   if (document.body?.dataset?.panelPage !== "employeesReports") return;
@@ -142,6 +142,50 @@
     return d.getTime() >= f.getTime() && d.getTime() <= t.getTime();
   }
 
+  function dayStart(value) {
+    const d = parseDate(value);
+    return d ? new Date(d.getFullYear(), d.getMonth(), d.getDate()) : null;
+  }
+
+  function daysInclusive(start, end) {
+    const s = dayStart(start);
+    const e = dayStart(end || start);
+    if (!s || !e) return 0;
+    const from = s <= e ? s : e;
+    const to = s <= e ? e : s;
+    return Math.floor((to - from) / 86400000) + 1;
+  }
+
+  function dateRangesOverlap(start, end, from, to) {
+    const s = dayStart(start);
+    const e = dayStart(end || start);
+    const f = dayStart(from);
+    const t = dayStart(to);
+    if (!s || !e || !f || !t) return false;
+    const a = s <= e ? s : e;
+    const b = s <= e ? e : s;
+    return a <= t && b >= f;
+  }
+
+  function daysOffStart(row) {
+    return row?.start_date || row?.date_from || row?.from_date || row?.date || row?.created_at;
+  }
+
+  function daysOffEnd(row) {
+    return row?.end_date || row?.date_to || row?.to_date || row?.date_until || row?.until_date || daysOffStart(row);
+  }
+
+  function daysOffCount(row) {
+    return daysInclusive(daysOffStart(row), daysOffEnd(row));
+  }
+
+  function daysOffCategory(row) {
+    const raw = normalize([row?.type, row?.reason, row?.status, row?.category, row?.kind].filter(Boolean).join(' '));
+    if (raw.includes('urlop') || raw.includes('vacation') || raw.includes('holiday') || raw.includes('leave')) return 'vacation';
+    if (raw.includes('zwol') || raw.includes('chorob') || raw.includes('sick') || raw.includes('medical') || raw.includes('l4')) return 'sick';
+    return 'other';
+  }
+
   function employeeName(employee, fallback = "") {
     return employee?.full_name || employee?.fullName || employee?.name || employee?.email || fallback || "(brak)";
   }
@@ -274,11 +318,49 @@
     return count;
   }
 
-  function employeeSchedulePeriodMinutes(row, from, to) {
+  function dayOffStart(row) { return String(row?.start_date || row?.date_from || row?.date || row?.day || "").slice(0, 10); }
+  function dayOffEnd(row) { return String(row?.end_date || row?.date_to || row?.start_date || row?.date_from || row?.date || row?.day || "").slice(0, 10); }
+  function dayOffMatches(row, employeeId, employeeNameValue) {
+    if (!row) return false;
+    if (employeeId && String(row.employee_id || row.employeeId || "") === String(employeeId)) return true;
+    const a = employeeKeyByName(row.employee_name || row.employeeName || row.full_name || "");
+    const b = employeeKeyByName(employeeNameValue || "");
+    return a && b && a !== "brak" && a === b;
+  }
+  function hasDayOffOnDate(daysOff, employeeId, employeeNameValue, iso) {
+    return (daysOff || []).some((row) => {
+      const start = dayOffStart(row);
+      const end = dayOffEnd(row) || start;
+      return dayOffMatches(row, employeeId, employeeNameValue) && start && iso >= start && iso <= end;
+    });
+  }
+  function dateToIso(date) {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, "0");
+    const d = String(date.getDate()).padStart(2, "0");
+    return `${y}-${m}-${d}`;
+  }
+  function employeeSchedulePeriodMinutes(row, from, to, daysOff = []) {
     if (row?.is_working === false) return 0;
     const oneDay = scheduleMinutes(row);
     if (!oneDay) return 0;
-    return oneDay * countWeekdayInRange(from, to, Number(row.day_of_week));
+    const start = parseDate(from);
+    const end = parseDate(to);
+    if (!start || !end) return 0;
+    const dayOfWeek = Number(row.day_of_week);
+    const d = new Date(start.getFullYear(), start.getMonth(), start.getDate());
+    const last = new Date(end.getFullYear(), end.getMonth(), end.getDate());
+    let total = 0;
+    while (d <= last) {
+      if (d.getDay() === dayOfWeek) {
+        const iso = dateToIso(d);
+        if (!hasDayOffOnDate(daysOff, row.employee_id || row.employeeId || row.profile_id || row.user_id || "", row.employee_name || row.employeeName || row.name || "", iso)) {
+          total += oneDay;
+        }
+      }
+      d.setDate(d.getDate() + 1);
+    }
+    return total;
   }
 
   function formatMinutes(totalMinutes) {
@@ -367,7 +449,7 @@
       if (row.active === false || ["void","deleted","usunięte","usuniete","cancelled","canceled","anulowane"].includes(status)) return false;
       return inRange(row.sale_date || row.created_at || row.updated_at, from, to);
     });
-    const filteredDaysOff = daysOff.filter((row) => inRange(row.date || row.start_date || row.date_from || row.from_date || row.created_at, from, to));
+    const filteredDaysOff = daysOff.filter((row) => dateRangesOverlap(daysOffStart(row), daysOffEnd(row), from, to));
     const filteredWorkSchedules = workSchedules.filter((row) => inRange(row.date || row.work_date || row.day || row.created_at, from, to));
 
     return { profiles, employeesTable, positions, clients, appointments: filteredAppointments, sales: filteredSales, saleItems: filteredItems, passes: filteredPasses, daysOff: filteredDaysOff, workSchedules: filteredWorkSchedules, workScheduleTemplates, employeeWorkSchedules, from, to };
@@ -579,11 +661,13 @@
     data.daysOff.forEach((d) => {
       const emp = ensure(d.employee_id || d.employeeId, d.employee_name || "");
       if (!emp) return;
-      const type = normalize(d.type || d.reason || d.status || "");
-      emp.daysOff += 1;
-      if (type.includes("urlop")) emp.vacation += 1;
-      else if (type.includes("zwol") || type.includes("chorob")) emp.sick += 1;
-      else emp.free += 1;
+      const days = daysOffCount(d);
+      if (!days) return;
+      const category = daysOffCategory(d);
+      emp.daysOff += days;
+      if (category === "vacation") emp.vacation += days;
+      else if (category === "sick") emp.sick += days;
+      else emp.free += days;
     });
 
     (data.workSchedules || []).forEach((row) => {
@@ -595,7 +679,7 @@
     (data.employeeWorkSchedules || []).forEach((row) => {
       const emp = ensure(row.employee_id || row.employeeId || row.profile_id || row.user_id || "", row.employee_name || row.employeeName || row.name || "");
       if (!emp) return;
-      emp.scheduledMinutes += employeeSchedulePeriodMinutes(row, data.from, data.to);
+      emp.scheduledMinutes += employeeSchedulePeriodMinutes(row, data.from, data.to, data.daysOff);
     });
 
     const realNameToKey = new Map();

@@ -1,4 +1,4 @@
-// CompanyManager — 050C Grafik pracy UI alignment polish
+// CompanyManager — 095 Najlepszy grafik: szablon + zakres + dni wolne + eksport zbiorczy
 // work-schedule.html: flexible work hours, edit/delete, download schedule.
 (function () {
   function isPage() {
@@ -51,7 +51,89 @@
     return `"${text.replace(/"/g, '""')}"`;
   }
 
-  let state = { ctx: null, employees: [], schedules: [], selectedEmployeeId: "" };
+  function toIsoDate(date) {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, "0");
+    const d = String(date.getDate()).padStart(2, "0");
+    return `${y}-${m}-${d}`;
+  }
+  function parseIsoDate(value) {
+    const [y, m, d] = String(value || "").slice(0, 10).split("-").map(Number);
+    if (!y || !m || !d) return null;
+    return new Date(y, m - 1, d);
+  }
+  function addDays(date, amount) {
+    const d = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    d.setDate(d.getDate() + Number(amount || 0));
+    return d;
+  }
+  function monthStartIso(date) { return toIsoDate(new Date(date.getFullYear(), date.getMonth(), 1)); }
+  function monthEndIso(date) { return toIsoDate(new Date(date.getFullYear(), date.getMonth() + 1, 0)); }
+  function yearStartIso(date) { return toIsoDate(new Date(date.getFullYear(), 0, 1)); }
+  function yearEndIso(date) { return toIsoDate(new Date(date.getFullYear(), 11, 31)); }
+  function startOfWeekIso(date) {
+    const d = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    const offset = (d.getDay() + 6) % 7;
+    d.setDate(d.getDate() - offset);
+    return toIsoDate(d);
+  }
+  function endOfWeekIso(date) { return toIsoDate(addDays(parseIsoDate(startOfWeekIso(date)), 6)); }
+  function dateRange(fromIso, toIso, maxDays = 370) {
+    const start = parseIsoDate(fromIso);
+    const end = parseIsoDate(toIso);
+    if (!start || !end || start > end) return [];
+    const rows = [];
+    let d = new Date(start);
+    while (d <= end && rows.length < maxDays) {
+      rows.push(new Date(d));
+      d = addDays(d, 1);
+    }
+    return rows;
+  }
+  function dayLabel(date) {
+    const day = DAYS.find((item) => item.idx === date.getDay());
+    return day?.short || "";
+  }
+  function formatDatePL(value) {
+    const iso = typeof value === "string" ? value.slice(0, 10) : toIsoDate(value);
+    const [y, m, d] = iso.split("-");
+    return y && m && d ? `${d}.${m}.${y}` : iso;
+  }
+  function dayOffStart(row) { return String(row?.start_date || row?.date_from || row?.date || "").slice(0, 10); }
+  function dayOffEnd(row) { return String(row?.end_date || row?.date_to || row?.start_date || row?.date_from || row?.date || "").slice(0, 10); }
+  function normalizeText(value) { return String(value || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, ""); }
+  function dayOffMatchesEmployee(row, employee) {
+    if (!row || !employee) return false;
+    if (String(row.employee_id || "") === String(employee.id || "")) return true;
+    const a = normalizeText(row.employee_name || row.full_name || "");
+    const b = normalizeText(employeeName(employee));
+    return !!a && !!b && a === b;
+  }
+  function dayOffFor(employee, iso) {
+    return state.daysOff.find((row) => {
+      const start = dayOffStart(row);
+      const end = dayOffEnd(row) || start;
+      return dayOffMatchesEmployee(row, employee) && start && iso >= start && iso <= end;
+    }) || null;
+  }
+  function dayOffCell(row) {
+    const raw = `${row?.type || ""} ${row?.reason || ""} ${row?.description || ""}`.toLowerCase();
+    if (raw.includes("zwol") || raw.includes("chorob") || raw.includes("lekars")) return "ZWOLNIENIE";
+    if (raw.includes("urlop")) return "URLOP";
+    if (raw.includes("szkol")) return "SZKOLENIE";
+    return "WOLNE";
+  }
+
+
+  let state = {
+    ctx: null,
+    employees: [],
+    schedules: [],
+    daysOff: [],
+    selectedEmployeeId: "",
+    finalFrom: monthStartIso(new Date()),
+    finalTo: monthEndIso(new Date())
+  };
 
   function area() { return $(".bm-panel-area") || $("#dashboardRoot"); }
   function showError(msg) {
@@ -117,6 +199,21 @@
     return data || [];
   }
 
+
+
+  async function fetchDaysOff(ctx) {
+    const { data, error } = await window.cmSupabase
+      .from("days_off")
+      .select("id, company_id, employee_id, employee_name, type, start_date, end_date, date_from, date_to, reason, description, status, deleted_at")
+      .eq("company_id", ctx.companyId)
+      .is("deleted_at", null);
+    if (error) {
+      console.warn("Grafik pracy days_off skipped", error.message || error);
+      return [];
+    }
+    return data || [];
+  }
+
   function scheduleByEmployeeAndDay(employeeId, day) {
     return state.schedules.find((row) => String(row.employee_id) === String(employeeId) && Number(row.day_of_week) === Number(day.idx));
   }
@@ -163,6 +260,61 @@
         </td>
       </tr>`;
     }).join("");
+  }
+
+
+  function finalCell(employee, date) {
+    const iso = toIsoDate(date);
+    const off = dayOffFor(employee, iso);
+    if (off) return dayOffCell(off);
+    const day = DAYS.find((item) => item.idx === date.getDay());
+    const schedule = day ? scheduleByEmployeeAndDay(employee.id, day) : null;
+    if (!schedule) return "—";
+    if (schedule.is_working === false) return "WOLNE";
+    const start = time(schedule.start_time, "08:00");
+    const end = time(schedule.end_time, "16:00");
+    const br = schedule.break_start && schedule.break_end ? `; przerwa ${time(schedule.break_start, "")}-${time(schedule.break_end, "")}` : "";
+    return `${start}-${end}${br}`;
+  }
+
+  function finalScheduleRowsHtml() {
+    const dates = dateRange(state.finalFrom, state.finalTo, 370);
+    if (!dates.length) return `<tr><td colspan="${state.employees.length + 2}">Wybierz poprawny zakres dat.</td></tr>`;
+    return dates.map((date) => {
+      const iso = toIsoDate(date);
+      return `<tr>
+        <td><strong>${escapeHtml(formatDatePL(iso))}</strong></td>
+        <td>${escapeHtml(dayLabel(date))}</td>
+        ${state.employees.map((employee) => {
+          const cell = finalCell(employee, date);
+          const cls = /URLOP|ZWOLNIENIE|WOLNE|SZKOLENIE/.test(cell) ? " cm-work-final-off" : "";
+          return `<td class="${cls}">${escapeHtml(cell)}</td>`;
+        }).join("")}
+      </tr>`;
+    }).join("");
+  }
+
+  function finalScheduleTableHtml() {
+    return `<section class="cm-work-final-section">
+      <div class="cm-section-title-row">
+        <h3 class="cm-section-title">Grafik wynikowy</h3>
+      </div>
+      <p class="bm-muted">To jest finalny grafik po połączeniu szablonu tygodniowego z dniami wolnymi. Urlop/zwolnienie zawsze wygrywa z planem pracy.</p>
+      <div class="cm-work-schedule-controls cm-work-final-controls">
+        <label>Od<input type="date" id="finalScheduleFrom" value="${escapeHtml(state.finalFrom)}"></label>
+        <label>Do<input type="date" id="finalScheduleTo" value="${escapeHtml(state.finalTo)}"></label>
+        <button type="button" id="finalScheduleWeekBtn" class="bm-light-btn cm-work-btn">Ten tydzień</button>
+        <button type="button" id="finalScheduleMonthBtn" class="bm-light-btn cm-work-btn">Ten miesiąc</button>
+        <button type="button" id="finalScheduleYearBtn" class="bm-light-btn cm-work-btn">Ten rok</button>
+        <button type="button" id="downloadFinalScheduleBtn" class="bm-light-btn cm-work-btn cm-work-btn-download">Pobierz grafik wynikowy</button>
+      </div>
+      <div class="bm-table-wrap cm-work-final-wrap">
+        <table class="bm-table cm-work-final-table">
+          <thead><tr><th>Data</th><th>Dzień</th>${state.employees.map((e) => `<th>${escapeHtml(employeeName(e))}</th>`).join("")}</tr></thead>
+          <tbody>${finalScheduleRowsHtml()}</tbody>
+        </table>
+      </div>
+    </section>`;
   }
 
   function render() {
@@ -223,8 +375,9 @@
         </table>
       </div>
       <div class="cm-work-export-actions">
-        <button type="button" id="downloadWorkScheduleBtn" class="bm-light-btn cm-work-btn cm-work-btn-download">Pobierz grafik</button>
+        <button type="button" id="downloadWorkScheduleBtn" class="bm-light-btn cm-work-btn cm-work-btn-download">Pobierz szablon tygodniowy</button>
       </div>
+      ${finalScheduleTableHtml()}
     </section>`;
     bindEvents();
     refreshDurations();
@@ -373,6 +526,34 @@
     URL.revokeObjectURL(url);
   }
 
+
+
+  function downloadFinalCsv() {
+    const dates = dateRange(state.finalFrom, state.finalTo, 370);
+    const header = ["Data", "Dzień", ...state.employees.map(employeeName)];
+    const rows = [header];
+    dates.forEach((date) => {
+      rows.push([formatDatePL(date), dayLabel(date), ...state.employees.map((employee) => finalCell(employee, date))]);
+    });
+    const csv = "\ufeff" + rows.map((row) => row.map(csvCell).join(";")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `grafik-wynikowy-${state.finalFrom}-${state.finalTo}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+  }
+
+  function updateFinalRange(from, to) {
+    if (from) state.finalFrom = from;
+    if (to) state.finalTo = to;
+    render();
+    document.querySelector(".cm-work-final-section")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
   function bindEvents() {
     $("#workScheduleEmployee")?.addEventListener("change", (event) => {
       state.selectedEmployeeId = event.currentTarget.value;
@@ -384,6 +565,12 @@
     $("#applyAllDaysBtn")?.addEventListener("click", () => applyToRows("all"));
     $("#clearScheduleBtn")?.addEventListener("click", setFree);
     $("#downloadWorkScheduleBtn")?.addEventListener("click", downloadCsv);
+    $("#finalScheduleFrom")?.addEventListener("change", (event) => { state.finalFrom = event.currentTarget.value; render(); });
+    $("#finalScheduleTo")?.addEventListener("change", (event) => { state.finalTo = event.currentTarget.value; render(); });
+    $("#finalScheduleWeekBtn")?.addEventListener("click", () => { const now = new Date(); updateFinalRange(startOfWeekIso(now), endOfWeekIso(now)); });
+    $("#finalScheduleMonthBtn")?.addEventListener("click", () => { const now = new Date(); updateFinalRange(monthStartIso(now), monthEndIso(now)); });
+    $("#finalScheduleYearBtn")?.addEventListener("click", () => { const now = new Date(); updateFinalRange(yearStartIso(now), yearEndIso(now)); });
+    $("#downloadFinalScheduleBtn")?.addEventListener("click", downloadFinalCsv);
     $$(".cm-work-schedule-editor input").forEach((input) => input.addEventListener("change", refreshDurations));
     $$('[data-edit-employee]').forEach((button) => button.addEventListener("click", () => {
       state.selectedEmployeeId = button.dataset.editEmployee;
@@ -397,9 +584,10 @@
     setTimeout(async () => {
       try {
         state.ctx = await getContext();
-        const [employees, schedules] = await Promise.all([fetchEmployees(state.ctx), fetchSchedules(state.ctx)]);
+        const [employees, schedules, daysOff] = await Promise.all([fetchEmployees(state.ctx), fetchSchedules(state.ctx), fetchDaysOff(state.ctx)]);
         state.employees = employees;
         state.schedules = schedules;
+        state.daysOff = daysOff;
         state.selectedEmployeeId = employees[0]?.id || "";
         render();
       } catch (error) {
