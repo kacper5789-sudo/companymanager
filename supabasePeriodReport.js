@@ -388,8 +388,12 @@
     return { byId, resolve };
   }
   function appointmentDate(row) { return row?.appointment_datetime || row?.starts_at || row?.date || row?.created_at; }
-  function isFinished(row) { const s = String(row?.status || "").toLowerCase(); return row?.finished === true || ["zakończone", "zakończona", "completed"].includes(s); }
-  function isCancelled(row) { const s = String(row?.status || "").toLowerCase(); return ["odwołane", "odwołana", "cancelled", "usunięte", "deleted"].includes(s); }
+  function isFinished(row) { const s = String(row?.status || "").trim().toLowerCase(); return row?.finished === true || ["zakończone", "zakonczone", "zakończona", "zakonczona", "completed"].includes(s); }
+  function isCancelled(row) {
+    const s = String(row?.status || "").trim().toLowerCase();
+    return row?.cancelled === true || row?.is_cancelled === true || row?.deleted === true ||
+      ["odwołane", "odwolane", "odwołana", "odwolana", "odwołany", "odwolany", "cancelled", "canceled", "anulowane", "anulowana", "usunięte", "usuniete", "usunięta", "usunieta", "deleted"].includes(s);
+  }
 
   const CANCELLATION_REASONS = ["Klient odwołał", "Klient nie przyszedł", "Klient przełożył wizytę", "Pomyłka", "Inne"];
   function cancellationReason(row) {
@@ -470,7 +474,14 @@
     const employeeMap = employeeResolver.byId;
     const appointmentById = new Map((data.appointments || []).map(a => [a.id, a]));
     const clientMap = new Map(data.clients.map(c => [c.id, c]));
-    let items = data.saleItems.map(item => ({ ...item, sale: saleMap.get(item.sale_id) || {} }));
+    const isSaleLinkedToCancelledAppointment = (sale) => {
+      const appointment = sale?.appointment_id ? (appointmentById.get(sale.appointment_id) || {}) : {};
+      return Boolean(appointment?.id && isCancelled(appointment));
+    };
+    const activeSalesForFinance = (data.sales || []).filter(sale => !isSaleLinkedToCancelledAppointment(sale));
+    let items = (data.saleItems || [])
+      .map(item => ({ ...item, sale: saleMap.get(item.sale_id) || {} }))
+      .filter(item => !isSaleLinkedToCancelledAppointment(item.sale));
     const rangeStartMs = new Date(range.startIso).getTime();
     const rangeEndMs = new Date(range.endIso).getTime();
     const inReportRange = (value) => {
@@ -539,8 +550,8 @@
     const services = items.filter(i => normalizeItemType(i.item_type) === 'service');
     const products = items.filter(i => normalizeItemType(i.item_type) === 'product');
     const passes = items.filter(i => normalizeItemType(i.item_type) === 'pass');
-    const revenue = data.sales.reduce((sum, sale) => sum + saleValue(sale), 0);
-    const finished = data.appointments.filter(isFinished);
+    const revenue = activeSalesForFinance.reduce((sum, sale) => sum + saleValue(sale), 0);
+    const finished = data.appointments.filter(a => !isCancelled(a) && isFinished(a));
     const planned = data.appointments.filter(a => !isCancelled(a) && !isFinished(a));
     const cancelled = data.appointments.filter(isCancelled);
     const newClients = data.clients.filter(c => {
@@ -602,7 +613,7 @@
 
     // Fallback: jeśli istnieje sprzedaż opłacona, ale nie ma sale_items albo część wartości
     // nie jest pokryta pozycjami, doliczamy brak jako osobne zdarzenie płatności.
-    data.sales.forEach((sale) => {
+    activeSalesForFinance.forEach((sale) => {
       const total = saleValue(sale);
       const represented = representedSaleValue.get(sale.id) || 0;
       const missing = Math.max(0, total - represented);
@@ -636,10 +647,11 @@
       ensureEmployee(employee.id, employee.full_name || employee.employee_name || employee.name || employee.email);
     });
     data.appointments.forEach(a => {
+      if (isCancelled(a)) return;
       const row = ensureEmployee(a.employee_id, a.employee_name);
       row.visits += 1;
     });
-    data.sales.forEach(s => {
+    activeSalesForFinance.forEach(s => {
       const appointment = appointmentById.get(s.appointment_id) || {};
       const row = ensureEmployee(s.employee_id || appointment.employee_id, s.employee_name, appointment.employee_name);
       row.sales += 1;
@@ -647,7 +659,7 @@
     });
     items.forEach(item => {
       const sale = item.sale || {};
-      const linkedPass = item.__linkedPass || (item.pass_id ? rawPasses.find(pass => String(pass.id) === String(item.pass_id)) : passBySaleId.get(item.sale_id) || {});
+      const linkedPass = item.__linkedPass || (item.pass_id ? rawPasses.find(pass => String(pass.id) === String(item.pass_id)) : passBySaleId.get(item.sale_id)) || {};
       const appointment = appointmentById.get(sale.appointment_id) || {};
       const row = ensureEmployee(sale.employee_id || linkedPass.employee_id || appointment.employee_id, sale.employee_name, linkedPass.employee_name, appointment.employee_name);
       const type = normalizeItemType(item.item_type);
@@ -665,7 +677,7 @@
       .reduce((sum, row) => sum + Number(row.qty || 0), 0);
 
     return {
-      kpis: { revenue, sales: data.sales.length, newClients: newClients.length, finished: finished.length, planned: planned.length, cancelled: cancelled.length, salesItems: salesItemsCount },
+      kpis: { revenue, sales: activeSalesForFinance.length, newClients: newClients.length, finished: finished.length, planned: planned.length, cancelled: cancelled.length, salesItems: salesItemsCount },
       services: groupedServices,
       products: groupedProducts,
       passes: groupedPasses,

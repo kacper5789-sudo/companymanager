@@ -336,18 +336,33 @@
       return { key: "missing", name: "(brak)" };
     };
 
-    const statusOf = (item) => String(item.status || "").toLowerCase();
-    const isCancelled = (a) => ["odwołane", "odwolane", "usunięte", "usuniete"].includes(statusOf(a)) || a.is_cancelled === true;
-    const isFinished = (a) => ["zakończone", "zakonczone", "completed"].includes(statusOf(a)) || a.finished === true;
+    const statusOf = (item) => String(item?.status || "").trim().toLowerCase();
+    const isCancelled = (a) => {
+      const status = statusOf(a);
+      return a?.cancelled === true || a?.is_cancelled === true || a?.deleted === true ||
+        ["odwołane", "odwolane", "odwołana", "odwolana", "odwołany", "odwolany", "cancelled", "canceled", "anulowane", "anulowana", "usunięte", "usuniete", "usunięta", "usunieta", "deleted"].includes(status);
+    };
+    const isFinished = (a) => ["zakończone", "zakonczone", "zakończona", "zakonczona", "completed"].includes(statusOf(a)) || a?.finished === true;
     const isPlanned = (a) => !isCancelled(a) && !isFinished(a);
+    const isSaleLinkedToCancelledAppointment = (sale) => {
+      const appointment = appointmentForSale(sale) || {};
+      return Boolean(appointment?.id && isCancelled(appointment));
+    };
+    const isItemLinkedToCancelledAppointment = (item) => {
+      const sale = saleMap.get(item?.sale_id) || item?.sale || {};
+      return isSaleLinkedToCancelledAppointment(sale);
+    };
 
-    const serviceItems = saleItems.filter(i => String(i.item_type || "").toLowerCase() === "service");
-    const productItems = saleItems.filter(i => String(i.item_type || "").toLowerCase() === "product");
-    const passItems = saleItems.filter(i => ["pass", "karnet"].includes(String(i.item_type || "").toLowerCase()));
+    // Odwołane/usunięte wizyty nie są finansami ani realizacją usługi w statystykach.
+    const activeSaleItems = saleItems.filter(i => !isItemLinkedToCancelledAppointment(i));
+    const activeSales = sales.filter(sale => !isSaleLinkedToCancelledAppointment(sale));
+    const serviceItems = activeSaleItems.filter(i => String(i.item_type || "").toLowerCase() === "service");
+    const productItems = activeSaleItems.filter(i => String(i.item_type || "").toLowerCase() === "product");
+    const passItems = activeSaleItems.filter(i => ["pass", "karnet"].includes(String(i.item_type || "").toLowerCase()));
 
-    const revenue = sales.reduce((sum, sale) => sum + saleValue(sale), 0);
+    const revenue = activeSales.reduce((sum, sale) => sum + saleValue(sale), 0);
     const paidSaleIds = new Set(payments.map(p => p.sale_id).filter(Boolean));
-    const syntheticSalePayments = sales
+    const syntheticSalePayments = activeSales
       .filter((sale) => sale.id && !paidSaleIds.has(sale.id) && saleValue(sale) > 0)
       .map((sale) => ({
         id: `sale-payment-${sale.id}`,
@@ -358,7 +373,12 @@
         paid_at: sale.created_at,
         created_at: sale.created_at
       }));
-    const reportPayments = payments.concat(syntheticSalePayments);
+    const reportPayments = payments.concat(syntheticSalePayments).filter((payment) => {
+      if (!payment?.appointment_id && !payment?.sale_id) return true;
+      const sale = payment?.sale_id ? (saleMap.get(payment.sale_id) || {}) : {};
+      const appointment = payment?.appointment_id ? (appointmentById.get(payment.appointment_id) || {}) : appointmentForSale(sale);
+      return !(appointment?.id && isCancelled(appointment));
+    });
     const paymentSum = reportPayments.reduce((sum, p) => sum + Number(p.amount || 0), 0);
     const cash = reportPayments.filter(p => String(p.method || "").toLowerCase().includes("gotówka")).reduce((sum, p) => sum + Number(p.amount || 0), 0);
 
@@ -389,13 +409,14 @@
     appointments.forEach((a) => {
       const apptDay = String(a.date || a.starts_at || a.appointment_datetime || "").slice(0, 10);
       if (data.dayIso && apptDay && apptDay !== data.dayIso) return;
+      if (isCancelled(a)) return;
       const row = ensureEmployee(a.employee_id, a.employee_name);
       row.visits += 1;
     });
-    saleItems.forEach((i) => {
+    activeSaleItems.forEach((i) => {
       const sale = saleMap.get(i.sale_id) || {};
-      const linkedPass = i.pass_id ? passes.find(pass => String(pass.id) === String(i.pass_id)) : passBySaleId.get(i.sale_id) || {};
-      const appointment = appointmentForSale(sale);
+      const linkedPass = (i.pass_id ? passes.find(pass => String(pass.id) === String(i.pass_id)) : passBySaleId.get(i.sale_id)) || {};
+      const appointment = appointmentForSale(sale) || {};
       const row = ensureEmployee(sale.employee_id || linkedPass.employee_id || appointment.employee_id, sale.employee_name, linkedPass.employee_name, appointment.employee_name);
       const type = String(i.item_type || "").toLowerCase();
       const qty = Number(i.quantity || 1);
