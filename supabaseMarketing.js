@@ -53,8 +53,64 @@
     return data;
   }
 
+  function readCachedJson(key) {
+    try { return JSON.parse(localStorage.getItem(key) || "null"); } catch (_) { return null; }
+  }
+
   async function fetchContext() {
-    return await rpc("cm_marketing_context");
+    try {
+      const ctx = await rpc("cm_marketing_context");
+      if (ctx?.company?.id) return ctx;
+      if (ctx?.company_id || ctx?.companyId) return { ...ctx, company: { ...(ctx.company || {}), id: ctx.company_id || ctx.companyId } };
+      throw new Error("Missing company_id");
+    } catch (rpcError) {
+      // OWNER wchodzący w kontekst firmy bywa obsługiwany przez get_effective_company_context,
+      // a starsze RPC marketingu nie zawsze ten kontekst rozpoznaje.
+      const [{ data: access, error: accessError }, { data: effective, error: contextError }] = await Promise.all([
+        window.cmSupabase.rpc("get_my_access"),
+        window.cmSupabase.rpc("get_effective_company_context")
+      ]);
+      if (accessError) throw accessError;
+      if (contextError) throw contextError;
+
+      const cachedEffective = readCachedJson("cm_effective_company");
+      const companyId = effective?.company_id || cachedEffective?.company_id || access?.company_id || "";
+      if (!companyId) throw rpcError;
+
+      const [{ data: company, error: companyError }, { data: campaigns, error: campaignsError }] = await Promise.all([
+        window.cmSupabase
+          .from("companies")
+          .select("*")
+          .eq("id", companyId)
+          .maybeSingle(),
+        window.cmSupabase
+          .from("marketing_campaigns")
+          .select("*")
+          .eq("company_id", companyId)
+          .order("created_at", { ascending: false })
+      ]);
+      if (companyError) throw companyError;
+      if (campaignsError) throw campaignsError;
+
+      const profile = {
+        id: access?.user_id || access?.id || "",
+        role: access?.role || effective?.role || "",
+        permissions: access?.permissions || effective?.permissions || {}
+      };
+
+      const ctx = {
+        company: company || { id: companyId },
+        profile,
+        campaigns: campaigns || [],
+        access,
+        effective
+      };
+      try {
+        localStorage.setItem("cm_access", JSON.stringify(access || {}));
+        localStorage.setItem("cm_effective_company", JSON.stringify(effective || { company_id: companyId }));
+      } catch (_) {}
+      return ctx;
+    }
   }
 
   async function fetchClients(companyId) {

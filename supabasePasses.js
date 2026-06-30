@@ -435,7 +435,11 @@
         .eq("company_id", ctx.companyId)
         .eq("active", true)
         .order("created_at", { ascending: false }),
-      window.cmSupabase.rpc("company_panel_get")
+      window.cmSupabase
+        .from("companies")
+        .select("id, name, payment_methods")
+        .eq("id", ctx.companyId)
+        .maybeSingle()
     ]);
     const errors = [passesRes, clientsRes, usersRes, servicesRes, templatesRes, companyRes].map((res) => res.error).filter(Boolean);
     if (errors.length) throw errors[0];

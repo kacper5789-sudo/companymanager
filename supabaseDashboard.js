@@ -716,7 +716,7 @@
   function getEmployeeColor(employee, index = 0) {
     const stored = readEmployeeColorStore();
     const id = String(employee?.id || "");
-    return normalizeEmployeeColor(employee?.employee_color)
+    return normalizeEmployeeColor(employee?.color || employee?.employee_color)
       || normalizeEmployeeColor(id ? stored[id] : "")
       || defaultEmployeeColor(employee, index);
   }
@@ -736,10 +736,10 @@
     try {
       const { data, error } = await window.cmSupabase
         .from("profiles")
-        .select("id, employee_color")
+        .select("id, color")
         .eq("company_id", ctx.companyId);
       if (error) throw error;
-      return Object.fromEntries((data || []).map((row) => [String(row.id), normalizeEmployeeColor(row.employee_color)]).filter((row) => row[0] && row[1]));
+      return Object.fromEntries((data || []).map((row) => [String(row.id), normalizeEmployeeColor(row.color)]).filter((row) => row[0] && row[1]));
     } catch (error) {
       console.warn("Dashboard employee colors skipped", error?.message || error);
       return {};
