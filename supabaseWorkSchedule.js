@@ -674,6 +674,8 @@
         date,
         start_time: row.start_time || null,
         end_time: row.end_time || null,
+        break_start: row.break_start || null,
+        break_end: row.break_end || null,
         created_at: row.created_at || new Date().toISOString(),
         updated_at: row.updated_at || new Date().toISOString()
       });
@@ -686,48 +688,66 @@
     return text.includes("409") || text.includes("23505") || text.includes("duplicate") || text.includes("conflict");
   }
 
-  async function upsertConcreteRowsSafely(rows, mode) {
+  async function saveConcreteRowsSafely(rows, mode) {
     const cleanRows = uniqueConcreteRows(rows);
     if (!cleanRows.length) return { saved: 0, skipped: 0 };
 
-    const batch = await window.cmSupabase
-      .from("work_schedule")
-      .upsert(cleanRows, { onConflict: "company_id,employee_id,date" });
-
-    if (!batch.error) return { saved: cleanRows.length, skipped: 0 };
-    if (!isConflictError(batch.error)) throw batch.error;
-
-    console.warn("work_schedule batch upsert conflict, falling back to row-by-row save", batch.error);
-
     let saved = 0;
     let skipped = 0;
+
+    // WAŻNE: nie używamy tutaj batch .upsert(), bo w niektórych konfiguracjach
+    // PostgREST/Supabase zwraca 409 mimo poprawnego on_conflict. Zapisujemy dzień
+    // po dniu i dla nadpisywania robimy jawne delete -> insert po kluczu
+    // company_id + employee_id + date. Dzięki temu nie ma konfliktu 409.
     for (const row of cleanRows) {
-      const single = await window.cmSupabase
-        .from("work_schedule")
-        .upsert(row, { onConflict: "company_id,employee_id,date" });
-
-      if (!single.error) { saved += 1; continue; }
-      if (!isConflictError(single.error)) throw single.error;
-
-      // Ostatnia warstwa bezpieczeństwa: jeżeli PostgREST/Supabase dalej zwraca 409,
-      // robimy jawne usunięcie konkretnego dnia i ponowny insert. W trybie fill nie
-      // nadpisujemy istniejących dni — konflikt oznacza, że dzień już istnieje.
-      if (mode === "fill") { skipped += 1; continue; }
-
-      const del = await window.cmSupabase
-        .from("work_schedule")
-        .delete()
-        .eq("company_id", row.company_id)
-        .eq("employee_id", row.employee_id)
-        .eq("date", row.date);
-      if (del.error) throw del.error;
+      if (mode === "overwrite") {
+        const del = await window.cmSupabase
+          .from("work_schedule")
+          .delete()
+          .eq("company_id", row.company_id)
+          .eq("employee_id", row.employee_id)
+          .eq("date", row.date);
+        if (del.error) throw del.error;
+      }
 
       const ins = await window.cmSupabase
         .from("work_schedule")
         .insert(row);
-      if (ins.error) throw ins.error;
-      saved += 1;
+
+      if (!ins.error) {
+        saved += 1;
+        continue;
+      }
+
+      if (isConflictError(ins.error)) {
+        // Tryb fill: jeśli mimo wcześniejszego sprawdzenia dzień już istnieje,
+        // nie traktujemy tego jako błędu — po prostu go pomijamy.
+        if (mode === "fill") {
+          skipped += 1;
+          continue;
+        }
+
+        // Dodatkowe zabezpieczenie dla trybu overwrite: jeżeli insert zwrócił
+        // konflikt, ponawiamy delete konkretnego klucza i insert jeszcze raz.
+        const delAgain = await window.cmSupabase
+          .from("work_schedule")
+          .delete()
+          .eq("company_id", row.company_id)
+          .eq("employee_id", row.employee_id)
+          .eq("date", row.date);
+        if (delAgain.error) throw delAgain.error;
+
+        const insAgain = await window.cmSupabase
+          .from("work_schedule")
+          .insert(row);
+        if (insAgain.error) throw insAgain.error;
+        saved += 1;
+        continue;
+      }
+
+      throw ins.error;
     }
+
     return { saved, skipped };
   }
 
@@ -777,6 +797,8 @@
         date: iso,
         start_time: template.start_time,
         end_time: template.end_time,
+        break_start: template.break_start || null,
+        break_end: template.break_end || null,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       });
@@ -793,7 +815,7 @@
       if (error) throw error;
     }
 
-    const saved = await upsertConcreteRowsSafely(rows, mode);
+    const saved = await saveConcreteRowsSafely(rows, mode);
     result.inserted = saved.saved;
     if (saved.skipped) result.overwritten = Math.max(0, result.overwritten - saved.skipped);
     return result;
