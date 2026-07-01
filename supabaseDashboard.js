@@ -1020,10 +1020,10 @@
     const step = visitDuration + breakMinutes;
     const windows = new Map();
     data.users.forEach((employee) => windows.set(employee.id, employeeWorkWindow(data, employee, dateIso, settings)));
-    const starts = Array.from(windows.values()).filter((w) => !w.off).map((w) => minutesFromTime(w.start)).filter((v) => v != null);
-    const ends = Array.from(windows.values()).filter((w) => !w.off).map((w) => minutesFromTime(w.end)).filter((v) => v != null);
-    const workStart = starts.length ? Math.min(...starts) : (minutesFromTime(settings.start) ?? minutesFromTime("08:00"));
-    const workEnd = ends.length ? Math.max(...ends) : (minutesFromTime(settings.end) ?? minutesFromTime("20:00"));
+    // CompanyManager 127 — oś godzin dashboardu zawsze pochodzi z Panel firmy → Godziny pracy firmy.
+    // Grafik pracownika wpływa tylko na dostępność komórek, a nie na zakres godzin tabeli.
+    const workStart = minutesFromTime(settings.start) ?? minutesFromTime("08:00");
+    const workEnd = minutesFromTime(settings.end) ?? minutesFromTime("20:00");
     const rows = [];
 
     if (workStart == null || workEnd == null || workEnd <= workStart) {

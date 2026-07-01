@@ -262,6 +262,19 @@
       panel.style.removeProperty("z-index");
     });
     setDaysOffModalOpen(false);
+    // CompanyManager 127 — pełne sprzątanie modala dni wolnych, żeby tło nie zostawało przyciemnione/rozmyte.
+    document.body.classList.remove("cm-modal-open", "cm-centered-panel-open", "cm-days-off-modal-open");
+    document.documentElement.classList.remove("cm-modal-open", "cm-centered-panel-open", "cm-days-off-modal-open");
+    const globalOverlay = document.getElementById("cmGlobalFormOverlay");
+    if (globalOverlay) {
+      globalOverlay.hidden = true;
+      globalOverlay.style.display = "none";
+      globalOverlay.style.opacity = "0";
+      globalOverlay.style.pointerEvents = "none";
+      globalOverlay.style.backdropFilter = "none";
+      globalOverlay.style.webkitBackdropFilter = "none";
+    }
+    try { window.cmGlobalModalCleanup?.(); } catch (_) {}
     try { window.cmRefreshGlobalModalState?.(); } catch (_) {}
   }
 
@@ -535,6 +548,7 @@
           throw new Error(details || "Nie udało się zapisać dni wolnych.");
         }
         message("#daysOffMessage", "Dni wolne zapisane.");
+        hidePanels();
         form.reset();
         const startInput = document.getElementById("daysOffStart");
         const endInput = document.getElementById("daysOffEnd");
@@ -573,6 +587,7 @@
         });
         if (error) throw error;
         message("#daysOffEditMessage", "Dni wolne zaktualizowane.");
+        hidePanels();
         await reloadAndRender();
       } catch (error) {
         message("#daysOffEditMessage", `Błąd edycji dni wolnych: ${error.message || error}`, false);
@@ -589,6 +604,7 @@
         });
         if (error) throw error;
         message("#daysOffDeleteMessage", "Dni wolne usunięte.");
+        hidePanels();
         await reloadAndRender();
       } catch (error) {
         message("#daysOffDeleteMessage", `Błąd usuwania dni wolnych: ${error.message || error}`, false);

@@ -784,7 +784,7 @@
   }
 
   function showOnly(cardToShow) {
-    const panels = ["#visitFormCard", "#visitEditCard", "#visitDeleteCard"].map((selector) => document.querySelector(selector));
+    const panels = ["#visitFormCard", "#visitEditCard"].map((selector) => document.querySelector(selector));
     if (window.cmShowOnlyModalPanel) return window.cmShowOnlyModalPanel(cardToShow, panels);
     panels.forEach((card) => {
       if (!card) return;
@@ -968,9 +968,9 @@
 
     const allowAdd = canAddAppointments(ctx);
     const allowEdit = canEditAppointments(ctx);
-    const allowDelete = canDeleteAppointments(ctx);
-    const currentFilter = new URLSearchParams(window.location.search).get("status") || "niezakończone";
-    const statuses = ["niezakończone", "zakończone", "zaplanowane", "odwołane", "usunięte"];
+    const currentStatusParam = new URLSearchParams(window.location.search).get("status") || "niezakończone";
+    const statuses = ["niezakończone", "zakończone", "zaplanowane", "odwołane"];
+    const currentFilter = statuses.includes(currentStatusParam) ? currentStatusParam : "niezakończone";
 
     const lookups = {
       clientsById: Object.fromEntries(data.clients.map((item) => [item.id, item])),
@@ -982,7 +982,6 @@
     };
 
     const filtered = data.appointments.filter((item) => {
-      if (currentFilter === "usunięte") return item.deleted === true || item.status === "usunięte";
       return item.deleted !== true && String(item.status || "niezakończone") === currentFilter;
     });
     const editable = data.appointments.filter((item) => item.deleted !== true && item.status !== "usunięte");
@@ -1026,7 +1025,7 @@
 
     area.innerHTML = `
       <section class="bm-page-card visits-module">
-        <div class="bm-page-head"><h2>Pokaż wizyty:</h2><div class="bm-action-row"><button id="showAddVisit" type="button" ${allowAdd ? "" : "disabled"}>Dodaj</button><button id="showEditVisit" type="button" class="bm-secondary-btn" ${allowEdit ? "" : "disabled"}>Edytuj</button><button id="showDeleteVisit" type="button" class="bm-danger-btn" ${allowDelete ? "" : "disabled"}>Usuń</button></div></div>
+        <div class="bm-page-head"><h2>Pokaż wizyty:</h2><div class="bm-action-row"><button id="showAddVisit" type="button" ${allowAdd ? "" : "disabled"}>Dodaj</button><button id="showEditVisit" type="button" class="bm-secondary-btn" ${allowEdit ? "" : "disabled"}>Edytuj</button></div></div>
         <div class="bm-tabs">${statusTabs}</div>
         <div class="bm-table-toolbar cm-limit-toolbar">${moduleLimitDropdownHtml("visitsLimit")}</div>
         ${table(["Data", "Godzina", "Klient", "Pracownik", "Usługa", "Status", "Powód"], rows, "Brak wizyt w Supabase.")}
@@ -1076,11 +1075,6 @@
         <p id="visitEditMessage" class="panel-message"></p>
       </section>
 
-      <section class="bm-page-card" id="visitDeleteCard" hidden>
-        <h2>Usuń wizytę</h2>
-        <div class="bm-form-row bm-delete-row"><select id="deleteVisitSelect"><option value="">Wybierz wizytę</option>${visitOptions}</select><button id="deleteVisitBtn" type="button" class="bm-danger-btn" ${allowDelete ? "" : "disabled"}>Usuń</button></div>
-        <p id="visitDeleteMessage" class="panel-message"></p>
-      </section>
 
       <section class="bm-page-card" id="visitQuickClientCard" data-parent-panel="#visitFormCard" hidden>
         <h2>Dodaj klienta</h2>
@@ -1119,7 +1113,7 @@
     const quickClientCard = document.querySelector("#visitQuickClientCard");
     const quickProductCard = document.querySelector("#visitQuickProductCard");
     const quickServiceCard = document.querySelector("#visitQuickServiceCard");
-    const relatedPanels = [document.querySelector("#visitFormCard"), document.querySelector("#visitEditCard"), document.querySelector("#visitDeleteCard"), quickClientCard, quickProductCard, quickServiceCard];
+    const relatedPanels = [document.querySelector("#visitFormCard"), document.querySelector("#visitEditCard"), quickClientCard, quickProductCard, quickServiceCard];
     let relatedParentPanel = document.querySelector("#visitFormCard");
     function openRelatedPanel(card, button) {
       relatedParentPanel = button?.closest("section.bm-page-card") || document.querySelector("#visitFormCard");
@@ -1290,7 +1284,7 @@
 
     const addCard = document.querySelector("#visitFormCard");
     const editCard = document.querySelector("#visitEditCard");
-    const deleteCard = document.querySelector("#visitDeleteCard");
+    const deleteCard = null;
     document.querySelector("#showAddVisit")?.addEventListener("click", () => {
       showOnly(addCard);
       setupVisitNativeDatePickers();
@@ -1373,24 +1367,6 @@
       setTimeout(renderAppointments, 450);
     });
 
-    document.querySelector("#deleteVisitBtn")?.addEventListener("click", async () => {
-      if (!allowDelete) { setMessage("#visitDeleteMessage", "Brak uprawnienia do usuwania wizyt.", false); return; }
-      const visitId = document.querySelector("#deleteVisitSelect")?.value;
-      if (!visitId) { setMessage("#visitDeleteMessage", "Wybierz wizytę do usunięcia.", false); return; }
-      const beforeVisit = data.appointments.find((item) => String(item.id) === String(visitId)) || null;
-      const deletePayload = { status: "usunięte", deleted: true, updated_at: new Date().toISOString() };
-      const { data: updatedAppointment, error } = await window.cmSupabase
-        .from("appointments")
-        .update(deletePayload)
-        .eq("id", visitId)
-        .eq("company_id", ctx.companyId)
-        .select("*")
-        .single();
-      if (error) { setMessage("#visitDeleteMessage", "Błąd usuwania wizyty: " + error.message, false); return; }
-      await window.cmUndo?.record({ module: "appointments", actionType: "update", targetTable: "appointments", targetId: visitId, beforeData: beforeVisit, afterData: updatedAppointment || { ...(beforeVisit || {}), ...deletePayload }, companyId: ctx.companyId });
-      setMessage("#visitDeleteMessage", "Wizyta przeniesiona do usuniętych w Supabase.", true);
-      setTimeout(renderAppointments, 450);
-    });
   }
 
   if (document.readyState === "loading") {
