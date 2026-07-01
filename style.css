@@ -17417,3 +17417,21 @@ body[data-panel-page="workSchedule"] .cm-work-bottom-actions{
     padding:0 10px 70px !important;
   }
 }
+
+
+/* CompanyManager 122 — Days Off forms must stay clickable without global modal overlay */
+#daysOffFormCard.cm-days-off-centered,
+#daysOffEditPanel.cm-days-off-centered,
+#daysOffDeletePanel.cm-days-off-centered {
+  pointer-events: auto !important;
+  filter: none !important;
+}
+#daysOffFormCard.cm-days-off-centered *,
+#daysOffEditPanel.cm-days-off-centered *,
+#daysOffDeletePanel.cm-days-off-centered * {
+  pointer-events: auto;
+}
+body:not(.cm-modal-open) #cmGlobalFormOverlay {
+  display: none !important;
+  pointer-events: none !important;
+}
