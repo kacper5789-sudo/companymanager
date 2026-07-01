@@ -657,212 +657,120 @@
     return { from, to, dates };
   }
 
-  function uniqueConcreteRows(rows) {
-    const byKey = new Map();
-    (rows || []).forEach((row) => {
-      if (!row) return;
-      const companyId = String(row.company_id || "");
-      const employeeId = String(row.employee_id || "");
-      const date = String(row.date || "").slice(0, 10);
-      if (!companyId || !employeeId || !date) return;
-      const key = `${companyId}|${employeeId}|${date}`;
-      // Ostatni wpis wygrywa. To zabezpiecza przed 409, gdy formularz wygeneruje
-      // dwa rekordy dla tego samego pracownika i tej samej daty w jednym zapisie.
-      byKey.set(key, {
-        company_id: companyId,
-        employee_id: employeeId,
-        date,
-        start_time: row.start_time || null,
-        end_time: row.end_time || null,
-        break_start: row.break_start || null,
-        break_end: row.break_end || null,
-        created_at: row.created_at || new Date().toISOString(),
-        updated_at: row.updated_at || new Date().toISOString()
-      });
-    });
-    return Array.from(byKey.values());
-  }
-
-  function isConflictError(error) {
-    const text = `${error?.code || ""} ${error?.status || ""} ${error?.message || ""} ${error?.details || ""}`.toLowerCase();
-    return text.includes("409") || text.includes("23505") || text.includes("duplicate") || text.includes("conflict");
-  }
-
-  async function saveConcreteRowsSafely(rows, mode) {
-    const cleanRows = uniqueConcreteRows(rows);
-    if (!cleanRows.length) return { saved: 0, skipped: 0 };
-
-    let saved = 0;
-    let skipped = 0;
-
-    // Zapis bez batch-upsert i bez delete->insert.
-    // Powód: PostgREST/Supabase zwracał 409, gdy rekord dla
-    // company_id + employee_id + date już istniał. Najbezpieczniejszy model:
-    // 1) sprawdź, czy konkretny dzień istnieje,
-    // 2) fill = pomiń istniejący,
-    // 3) overwrite = update istniejący,
-    // 4) brak istniejącego = insert,
-    // 5) jeśli insert złapie race-condition 409, jeszcze raz select i update/skip.
-    for (const row of cleanRows) {
-      const existingRes = await window.cmSupabase
-        .from("work_schedule")
-        .select("id")
-        .eq("company_id", row.company_id)
-        .eq("employee_id", row.employee_id)
-        .eq("date", row.date)
-        .maybeSingle();
-
-      if (existingRes.error) throw existingRes.error;
-
-      if (existingRes.data?.id) {
-        if (mode === "fill") {
-          skipped += 1;
-          continue;
-        }
-
-        const updatePayload = {
-          start_time: row.start_time,
-          end_time: row.end_time,
-          break_start: row.break_start || null,
-          break_end: row.break_end || null,
-          updated_at: new Date().toISOString()
-        };
-
-        const upd = await window.cmSupabase
-          .from("work_schedule")
-          .update(updatePayload)
-          .eq("id", existingRes.data.id);
-        if (upd.error) throw upd.error;
-        saved += 1;
-        continue;
-      }
-
-      const insertPayload = {
-        company_id: row.company_id,
-        employee_id: row.employee_id,
-        date: row.date,
-        start_time: row.start_time,
-        end_time: row.end_time,
-        break_start: row.break_start || null,
-        break_end: row.break_end || null,
-        created_at: row.created_at || new Date().toISOString(),
-        updated_at: row.updated_at || new Date().toISOString()
-      };
-
-      const ins = await window.cmSupabase
-        .from("work_schedule")
-        .insert(insertPayload);
-
-      if (!ins.error) {
-        saved += 1;
-        continue;
-      }
-
-      if (!isConflictError(ins.error)) throw ins.error;
-
-      // Race condition / istniejący wpis nie został złapany w pierwszym SELECT.
-      const again = await window.cmSupabase
-        .from("work_schedule")
-        .select("id")
-        .eq("company_id", row.company_id)
-        .eq("employee_id", row.employee_id)
-        .eq("date", row.date)
-        .maybeSingle();
-      if (again.error) throw again.error;
-
-      if (again.data?.id) {
-        if (mode === "fill") {
-          skipped += 1;
-          continue;
-        }
-        const upd = await window.cmSupabase
-          .from("work_schedule")
-          .update({
-            start_time: row.start_time,
-            end_time: row.end_time,
-            break_start: row.break_start || null,
-            break_end: row.break_end || null,
-            updated_at: new Date().toISOString()
-          })
-          .eq("id", again.data.id);
-        if (upd.error) throw upd.error;
-        saved += 1;
-        continue;
-      }
-
-      throw ins.error;
-    }
-
-    return { saved, skipped };
-  }
-
   async function saveConcreteSchedule(employee, weeklyRows, dates, mode = "fill") {
     const fromIso = toIsoDate(dates[0]);
     const toIso = toIsoDate(dates[dates.length - 1]);
-    const employeeId = String(scheduleEmployeeId(employee) || "");
-    const result = { inserted: 0, daysOff: 0, overwritten: 0, deleted: 0 };
-
-    const existingResponse = await window.cmSupabase
-      .from("work_schedule")
-      .select("id, date")
-      .eq("company_id", state.ctx.companyId)
-      .eq("employee_id", employeeId)
-      .gte("date", fromIso)
-      .lte("date", toIso);
-    if (existingResponse.error) throw existingResponse.error;
-
-    const existing = existingResponse.data || [];
-    const existingDates = new Set(existing.map((row) => String(row.date || "").slice(0, 10)));
-    result.overwritten = existing.length;
+    const employeeId = scheduleEmployeeId(employee);
+    const result = { inserted: 0, daysOff: 0, overwritten: 0, deleted: 0, skippedExisting: 0 };
 
     if (mode === "delete") {
-      const { error } = await window.cmSupabase
+      const { data, error } = await window.cmSupabase
         .from("work_schedule")
         .delete()
         .eq("company_id", state.ctx.companyId)
         .eq("employee_id", employeeId)
         .gte("date", fromIso)
-        .lte("date", toIso);
+        .lte("date", toIso)
+        .select("id");
       if (error) throw error;
-      result.deleted = existing.length;
+      result.deleted = (data || []).length;
       return result;
     }
 
-    const rows = [];
+    const rowsByKey = new Map();
     dates.forEach((date) => {
       const iso = toIsoDate(date);
-      if (mode === "fill" && existingDates.has(iso)) return;
       const template = weeklyRows.find((row) => Number(row.day_of_week) === Number(date.getDay()));
       if (!template || !template.is_working) return;
       const off = dayOffFor(employee, iso);
       if (off) { result.daysOff += 1; return; }
-      rows.push({
+      rowsByKey.set(`${state.ctx.companyId}|${employeeId}|${iso}`, {
         company_id: state.ctx.companyId,
         employee_id: employeeId,
         date: iso,
-        start_time: template.start_time,
-        end_time: template.end_time,
-        break_start: template.break_start || null,
-        break_end: template.break_end || null,
+        start_time: template.start_time || null,
+        end_time: template.end_time || null,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       });
     });
 
-    if (mode === "overwrite") {
-      const { error } = await window.cmSupabase
+    const rows = Array.from(rowsByKey.values());
+
+    for (const row of rows) {
+      const existingResp = await window.cmSupabase
         .from("work_schedule")
-        .delete()
-        .eq("company_id", state.ctx.companyId)
-        .eq("employee_id", employeeId)
-        .gte("date", fromIso)
-        .lte("date", toIso);
-      if (error) throw error;
+        .select("id")
+        .eq("company_id", row.company_id)
+        .eq("employee_id", row.employee_id)
+        .eq("date", row.date)
+        .limit(1);
+      if (existingResp.error) throw existingResp.error;
+
+      const existing = existingResp.data || [];
+      if (existing.length) {
+        if (mode === "fill") {
+          result.skippedExisting += 1;
+          continue;
+        }
+        const existingId = existing[0].id;
+        const { error: updateError } = await window.cmSupabase
+          .from("work_schedule")
+          .update({
+            start_time: row.start_time,
+            end_time: row.end_time,
+            updated_at: new Date().toISOString()
+          })
+          .eq("id", existingId);
+        if (updateError) throw updateError;
+        result.overwritten += 1;
+        result.inserted += 1;
+        continue;
+      }
+
+      const { error: insertError } = await window.cmSupabase
+        .from("work_schedule")
+        .insert([row]);
+
+      if (insertError) {
+        const isConflict = insertError.code === "23505" || insertError.status === 409 || /duplicate|conflict/i.test(insertError.message || "");
+        if (!isConflict) throw insertError;
+
+        // Awaryjnie: jeśli rekord powstał równolegle albo Supabase zwrócił konflikt,
+        // nie kończymy zapisu całego grafiku. Sprawdzamy dzień jeszcze raz.
+        const retry = await window.cmSupabase
+          .from("work_schedule")
+          .select("id")
+          .eq("company_id", row.company_id)
+          .eq("employee_id", row.employee_id)
+          .eq("date", row.date)
+          .limit(1);
+        if (retry.error) throw retry.error;
+        const retryExisting = retry.data || [];
+        if (retryExisting.length) {
+          if (mode === "fill") {
+            result.skippedExisting += 1;
+            continue;
+          }
+          const { error: retryUpdateError } = await window.cmSupabase
+            .from("work_schedule")
+            .update({
+              start_time: row.start_time,
+              end_time: row.end_time,
+              updated_at: new Date().toISOString()
+            })
+            .eq("id", retryExisting[0].id);
+          if (retryUpdateError) throw retryUpdateError;
+          result.overwritten += 1;
+          result.inserted += 1;
+          continue;
+        }
+        throw insertError;
+      }
+
+      result.inserted += 1;
     }
 
-    const saved = await saveConcreteRowsSafely(rows, mode);
-    result.inserted = saved.saved;
-    if (saved.skipped) result.overwritten = Math.max(0, result.overwritten - saved.skipped);
     return result;
   }
 
