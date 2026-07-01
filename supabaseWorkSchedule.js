@@ -1,4 +1,4 @@
-// CompanyManager — 101 Grafik: bezpieczny kreator zakresów, masowa edycja, podgląd zapisu
+// CompanyManager — 121 Grafik: bezpieczny kreator zakresów, masowa edycja, podgląd zapisu
 // work-schedule.html: flexible work hours, edit/delete, download schedule.
 (function () {
   function isPage() {
@@ -110,7 +110,10 @@
   function normalizeText(value) { return String(value || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, ""); }
   function dayOffMatchesEmployee(row, employee) {
     if (!row || !employee) return false;
-    if (String(row.employee_id || "") === String(employee.id || "")) return true;
+    const offEmployeeId = String(row.employee_id || "");
+    if (offEmployeeId && offEmployeeId === String(employee.id || "")) return true;
+    if (offEmployeeId && offEmployeeId === String(scheduleEmployeeId(employee) || "")) return true;
+    if (offEmployeeId && offEmployeeId === String(employee.profile_id || "")) return true;
     const a = normalizeText(row.employee_name || row.full_name || "");
     const b = normalizeText(employeeName(employee));
     return !!a && !!b && a === b;
@@ -191,7 +194,8 @@
   async function countExistingConcreteSchedules(employees, dates) {
     if (!employees.length || !dates.length) return 0;
     try {
-      const ids = employees.map((e) => e.id);
+      const ids = employees.map((e) => scheduleEmployeeId(e)).filter(Boolean);
+      if (!ids.length) return 0;
       const { data, error } = await window.cmSupabase
         .from("work_schedule")
         .select("id, employee_id, date")
@@ -273,8 +277,36 @@
   async function fetchEmployees(ctx) {
     const { data, error } = await window.cmSupabase.rpc("company_team_members", { p_company_id: ctx.companyId });
     if (error) throw error;
+
+    // company_team_members zwraca użytkowników/profiles. Tabela work_schedule ma FK do public.employees(id),
+    // dlatego do zapisu grafiku potrzebujemy technicznego id z employees, a nie id profilu.
+    // UI nadal używa employee.id jako id użytkownika, żeby nie ruszać widoku ani wyboru pracowników.
+    let employeeRows = [];
+    try {
+      const employeesResponse = await window.cmSupabase
+        .from("employees")
+        .select("id, profile_id, full_name, role, active, company_id")
+        .eq("company_id", ctx.companyId);
+      if (!employeesResponse.error) employeeRows = employeesResponse.data || [];
+      else console.warn("Grafik pracy employees mapping skipped", employeesResponse.error?.message || employeesResponse.error);
+    } catch (mappingError) {
+      console.warn("Grafik pracy employees mapping skipped", mappingError?.message || mappingError);
+    }
+
+    const byProfileId = new Map(employeeRows.filter((row) => row.profile_id).map((row) => [String(row.profile_id), row]));
+    const byName = new Map(employeeRows.map((row) => [normalizeText(row.full_name || ""), row]).filter(([key]) => !!key));
+
     return (data || [])
       .filter((row) => normalizeRole(row.role) !== "OWNER")
+      .map((row) => {
+        const mapped = byProfileId.get(String(row.id)) || byName.get(normalizeText(employeeName(row))) || null;
+        return {
+          ...row,
+          profile_id: row.id,
+          work_schedule_employee_id: mapped?.id || row.employee_id || row.id,
+          employee_record_id: mapped?.id || row.employee_id || null
+        };
+      })
       .sort((a, b) => employeeName(a).localeCompare(employeeName(b), "pl"));
   }
 
@@ -328,7 +360,7 @@
   }
 
   function scheduleEmployeeId(employee) {
-    return employee?.employee_id || employee?.id;
+    return employee?.work_schedule_employee_id || employee?.employee_record_id || employee?.employee_id || employee?.id;
   }
 
   function employeeOptions() {
@@ -663,6 +695,8 @@
     const employeeId = scheduleEmployeeId(employee);
     const result = { inserted: 0, daysOff: 0, overwritten: 0, deleted: 0 };
 
+    if (!employeeId) throw new Error(`Nie można ustalić technicznego ID pracownika dla grafiku: ${employeeName(employee)}`);
+
     const existingResponse = await window.cmSupabase
       .from("work_schedule")
       .select("id, date")
@@ -689,7 +723,7 @@
       return result;
     }
 
-    const rowsByKey = new Map();
+    const rowsByDate = new Map();
     dates.forEach((date) => {
       const iso = toIsoDate(date);
       if (mode === "fill" && existingByDate.has(iso)) return;
@@ -697,8 +731,7 @@
       if (!template || !template.is_working) return;
       const off = dayOffFor(employee, iso);
       if (off) { result.daysOff += 1; return; }
-      const key = `${state.ctx.companyId}|${employeeId}|${iso}`;
-      rowsByKey.set(key, {
+      rowsByDate.set(iso, {
         company_id: state.ctx.companyId,
         employee_id: employeeId,
         date: iso,
@@ -708,9 +741,7 @@
       });
     });
 
-    const rows = Array.from(rowsByKey.values());
-
-    for (const row of rows) {
+    for (const row of rowsByDate.values()) {
       const existingRow = existingByDate.get(row.date);
 
       if (existingRow) {
@@ -746,9 +777,10 @@
         continue;
       }
 
-      // Jeżeli drugi zapis zdążył dodać ten sam dzień, nie przerywamy pracy.
-      // Szukamy rekordu po company_id + employee_id + date i aktualizujemy go zwykłym UPDATE.
-      if (String(insertError.code || "") === "23505" || String(insertError.message || "").toLowerCase().includes("duplicate") || String(insertError.message || "").toLowerCase().includes("conflict")) {
+      // 409/23505 może się pojawić, gdy rekord powstał między SELECT a INSERT.
+      // Wtedy nie przerywamy — odszukujemy rekord i robimy UPDATE.
+      const conflictText = `${insertError.code || ""} ${insertError.message || ""} ${insertError.details || ""}`.toLowerCase();
+      if (String(insertError.code || "") === "23505" || conflictText.includes("duplicate") || conflictText.includes("conflict")) {
         const retry = await window.cmSupabase
           .from("work_schedule")
           .select("id")
