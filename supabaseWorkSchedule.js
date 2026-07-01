@@ -657,10 +657,84 @@
     return { from, to, dates };
   }
 
+  function uniqueConcreteRows(rows) {
+    const byKey = new Map();
+    (rows || []).forEach((row) => {
+      if (!row) return;
+      const companyId = String(row.company_id || "");
+      const employeeId = String(row.employee_id || "");
+      const date = String(row.date || "").slice(0, 10);
+      if (!companyId || !employeeId || !date) return;
+      const key = `${companyId}|${employeeId}|${date}`;
+      // Ostatni wpis wygrywa. To zabezpiecza przed 409, gdy formularz wygeneruje
+      // dwa rekordy dla tego samego pracownika i tej samej daty w jednym zapisie.
+      byKey.set(key, {
+        company_id: companyId,
+        employee_id: employeeId,
+        date,
+        start_time: row.start_time || null,
+        end_time: row.end_time || null,
+        created_at: row.created_at || new Date().toISOString(),
+        updated_at: row.updated_at || new Date().toISOString()
+      });
+    });
+    return Array.from(byKey.values());
+  }
+
+  function isConflictError(error) {
+    const text = `${error?.code || ""} ${error?.status || ""} ${error?.message || ""} ${error?.details || ""}`.toLowerCase();
+    return text.includes("409") || text.includes("23505") || text.includes("duplicate") || text.includes("conflict");
+  }
+
+  async function upsertConcreteRowsSafely(rows, mode) {
+    const cleanRows = uniqueConcreteRows(rows);
+    if (!cleanRows.length) return { saved: 0, skipped: 0 };
+
+    const batch = await window.cmSupabase
+      .from("work_schedule")
+      .upsert(cleanRows, { onConflict: "company_id,employee_id,date" });
+
+    if (!batch.error) return { saved: cleanRows.length, skipped: 0 };
+    if (!isConflictError(batch.error)) throw batch.error;
+
+    console.warn("work_schedule batch upsert conflict, falling back to row-by-row save", batch.error);
+
+    let saved = 0;
+    let skipped = 0;
+    for (const row of cleanRows) {
+      const single = await window.cmSupabase
+        .from("work_schedule")
+        .upsert(row, { onConflict: "company_id,employee_id,date" });
+
+      if (!single.error) { saved += 1; continue; }
+      if (!isConflictError(single.error)) throw single.error;
+
+      // Ostatnia warstwa bezpieczeństwa: jeżeli PostgREST/Supabase dalej zwraca 409,
+      // robimy jawne usunięcie konkretnego dnia i ponowny insert. W trybie fill nie
+      // nadpisujemy istniejących dni — konflikt oznacza, że dzień już istnieje.
+      if (mode === "fill") { skipped += 1; continue; }
+
+      const del = await window.cmSupabase
+        .from("work_schedule")
+        .delete()
+        .eq("company_id", row.company_id)
+        .eq("employee_id", row.employee_id)
+        .eq("date", row.date);
+      if (del.error) throw del.error;
+
+      const ins = await window.cmSupabase
+        .from("work_schedule")
+        .insert(row);
+      if (ins.error) throw ins.error;
+      saved += 1;
+    }
+    return { saved, skipped };
+  }
+
   async function saveConcreteSchedule(employee, weeklyRows, dates, mode = "fill") {
     const fromIso = toIsoDate(dates[0]);
     const toIso = toIsoDate(dates[dates.length - 1]);
-    const employeeId = scheduleEmployeeId(employee);
+    const employeeId = String(scheduleEmployeeId(employee) || "");
     const result = { inserted: 0, daysOff: 0, overwritten: 0, deleted: 0 };
 
     const existingResponse = await window.cmSupabase
@@ -719,18 +793,9 @@
       if (error) throw error;
     }
 
-    if (rows.length) {
-      // Nie wysyłamy własnego id. work_schedule ma id generowane po stronie bazy.
-      // Dzięki temu upsert działa wyłącznie po company_id + employee_id + date
-      // i nie wpada w konflikt primary key/id.
-      const cleanRows = rows.map(({ id, ...row }) => row);
-      const { error } = await window.cmSupabase
-        .from("work_schedule")
-        .upsert(cleanRows, { onConflict: "company_id,employee_id,date" });
-      if (error) throw error;
-    }
-
-    result.inserted = rows.length;
+    const saved = await upsertConcreteRowsSafely(rows, mode);
+    result.inserted = saved.saved;
+    if (saved.skipped) result.overwritten = Math.max(0, result.overwritten - saved.skipped);
     return result;
   }
 
