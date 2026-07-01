@@ -695,52 +695,97 @@
     let saved = 0;
     let skipped = 0;
 
-    // WAŻNE: nie używamy tutaj batch .upsert(), bo w niektórych konfiguracjach
-    // PostgREST/Supabase zwraca 409 mimo poprawnego on_conflict. Zapisujemy dzień
-    // po dniu i dla nadpisywania robimy jawne delete -> insert po kluczu
-    // company_id + employee_id + date. Dzięki temu nie ma konfliktu 409.
+    // Zapis bez batch-upsert i bez delete->insert.
+    // Powód: PostgREST/Supabase zwracał 409, gdy rekord dla
+    // company_id + employee_id + date już istniał. Najbezpieczniejszy model:
+    // 1) sprawdź, czy konkretny dzień istnieje,
+    // 2) fill = pomiń istniejący,
+    // 3) overwrite = update istniejący,
+    // 4) brak istniejącego = insert,
+    // 5) jeśli insert złapie race-condition 409, jeszcze raz select i update/skip.
     for (const row of cleanRows) {
-      if (mode === "overwrite") {
-        const del = await window.cmSupabase
+      const existingRes = await window.cmSupabase
+        .from("work_schedule")
+        .select("id")
+        .eq("company_id", row.company_id)
+        .eq("employee_id", row.employee_id)
+        .eq("date", row.date)
+        .maybeSingle();
+
+      if (existingRes.error) throw existingRes.error;
+
+      if (existingRes.data?.id) {
+        if (mode === "fill") {
+          skipped += 1;
+          continue;
+        }
+
+        const updatePayload = {
+          start_time: row.start_time,
+          end_time: row.end_time,
+          break_start: row.break_start || null,
+          break_end: row.break_end || null,
+          updated_at: new Date().toISOString()
+        };
+
+        const upd = await window.cmSupabase
           .from("work_schedule")
-          .delete()
-          .eq("company_id", row.company_id)
-          .eq("employee_id", row.employee_id)
-          .eq("date", row.date);
-        if (del.error) throw del.error;
+          .update(updatePayload)
+          .eq("id", existingRes.data.id);
+        if (upd.error) throw upd.error;
+        saved += 1;
+        continue;
       }
+
+      const insertPayload = {
+        company_id: row.company_id,
+        employee_id: row.employee_id,
+        date: row.date,
+        start_time: row.start_time,
+        end_time: row.end_time,
+        break_start: row.break_start || null,
+        break_end: row.break_end || null,
+        created_at: row.created_at || new Date().toISOString(),
+        updated_at: row.updated_at || new Date().toISOString()
+      };
 
       const ins = await window.cmSupabase
         .from("work_schedule")
-        .insert(row);
+        .insert(insertPayload);
 
       if (!ins.error) {
         saved += 1;
         continue;
       }
 
-      if (isConflictError(ins.error)) {
-        // Tryb fill: jeśli mimo wcześniejszego sprawdzenia dzień już istnieje,
-        // nie traktujemy tego jako błędu — po prostu go pomijamy.
+      if (!isConflictError(ins.error)) throw ins.error;
+
+      // Race condition / istniejący wpis nie został złapany w pierwszym SELECT.
+      const again = await window.cmSupabase
+        .from("work_schedule")
+        .select("id")
+        .eq("company_id", row.company_id)
+        .eq("employee_id", row.employee_id)
+        .eq("date", row.date)
+        .maybeSingle();
+      if (again.error) throw again.error;
+
+      if (again.data?.id) {
         if (mode === "fill") {
           skipped += 1;
           continue;
         }
-
-        // Dodatkowe zabezpieczenie dla trybu overwrite: jeżeli insert zwrócił
-        // konflikt, ponawiamy delete konkretnego klucza i insert jeszcze raz.
-        const delAgain = await window.cmSupabase
+        const upd = await window.cmSupabase
           .from("work_schedule")
-          .delete()
-          .eq("company_id", row.company_id)
-          .eq("employee_id", row.employee_id)
-          .eq("date", row.date);
-        if (delAgain.error) throw delAgain.error;
-
-        const insAgain = await window.cmSupabase
-          .from("work_schedule")
-          .insert(row);
-        if (insAgain.error) throw insAgain.error;
+          .update({
+            start_time: row.start_time,
+            end_time: row.end_time,
+            break_start: row.break_start || null,
+            break_end: row.break_end || null,
+            updated_at: new Date().toISOString()
+          })
+          .eq("id", again.data.id);
+        if (upd.error) throw upd.error;
         saved += 1;
         continue;
       }
