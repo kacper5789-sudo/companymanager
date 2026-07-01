@@ -17418,20 +17418,36 @@ body[data-panel-page="workSchedule"] .cm-work-bottom-actions{
   }
 }
 
-
-/* CompanyManager 122 — Days Off forms must stay clickable without global modal overlay */
-#daysOffFormCard.cm-days-off-centered,
-#daysOffEditPanel.cm-days-off-centered,
-#daysOffDeletePanel.cm-days-off-centered {
+/* CompanyManager 123 — Days Off form click fix: days-off panels are inline/standalone, not global modal overlays */
+#daysOffFormCard.cm-no-modal,
+#daysOffEditPanel.cm-no-modal,
+#daysOffDeletePanel.cm-no-modal,
+#daysOffFormCard.cm-days-off-inline-panel,
+#daysOffEditPanel.cm-days-off-inline-panel,
+#daysOffDeletePanel.cm-days-off-inline-panel{
+  position: relative !important;
+  top: auto !important;
+  left: auto !important;
+  right: auto !important;
+  bottom: auto !important;
+  transform: none !important;
+  z-index: auto !important;
+  width: 100% !important;
+  max-width: 980px !important;
+  max-height: none !important;
+  overflow: visible !important;
+  margin: 16px auto !important;
   pointer-events: auto !important;
-  filter: none !important;
 }
-#daysOffFormCard.cm-days-off-centered *,
-#daysOffEditPanel.cm-days-off-centered *,
-#daysOffDeletePanel.cm-days-off-centered * {
-  pointer-events: auto;
+#daysOffFormCard.cm-no-modal *,
+#daysOffEditPanel.cm-no-modal *,
+#daysOffDeletePanel.cm-no-modal *{
+  pointer-events: auto !important;
 }
-body:not(.cm-modal-open) #cmGlobalFormOverlay {
+body:has(#daysOffFormCard.cm-no-modal:not([hidden])) #cmGlobalFormOverlay,
+body:has(#daysOffEditPanel.cm-no-modal:not([hidden])) #cmGlobalFormOverlay,
+body:has(#daysOffDeletePanel.cm-no-modal:not([hidden])) #cmGlobalFormOverlay{
   display: none !important;
+  opacity: 0 !important;
   pointer-events: none !important;
 }
