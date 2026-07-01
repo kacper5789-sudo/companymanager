@@ -1005,12 +1005,11 @@
   }
 
   function employeeWorkWindow(data, employee, dateIso, settings) {
-    // Dashboard ma korzystać z godzin pracy firmy ustawionych w Panelu firmy.
-    // Grafik pracy pracowników jest używany w module Grafik pracy i raportach,
-    // ale nie może rozciągać osi czasu dashboardu ani zastępować godzin firmy.
-    const start = normalizeTime(settings.start || "08:00") || "08:00";
-    const end = normalizeTime(settings.end || "20:00") || "20:00";
-    return { off: false, start, end, source: "company" };
+    const schedule = employeeScheduleForDate(data, employee, dateIso);
+    if (schedule && schedule.is_working === false) return { off: true, start: null, end: null, source: "schedule" };
+    const start = normalizeTime(schedule?.start_time || settings.start || "08:00") || "08:00";
+    const end = normalizeTime(schedule?.end_time || settings.end || "20:00") || "20:00";
+    return { off: false, start, end, source: schedule ? "schedule" : "company" };
   }
 
   function scheduleRows(data, lookups, dateIso, activeWorkerIds = []) {

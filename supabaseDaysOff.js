@@ -1,5 +1,5 @@
 // CompanyManager — Days Off Module powered by Supabase
-// 042H: Dni wolne pracowników -> public.days_off. Formularze dni wolnych działają inline, bez globalnego overlaya.
+// 042A: Dni wolne pracowników -> public.days_off + profiles/team members.
 
 (function () {
   function isDaysOffPage() {
@@ -225,6 +225,46 @@
       </div>`;
   }
 
+
+  function ensureDaysOffBackdrop() {
+    let backdrop = document.getElementById("cmDaysOffLocalBackdrop");
+    if (!backdrop) {
+      backdrop = document.createElement("div");
+      backdrop.id = "cmDaysOffLocalBackdrop";
+      backdrop.className = "cm-days-off-backdrop";
+      backdrop.hidden = true;
+      backdrop.addEventListener("click", () => hidePanels());
+      document.body.appendChild(backdrop);
+    }
+    return backdrop;
+  }
+
+  function setDaysOffModalOpen(isOpen) {
+    const backdrop = ensureDaysOffBackdrop();
+    backdrop.hidden = !isOpen;
+    document.body.classList.toggle("cm-days-off-modal-open", !!isOpen);
+  }
+
+  function hasOpenDaysOffPanel() {
+    return ["daysOffFormCard", "daysOffEditPanel", "daysOffDeletePanel"]
+      .map((id) => document.getElementById(id))
+      .some((panel) => panel && !panel.hidden);
+  }
+
+  function hidePanels() {
+    ["daysOffFormCard", "daysOffEditPanel", "daysOffDeletePanel"].forEach((id) => {
+      const panel = document.getElementById(id);
+      if (!panel) return;
+      panel.hidden = true;
+      panel.classList.remove("cm-days-off-dialog");
+      panel.classList.remove("cm-modal-active", "cm-as-modal", "cm-days-off-centered");
+      panel.removeAttribute("data-cm-modal-depth");
+      panel.style.removeProperty("z-index");
+    });
+    setDaysOffModalOpen(false);
+    try { window.cmRefreshGlobalModalState?.(); } catch (_) {}
+  }
+
   function render() {
     const area = getPanelArea();
     if (!area) return;
@@ -252,7 +292,7 @@
         </div>
       </section>
 
-      <section class="bm-page-card cm-centered-form-card cm-days-off-inline-panel cm-no-modal" data-cm-no-modal="true" id="daysOffFormCard" hidden>
+      <section class="bm-page-card cm-centered-form-card cm-no-modal" id="daysOffFormCard" data-cm-no-modal="true" hidden>
         <h2>Dodaj dni wolne pracownika</h2>
         <form id="daysOffForm" class="bm-form-grid">
           <label>Pracownik<select name="employee_id" required>${employeeOptionsHtml()}</select></label>
@@ -265,7 +305,7 @@
         <p id="daysOffMessage" class="panel-message"></p>
       </section>
 
-      <section class="bm-page-card cm-centered-form-card cm-days-off-inline-panel cm-no-modal" data-cm-no-modal="true" id="daysOffEditPanel" hidden>
+      <section class="bm-page-card cm-centered-form-card cm-no-modal" id="daysOffEditPanel" data-cm-no-modal="true" hidden>
         <h2>Edytuj dni wolne</h2>
         ${state.daysOff.length ? `<form id="daysOffEditForm" class="bm-form-grid">
           <label class="full">Wybierz wpis<select id="daysOffEditSelect" name="day_off_id" required>${entryOptionsHtml()}</select></label>
@@ -278,7 +318,7 @@
         </form><p id="daysOffEditMessage" class="panel-message"></p>` : `<p class="muted-note">Brak dodanych dni wolnych do edycji.</p>`}
       </section>
 
-      <section class="bm-page-card cm-centered-form-card cm-days-off-inline-panel cm-no-modal" data-cm-no-modal="true" id="daysOffDeletePanel" hidden>
+      <section class="bm-page-card cm-centered-form-card cm-no-modal" id="daysOffDeletePanel" data-cm-no-modal="true" hidden>
         <h2>Usuń dni wolne</h2>
         ${state.daysOff.length ? `<form id="daysOffDeleteForm" class="bm-form-grid">
           <label class="full">Wybierz wpis<select id="daysOffDeleteSelect" name="day_off_id" required>${entryOptionsHtml()}</select></label>
@@ -298,6 +338,7 @@
 
     bindEvents();
     try { window.cmReinitNativePickers?.(); } catch (_) {}
+    try { window.cmGlobalModalCleanup?.(); } catch (_) {}
   }
 
   function ensureDaysOffCancel(panel) {
@@ -306,13 +347,11 @@
     btn.type = "button";
     btn.className = "bm-inline-action cm-days-off-cancel";
     btn.dataset.daysOffCancel = "true";
-    btn.dataset.modalCancel = "true";
     btn.textContent = "Anuluj";
-    btn.addEventListener("click", () => {
-      panel.hidden = true;
-      panel.classList.remove("cm-modal-active", "cm-as-modal", "cm-days-off-centered");
-      panel.classList.add("cm-no-modal");
-      panel.setAttribute("data-cm-no-modal", "true");
+    btn.addEventListener("click", (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      hidePanels();
     });
     panel.appendChild(btn);
   }
@@ -321,33 +360,30 @@
     const panels = ["daysOffFormCard", "daysOffEditPanel", "daysOffDeletePanel"].map((id) => document.getElementById(id)).filter(Boolean);
     const target = document.getElementById(targetId);
     panels.forEach((panel) => {
+      panel.hidden = panel !== target;
+      panel.classList.remove("cm-modal-active", "cm-as-modal", "cm-days-off-centered");
+      panel.classList.toggle("cm-days-off-dialog", panel === target);
       panel.classList.add("cm-no-modal");
-      panel.setAttribute("data-cm-no-modal", "true");
-      panel.classList.remove("cm-modal-active", "cm-as-modal");
+      panel.dataset.cmNoModal = "true";
       panel.removeAttribute("data-cm-modal-depth");
       panel.style.removeProperty("z-index");
-      if (panel !== target) {
-        panel.hidden = true;
-        panel.classList.remove("cm-days-off-centered");
-      }
     });
     if (target) {
       target.hidden = false;
-      target.classList.add("cm-days-off-centered", "cm-no-modal");
-      target.setAttribute("data-cm-no-modal", "true");
+      target.classList.add("cm-days-off-dialog", "cm-no-modal");
+      target.dataset.cmNoModal = "true";
+      target.addEventListener("click", (event) => event.stopPropagation(), { once: false });
+      target.addEventListener("mousedown", (event) => event.stopPropagation(), { once: false });
       ensureDaysOffCancel(target);
-      target.scrollIntoView({ behavior: "smooth", block: "center" });
-      target.querySelector("input, select, textarea, button")?.focus?.({ preventScroll: true });
+      setDaysOffModalOpen(true);
+      try { window.cmReinitNativePickers?.(target); } catch (_) {}
+      try { window.cmReinitNativeDatePickers?.(target); } catch (_) {}
+      try { window.cmRefreshGlobalModalState?.(); } catch (_) {}
+      const first = target.querySelector("input:not([readonly]), select:not([disabled]), textarea:not([readonly])");
+      window.setTimeout(() => { try { first?.focus?.({ preventScroll: true }); } catch (_) {} }, 40);
+    } else {
+      setDaysOffModalOpen(hasOpenDaysOffPanel());
     }
-    try { window.cmReinitNativePickers?.(target || document); } catch (_) {}
-    try {
-      document.body.classList.remove("cm-modal-open");
-      document.documentElement.classList.remove("cm-modal-open");
-      document.body.removeAttribute("data-cm-modal-open");
-      document.documentElement.removeAttribute("data-cm-modal-open");
-      const overlay = document.getElementById("cmGlobalFormOverlay");
-      if (overlay) { overlay.hidden = true; overlay.style.display = "none"; overlay.style.pointerEvents = "none"; overlay.style.opacity = "0"; }
-    } catch (_) {}
   }
 
   function message(selector, text, ok = true) {
@@ -428,14 +464,8 @@
       const panel = document.getElementById(id);
       if (!panel || panel.dataset.daysOffClickGuard === "1") return;
       panel.dataset.daysOffClickGuard = "1";
-      panel.classList.add("cm-no-modal");
-      panel.setAttribute("data-cm-no-modal", "true");
-      ["pointerdown", "mousedown", "mouseup", "click", "touchstart"].forEach((type) => {
-        panel.addEventListener(type, (event) => {
-          const cancel = event.target?.closest?.('[data-days-off-cancel="true"]');
-          if (cancel) return;
-          event.stopPropagation();
-        }, true);
+      ["click", "mousedown", "mouseup", "pointerdown", "pointerup", "touchstart", "touchend"].forEach((eventName) => {
+        panel.addEventListener(eventName, (event) => event.stopPropagation());
       });
     });
     document.getElementById("showAddDaysOff")?.addEventListener("click", () => showPanel("daysOffFormCard"));

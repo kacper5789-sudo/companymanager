@@ -17418,36 +17418,71 @@ body[data-panel-page="workSchedule"] .cm-work-bottom-actions{
   }
 }
 
-/* CompanyManager 123 — Days Off form click fix: days-off panels are inline/standalone, not global modal overlays */
+
+/* CompanyManager 125 — Dni wolne: własny bezpieczny modal, bez globalnego overlaya */
+#cmDaysOffLocalBackdrop.cm-days-off-backdrop{
+  position:fixed!important;
+  inset:0!important;
+  z-index:2147482990!important;
+  background:rgba(2,6,23,.62)!important;
+  backdrop-filter:blur(12px) saturate(1.03)!important;
+  -webkit-backdrop-filter:blur(12px) saturate(1.03)!important;
+}
+#cmDaysOffLocalBackdrop.cm-days-off-backdrop[hidden]{display:none!important;}
 #daysOffFormCard.cm-no-modal,
 #daysOffEditPanel.cm-no-modal,
-#daysOffDeletePanel.cm-no-modal,
-#daysOffFormCard.cm-days-off-inline-panel,
-#daysOffEditPanel.cm-days-off-inline-panel,
-#daysOffDeletePanel.cm-days-off-inline-panel{
-  position: relative !important;
-  top: auto !important;
-  left: auto !important;
-  right: auto !important;
-  bottom: auto !important;
-  transform: none !important;
-  z-index: auto !important;
-  width: 100% !important;
-  max-width: 980px !important;
-  max-height: none !important;
-  overflow: visible !important;
-  margin: 16px auto !important;
-  pointer-events: auto !important;
+#daysOffDeletePanel.cm-no-modal{
+  filter:none!important;
 }
-#daysOffFormCard.cm-no-modal *,
-#daysOffEditPanel.cm-no-modal *,
-#daysOffDeletePanel.cm-no-modal *{
-  pointer-events: auto !important;
+#daysOffFormCard.cm-days-off-dialog,
+#daysOffEditPanel.cm-days-off-dialog,
+#daysOffDeletePanel.cm-days-off-dialog{
+  position:fixed!important;
+  top:50%!important;
+  left:50%!important;
+  right:auto!important;
+  bottom:auto!important;
+  transform:translate(-50%,-50%)!important;
+  z-index:2147483000!important;
+  width:min(860px, calc(100vw - 36px))!important;
+  max-height:min(88vh, 900px)!important;
+  overflow:auto!important;
+  margin:0!important;
+  background:linear-gradient(180deg, rgba(15,23,42,.995), rgba(2,6,23,.975))!important;
+  border:1px solid rgba(148,163,184,.34)!important;
+  box-shadow:0 44px 150px rgba(0,0,0,.72), 0 0 0 1px rgba(96,165,250,.14) inset!important;
+  pointer-events:auto!important;
+  isolation:isolate!important;
 }
-body:has(#daysOffFormCard.cm-no-modal:not([hidden])) #cmGlobalFormOverlay,
-body:has(#daysOffEditPanel.cm-no-modal:not([hidden])) #cmGlobalFormOverlay,
-body:has(#daysOffDeletePanel.cm-no-modal:not([hidden])) #cmGlobalFormOverlay{
-  display: none !important;
-  opacity: 0 !important;
-  pointer-events: none !important;
+#daysOffFormCard.cm-days-off-dialog[hidden],
+#daysOffEditPanel.cm-days-off-dialog[hidden],
+#daysOffDeletePanel.cm-days-off-dialog[hidden]{display:none!important;}
+#daysOffFormCard.cm-days-off-dialog input,
+#daysOffFormCard.cm-days-off-dialog select,
+#daysOffFormCard.cm-days-off-dialog textarea,
+#daysOffFormCard.cm-days-off-dialog button,
+#daysOffEditPanel.cm-days-off-dialog input,
+#daysOffEditPanel.cm-days-off-dialog select,
+#daysOffEditPanel.cm-days-off-dialog textarea,
+#daysOffEditPanel.cm-days-off-dialog button,
+#daysOffDeletePanel.cm-days-off-dialog input,
+#daysOffDeletePanel.cm-days-off-dialog select,
+#daysOffDeletePanel.cm-days-off-dialog textarea,
+#daysOffDeletePanel.cm-days-off-dialog button{
+  pointer-events:auto!important;
+  position:relative;
+  z-index:1;
+}
+body.cm-days-off-modal-open #cmGlobalFormOverlay,
+html.cm-days-off-modal-open body #cmGlobalFormOverlay{
+  display:none!important;
+  opacity:0!important;
+  pointer-events:none!important;
+}
+body.cm-days-off-modal-open,
+html.cm-days-off-modal-open,
+body.cm-days-off-modal-open .bm-shell,
+body.cm-days-off-modal-open .bm-main,
+body.cm-days-off-modal-open .bm-panel-area{
+  filter:none!important;
 }
