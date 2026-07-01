@@ -661,36 +661,49 @@
     const fromIso = toIsoDate(dates[0]);
     const toIso = toIsoDate(dates[dates.length - 1]);
     const employeeId = scheduleEmployeeId(employee);
-    const result = { inserted: 0, daysOff: 0, overwritten: 0, deleted: 0, skippedExisting: 0 };
+    const result = { inserted: 0, daysOff: 0, overwritten: 0, deleted: 0 };
+
+    const existingResponse = await window.cmSupabase
+      .from("work_schedule")
+      .select("id, date")
+      .eq("company_id", state.ctx.companyId)
+      .eq("employee_id", employeeId)
+      .gte("date", fromIso)
+      .lte("date", toIso);
+    if (existingResponse.error) throw existingResponse.error;
+
+    const existing = existingResponse.data || [];
+    const existingByDate = new Map(existing.map((row) => [String(row.date || "").slice(0, 10), row]));
+    result.overwritten = existing.length;
 
     if (mode === "delete") {
-      const { data, error } = await window.cmSupabase
+      const { error } = await window.cmSupabase
         .from("work_schedule")
         .delete()
         .eq("company_id", state.ctx.companyId)
         .eq("employee_id", employeeId)
         .gte("date", fromIso)
-        .lte("date", toIso)
-        .select("id");
+        .lte("date", toIso);
       if (error) throw error;
-      result.deleted = (data || []).length;
+      result.deleted = existing.length;
       return result;
     }
 
     const rowsByKey = new Map();
     dates.forEach((date) => {
       const iso = toIsoDate(date);
+      if (mode === "fill" && existingByDate.has(iso)) return;
       const template = weeklyRows.find((row) => Number(row.day_of_week) === Number(date.getDay()));
       if (!template || !template.is_working) return;
       const off = dayOffFor(employee, iso);
       if (off) { result.daysOff += 1; return; }
-      rowsByKey.set(`${state.ctx.companyId}|${employeeId}|${iso}`, {
+      const key = `${state.ctx.companyId}|${employeeId}|${iso}`;
+      rowsByKey.set(key, {
         company_id: state.ctx.companyId,
         employee_id: employeeId,
         date: iso,
-        start_time: template.start_time || null,
-        end_time: template.end_time || null,
-        created_at: new Date().toISOString(),
+        start_time: template.start_time,
+        end_time: template.end_time,
         updated_at: new Date().toISOString()
       });
     });
@@ -698,77 +711,68 @@
     const rows = Array.from(rowsByKey.values());
 
     for (const row of rows) {
-      const existingResp = await window.cmSupabase
-        .from("work_schedule")
-        .select("id")
-        .eq("company_id", row.company_id)
-        .eq("employee_id", row.employee_id)
-        .eq("date", row.date)
-        .limit(1);
-      if (existingResp.error) throw existingResp.error;
+      const existingRow = existingByDate.get(row.date);
 
-      const existing = existingResp.data || [];
-      if (existing.length) {
-        if (mode === "fill") {
-          result.skippedExisting += 1;
-          continue;
-        }
-        const existingId = existing[0].id;
-        const { error: updateError } = await window.cmSupabase
+      if (existingRow) {
+        const { error } = await window.cmSupabase
           .from("work_schedule")
           .update({
             start_time: row.start_time,
             end_time: row.end_time,
-            updated_at: new Date().toISOString()
+            updated_at: row.updated_at
           })
-          .eq("id", existingId);
-        if (updateError) throw updateError;
-        result.overwritten += 1;
+          .eq("id", existingRow.id);
+        if (error) throw error;
         result.inserted += 1;
         continue;
       }
 
+      const insertPayload = {
+        company_id: row.company_id,
+        employee_id: row.employee_id,
+        date: row.date,
+        start_time: row.start_time,
+        end_time: row.end_time,
+        created_at: new Date().toISOString(),
+        updated_at: row.updated_at
+      };
+
       const { error: insertError } = await window.cmSupabase
         .from("work_schedule")
-        .insert([row]);
+        .insert(insertPayload);
 
-      if (insertError) {
-        const isConflict = insertError.code === "23505" || insertError.status === 409 || /duplicate|conflict/i.test(insertError.message || "");
-        if (!isConflict) throw insertError;
+      if (!insertError) {
+        result.inserted += 1;
+        continue;
+      }
 
-        // Awaryjnie: jeśli rekord powstał równolegle albo Supabase zwrócił konflikt,
-        // nie kończymy zapisu całego grafiku. Sprawdzamy dzień jeszcze raz.
+      // Jeżeli drugi zapis zdążył dodać ten sam dzień, nie przerywamy pracy.
+      // Szukamy rekordu po company_id + employee_id + date i aktualizujemy go zwykłym UPDATE.
+      if (String(insertError.code || "") === "23505" || String(insertError.message || "").toLowerCase().includes("duplicate") || String(insertError.message || "").toLowerCase().includes("conflict")) {
         const retry = await window.cmSupabase
           .from("work_schedule")
           .select("id")
           .eq("company_id", row.company_id)
           .eq("employee_id", row.employee_id)
           .eq("date", row.date)
-          .limit(1);
+          .maybeSingle();
         if (retry.error) throw retry.error;
-        const retryExisting = retry.data || [];
-        if (retryExisting.length) {
-          if (mode === "fill") {
-            result.skippedExisting += 1;
-            continue;
-          }
-          const { error: retryUpdateError } = await window.cmSupabase
+        if (retry.data?.id) {
+          const { error: updateError } = await window.cmSupabase
             .from("work_schedule")
             .update({
               start_time: row.start_time,
               end_time: row.end_time,
-              updated_at: new Date().toISOString()
+              updated_at: row.updated_at
             })
-            .eq("id", retryExisting[0].id);
-          if (retryUpdateError) throw retryUpdateError;
-          result.overwritten += 1;
+            .eq("id", retry.data.id);
+          if (updateError) throw updateError;
           result.inserted += 1;
           continue;
         }
-        throw insertError;
       }
 
-      result.inserted += 1;
+      throw insertError;
     }
 
     return result;
