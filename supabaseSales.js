@@ -543,13 +543,42 @@
     const passBySaleId = {};
     (data.passes || []).forEach((pass) => { if (pass.sale_id && !passBySaleId[pass.sale_id]) passBySaleId[pass.sale_id] = pass; });
 
+    // v301: lista w UI ma pokazywać realnych pracowników tylko raz.
+    // Alias profiles.id <-> employees.id służy wyłącznie do filtrowania danych,
+    // nie może doklejać drugiej pozycji w dropdownie.
+    const normalizeEmployeeLabel = (value) => String(value || "")
+      .trim()
+      .toLowerCase()
+      .replace(/\s+/g, " ");
     const employeeOptionMap = new Map();
-    data.users.forEach((u) => employeeOptionMap.set(String(u.id), { value: u.id, label: userName(u) }));
+    const employeeNameKeyMap = new Map();
+    const addEmployeeOption = (value, label, sourceRank = 1) => {
+      const id = String(value || "").trim();
+      const cleanLabel = String(label || "").trim() || "(brak)";
+      if (!id) return;
+      const nameKey = normalizeEmployeeLabel(cleanLabel);
+      const existingIdForName = employeeNameKeyMap.get(nameKey);
+      if (existingIdForName && employeeOptionMap.has(existingIdForName)) {
+        const existing = employeeOptionMap.get(existingIdForName);
+        // Preferuj profile_id/użytkownika jako wartość filtra, bo dropdown historycznie tak działał.
+        if (sourceRank < (existing.sourceRank || 9)) {
+          employeeOptionMap.delete(existingIdForName);
+          employeeOptionMap.set(id, { value: id, label: cleanLabel, sourceRank });
+          employeeNameKeyMap.set(nameKey, id);
+        }
+        return;
+      }
+      if (!employeeOptionMap.has(id)) {
+        employeeOptionMap.set(id, { value: id, label: cleanLabel, sourceRank });
+        employeeNameKeyMap.set(nameKey, id);
+      }
+    };
+    data.users.forEach((u) => addEmployeeOption(u.id, userName(u), 1));
     (data.employees || []).forEach((employee) => {
-      const value = employee.profile_id || employee.id;
-      if (value && !employeeOptionMap.has(String(value))) employeeOptionMap.set(String(value), { value, label: employee.full_name || "(brak)" });
+      // Jeżeli employee ma profile_id, używamy go jako wartości w UI; employees.id zostaje w aliasMap.
+      addEmployeeOption(employee.profile_id || employee.id, employee.full_name || "(brak)", employee.profile_id ? 2 : 3);
     });
-    const employeeOptions = [...employeeOptionMap.values()];
+    const employeeOptions = [...employeeOptionMap.values()].map(({ value, label }) => ({ value, label }));
     const serviceOptions = data.services.map((s) => ({ value: s.id, label: s.name || "-" }));
     const productOptions = data.products.map((p) => ({ value: p.id, label: p.name || "-" }));
     const serviceCategoryOptions = data.serviceCategories.map((c) => ({ value: c.id, label: c.name || "-" }));
