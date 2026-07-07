@@ -1353,13 +1353,13 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   const pageLabels = {
-    dashboard: 'Dashboard', calendar: 'Kalendarz', positions: 'Stanowiska pracy', employees: 'Zespół', users: 'Użytkownicy', workSchedule: 'Grafik pracy',
+    dashboard: 'Dashboard', tutorial: 'Samouczek', calendar: 'Kalendarz', positions: 'Stanowiska pracy', employees: 'Zespół', users: 'Użytkownicy', workSchedule: 'Grafik pracy',
     daysOff: 'Dni wolne pracowników', customers: 'Klienci', services: 'Usługi', visits: 'Wizyty',
     reports: 'Wykres/Statystyka', customersReports: 'Klienci - raporty', dailyReport: 'Raport dzienny', periodReport: 'Raport z okresu', employeesReports: 'Pracownicy - raporty', smsReports: 'SMS', emailReports: 'Email', walkins: 'Sprzedaż bez wizyty', products: 'Produkty', marketing: 'Marketing',
     passes: 'Karnety', sales: 'Sprzedaż', companyPanel: 'Panel Firmy', owner: 'Właściciel strony', companies: 'Firmy', settings: 'Ustawienia', activity: 'Historia aktywności'
   };
 
-  const allPanelPages = ['dashboard','calendar','positions','employees','users','workSchedule','daysOff','customers','services','visits','reports','customersReports','dailyReport','periodReport','employeesReports','smsReports','emailReports','products','walkins','marketing','passes','sales','companyPanel','owner','activity','companies','settings'];
+  const allPanelPages = ['dashboard','tutorial','calendar','positions','employees','users','workSchedule','daysOff','customers','services','visits','reports','customersReports','dailyReport','periodReport','employeesReports','smsReports','emailReports','products','walkins','marketing','passes','sales','companyPanel','owner','activity','companies','settings'];
   const legacyEmployeePages = ['dashboard','calendar','visits','customers'];
   const hasOpenPermission = (user, page) => Array.isArray(user?.permissions) && user.permissions.includes(`open:${page}`);
   const reportPermissionPages = ['reports','customersReports','dailyReport','periodReport','employeesReports','smsReports','emailReports','sales'];
@@ -1429,6 +1429,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const canAccessPage = (subject, page) => {
     const role = typeof subject === 'string' ? subject : (subject?.role || 'employee');
     if (!allPanelPages.includes(page)) return false;
+    if (page === 'tutorial') return true;
     if (page === 'companies') return role === 'owner';
     if (role === 'owner' || role === 'admin') return true;
     if (typeof subject !== 'string' && Array.isArray(subject?.permissions)) {
@@ -1564,6 +1565,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const panelMenu = (panelUser, page) => {
     const items = [
+      ['tutorial.html','tutorial','Samouczek','🧭'],
       ['visits.html','visits','Wizyty','📅'],
       ['customers.html','customers','Klienci','👤'],
       ['services.html','services','Usługi','✂️'],
@@ -9421,7 +9423,7 @@ document.addEventListener('DOMContentLoaded', () => {
     'dashboard','employees','users','calendar','customers','positions','daysOff','services','visits',
     'reports','customersReports','dailyReport','periodReport','employeesReports','workSchedule',
     'smsReports','emailReports','walkins','products','marketing','passes','sales','companyPanel',
-    'owner','companies','activity','settings'
+    'owner','companies','activity','settings','tutorial'
   ]);
 
   const getCmRuntimeMode = () => {
@@ -9496,6 +9498,7 @@ document.addEventListener('DOMContentLoaded', () => {
       else if (page === 'companies') renderCompanies(ctx);
       else if (page === 'activity') renderModulePage(ctx, 'activity');
       else if (page === 'settings') renderSettings(ctx);
+      else if (page === 'tutorial') renderModulePage(ctx, 'tutorial');
       else renderModulePage(ctx, page);
     }
     setupNativePickers();

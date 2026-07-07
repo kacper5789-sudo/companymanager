@@ -17533,3 +17533,121 @@ body.cm-days-off-modal-open main {
 body:not(.cm-days-off-modal-open) #cmDaysOffLocalBackdrop {
   display: none !important;
 }
+
+/* CompanyManager — Samouczek wdrożeniowy v303 */
+.cm-tutorial-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 280px;
+  gap: 18px;
+  align-items: stretch;
+  margin-bottom: 18px;
+}
+.cm-tutorial-hero,
+.cm-tutorial-warning,
+.cm-tutorial-step {
+  border: 1px solid rgba(255,255,255,.12);
+  background: linear-gradient(135deg, rgba(255,255,255,.08), rgba(255,255,255,.035));
+  border-radius: 22px;
+  box-shadow: 0 20px 50px rgba(0,0,0,.18);
+}
+.cm-tutorial-hero { padding: 24px; }
+.cm-tutorial-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 12px;
+  border-radius: 999px;
+  background: rgba(255,255,255,.10);
+  color: var(--cm-accent, #d6b36a);
+  font-weight: 800;
+  letter-spacing: .03em;
+  text-transform: uppercase;
+  font-size: 12px;
+}
+.cm-tutorial-hero h2 { margin: 14px 0 10px; font-size: 30px; }
+.cm-tutorial-hero p { margin: 0; line-height: 1.65; color: rgba(255,255,255,.78); max-width: 980px; }
+.cm-tutorial-progress-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 10px;
+  padding: 18px;
+  border-radius: 18px;
+  background: rgba(0,0,0,.18);
+}
+.cm-tutorial-progress-card strong { font-size: 36px; line-height: 1; }
+.cm-tutorial-progress-card span { color: rgba(255,255,255,.72); }
+.cm-tutorial-progress {
+  height: 10px;
+  border-radius: 999px;
+  background: rgba(255,255,255,.12);
+  overflow: hidden;
+}
+.cm-tutorial-progress i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--cm-accent, #d6b36a), var(--cm-primary, #7c5cff));
+}
+.cm-tutorial-warning {
+  padding: 14px 18px;
+  margin-bottom: 18px;
+  color: rgba(255,255,255,.84);
+}
+.cm-tutorial-warning strong { color: var(--cm-accent, #d6b36a); }
+.cm-tutorial-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+.cm-tutorial-step {
+  padding: 18px;
+  min-height: 270px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.cm-tutorial-step.is-done {
+  border-color: rgba(34,197,94,.45);
+  background: linear-gradient(135deg, rgba(34,197,94,.14), rgba(255,255,255,.035));
+}
+.cm-tutorial-step-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+.cm-tutorial-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 800;
+  color: rgba(255,255,255,.82);
+}
+.cm-tutorial-check input { width: 18px; height: 18px; accent-color: var(--cm-accent, #d6b36a); }
+.cm-tutorial-badge {
+  border-radius: 999px;
+  padding: 5px 10px;
+  background: rgba(255,255,255,.10);
+  color: rgba(255,255,255,.76);
+  font-size: 12px;
+  font-weight: 800;
+}
+.cm-tutorial-title { display: flex; align-items: center; gap: 12px; }
+.cm-tutorial-title > span { font-size: 28px; }
+.cm-tutorial-title h3 { margin: 0; font-size: 18px; }
+.cm-tutorial-step p { margin: 0; color: rgba(255,255,255,.76); line-height: 1.55; }
+.cm-tutorial-step details {
+  margin-top: 2px;
+  padding: 12px;
+  border-radius: 14px;
+  background: rgba(0,0,0,.14);
+}
+.cm-tutorial-step summary { cursor: pointer; font-weight: 800; color: rgba(255,255,255,.88); }
+.cm-tutorial-step ul { margin: 12px 0 0; padding-left: 20px; color: rgba(255,255,255,.75); line-height: 1.6; }
+.cm-tutorial-actions { margin-top: auto; display: flex; justify-content: flex-end; }
+.cm-tutorial-actions a { text-decoration: none; }
+@media (max-width: 1100px) {
+  .cm-tutorial-hero { grid-template-columns: 1fr; }
+  .cm-tutorial-grid { grid-template-columns: 1fr; }
+}
