@@ -246,7 +246,7 @@
   });
 
   async function fetchData(ctx, fromDate, toDate) {
-    const [salesRes, itemsRes, paymentsRes, clientsRes, servicesRes, productsRes, categoriesRes, usersRes, appointmentsRes, passesRes] = await Promise.all([
+    const [salesRes, itemsRes, paymentsRes, clientsRes, servicesRes, productsRes, categoriesRes, usersRes, employeesRes, appointmentsRes, passesRes] = await Promise.all([
       window.cmSupabase.from("sales").select("id, company_id, client_id, appointment_id, employee_id, employee_name, sale_number, status, total_net, total_tax, total_gross, discount_value, payment_status, payment_method, note, created_at, updated_at").eq("company_id", ctx.companyId).gte("created_at", `${fromDate}T00:00:00`).lte("created_at", `${toDate}T23:59:59`).order("created_at", { ascending: false }),
       window.cmSupabase.from("sale_items").select("id, company_id, sale_id, item_type, service_id, product_id, pass_id, name, name_snapshot, quantity, unit_price, discount, total, total_price, created_at").eq("company_id", ctx.companyId),
       window.cmSupabase.from("payments").select("id, company_id, sale_id, appointment_id, amount, method, status, paid_at, created_at").eq("company_id", ctx.companyId).gte("paid_at", `${fromDate}T00:00:00`).lte("paid_at", `${toDate}T23:59:59`).order("paid_at", { ascending: false }),
@@ -255,10 +255,11 @@
       window.cmSupabase.from("products").select("id, name, category, price").eq("company_id", ctx.companyId),
       window.cmSupabase.from("service_categories").select("id, name, active").eq("company_id", ctx.companyId).eq("active", true),
       window.cmSupabase.rpc("company_users_for_dropdown", { target_company_id: ctx.companyId }),
+      window.cmSupabase.from("employees").select("id, profile_id, full_name, active, company_id").eq("company_id", ctx.companyId),
       window.cmSupabase.from("appointments").select("id, client_id, client_name, service_id, service_name, product_id, product_name, employee_id, employee_name, payment_method, payment_status, status, finished, total, price, starts_at, appointment_datetime, date, start_time, created_at").eq("company_id", ctx.companyId),
       window.cmSupabase.from("passes").select("id, company_id, customer_id, buyer_client_id, beneficiary_client_id, employee_id, service_id, service_name, pass_type, sale_id, name, number, sale_date, sale_time, valid_until, payment_method, buyer, customer_name, employee_name, value, remaining, total_units, remaining_units, description, status, active, created_at").eq("company_id", ctx.companyId).order("created_at", { ascending: false })
     ]);
-    const errors = [salesRes, itemsRes, paymentsRes, clientsRes, servicesRes, productsRes, categoriesRes, usersRes, appointmentsRes, passesRes].map((res) => res.error).filter(Boolean);
+    const errors = [salesRes, itemsRes, paymentsRes, clientsRes, servicesRes, productsRes, categoriesRes, usersRes, employeesRes, appointmentsRes, passesRes].map((res) => res.error).filter(Boolean);
     if (errors.length) throw errors[0];
     return {
       sales: salesRes.data || [],
@@ -269,6 +270,7 @@
       products: productsRes.data || [],
       serviceCategories: categoriesRes.data || [],
       users: usersRes.data || [],
+      employees: employeesRes.data || [],
       appointments: appointmentsRes.data || [],
       passes: passesRes.data || []
     };
@@ -289,6 +291,45 @@
 
   function employeeDisplayName(userById, employeeId, appointment, sale) {
     return userNameOrEmpty(userById[employeeId]) || appointment?.employee_name || sale?.employee_name || "(brak)";
+  }
+
+  function buildEmployeeAliasMap(users, employees) {
+    const aliases = new Map();
+    const add = (a, b) => {
+      const left = String(a || "").trim();
+      const right = String(b || "").trim();
+      if (!left || !right) return;
+      if (!aliases.has(left)) aliases.set(left, new Set([left]));
+      if (!aliases.has(right)) aliases.set(right, new Set([right]));
+      aliases.get(left).add(right);
+      aliases.get(right).add(left);
+      aliases.get(left).forEach((x) => aliases.get(right).add(x));
+      aliases.get(right).forEach((x) => aliases.get(left).add(x));
+    };
+    (employees || []).forEach((employee) => {
+      add(employee.id, employee.profile_id);
+    });
+    (users || []).forEach((user) => {
+      if (user.employee_id) add(user.id, user.employee_id);
+      if (user.employee_record_id) add(user.id, user.employee_record_id);
+      if (user.work_schedule_employee_id) add(user.id, user.work_schedule_employee_id);
+      const matched = (employees || []).find((employee) => String(employee.profile_id || "") === String(user.id || ""));
+      if (matched) add(user.id, matched.id);
+    });
+    return aliases;
+  }
+
+  function employeeMatchesSelected(selectedEmployees, aliasMap, employeeId) {
+    const id = String(employeeId || "").trim();
+    if (!id) return false;
+    return (selectedEmployees || []).some((selected) => {
+      const selectedId = String(selected || "").trim();
+      if (!selectedId) return false;
+      if (selectedId === id) return true;
+      const selectedAliases = aliasMap.get(selectedId);
+      const rowAliases = aliasMap.get(id);
+      return Boolean(selectedAliases?.has(id) || rowAliases?.has(selectedId));
+    });
   }
 
 
@@ -489,6 +530,12 @@
     const paymentFor = (sale, appointment) => paymentBySaleId[sale?.id] || paymentByAppointmentId[appointment?.id] || null;
     const clientById = Object.fromEntries(data.clients.map((client) => [client.id, client]));
     const userById = Object.fromEntries(data.users.map((user) => [user.id, user]));
+    (data.employees || []).forEach((employee) => {
+      const display = employee.full_name || "";
+      if (employee.id && !userById[employee.id]) userById[employee.id] = { id: employee.id, full_name: display };
+      if (employee.profile_id && !userById[employee.profile_id]) userById[employee.profile_id] = { id: employee.profile_id, full_name: display };
+    });
+    const employeeAliasMap = buildEmployeeAliasMap(data.users || [], data.employees || []);
     const serviceById = Object.fromEntries(data.services.map((service) => [service.id, service]));
     const productById = Object.fromEntries(data.products.map((product) => [product.id, product]));
     const categoryById = Object.fromEntries(data.serviceCategories.map((cat) => [cat.id, cat]));
@@ -496,7 +543,13 @@
     const passBySaleId = {};
     (data.passes || []).forEach((pass) => { if (pass.sale_id && !passBySaleId[pass.sale_id]) passBySaleId[pass.sale_id] = pass; });
 
-    const employeeOptions = data.users.map((u) => ({ value: u.id, label: userName(u) }));
+    const employeeOptionMap = new Map();
+    data.users.forEach((u) => employeeOptionMap.set(String(u.id), { value: u.id, label: userName(u) }));
+    (data.employees || []).forEach((employee) => {
+      const value = employee.profile_id || employee.id;
+      if (value && !employeeOptionMap.has(String(value))) employeeOptionMap.set(String(value), { value, label: employee.full_name || "(brak)" });
+    });
+    const employeeOptions = [...employeeOptionMap.values()];
     const serviceOptions = data.services.map((s) => ({ value: s.id, label: s.name || "-" }));
     const productOptions = data.products.map((p) => ({ value: p.id, label: p.name || "-" }));
     const serviceCategoryOptions = data.serviceCategories.map((c) => ({ value: c.id, label: c.name || "-" }));
@@ -514,7 +567,11 @@
     // bo dashboard zachowuje kompatybilność ze starym modelem po nazwach.
     // Gdy filtr nie jest ręcznie zawężony w URL, nie odcinamy takich rekordów.
     const filterActive = (name) => params.getAll(name).filter(Boolean).length > 0;
-    const passesFilter = (name, selected, value) => !filterActive(name) || selected.includes(String(value || ""));
+    const passesFilter = (name, selected, value) => {
+      if (!filterActive(name)) return true;
+      if (name === "employees") return employeeMatchesSelected(selected, employeeAliasMap, value);
+      return selected.includes(String(value || ""));
+    };
 
     const searchNeedle = normalizeText(searchValue);
     const filterBySearch = (rows) => !searchNeedle ? rows : rows.filter((row) => normalizeText(row.join(" ")).includes(searchNeedle));

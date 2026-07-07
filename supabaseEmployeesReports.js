@@ -770,6 +770,53 @@
     </div>`;
   }
 
+
+  function cleanExportCell(value) {
+    const div = document.createElement('div');
+    div.innerHTML = String(value || '');
+    return div.textContent.replace(/\s+/g, ' ').trim();
+  }
+
+  function excelEscape(value) {
+    const text = cleanExportCell(value);
+    return `"${text.replace(/"/g, '""')}"`;
+  }
+
+  function downloadEmployeesReportsExcel(filenameBase, rootSelector = '.cm-employees-report-page') {
+    const root = document.querySelector(rootSelector);
+    if (!root) return;
+    const lines = [];
+    const title = root.querySelector('h2')?.textContent?.trim() || 'Pracownicy - raporty';
+    const from = document.querySelector('#erDateFrom')?.value || window.__cmErCurrentFrom || '';
+    const to = document.querySelector('#erDateTo')?.value || window.__cmErCurrentTo || '';
+    lines.push([title].map(excelEscape).join(';'));
+    lines.push([`Zakres: ${from} - ${to}`].map(excelEscape).join(';'));
+    lines.push('');
+
+    root.querySelectorAll('[data-er-table]').forEach((section) => {
+      const sectionTitle = section.querySelector('h3')?.textContent?.trim() || 'Tabela';
+      const table = section.querySelector('table');
+      if (!table) return;
+      lines.push([sectionTitle].map(excelEscape).join(';'));
+      table.querySelectorAll('tr').forEach((tr) => {
+        const cells = Array.from(tr.querySelectorAll('th,td')).map((cell) => excelEscape(cell.innerHTML));
+        if (cells.length) lines.push(cells.join(';'));
+      });
+      lines.push('');
+    });
+
+    const blob = new Blob([lines.join('\n')], { type: 'application/vnd.ms-excel;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const safeBase = String(filenameBase || 'pracownicy-raporty').replace(/[^a-z0-9_-]+/gi, '-').replace(/-+/g, '-').replace(/^-|-$/g, '').toLowerCase();
+    a.href = url;
+    a.download = `${safeBase}.xls`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  }
+
   function tableModule(id, title, headers, rows, footer) {
     const bodyRows = rows.map((row) => `<tr>${row.map((cell) => `<td>${cell}</td>`).join("")}</tr>`).join("") || `<tr><td colspan="${headers.length}">Brak danych</td></tr>`;
     const footerHtml = footer ? `<tfoot><tr>${footer.map((cell) => `<td>${cell}</td>`).join("")}</tr></tfoot>` : "";
@@ -843,7 +890,7 @@
 
     const root = getRoot();
     root.innerHTML = `<section class="bm-page-card cm-employees-report-page">
-      <div class="bm-page-head customers-head"><h2>Pracownicy - raporty</h2></div>
+      <div class="bm-page-head customers-head"><h2>Pracownicy - raporty</h2><div class="bm-actions-row"><button type="button" id="employeesReportsExportBtn" class="bm-excel-btn" data-report-export="true">Export - Excel</button></div></div>
       <div class="cm-er-filters">
         <label>Od<input type="date" id="erDateFrom" value="${esc(filters.from)}"></label>
         <label>Do<input type="date" id="erDateTo" value="${esc(filters.to)}"></label>
@@ -874,6 +921,12 @@
     });
     $$('[data-er-employee]').forEach((box) => box.addEventListener('change', syncEmployeesAll));
     syncEmployeesAll();
+
+    $('#employeesReportsExportBtn')?.addEventListener('click', () => {
+      const from = $('#erDateFrom')?.value || filters.from;
+      const to = $('#erDateTo')?.value || filters.to;
+      downloadEmployeesReportsExcel(`pracownicy-raporty-${from}-${to}`);
+    });
 
     $('#erRangePreset')?.addEventListener('change', (event) => {
       const preset = rangePreset(event.currentTarget.value);
