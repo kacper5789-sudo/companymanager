@@ -289,6 +289,13 @@
     return user?.full_name || user?.email || "";
   }
 
+  function normalizeEmployeeNameForFilter(value) {
+    return String(value || "")
+      .trim()
+      .toLowerCase()
+      .replace(/\s+/g, " ");
+  }
+
   function employeeDisplayName(userById, employeeId, appointment, sale) {
     return userNameOrEmpty(userById[employeeId]) || appointment?.employee_name || sale?.employee_name || "(brak)";
   }
@@ -319,16 +326,25 @@
     return aliases;
   }
 
-  function employeeMatchesSelected(selectedEmployees, aliasMap, employeeId) {
+  function employeeMatchesSelected(selectedEmployees, aliasMap, employeeId, employeeName, selectedEmployeeLabels) {
     const id = String(employeeId || "").trim();
-    if (!id) return false;
+    const rowNameKey = normalizeEmployeeNameForFilter(employeeName);
     return (selectedEmployees || []).some((selected) => {
       const selectedId = String(selected || "").trim();
       if (!selectedId) return false;
-      if (selectedId === id) return true;
-      const selectedAliases = aliasMap.get(selectedId);
-      const rowAliases = aliasMap.get(id);
-      return Boolean(selectedAliases?.has(id) || rowAliases?.has(selectedId));
+
+      // 302: część historycznej sprzedaży ma employee_id z profiles.id, część z employees.id,
+      // a część tylko poprawną nazwę pracownika. Filtr musi łapać wszystkie te warianty,
+      // ale bez dublowania pracowników w dropdownie.
+      if (id) {
+        if (selectedId === id) return true;
+        const selectedAliases = aliasMap.get(selectedId);
+        const rowAliases = aliasMap.get(id);
+        if (selectedAliases?.has(id) || rowAliases?.has(selectedId)) return true;
+      }
+
+      if (rowNameKey && selectedEmployeeLabels?.has(rowNameKey)) return true;
+      return false;
     });
   }
 
@@ -586,6 +602,8 @@
     const paymentTypes = uniq(data.payments.map((p) => normalizePaymentMethod(p.method)).concat(["gotówka"]));
 
     const selectedEmployees = getSelected(params, "employees", employeeOptions.map((o) => o.value));
+    const employeeOptionLabelByValue = Object.fromEntries(employeeOptions.map((o) => [String(o.value || ""), o.label || ""]));
+    const selectedEmployeeLabels = new Set((selectedEmployees || []).map((id) => normalizeEmployeeNameForFilter(employeeOptionLabelByValue[String(id || "")])).filter(Boolean));
     const selectedServiceCategories = getSelected(params, "serviceCategories", serviceCategoryOptions.map((o) => o.value));
     const selectedServiceNames = getSelected(params, "serviceNames", serviceOptions.map((o) => o.value));
     const selectedProductCategories = getSelected(params, "productCategories", productCategories);
@@ -596,9 +614,9 @@
     // bo dashboard zachowuje kompatybilność ze starym modelem po nazwach.
     // Gdy filtr nie jest ręcznie zawężony w URL, nie odcinamy takich rekordów.
     const filterActive = (name) => params.getAll(name).filter(Boolean).length > 0;
-    const passesFilter = (name, selected, value) => {
+    const passesFilter = (name, selected, value, employeeName) => {
       if (!filterActive(name)) return true;
-      if (name === "employees") return employeeMatchesSelected(selected, employeeAliasMap, value);
+      if (name === "employees") return employeeMatchesSelected(selected, employeeAliasMap, value, employeeName, selectedEmployeeLabels);
       return selected.includes(String(value || ""));
     };
 
@@ -639,7 +657,7 @@
           saleId: item.sale_id || ""
         };
       })
-      .filter((row) => passesFilter("employees", selectedEmployees, row.employeeId) && passesFilter("serviceCategories", selectedServiceCategories, row.serviceCategoryId) && passesFilter("serviceNames", selectedServiceNames, row.serviceId));
+      .filter((row) => passesFilter("employees", selectedEmployees, row.employeeId, row.employee) && passesFilter("serviceCategories", selectedServiceCategories, row.serviceCategoryId) && passesFilter("serviceNames", selectedServiceNames, row.serviceId));
 
     serviceItemsRaw = preferResolvedEmployeeRows(serviceItemsRaw);
 
@@ -665,7 +683,7 @@
           saleId: item.sale_id || ""
         };
       })
-      .filter((row) => passesFilter("employees", selectedEmployees, row.employeeId) && passesFilter("productCategories", selectedProductCategories, row.productCategory) && passesFilter("productNames", selectedProductNames, row.productId));
+      .filter((row) => passesFilter("employees", selectedEmployees, row.employeeId, row.employee) && passesFilter("productCategories", selectedProductCategories, row.productCategory) && passesFilter("productNames", selectedProductNames, row.productId));
 
     const inactivePassStatuses = ["void", "deleted", "usunięte", "usuniete", "cancelled", "canceled", "anulowane", "anulowana"];
     // 234: Karnety są sprzedażą wtedy, gdy istnieją jako sale_items item_type='pass'.
@@ -737,7 +755,7 @@
         passSeen.add(key);
         return true;
       })
-      .filter((row) => passesFilter("employees", selectedEmployees, row.employeeId));
+      .filter((row) => passesFilter("employees", selectedEmployees, row.employeeId, row.employee));
 
     // 159: Historia sprzedaży musi pokazywać pełny przychód z tabeli sales.
     // Raport z okresu liczy przychód z sales.total_gross, więc tutaj dokładamy
@@ -777,7 +795,7 @@
       })
       .filter(Boolean)
       .filter((row) => inDateRange(row.date, fromDate, toDate))
-      .filter((row) => passesFilter("employees", selectedEmployees, row.employeeId));
+      .filter((row) => passesFilter("employees", selectedEmployees, row.employeeId, row.employee));
 
     if (filterActive("paymentTypes")) {
       const paymentOk = (row) => selectedPaymentTypes.includes(String(normalizePaymentMethod(row.paymentMethod || "gotówka")));
@@ -810,7 +828,7 @@
       // do widoku Płatności. Inaczej suma płatności gubi np. sprzedaż karnetu.
       .concat(fallbackSaleRowsRaw.map((row) => makePaymentRow(row, row.paymentMethod)))
       .filter((row) => row.value > 0)
-      .filter((row) => passesFilter("employees", selectedEmployees, row.employeeId))
+      .filter((row) => passesFilter("employees", selectedEmployees, row.employeeId, row.employee))
       .filter((row) => passesFilter("paymentTypes", selectedPaymentTypes, row.type));
 
     const groupRows = (rows, keyFn) => {
