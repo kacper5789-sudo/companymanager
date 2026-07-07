@@ -385,7 +385,7 @@
     }
   }
 
-  function personName(person) { return person?.full_name || person?.email || person?.name || "-"; }
+  function personName(person) { return person?.full_name || person?.employee_name || person?.name || person?.email || "-"; }
   function serviceName(service) { return service?.name || "-"; }
   function productName(product) { return product?.name || "-"; }
   function normalizeText(value) {
@@ -770,7 +770,7 @@
     try {
       const { data, error } = await window.cmSupabase
         .from("employees")
-        .select("id, profile_id, full_name, employee_name, name, active, company_id")
+        .select("id, profile_id, full_name, name, active, company_id")
         .eq("company_id", ctx.companyId);
       if (error) throw error;
       return data || [];
@@ -782,7 +782,7 @@
 
   function mergeDashboardEmployeeIds(users, employeeRows) {
     const byProfileId = new Map((employeeRows || []).filter((row) => row.profile_id).map((row) => [String(row.profile_id), row]));
-    const byName = new Map((employeeRows || []).map((row) => [normalizeText(row.full_name || row.employee_name || row.name || ""), row]).filter(([key]) => !!key));
+    const byName = new Map((employeeRows || []).map((row) => [normalizeText(row.full_name || row.name || ""), row]).filter(([key]) => !!key));
     return uniqueUsers(users).map((user) => {
       const mapped = byProfileId.get(String(user?.id || "")) || byName.get(normalizeText(personName(user))) || null;
       return {
@@ -1040,7 +1040,8 @@
     const concrete = (data.concreteSchedules || []).find((row) => {
       if (String(row.date || "").slice(0, 10) !== date) return false;
       const rowEmployeeId = String(row.employee_id || "");
-      return rowEmployeeId && (rowEmployeeId === scheduleEmployeeId || rowEmployeeId === profileEmployeeId);
+      const rowProfileId = String(row.profile_id || "");
+      return !!rowEmployeeId && (rowEmployeeId === scheduleEmployeeId || rowEmployeeId === profileEmployeeId || rowProfileId === profileEmployeeId);
     });
     if (concrete) {
       return {
