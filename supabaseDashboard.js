@@ -386,38 +386,19 @@
   }
 
   function personName(person) { return person?.full_name || person?.email || person?.name || "-"; }
-  function normalizeText(value) { return String(value || "").trim().toLowerCase().replace(/\s+/g, " "); }
-  function employeeScheduleId(employee) { return employee?.work_schedule_employee_id || employee?.employee_record_id || employee?.employee_id || employee?.id || ""; }
-  function employeeIdAliases(employee) {
-    return new Set([employee?.id, employee?.profile_id, employee?.employee_id, employee?.employee_record_id, employee?.work_schedule_employee_id].filter(Boolean).map((id) => String(id)));
-  }
-  function employeeIdMatches(rowEmployeeId, employee) {
-    return !!rowEmployeeId && employeeIdAliases(employee).has(String(rowEmployeeId));
-  }
-  function employeeNameMatches(rowName, employee) {
-    const savedName = normalizeText(rowName);
-    return !!savedName && savedName === normalizeText(personName(employee));
-  }
-  function mergeDashboardEmployeeScheduleIds(users, employeeRows) {
-    const byProfileId = new Map((employeeRows || []).filter((row) => row.profile_id).map((row) => [String(row.profile_id), row]));
-    const byEmployeeId = new Map((employeeRows || []).filter((row) => row.employee_id).map((row) => [String(row.employee_id), row]));
-    const byName = new Map((employeeRows || []).map((row) => [normalizeText(row.full_name || row.name || row.email || ""), row]).filter(([key]) => !!key));
-    return (users || []).map((user) => {
-      const mapped = byProfileId.get(String(user.id))
-        || byEmployeeId.get(String(user.id))
-        || byName.get(normalizeText(personName(user)))
-        || null;
-      const technicalId = mapped?.id || user.work_schedule_employee_id || user.employee_record_id || user.employee_id || user.id;
-      return {
-        ...user,
-        profile_id: user.profile_id || user.id,
-        work_schedule_employee_id: technicalId,
-        employee_record_id: mapped?.id || user.employee_record_id || user.employee_id || null
-      };
-    });
-  }
   function serviceName(service) { return service?.name || "-"; }
   function productName(product) { return product?.name || "-"; }
+  function normalizeText(value) {
+    return String(value || "")
+      .trim()
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/\s+/g, " " );
+  }
+  function dashboardScheduleEmployeeId(employee) {
+    return employee?.work_schedule_employee_id || employee?.employee_record_id || employee?.employee_id || employee?.id || "";
+  }
 
 
 
@@ -784,6 +765,50 @@
     });
   }
 
+  async function fetchDashboardEmployeeRows(ctx) {
+    if (!window.cmSupabase || !ctx?.companyId) return [];
+    try {
+      const { data, error } = await window.cmSupabase
+        .from("employees")
+        .select("id, profile_id, full_name, employee_name, name, active, company_id")
+        .eq("company_id", ctx.companyId);
+      if (error) throw error;
+      return data || [];
+    } catch (error) {
+      console.warn("Dashboard employees mapping skipped", error?.message || error);
+      return [];
+    }
+  }
+
+  function mergeDashboardEmployeeIds(users, employeeRows) {
+    const byProfileId = new Map((employeeRows || []).filter((row) => row.profile_id).map((row) => [String(row.profile_id), row]));
+    const byName = new Map((employeeRows || []).map((row) => [normalizeText(row.full_name || row.employee_name || row.name || ""), row]).filter(([key]) => !!key));
+    return uniqueUsers(users).map((user) => {
+      const mapped = byProfileId.get(String(user?.id || "")) || byName.get(normalizeText(personName(user))) || null;
+      return {
+        ...user,
+        profile_id: user?.profile_id || user?.id,
+        work_schedule_employee_id: mapped?.id || user?.work_schedule_employee_id || user?.employee_record_id || user?.employee_id || user?.id,
+        employee_record_id: mapped?.id || user?.employee_record_id || user?.employee_id || null
+      };
+    });
+  }
+
+  async function fetchDashboardConcreteSchedules(ctx) {
+    if (!window.cmSupabase || !ctx?.companyId) return { rows: [], loaded: false };
+    try {
+      const { data, error } = await window.cmSupabase
+        .from("work_schedule")
+        .select("id, company_id, employee_id, date, start_time, end_time, created_at, updated_at")
+        .eq("company_id", ctx.companyId);
+      if (error) throw error;
+      return { rows: data || [], loaded: true };
+    } catch (error) {
+      console.warn("Dashboard concrete work_schedule skipped", error?.message || error);
+      return { rows: [], loaded: false };
+    }
+  }
+
   function employeeInitials(employee) {
     const name = personName(employee);
     const parts = String(name || "").trim().split(/\s+/).filter(Boolean);
@@ -792,7 +817,7 @@
   }
 
   async function fetchDashboardData(ctx) {
-    const [appointmentsRes, clientsRes, servicesRes, productsRes, usersRes, employeesRowsRes, passesRes, companyRes, workSchedulesRes, concreteSchedulesRes, daysOffRes, categoriesRes, positionsRes] = await Promise.all([
+    const [appointmentsRes, clientsRes, servicesRes, productsRes, usersRes, passesRes, companyRes, workSchedulesRes, daysOffRes, categoriesRes, positionsRes] = await Promise.all([
       window.cmSupabase
         .from("appointments")
         .select("id, company_id, date, time, start_time, end_time, customer_id, client_id, employee_id, employee_name, service_id, service_name, position_id, product_id, product_name, product_price, product_quantity, pass_id, pass_name, pass_used_value, pass_used_units, status, deleted, note, price, total, payment_method, cancellation_reason, cancelled_at, starts_at, ends_at, appointment_datetime, created_at, updated_at")
@@ -816,10 +841,6 @@
         .order("name", { ascending: true }),
       window.cmSupabase.rpc("company_users_for_dropdown", { target_company_id: ctx.companyId }),
       window.cmSupabase
-        .from("employees")
-        .select("id, profile_id, employee_id, full_name, name, email, role, active, company_id")
-        .eq("company_id", ctx.companyId),
-      window.cmSupabase
         .from("passes")
         .select("id, company_id, customer_id, beneficiary_client_id, buyer_client_id, service_id, service_name, name, number, pass_type, value, remaining, total_units, remaining_units, valid_until, status, active")
         .eq("company_id", ctx.companyId)
@@ -832,10 +853,6 @@
       window.cmSupabase
         .from("employee_work_schedules")
         .select("id, company_id, employee_id, employee_name, day_of_week, is_working, start_time, end_time, break_start, break_end")
-        .eq("company_id", ctx.companyId),
-      window.cmSupabase
-        .from("work_schedule")
-        .select("id, company_id, employee_id, date, start_time, end_time, created_at, updated_at")
         .eq("company_id", ctx.companyId),
       window.cmSupabase
         .from("days_off")
@@ -863,19 +880,23 @@
     }
     if (passesRes.error) throw passesRes.error;
     if (companyRes.error) throw companyRes.error;
-    if (employeesRowsRes.error) console.warn("Dashboard employees mapping skipped", employeesRowsRes.error.message || employeesRowsRes.error);
     if (workSchedulesRes.error) console.warn("Dashboard work schedules skipped", workSchedulesRes.error.message || workSchedulesRes.error);
-    if (concreteSchedulesRes.error) console.warn("Dashboard concrete work_schedule skipped", concreteSchedulesRes.error.message || concreteSchedulesRes.error);
     if (daysOffRes.error) console.warn("Dashboard days off skipped", daysOffRes.error.message || daysOffRes.error);
     if (categoriesRes.error) console.warn("Dashboard service categories skipped", categoriesRes.error.message || categoriesRes.error);
     if (positionsRes.error) console.warn("Dashboard positions skipped", positionsRes.error.message || positionsRes.error);
-    const employeeColorMap = await fetchEmployeeColorMap(ctx);
-    const usersMappedToScheduleIds = mergeDashboardEmployeeScheduleIds(safeUsersData, employeesRowsRes.data || []);
-    const usersWithColors = mergeEmployeeColors(usersMappedToScheduleIds, employeeColorMap);
+    const [employeeColorMap, employeeRows, concreteSchedulesResult] = await Promise.all([
+      fetchEmployeeColorMap(ctx),
+      fetchDashboardEmployeeRows(ctx),
+      fetchDashboardConcreteSchedules(ctx)
+    ]);
+    const concreteSchedules = concreteSchedulesResult?.rows || [];
+    const usersWithScheduleIds = mergeDashboardEmployeeIds(safeUsersData, employeeRows);
+    const usersWithColors = mergeEmployeeColors(usersWithScheduleIds, employeeColorMap);
     return {
       company: companyRes.data || {},
       workSchedules: workSchedulesRes.data || [],
-      concreteSchedules: concreteSchedulesRes.data || [],
+      concreteSchedules,
+      concreteSchedulesLoaded: concreteSchedulesResult?.loaded === true,
       daysOff: daysOffRes.data || [],
       appointments: appointmentsRes.data || [],
       clients: (clientsRes.data || []).filter(isActiveClient),
@@ -998,8 +1019,9 @@
 
   function appointmentEmployeeMatches(item, employee) {
     if (!item || !employee) return false;
-    if (employeeIdMatches(item.employee_id, employee)) return true;
-    return employeeNameMatches(item.employee_name, employee);
+    if (item.employee_id && item.employee_id === employee.id) return true;
+    const savedName = String(item.employee_name || "").trim().toLowerCase();
+    return savedName && savedName === String(personName(employee)).trim().toLowerCase();
   }
 
   function jsDayForIso(dateIso) {
@@ -1008,20 +1030,37 @@
     return new Date(y, m - 1, d).getDay();
   }
 
-  function employeeConcreteScheduleForDate(data, employee, dateIso) {
-    const date = String(dateIso || "").slice(0, 10);
-    return (data.concreteSchedules || []).find((row) => {
-      if (String(row.date || "").slice(0, 10) !== date) return false;
-      return employeeIdMatches(row.employee_id, employee);
-    }) || null;
-  }
-
   function employeeScheduleForDate(data, employee, dateIso) {
+    const date = String(dateIso || "").slice(0, 10);
+    const scheduleEmployeeId = String(dashboardScheduleEmployeeId(employee) || "");
+    const profileEmployeeId = String(employee?.id || "");
+
+    // Najważniejsze: Dashboard ma czytać finalny, dzienny grafik z work_schedule.
+    // Stary employee_work_schedules jest tylko szablonem tygodniowym/fallbackiem.
+    const concrete = (data.concreteSchedules || []).find((row) => {
+      if (String(row.date || "").slice(0, 10) !== date) return false;
+      const rowEmployeeId = String(row.employee_id || "");
+      return rowEmployeeId && (rowEmployeeId === scheduleEmployeeId || rowEmployeeId === profileEmployeeId);
+    });
+    if (concrete) {
+      return {
+        ...concrete,
+        is_working: !!(normalizeTime(concrete.start_time) && normalizeTime(concrete.end_time)),
+        source: "work_schedule"
+      };
+    }
+
+    // Jeżeli tabela work_schedule została poprawnie odczytana, brak wpisu dla tej daty oznacza brak grafiku.
+    // Nie wolno wtedy podstawiać starego szablonu tygodniowego ani godzin firmy.
+    if (data.concreteSchedulesLoaded) return null;
+
     const day = jsDayForIso(dateIso);
     return (data.workSchedules || []).find((row) => {
       if (Number(row.day_of_week) !== Number(day)) return false;
-      if (employeeIdMatches(row.employee_id, employee)) return true;
-      return employeeNameMatches(row.employee_name, employee);
+      const rowEmployeeId = String(row.employee_id || "");
+      if (rowEmployeeId && (rowEmployeeId === scheduleEmployeeId || rowEmployeeId === profileEmployeeId)) return true;
+      const savedName = normalizeText(row.employee_name || "");
+      return savedName && savedName === normalizeText(personName(employee));
     }) || null;
   }
 
@@ -1033,8 +1072,9 @@
       const start = String(row.start_date || row.date_from || row.date || row.created_at || "").slice(0, 10);
       const end = String(row.end_date || row.date_to || row.start_date || row.date_from || row.date || "").slice(0, 10) || start;
       if (!start || date < start || date > end) return false;
-      if (employeeIdMatches(row.employee_id, employee)) return true;
-      return employeeNameMatches(row.employee_name || row.full_name, employee);
+      if (row.employee_id && employee?.id && String(row.employee_id) === String(employee.id)) return true;
+      const savedName = String(row.employee_name || row.full_name || "").trim().toLowerCase();
+      return savedName && savedName === String(personName(employee)).trim().toLowerCase();
     }) || null;
   }
 
@@ -1052,19 +1092,8 @@
   }
 
   function employeeWorkWindow(data, employee, dateIso, settings) {
-    // Najpierw konkretny grafik z tabeli work_schedule dla danej daty.
-    // Dopiero gdy go nie ma, fallback do tygodniowego employee_work_schedules,
-    // a na końcu do godzin firmy. To naprawia przypadek, gdzie UI grafiku
-    // zapisuje techniczne employees.id, a Dashboard dostaje profiles.id z dropdowna.
-    const concreteSchedule = employeeConcreteScheduleForDate(data, employee, dateIso);
-    if (concreteSchedule) {
-      const concreteStart = normalizeTime(concreteSchedule.start_time);
-      const concreteEnd = normalizeTime(concreteSchedule.end_time);
-      if (!concreteStart || !concreteEnd) return { off: true, start: null, end: null, source: "work_schedule" };
-      return { off: false, start: concreteStart, end: concreteEnd, source: "work_schedule" };
-    }
-
     const schedule = employeeScheduleForDate(data, employee, dateIso);
+    if (!schedule && data.concreteSchedulesLoaded) return { off: true, start: null, end: null, source: "work_schedule_missing" };
     if (schedule && schedule.is_working === false) return { off: true, start: null, end: null, source: "schedule" };
     const start = normalizeTime(schedule?.start_time || settings.start || "08:00") || "08:00";
     const end = normalizeTime(schedule?.end_time || settings.end || "20:00") || "20:00";

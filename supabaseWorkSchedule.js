@@ -147,7 +147,7 @@
   function collectWeeklyRowsFor(employee) {
     return $$(".cm-work-schedule-editor tbody tr").map((tr) => ({
       company_id: state.ctx.companyId,
-      employee_id: employee.id,
+      employee_id: scheduleEmployeeId(employee),
       employee_name: employeeName(employee),
       day_of_week: Number(tr.dataset.day),
       is_working: !!$("[data-working]", tr)?.checked,
@@ -352,7 +352,9 @@
   }
 
   function scheduleByEmployeeAndDay(employeeId, day) {
-    return state.schedules.find((row) => String(row.employee_id) === String(employeeId) && Number(row.day_of_week) === Number(day.idx));
+    const employee = state.employees.find((item) => String(item.id) === String(employeeId) || String(scheduleEmployeeId(item)) === String(employeeId));
+    const technicalId = employee ? String(scheduleEmployeeId(employee)) : String(employeeId);
+    return state.schedules.find((row) => String(row.employee_id) === technicalId && Number(row.day_of_week) === Number(day.idx));
   }
 
   function concreteScheduleFor(employeeId, iso) {
@@ -625,12 +627,10 @@
 
       for (const employee of employees) {
         const rows = weeklyRowsByEmployee.get(String(employee.id));
-        if (mode !== "delete") {
-          const { error } = await window.cmSupabase
-            .from("employee_work_schedules")
-            .upsert(rows, { onConflict: "company_id,employee_id,day_of_week" });
-          if (error) throw error;
-        }
+        // Nie aktualizujemy tutaj employee_work_schedules.
+        // To stary tygodniowy szablon/fallback, a zapis z tego ekranu ma tworzyć finalne wpisy dzienne w work_schedule.
+        // Wcześniej edycja jednego dnia, np. 10.07 15:00-16:00, nadpisywała szablon piątku
+        // i Dashboard traktował tę jedną korektę jak grafik dla wielu innych dat.
         const result = await saveConcreteSchedule(employee, rows, range.dates, mode);
         totalInserted += result.inserted || 0;
         totalSkippedDaysOff += result.daysOff || 0;
