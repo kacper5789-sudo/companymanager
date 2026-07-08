@@ -1,4 +1,4 @@
-// CompanyManager — 124 Grafik: stabilny Export Excel po aktualnie pokazanym wyniku
+// CompanyManager — 125 Grafik: stabilny Export Excel bez cichego kliku
 // work-schedule.html: flexible work hours, edit/delete, download schedule.
 (function () {
   function isPage() {
@@ -992,13 +992,22 @@
     link.style.left = '-9999px';
     link.style.top = '-9999px';
     link.setAttribute('data-cm-work-download-link', 'true');
+    link.addEventListener('click', (event) => {
+      event.stopPropagation();
+    }, true);
     document.body.appendChild(link);
-    const mouseEvent = new MouseEvent('click', { bubbles: false, cancelable: true, view: window });
-    link.dispatchEvent(mouseEvent);
+    try {
+      // Nie używamy dispatchEvent(), bo w części przeglądarek taki sztuczny klik
+      // nie uruchamia pobierania pliku. Native click() jest najstabilniejszy.
+      link.click();
+    } catch (error) {
+      console.warn('CompanyManager: native download click failed, opening blob fallback.', error);
+      window.open(url, '_blank', 'noopener');
+    }
     setTimeout(() => {
       try { link.remove(); } catch (_) {}
       try { URL.revokeObjectURL(url); } catch (_) {}
-    }, 2500);
+    }, 5000);
     return true;
   }
 
@@ -1012,6 +1021,7 @@
     if (result.error) { alert(result.error); return false; }
     const base = `grafik-wynikowy-${state.finalFrom}-${state.finalTo}`;
     try {
+      // Eksport jako HTML .xls — Excel otwiera to jako arkusz, a plik zachowuje układ tabeli.
       const excelHtml = buildFinalScheduleExcelHtml(result);
       const blob = new Blob([excelHtml], { type: 'application/vnd.ms-excel;charset=utf-8' });
       forceDownloadBlob(blob, `${base}.xls`);
