@@ -967,13 +967,47 @@
     return `grafik-wynikowy-${who}-${state.finalFrom}-${state.finalTo}.png`;
   }
 
+  function downloadBlobFile(blob, filename) {
+    if (!blob) return false;
+    const safeFilename = filename || `grafik-wynikowy-${new Date().toISOString().slice(0, 10)}.png`;
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = safeFilename;
+    link.style.display = "none";
+    document.body.appendChild(link);
+    link.click();
+    setTimeout(() => {
+      try { link.remove(); } catch (_) {}
+      try { URL.revokeObjectURL(url); } catch (_) {}
+    }, 250);
+    return true;
+  }
+
   function downloadCanvasAsPng(canvas, filename) {
     if (!canvas) return false;
-    canvas.toBlob((blob) => {
-      if (!blob) { alert("Nie udało się wygenerować pliku PNG."); return; }
-      forceDownloadBlob(blob, filename);
-    }, "image/png");
-    return true;
+    if (typeof canvas.toBlob === "function") {
+      canvas.toBlob((blob) => {
+        if (!blob) { alert("Nie udało się wygenerować pliku PNG."); return; }
+        downloadBlobFile(blob, filename);
+      }, "image/png");
+      return true;
+    }
+    try {
+      const dataUrl = canvas.toDataURL("image/png");
+      const link = document.createElement("a");
+      link.href = dataUrl;
+      link.download = filename || `grafik-wynikowy-${new Date().toISOString().slice(0, 10)}.png`;
+      link.style.display = "none";
+      document.body.appendChild(link);
+      link.click();
+      setTimeout(() => { try { link.remove(); } catch (_) {} }, 250);
+      return true;
+    } catch (error) {
+      console.warn("CompanyManager PNG export failed", error);
+      alert("Nie udało się pobrać PNG. Spróbuj ponownie albo użyj opcji Drukuj.");
+      return false;
+    }
   }
 
   function drawRoundedRect(ctx, x, y, w, h, r) {
