@@ -356,7 +356,10 @@
     }, true);
 
     document.addEventListener('keydown', function (event) {
-      if (event.key === 'Escape') closeAll();
+      // Nie zamykamy formularzy przez Escape — użytkownik musi użyć Anuluj/Zapisz/Zatwierdź.
+      if (event.key === 'Escape' && anyOpenModal()) {
+        event.preventDefault();
+      }
     });
   }
 

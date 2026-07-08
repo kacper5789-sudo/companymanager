@@ -144,6 +144,19 @@
     return one ? [one] : [];
   }
 
+  function finalEmployees() {
+    const ids = Array.isArray(state.finalEmployeeIds) ? state.finalEmployeeIds.map(String) : [];
+    const list = state.employees.filter((employee) => ids.includes(String(employee.id)));
+    if (list.length) return list;
+    return selectedEmployees();
+  }
+
+  function pendingSelectedEmployeeIdsFromDom() {
+    const checked = $$('[data-employee-multi]:checked').map((el) => el.value);
+    if (checked.length) return checked;
+    return Array.isArray(state.selectedEmployeeIds) ? state.selectedEmployeeIds.slice() : [];
+  }
+
   function collectWeeklyRowsFor(employee) {
     return $$(".cm-work-schedule-editor tbody tr").map((tr) => ({
       company_id: state.ctx.companyId,
@@ -220,13 +233,18 @@
     daysOff: [],
     selectedEmployeeId: "",
     selectedEmployeeIds: [],
+    finalEmployeeIds: [],
+    pendingFinalEmployeeIds: [],
     saveMode: "fill",
     finalFrom: monthStartIso(new Date()),
     finalTo: monthEndIso(new Date()),
+    pendingFinalFrom: monthStartIso(new Date()),
+    pendingFinalTo: monthEndIso(new Date()),
     applyFrom: startOfWeekIso(new Date()),
     applyTo: endOfWeekIso(new Date()),
     finalPage: 1,
-    finalPageSize: 50
+    finalPageSize: 50,
+    pendingFinalPageSize: 50
   };
 
   function area() { return $(".bm-panel-area") || $("#dashboardRoot"); }
@@ -424,7 +442,9 @@
 
   function finalScheduleRowsHtml() {
     const dates = dateRange(state.finalFrom, state.finalTo, 370);
-    if (!dates.length) return `<tr><td colspan="${state.employees.length + 1}">Wybierz poprawny zakres dat.</td></tr>`;
+    const employees = finalEmployees();
+    if (!employees.length) return `<tr><td colspan="1">Wybierz przynajmniej jednego pracownika i kliknij Pokaż.</td></tr>`;
+    if (!dates.length) return `<tr><td colspan="${employees.length + 1}">Wybierz poprawny zakres dat.</td></tr>`;
     const pageSize = Number(state.finalPageSize || 50);
     const totalPages = Math.max(1, Math.ceil(dates.length / pageSize));
     state.finalPage = Math.min(Math.max(1, Number(state.finalPage || 1)), totalPages);
@@ -434,7 +454,7 @@
       const iso = toIsoDate(date);
       return `<tr>
         <td class="cm-work-date-day"><strong>${escapeHtml(formatDatePL(iso))}</strong><span>${escapeHtml(dayLabel(date))}</span></td>
-        ${state.employees.map((employee) => {
+        ${employees.map((employee) => {
           const off = dayOffFor(employee, iso);
           const cell = off ? dayOffCell(off) : finalCell(employee, date);
           const cls = off || /URLOP|ZWOLNIENIE|WOLNE/.test(cell) ? " cm-work-final-off" : "";
@@ -457,7 +477,7 @@
       <div class="cm-work-page-size">
         <label>Na stronę
           <select id="finalSchedulePageSize">
-            ${[50, 100, 200].map((size) => `<option value="${size}" ${Number(state.finalPageSize) === size ? "selected" : ""}>${size}</option>`).join("")}
+            ${[50, 100, 200].map((size) => `<option value="${size}" ${Number(state.pendingFinalPageSize || state.finalPageSize) === size ? "selected" : ""}>${size}</option>`).join("")}
           </select>
         </label>
       </div>
@@ -471,24 +491,29 @@
   }
 
   function finalScheduleTableHtml() {
+    const employees = finalEmployees();
+    const pendingCount = Array.isArray(state.pendingFinalEmployeeIds) && state.pendingFinalEmployeeIds.length ? state.pendingFinalEmployeeIds.length : selectedEmployees().length;
+    const activeCount = employees.length;
     return `<section class="cm-work-final-section">
       <div class="cm-section-title-row">
         <h3 class="cm-section-title">Grafik wynikowy</h3>
       </div>
       <p class="bm-muted">Finalny grafik po połączeniu szablonu tygodniowego z dniami wolnymi. Każdy wpis w Dni wolne nadpisuje plan pracy: urlop, zwolnienie, szkolenie, inne lub własny powód.</p>
+      <p class="bm-muted">Pokazujesz obecnie: ${activeCount} pracownik(ów). Do zastosowania po kliknięciu Pokaż: ${pendingCount} pracownik(ów).</p>
       <div class="cm-work-schedule-controls cm-work-final-controls">
-        <label>Od<input type="date" class="cm-modern-date" id="finalScheduleFrom" value="${escapeHtml(state.finalFrom)}"></label>
-        <label>Do<input type="date" class="cm-modern-date" id="finalScheduleTo" value="${escapeHtml(state.finalTo)}"></label>
+        <label>Od<input type="date" class="cm-modern-date" id="finalScheduleFrom" value="${escapeHtml(state.pendingFinalFrom || state.finalFrom)}"></label>
+        <label>Do<input type="date" class="cm-modern-date" id="finalScheduleTo" value="${escapeHtml(state.pendingFinalTo || state.finalTo)}"></label>
         <button type="button" id="finalSchedulePrevMonthBtn" class="bm-light-btn cm-work-btn">Poprzedni miesiąc</button>
         <button type="button" id="finalScheduleCurrentMonthBtn" class="bm-light-btn cm-work-btn">Obecny miesiąc</button>
         <button type="button" id="finalScheduleNextMonthBtn" class="bm-light-btn cm-work-btn">Kolejny miesiąc</button>
         <button type="button" id="finalScheduleYearBtn" class="bm-light-btn cm-work-btn">Ten rok</button>
+        <button type="button" id="finalScheduleApplyBtn" class="bm-primary-btn cm-work-btn cm-work-btn-save">Pokaż</button>
         <button type="button" id="downloadFinalScheduleBtn" class="bm-light-btn cm-work-btn cm-work-btn-download">Pobierz grafik wynikowy</button>
       </div>
       ${finalSchedulePagerHtml()}
       <div class="bm-table-wrap cm-work-final-wrap">
         <table class="bm-table cm-work-final-table">
-          <thead><tr><th class="cm-work-date-day-head">Data / dzień</th>${state.employees.map((e) => `<th>${escapeHtml(employeeName(e))}</th>`).join("")}</tr></thead>
+          <thead><tr><th class="cm-work-date-day-head">Data / dzień</th>${employees.map((e) => `<th>${escapeHtml(employeeName(e))}</th>`).join("")}</tr></thead>
           <tbody>${finalScheduleRowsHtml()}</tbody>
         </table>
       </div>
@@ -643,6 +668,8 @@
       state.daysOff = await fetchDaysOff(state.ctx);
       state.finalFrom = range.from;
       state.finalTo = range.to;
+      state.pendingFinalFrom = range.from;
+      state.pendingFinalTo = range.to;
       message(`Gotowe. Zapisano ${totalInserted} dni pracy. Pominięto/nadpisano wolnym ${totalSkippedDaysOff} dni wolnych. Nadpisano ${totalOverwritten} wpisów. Usunięto ${totalDeleted} wpisów.`);
       render();
     } catch (error) {
@@ -898,10 +925,15 @@
 
   function downloadFinalCsv() {
     const dates = dateRange(state.finalFrom, state.finalTo, 370);
-    const header = ["Data / dzień", ...state.employees.map(employeeName)];
+    const employees = finalEmployees();
+    if (!employees.length) {
+      alert("Wybierz przynajmniej jednego pracownika i kliknij Pokaż.");
+      return;
+    }
+    const header = ["Data / dzień", ...employees.map(employeeName)];
     const rows = [header];
     dates.forEach((date) => {
-      rows.push([`${formatDatePL(date)} ${dayLabel(date)}`, ...state.employees.map((employee) => finalCell(employee, date))]);
+      rows.push([`${formatDatePL(date)} ${dayLabel(date)}`, ...employees.map((employee) => finalCell(employee, date))]);
     });
     const csv = "\ufeff" + rows.map((row) => row.map(csvCell).join(";")).join("\n");
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
@@ -915,9 +947,35 @@
     URL.revokeObjectURL(url);
   }
 
-  function updateFinalRange(from, to) {
-    if (from) state.finalFrom = from;
-    if (to) state.finalTo = to;
+  function setPendingFinalRange(from, to) {
+    if (from) state.pendingFinalFrom = from;
+    if (to) state.pendingFinalTo = to;
+    const fromInput = $("#finalScheduleFrom");
+    const toInput = $("#finalScheduleTo");
+    if (fromInput && from) fromInput.value = from;
+    if (toInput && to) toInput.value = to;
+  }
+
+  function applyFinalFilters() {
+    const from = $("#finalScheduleFrom")?.value || state.pendingFinalFrom || state.finalFrom;
+    const to = $("#finalScheduleTo")?.value || state.pendingFinalTo || state.finalTo;
+    if (to < from) {
+      alert("Data 'Do' nie może być wcześniejsza niż data 'Od'.");
+      return;
+    }
+    const employeeIds = pendingSelectedEmployeeIdsFromDom();
+    if (!employeeIds.length) {
+      alert("Wybierz przynajmniej jednego pracownika.");
+      return;
+    }
+    state.selectedEmployeeIds = employeeIds;
+    state.pendingFinalEmployeeIds = employeeIds.slice();
+    state.finalEmployeeIds = employeeIds.slice();
+    state.pendingFinalFrom = from;
+    state.pendingFinalTo = to;
+    state.finalFrom = from;
+    state.finalTo = to;
+    state.finalPageSize = Number(state.pendingFinalPageSize || state.finalPageSize || 50);
     state.finalPage = 1;
     render();
     document.querySelector(".cm-work-final-section")?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -926,6 +984,7 @@
   function bindEvents() {
     $$('[data-employee-multi]').forEach((input) => input.addEventListener("change", () => {
       state.selectedEmployeeIds = $$('[data-employee-multi]:checked').map((el) => el.value);
+      state.pendingFinalEmployeeIds = state.selectedEmployeeIds.slice();
     }));
     $$('input[name="workScheduleSaveMode"]').forEach((input) => input.addEventListener("change", (event) => { state.saveMode = event.currentTarget.value; }));
     $("#saveWorkScheduleBottomBtn")?.addEventListener("click", save);
@@ -938,13 +997,14 @@
     $("#applyAllDaysBtn")?.addEventListener("click", () => applyToRows("all"));
     $("#clearScheduleBtn")?.addEventListener("click", setFree);
     $("#downloadWorkScheduleBtn")?.addEventListener("click", downloadCsv);
-    $("#finalScheduleFrom")?.addEventListener("change", (event) => { state.finalFrom = event.currentTarget.value; state.finalPage = 1; render(); });
-    $("#finalScheduleTo")?.addEventListener("change", (event) => { state.finalTo = event.currentTarget.value; state.finalPage = 1; render(); });
-    $("#finalSchedulePrevMonthBtn")?.addEventListener("click", () => { const now = new Date(); updateFinalRange(shiftedMonthIso(now, -1), shiftedMonthIso(now, -1, true)); });
-    $("#finalScheduleCurrentMonthBtn")?.addEventListener("click", () => { const now = new Date(); updateFinalRange(monthStartIso(now), monthEndIso(now)); });
-    $("#finalScheduleNextMonthBtn")?.addEventListener("click", () => { const now = new Date(); updateFinalRange(shiftedMonthIso(now, 1), shiftedMonthIso(now, 1, true)); });
-    $("#finalScheduleYearBtn")?.addEventListener("click", () => { const now = new Date(); updateFinalRange(yearStartIso(now), yearEndIso(now)); });
-    $("#finalSchedulePageSize")?.addEventListener("change", (event) => { state.finalPageSize = Number(event.currentTarget.value || 50); state.finalPage = 1; render(); document.querySelector(".cm-work-final-section")?.scrollIntoView({ behavior: "smooth", block: "start" }); });
+    $("#finalScheduleFrom")?.addEventListener("change", (event) => { state.pendingFinalFrom = event.currentTarget.value; });
+    $("#finalScheduleTo")?.addEventListener("change", (event) => { state.pendingFinalTo = event.currentTarget.value; });
+    $("#finalSchedulePrevMonthBtn")?.addEventListener("click", () => { const now = new Date(); setPendingFinalRange(shiftedMonthIso(now, -1), shiftedMonthIso(now, -1, true)); });
+    $("#finalScheduleCurrentMonthBtn")?.addEventListener("click", () => { const now = new Date(); setPendingFinalRange(monthStartIso(now), monthEndIso(now)); });
+    $("#finalScheduleNextMonthBtn")?.addEventListener("click", () => { const now = new Date(); setPendingFinalRange(shiftedMonthIso(now, 1), shiftedMonthIso(now, 1, true)); });
+    $("#finalScheduleYearBtn")?.addEventListener("click", () => { const now = new Date(); setPendingFinalRange(yearStartIso(now), yearEndIso(now)); });
+    $("#finalScheduleApplyBtn")?.addEventListener("click", applyFinalFilters);
+    $("#finalSchedulePageSize")?.addEventListener("change", (event) => { state.pendingFinalPageSize = Number(event.currentTarget.value || 50); });
     $("#finalSchedulePrevPage")?.addEventListener("click", () => { state.finalPage = Math.max(1, Number(state.finalPage || 1) - 1); render(); document.querySelector(".cm-work-final-section")?.scrollIntoView({ behavior: "smooth", block: "start" }); });
     $("#finalScheduleNextPage")?.addEventListener("click", () => { state.finalPage = Number(state.finalPage || 1) + 1; render(); document.querySelector(".cm-work-final-section")?.scrollIntoView({ behavior: "smooth", block: "start" }); });
     $("#downloadFinalScheduleBtn")?.addEventListener("click", downloadFinalCsv);
@@ -968,6 +1028,8 @@
         state.daysOff = daysOff;
         state.selectedEmployeeId = employees[0]?.id || "";
         state.selectedEmployeeIds = state.selectedEmployeeId ? [state.selectedEmployeeId] : [];
+        state.pendingFinalEmployeeIds = state.selectedEmployeeIds.slice();
+        state.finalEmployeeIds = state.selectedEmployeeIds.slice();
         render();
       } catch (error) {
         showError(error.message || String(error));

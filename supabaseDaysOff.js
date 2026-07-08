@@ -233,7 +233,7 @@
       backdrop.id = "cmDaysOffLocalBackdrop";
       backdrop.className = "cm-days-off-backdrop";
       backdrop.hidden = true;
-      backdrop.addEventListener("click", () => hidePanels());
+      backdrop.addEventListener("click", (event) => { event.preventDefault(); event.stopPropagation(); });
       document.body.appendChild(backdrop);
     }
     return backdrop;

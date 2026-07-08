@@ -3784,14 +3784,17 @@ document.addEventListener('DOMContentLoaded', () => {
       const target = event.target;
       if (!(target instanceof HTMLElement)) return;
       if (target.closest('.bm-nested-modal')) return;
-      if (target.id === 'cmGlobalFormOverlay') { closeActiveModalPanel(); return; }
+      if (target.id === 'cmGlobalFormOverlay') { event.preventDefault(); event.stopPropagation(); return; }
       if (target.matches('[data-modal-cancel="true"]') || (/anuluj/i.test(target.textContent || '') && target.closest('.cm-as-modal'))) {
         const panel = target.closest('.cm-as-modal, .cm-modal-active');
         if (panel) { closeModalPanel(panel); event.preventDefault(); }
       }
     });
     document.addEventListener('keydown', event => {
-      if (event.key === 'Escape') closeActiveModalPanel();
+      // Formularze nie zamykają się już po Escape — tylko przez Anuluj/Zapisz/Zatwierdź.
+      if (event.key === 'Escape' && document.querySelector('.cm-modal-active:not([hidden]), .cm-as-modal:not([hidden])')) {
+        event.preventDefault();
+      }
     });
     updateGlobalModalState();
   };
