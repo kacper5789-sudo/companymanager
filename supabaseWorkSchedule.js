@@ -981,7 +981,37 @@
     document.querySelector(".cm-work-final-section")?.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
+  function protectWorkSchedulePanelsFromOutsideClose() {
+    if (window.__cmWorkScheduleNoOutsideCloseReady) return;
+    window.__cmWorkScheduleNoOutsideCloseReady = true;
+
+    // v312: Grafik pracy ma zostać otwarty, dopóki użytkownik nie kliknie Anuluj/Zapisz.
+    // Kliknięcia w krawędzie, tło, puste miejsca tabeli albo wrapper nie mogą zwijać edytora.
+    document.addEventListener("click", (event) => {
+      const target = event.target instanceof Element ? event.target : null;
+      if (!target) return;
+
+      if (target.id === "cmGlobalFormOverlay" && document.querySelector(".cm-work-schedule-modal:not([hidden]), .cm-work-schedule-editor-wrap")) {
+        event.preventDefault();
+        event.stopPropagation();
+        if (typeof event.stopImmediatePropagation === "function") event.stopImmediatePropagation();
+        return;
+      }
+
+      const insideWorkSchedule = target.closest("#workScheduleRoot, .cm-work-schedule-page, .cm-work-schedule-modal, .cm-work-schedule-editor-wrap, .cm-work-final-section");
+      if (!insideWorkSchedule) return;
+
+      // Nie blokujemy właściwego kliknięcia w przycisk/pole. Zatrzymujemy tylko bąbelkowanie
+      // do globalnych handlerów, które w starszych miejscach potrafiły zamknąć aktywny panel.
+      setTimeout(() => {
+        try { window.cmRefreshGlobalModalState?.(); } catch (_) {}
+      }, 0);
+      event.stopPropagation();
+    }, false);
+  }
+
   function bindEvents() {
+    protectWorkSchedulePanelsFromOutsideClose();
     $$('[data-employee-multi]').forEach((input) => input.addEventListener("change", () => {
       state.selectedEmployeeIds = $$('[data-employee-multi]:checked').map((el) => el.value);
       state.pendingFinalEmployeeIds = state.selectedEmployeeIds.slice();

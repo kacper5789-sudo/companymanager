@@ -342,6 +342,14 @@
     document.addEventListener('click', function (event) {
       const target = event.target;
       if (!(target instanceof HTMLElement)) return;
+      // v312: kliknięcie w tło/krawędź formularza lub grafiku NIE zamyka aktywnego panelu.
+      // Zamknięcie zostaje wyłącznie pod przyciskami Anuluj/Zapisz/Zatwierdź.
+      if (target.id === OVERLAY_ID || target.closest('#' + OVERLAY_ID)) {
+        event.preventDefault();
+        event.stopPropagation();
+        if (typeof event.stopImmediatePropagation === 'function') event.stopImmediatePropagation();
+        return;
+      }
       if (target.matches('[data-modal-cancel="true"]')) {
         const panel = target.closest('.' + MODAL_ACTIVE + ', .' + MODAL_CLASS);
         if (panel) {

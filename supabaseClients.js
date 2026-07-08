@@ -271,7 +271,58 @@
     return [clientName(client), client.phone, client.email].filter(Boolean).join(" — ");
   }
 
-  function getCustomerRows(customers) {
+  function appointmentClientId(item) {
+    return String(item?.client_id || item?.customer_id || "").trim();
+  }
+
+  function clientImportantEntries(client, importantNotesByClient = {}) {
+    const entries = [];
+    if (String(client?.notes || "").trim()) {
+      entries.push({ date: client.updated_at || client.created_at || "", label: "Karta klienta", text: String(client.notes || "").trim() });
+    }
+    (importantNotesByClient[String(client?.id || "")] || []).forEach((item) => {
+      const note = String(item.note || "").trim();
+      if (!note) return;
+      const when = [plDate(item.date || String(item.starts_at || item.appointment_datetime || item.created_at || "").slice(0, 10)), item.start_time || item.time || ""].filter(Boolean).join(" ");
+      const label = [when, item.service_name || "Wizyta", item.employee_name || ""].filter(Boolean).join(" — ");
+      entries.push({ date: item.date || item.created_at || "", label, text: note });
+    });
+    return entries;
+  }
+
+  function clientImportantCell(client, importantNotesByClient = {}) {
+    const entries = clientImportantEntries(client, importantNotesByClient);
+    const current = String(client.notes || "").trim() || entries[0]?.text || "";
+    if (!entries.length) return "";
+    const tooltip = entries.map((entry) => `${entry.label}: ${entry.text}`).join("\n\n");
+    const preview = current.length > 90 ? current.slice(0, 87) + "..." : current;
+    return `<span class="cm-client-important-hover" tabindex="0" title="${escapeHtml(tooltip)}">${escapeHtml(preview)}<span class="cm-client-important-popover">${entries.map((entry) => `<b>${escapeHtml(entry.label)}</b><br>${escapeHtml(entry.text)}`).join("<hr>")}</span></span>`;
+  }
+
+  async function fetchClientImportantNotes(companyId) {
+    try {
+      const { data, error } = await window.cmSupabase
+        .from("appointments")
+        .select("id, company_id, date, time, start_time, starts_at, appointment_datetime, customer_id, client_id, employee_name, service_name, note, created_at")
+        .eq("company_id", companyId)
+        .not("note", "is", null)
+        .order("date", { ascending: false })
+        .order("start_time", { ascending: false });
+      if (error) throw error;
+      return (data || []).reduce((acc, item) => {
+        const note = String(item.note || "").trim();
+        const id = appointmentClientId(item);
+        if (!id || !note) return acc;
+        (acc[id] ||= []).push(item);
+        return acc;
+      }, {});
+    } catch (error) {
+      console.warn("Client important notes skipped", error?.message || error);
+      return {};
+    }
+  }
+
+  function getCustomerRows(customers, importantNotesByClient = {}) {
     return customers.map((client) => [
       escapeHtml(clientName(client)),
       escapeHtml(client.gender || ""),
@@ -281,7 +332,7 @@
       `<span class="bm-status ${client.marketing_email ? "active" : "inactive"}">${client.marketing_email ? "tak" : "nie"}</span>`,
       escapeHtml(plDate(client.updated_at)),
       escapeHtml(plDate(client.last_visit_at)),
-      escapeHtml(client.notes || ""),
+      clientImportantCell(client, importantNotesByClient),
       `<span class="bm-status ${client.active === false ? "inactive" : "active"}">${client.active === false ? "nieaktywny" : "aktywny"}</span>`
     ]);
   }
@@ -320,7 +371,8 @@
       return;
     }
 
-    renderContent(ctx, customers || []);
+    const importantNotesByClient = await fetchClientImportantNotes(ctx.companyId);
+    renderContent(ctx, customers || [], importantNotesByClient);
     setupClientNativeDatePickers();
   }
 
@@ -402,7 +454,7 @@
     };
   }
 
-  function renderContent(ctx, customers) {
+  function renderContent(ctx, customers, importantNotesByClient = {}) {
     const area = getPanelArea();
     if (!area) return;
 
@@ -437,7 +489,7 @@
 
         <div id="customersTableWrap">
           ${allowHistory ? `
-            ${table(["Imię Nazwisko", "Płeć", "Telefon", "Email", "Reklama SMS", "Reklama Email", "Aktualizacja", "Ostatnia wizyta", "Ważna informacja", "Status"], getCustomerRows(customers), "Brak klientów w Supabase.")}
+            ${table(["Imię Nazwisko", "Płeć", "Telefon", "Email", "Reklama SMS", "Reklama Email", "Aktualizacja", "Ostatnia wizyta", "Ważna informacja", "Status"], getCustomerRows(customers, importantNotesByClient), "Brak klientów w Supabase.")}
             ${pagination(customers.length)}
           ` : `<div class="bm-empty-state cm-permission-notice">Brak uprawnienia: ${escapeHtml(customerHistoryPermission)}</div>`}
         </div>
@@ -475,7 +527,7 @@
       </section>
     `;
 
-    bindActions(ctx, customers);
+    bindActions(ctx, customers, importantNotesByClient);
   }
 
   function filterCustomers(customers) {
@@ -502,13 +554,13 @@
     });
   }
 
-  function rerenderTable(customers) {
+  function rerenderTable(customers, importantNotesByClient = {}) {
     const wrap = document.querySelector("#customersTableWrap");
     if (!wrap || wrap.querySelector(".cm-permission-notice")) return;
     const filtered = filterCustomers(customers);
     if (!wrap) return;
     wrap.innerHTML = `
-      ${table(["Imię Nazwisko", "Płeć", "Telefon", "Email", "Reklama SMS", "Reklama Email", "Aktualizacja", "Ostatnia wizyta", "Ważna informacja", "Status"], getCustomerRows(filtered), "Brak klientów w Supabase.")}
+      ${table(["Imię Nazwisko", "Płeć", "Telefon", "Email", "Reklama SMS", "Reklama Email", "Aktualizacja", "Ostatnia wizyta", "Ważna informacja", "Status"], getCustomerRows(filtered, importantNotesByClient), "Brak klientów w Supabase.")}
       ${pagination(filtered.length)}
     `;
   }
@@ -548,7 +600,7 @@
     msg.style.display = "block";
   }
 
-  function bindActions(ctx, customers) {
+  function bindActions(ctx, customers, importantNotesByClient = {}) {
     const customerFormCard = document.querySelector("#customerFormCard");
     const customerEditCard = document.querySelector("#customerEditCard");
     const customerDeleteCard = document.querySelector("#customerDeleteCard");
@@ -561,7 +613,7 @@
     document.querySelector("#showEditCustomer")?.addEventListener("click", () => showOnly(customerEditCard));
     document.querySelector("#showDeleteCustomer")?.addEventListener("click", () => showOnly(customerDeleteCard));
 
-    document.querySelector("#customersSearch")?.addEventListener("input", () => rerenderTable(customers));
+    document.querySelector("#customersSearch")?.addEventListener("input", () => rerenderTable(customers, importantNotesByClient));
 
     document.querySelector("#customerForm")?.addEventListener("submit", async (event) => {
       event.preventDefault();

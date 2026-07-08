@@ -7724,7 +7724,22 @@ document.addEventListener('DOMContentLoaded', () => {
     const editWorkSchedulePanel = document.querySelector('#editWorkSchedulePanel');
     const deleteWorkSchedulePanel = document.querySelector('#deleteWorkSchedulePanel');
     const workSchedulePanels = [addWorkSchedulePanel, editWorkSchedulePanel, deleteWorkSchedulePanel];
-    const closeWorkSchedulePanels = () => { workSchedulePanels.forEach(panel => { if (panel) panel.hidden = true; }); };
+    const closeWorkSchedulePanels = () => {
+      workSchedulePanels.forEach(panel => {
+        if (panel) {
+          panel.hidden = true;
+          panel.classList.remove('cm-modal-active', 'cm-as-modal');
+        }
+      });
+      updateGlobalModalState?.();
+    };
+    document.querySelector('#dashboardRoot')?.addEventListener('click', (event) => {
+      const target = event.target instanceof Element ? event.target : null;
+      if (!target) return;
+      if (target.closest('.cm-work-schedule-modal, .cm-work-schedule-editor-wrap, .cm-work-final-section')) {
+        event.stopPropagation();
+      }
+    });
     document.querySelector('#showAddWorkScheduleBtn')?.addEventListener('click', () => showOnlyPanel(addWorkSchedulePanel, workSchedulePanels));
     document.querySelector('#showEditWorkScheduleBtn')?.addEventListener('click', () => { showOnlyPanel(editWorkSchedulePanel, workSchedulePanels); fillEditWorkScheduleForm(); });
     document.querySelector('#showDeleteWorkScheduleBtn')?.addEventListener('click', () => showOnlyPanel(deleteWorkSchedulePanel, workSchedulePanels));

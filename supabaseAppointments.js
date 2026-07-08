@@ -328,6 +328,63 @@
     ].filter(Boolean).join(" · ");
   }
 
+  function appointmentClientId(item) {
+    return String(item?.client_id || item?.customer_id || "").trim();
+  }
+
+  function appointmentStart(item) {
+    return normalizeTime(item?.start_time || item?.time || item?.starts_at || item?.appointment_datetime || "");
+  }
+
+  function clientImportantEntries(clientId, data = {}, currentVisitId = "") {
+    const id = String(clientId || "").trim();
+    if (!id) return [];
+    const client = (data.clients || []).find((item) => String(item.id) === id);
+    const entries = [];
+    if (String(client?.notes || "").trim()) {
+      entries.push({ date: client.updated_at || client.created_at || "", title: "Karta klienta", employee: "", text: String(client.notes || "").trim() });
+    }
+    (data.appointments || []).forEach((visit) => {
+      const note = String(visit?.note || "").trim();
+      if (!note) return;
+      if (appointmentClientId(visit) !== id) return;
+      if (currentVisitId && String(visit.id) === String(currentVisitId)) return;
+      entries.push({ date: visit.date || String(visit.starts_at || visit.appointment_datetime || visit.created_at || "").slice(0, 10), time: appointmentStart(visit), title: visit.service_name || "Wizyta", employee: visit.employee_name || "", text: note });
+    });
+    return entries.sort((a, b) => String(b.date || "").localeCompare(String(a.date || "")) || String(b.time || "").localeCompare(String(a.time || "")));
+  }
+
+  function clientImportantEntryHtml(entry) {
+    const when = [plDate(entry.date), entry.time].filter(Boolean).join(" ");
+    const meta = [when, entry.title, entry.employee].filter(Boolean).join(" — ");
+    return `<div class="cm-client-important-entry"><span>${escapeHtml(meta || "Wpis")}</span><p>${escapeHtml(entry.text)}</p></div>`;
+  }
+
+  function clientImportantHistoryHtml(clientId, data = {}, options = {}) {
+    const entries = clientImportantEntries(clientId, data, options.currentVisitId || "");
+    if (!clientId) return `<div class="cm-client-important-box is-empty"><strong>Historia ważnych informacji</strong><span>Wybierz klienta, żeby zobaczyć ostatnie notatki z jego wizyt.</span></div>`;
+    if (!entries.length) return `<div class="cm-client-important-box is-empty"><strong>Historia ważnych informacji</strong><span>Brak zapisanych ważnych informacji dla tego klienta.</span></div>`;
+    const visible = entries.slice(0, 3);
+    const more = entries.length > 3 ? `<details class="cm-client-important-more"><summary>Pokaż całą historię (${entries.length})</summary>${entries.slice(3).map((entry) => clientImportantEntryHtml(entry)).join("")}</details>` : "";
+    return `<div class="cm-client-important-box"><strong>Historia ważnych informacji klienta</strong>${visible.map((entry) => clientImportantEntryHtml(entry)).join("")}${more}<small>Nowa treść z pola „Opis / Ważna informacja” zapisuje się przy wizycie i będzie widoczna przy kolejnych wizytach tego klienta.</small></div>`;
+  }
+
+  function setupClientImportantHistoryPanels(data = {}) {
+    document.querySelectorAll("[data-client-history-panel]").forEach((panel) => {
+      const hiddenId = panel.dataset.clientHistoryPanel;
+      const hidden = document.getElementById(hiddenId);
+      if (!hidden) return;
+      const form = hidden.closest("form");
+      const update = () => panel.innerHTML = clientImportantHistoryHtml(hidden.value, data, { currentVisitId: String(form?.elements?.visitId?.value || "").trim() });
+      if (panel.dataset.cmImportantHistoryReady !== "1") {
+        panel.dataset.cmImportantHistoryReady = "1";
+        hidden.addEventListener("change", update);
+        form?.elements?.visitId?.addEventListener("change", update);
+      }
+      update();
+    });
+  }
+
 
   function cmYesNoOptions(selected) {
     return ["tak", "nie"].map((v) => `<option value="${v}" ${String(selected || "nie") === v ? "selected" : ""}>${v}</option>`).join("");
@@ -469,7 +526,8 @@
           <small class="cm-muted">Wpisz imię, nazwisko, telefon lub email klienta.</small>
         </label>
         <button type="button" class="bm-secondary-btn cm-related-add-btn" data-open-related="quick-client" data-related-type="client">Dodaj klienta</button>
-      </div>`;
+      </div>
+      <div class="cm-client-important-history bm-full full" data-client-history-panel="${escapeHtml(prefix)}Id"></div>`;
   }
 
   function setupClientSearchFields(clients) {
@@ -540,7 +598,10 @@
     if (!form) return;
     const hidden = form.elements.customerId;
     const input = form.querySelector("[data-client-search]");
-    if (hidden) hidden.value = clientId || "";
+    if (hidden) {
+      hidden.value = clientId || "";
+      hidden.dispatchEvent(new Event("change", { bubbles: true }));
+    }
     if (input) {
       const client = clientsById?.[clientId];
       input.value = client ? clientSearchText(client) : "";
@@ -688,7 +749,7 @@
         .order("time", { ascending: true }),
       window.cmSupabase
         .from("clients")
-        .select("id, company_id, first_name, last_name, full_name, email, phone, status, active, deleted_at")
+        .select("id, company_id, first_name, last_name, full_name, email, phone, status, active, deleted_at, notes, created_at, updated_at, last_visit_at")
         .eq("company_id", ctx.companyId)
         .order("last_name", { ascending: true }),
       window.cmSupabase
@@ -1047,7 +1108,7 @@
           <label>Płatność<select name="payment">${paymentOptionsHtml}</select></label>
           <label>Stanowisko pracy<select name="positionId"><option value="">Wybierz stanowisko</option>${positionOptions}</select></label>
           <label>Status<select name="status">${statuses.filter((s) => s !== "usunięte").map((s) => `<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`).join("")}</select></label>
-          <label class="bm-full">Opis<textarea name="note" placeholder="Notatka"></textarea></label>
+          <label class="bm-full">Opis / ważna informacja<textarea name="note" placeholder="np. strzyżenie: 3 boki, 6 góra; alergia; preferencje klienta"></textarea></label>
           <button type="submit">Zapisz wizytę</button>
         </form>
         <p id="visitMessage" class="panel-message"></p>
@@ -1069,7 +1130,7 @@
           <label>Płatność<select name="payment">${paymentOptionsHtml}</select></label>
           <label>Stanowisko pracy<select name="positionId"><option value="">Wybierz stanowisko</option>${positionOptions}</select></label>
           <label>Status<select name="status">${statuses.map((s) => `<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`).join("")}</select></label>
-          <label class="bm-full">Opis<textarea name="note" placeholder="Notatka"></textarea></label>
+          <label class="bm-full">Opis / ważna informacja<textarea name="note" placeholder="np. strzyżenie: 3 boki, 6 góra; alergia; preferencje klienta"></textarea></label>
           <button type="submit">Zapisz zmiany</button>
         </form>
         <p id="visitEditMessage" class="panel-message"></p>
@@ -1110,6 +1171,7 @@
     setupVisitNativeDatePickers();
     setupClientSearchFields(data.clients);
     setupEntitySearchFields(data);
+    setupClientImportantHistoryPanels(data);
     const quickClientCard = document.querySelector("#visitQuickClientCard");
     const quickProductCard = document.querySelector("#visitQuickProductCard");
     const quickServiceCard = document.querySelector("#visitQuickServiceCard");

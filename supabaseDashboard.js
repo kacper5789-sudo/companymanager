@@ -173,6 +173,85 @@
     return [customerName(client), client?.phone || "", client?.email || ""].filter(Boolean).join(" · ");
   }
 
+  function appointmentClientId(item) {
+    return String(item?.client_id || item?.customer_id || "").trim();
+  }
+
+  function appointmentServiceLabel(item, lookups = {}) {
+    const service = lookups.servicesById?.[item?.service_id];
+    return serviceName(service || { name: item?.service_name }) || "Wizyta";
+  }
+
+  function clientImportantEntries(clientId, data = {}, lookups = {}, currentVisitId = "") {
+    const id = String(clientId || "").trim();
+    if (!id) return [];
+    const client = (data.clients || []).find((item) => String(item.id) === id);
+    const entries = [];
+    if (String(client?.notes || "").trim()) {
+      entries.push({
+        date: client?.updated_at || client?.created_at || "",
+        title: "Karta klienta",
+        employee: "",
+        text: String(client.notes || "").trim(),
+        source: "client"
+      });
+    }
+    (data.appointments || []).forEach((visit) => {
+      const note = String(visit?.note || "").trim();
+      if (!note) return;
+      if (appointmentClientId(visit) !== id) return;
+      if (currentVisitId && String(visit.id) === String(currentVisitId)) return;
+      entries.push({
+        date: visit.date || String(visit.starts_at || visit.appointment_datetime || visit.created_at || "").slice(0, 10),
+        time: appointmentStart(visit),
+        title: appointmentServiceLabel(visit, lookups),
+        employee: visit.employee_name || "",
+        text: note,
+        source: "appointment"
+      });
+    });
+    return entries.sort((a, b) => String(b.date || "").localeCompare(String(a.date || "")) || String(b.time || "").localeCompare(String(a.time || "")));
+  }
+
+  function clientImportantHistoryHtml(clientId, data = {}, lookups = {}, options = {}) {
+    const entries = clientImportantEntries(clientId, data, lookups, options.currentVisitId || "");
+    if (!clientId) {
+      return `<div class="cm-client-important-box is-empty"><strong>Historia ważnych informacji</strong><span>Wybierz klienta, żeby zobaczyć ostatnie notatki z jego wizyt.</span></div>`;
+    }
+    if (!entries.length) {
+      return `<div class="cm-client-important-box is-empty"><strong>Historia ważnych informacji</strong><span>Brak zapisanych ważnych informacji dla tego klienta.</span></div>`;
+    }
+    const limit = Number(options.limit || 3);
+    const visible = entries.slice(0, limit);
+    const more = entries.length > limit ? `<details class="cm-client-important-more"><summary>Pokaż całą historię (${entries.length})</summary>${entries.slice(limit).map((entry) => clientImportantEntryHtml(entry)).join("")}</details>` : "";
+    return `<div class="cm-client-important-box"><strong>Historia ważnych informacji klienta</strong>${visible.map((entry) => clientImportantEntryHtml(entry)).join("")}${more}<small>Nowa treść z pola „Opis / Ważna informacja” zapisuje się przy wizycie i będzie widoczna przy kolejnych wizytach tego klienta.</small></div>`;
+  }
+
+  function clientImportantEntryHtml(entry) {
+    const when = [plDate(entry.date), entry.time].filter(Boolean).join(" ");
+    const meta = [when, entry.title, entry.employee].filter(Boolean).join(" — ");
+    return `<div class="cm-client-important-entry"><span>${escapeHtml(meta || "Wpis")}</span><p>${escapeHtml(entry.text)}</p></div>`;
+  }
+
+  function setupClientImportantHistoryPanels(data = {}, lookups = {}) {
+    document.querySelectorAll("[data-client-history-panel]").forEach((panel) => {
+      const hiddenId = panel.dataset.clientHistoryPanel;
+      const hidden = document.getElementById(hiddenId);
+      if (!hidden) return;
+      const form = hidden.closest("form");
+      const update = () => {
+        const currentVisitId = String(form?.elements?.visitId?.value || form?.dataset?.activeVisitId || "").trim();
+        panel.innerHTML = clientImportantHistoryHtml(hidden.value, data, lookups, { currentVisitId });
+      };
+      if (panel.dataset.cmImportantHistoryReady !== "1") {
+        panel.dataset.cmImportantHistoryReady = "1";
+        hidden.addEventListener("change", update);
+        form?.elements?.visitId?.addEventListener("change", update);
+      }
+      update();
+    });
+  }
+
 
   function cmYesNoOptions(selected) {
     return ["tak", "nie"].map((v) => `<option value="${v}" ${String(selected || "nie") === v ? "selected" : ""}>${v}</option>`).join("");
@@ -313,7 +392,8 @@
         </div>
         ${addHtml}
         <small class="cm-muted">Wpisz imię, nazwisko, telefon lub email klienta.</small>
-      </label>`;
+      </label>
+      <div class="cm-client-important-history bm-full full" data-client-history-panel="${escapeHtml(prefix)}Id"></div>`;
   }
 
   function setupClientSearchFields(clients) {
@@ -378,7 +458,10 @@
     if (!form) return;
     const hidden = form.elements.customerId;
     const input = form.querySelector("[data-client-search]");
-    if (hidden) hidden.value = clientId || "";
+    if (hidden) {
+      hidden.value = clientId || "";
+      hidden.dispatchEvent(new Event("change", { bubbles: true }));
+    }
     if (input) {
       const client = clientsById?.[clientId];
       input.value = client ? clientSearchText(client) : "";
@@ -826,7 +909,7 @@
         .order("start_time", { ascending: true }),
       window.cmSupabase
         .from("clients")
-        .select("id, company_id, first_name, last_name, full_name, email, phone, status, active, deleted_at")
+        .select("id, company_id, first_name, last_name, full_name, email, phone, status, active, deleted_at, notes, created_at, updated_at, last_visit_at")
         .eq("company_id", ctx.companyId)
         .order("last_name", { ascending: true }),
       window.cmSupabase
@@ -1466,7 +1549,7 @@
           <label class="bm-full">Karnet klienta<select name="passId"><option value="">Najpierw wybierz klienta</option></select><small class="bm-muted">Karnet pojawi się po wyborze klienta. Karnet usługowy rozlicza usługę, produkty zostają doliczone normalnie.</small></label>
           <label>Razem do zapłaty<input name="total" value="0.00" readonly></label>
           <label>Płatność<select name="payment">${paymentOptionsHtml}</select></label>
-          <label class="bm-full">Opis<textarea name="note" placeholder="Notatka"></textarea></label>
+          <label class="bm-full">Opis / ważna informacja<textarea name="note" placeholder="np. strzyżenie: 3 boki, 6 góra; alergia; preferencje klienta"></textarea></label>
           <button type="submit">Dodaj</button>
         </form>
         <p id="dashboardAppointmentMessage" class="panel-message"></p>
@@ -1486,7 +1569,7 @@
           <label class="bm-full">Karnet klienta<select name="passId"><option value="">Najpierw wybierz klienta</option></select><small class="bm-muted">Karnet pojawi się po wyborze klienta. Karnet usługowy rozlicza usługę, produkty zostają doliczone normalnie.</small></label>
           <label>Razem do zapłaty<input name="total" value="0.00" readonly></label>
           <label>Płatność<select name="payment">${paymentOptionsHtml}</select></label>
-          <label class="bm-full">Opis<textarea name="note" placeholder="Notatka"></textarea></label>
+          <label class="bm-full">Opis / ważna informacja<textarea name="note" placeholder="np. strzyżenie: 3 boki, 6 góra; alergia; preferencje klienta"></textarea></label>
           <button type="submit">Zapisz zmiany</button>
           <div class="bm-full bm-dashboard-edit-status-actions">
             <button type="button" id="dashEditFinishVisitBtn" class="bm-light-btn" ${allowFinish ? "" : "disabled"}>Zakończ wizytę</button>
@@ -1640,6 +1723,7 @@
     updateWorkerVisibility(false);
     setupClientSearchFields(data.clients);
     setupEntitySearchFields(data);
+    setupClientImportantHistoryPanels(data, lookups);
 
     function returnToRelatedParent(card) {
       const parent = card?.dataset?.parentPanel ? document.querySelector(card.dataset.parentPanel) : relatedParentPanel;
