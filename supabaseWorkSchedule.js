@@ -1,4 +1,4 @@
-// CompanyManager — 123 Grafik: stabilny Export Excel i Drukuj bez przekierowania
+// CompanyManager — 124 Grafik: stabilny Export Excel po aktualnie pokazanym wyniku
 // work-schedule.html: flexible work hours, edit/delete, download schedule.
 (function () {
   function isPage() {
@@ -954,32 +954,73 @@
     return { html, title };
   }
 
+  function buildFinalScheduleExcelHtml(result) {
+    const { header, rows, employees } = result;
+    const title = `Grafik wynikowy ${formatDatePL(state.finalFrom)} - ${formatDatePL(state.finalTo)}`;
+    const esc = (value) => String(value ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+    const headerHtml = header.map((cell) => `<th style="background:#e8eef8;font-weight:bold;border:1px solid #777;padding:6px;">${esc(cell)}</th>`).join('');
+    const bodyHtml = rows.map((row) => `<tr>${row.map((cell) => `<td style="border:1px solid #999;padding:6px;mso-number-format:'\\@';">${esc(cell)}</td>`).join('')}</tr>`).join('');
+    return `<!doctype html><html><head><meta charset="utf-8"><meta http-equiv="content-type" content="application/vnd.ms-excel; charset=UTF-8"><style>table{border-collapse:collapse;font-family:Arial,sans-serif;font-size:12px}th,td{vertical-align:top}</style></head><body><h2>${esc(title)}</h2><p><strong>Pracownicy:</strong> ${esc(employees.map(employeeName).join(', '))}</p><table><thead><tr>${headerHtml}</tr></thead><tbody>${bodyHtml}</tbody></table></body></html>`;
+  }
+
+  function buildFinalScheduleCsv(result) {
+    const { header, rows, employees } = result;
+    const meta = [
+      [`Grafik wynikowy ${formatDatePL(state.finalFrom)} - ${formatDatePL(state.finalTo)}`],
+      [`Pracownicy: ${employees.map(employeeName).join(', ')}`],
+      []
+    ];
+    return '\ufeff' + [...meta, header, ...rows].map((row) => row.map(csvCell).join(';')).join('\n');
+  }
+
+  function forceDownloadBlob(blob, filename) {
+    if (window.navigator && typeof window.navigator.msSaveOrOpenBlob === 'function') {
+      window.navigator.msSaveOrOpenBlob(blob, filename);
+      return true;
+    }
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    link.target = '_self';
+    link.rel = 'noopener';
+    link.style.position = 'fixed';
+    link.style.left = '-9999px';
+    link.style.top = '-9999px';
+    link.setAttribute('data-cm-work-download-link', 'true');
+    document.body.appendChild(link);
+    const mouseEvent = new MouseEvent('click', { bubbles: false, cancelable: true, view: window });
+    link.dispatchEvent(mouseEvent);
+    setTimeout(() => {
+      try { link.remove(); } catch (_) {}
+      try { URL.revokeObjectURL(url); } catch (_) {}
+    }, 2500);
+    return true;
+  }
+
   function downloadFinalExcel(event) {
     if (event) {
       event.preventDefault();
       event.stopPropagation();
       if (typeof event.stopImmediatePropagation === "function") event.stopImmediatePropagation();
     }
-    const result = finalScheduleHtmlDocument();
+    const result = finalScheduleExportRows();
     if (result.error) { alert(result.error); return false; }
-    const blob = new Blob([result.html], { type: "application/vnd.ms-excel;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `grafik-wynikowy-${state.finalFrom}-${state.finalTo}.xls`;
-    link.rel = "noopener";
-    link.style.display = "none";
-    link.setAttribute("data-cm-download", "true");
-    link.addEventListener("click", (clickEvent) => {
-      clickEvent.stopPropagation();
-      if (typeof clickEvent.stopImmediatePropagation === "function") clickEvent.stopImmediatePropagation();
-    }, true);
-    document.body.appendChild(link);
-    link.click();
-    setTimeout(() => {
-      link.remove();
-      URL.revokeObjectURL(url);
-    }, 1000);
+    const base = `grafik-wynikowy-${state.finalFrom}-${state.finalTo}`;
+    try {
+      const excelHtml = buildFinalScheduleExcelHtml(result);
+      const blob = new Blob([excelHtml], { type: 'application/vnd.ms-excel;charset=utf-8' });
+      forceDownloadBlob(blob, `${base}.xls`);
+    } catch (error) {
+      console.warn('CompanyManager: Excel HTML export failed, CSV fallback used.', error);
+      const csv = buildFinalScheduleCsv(result);
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+      forceDownloadBlob(blob, `${base}.csv`);
+    }
     return false;
   }
 
