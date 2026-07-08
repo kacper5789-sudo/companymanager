@@ -3891,6 +3891,167 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const pageSizeDropdown = (id, value = '50') => limitDropdownHtml(id, value);
 
+
+
+  const cmParseAmountValue = (value) => {
+    const normalized = String(value ?? '').replace(/[^0-9,.-]/g, '').replace(',', '.');
+    const num = Number(normalized);
+    return Number.isFinite(num) ? num : 0;
+  };
+
+  const cmMoneyDisplay = (value) => {
+    const num = cmParseAmountValue(value);
+    return `${num.toFixed(2)} PLN`;
+  };
+
+  const cmVisitImportantText = (visit) => String(
+    visit?.importantInfo ?? visit?.important_info ?? visit?.note ?? visit?.description ?? visit?.notes ?? ''
+  ).trim();
+
+  const cmVisitAmount = (db, companyId, visit) => {
+    const direct = cmParseAmountValue(visit?.total ?? visit?.paidAmount ?? visit?.paid_amount ?? visit?.amount ?? visit?.value ?? visit?.price);
+    if (direct > 0) return direct;
+    const sale = (db.sales || []).find(item =>
+      (String(item.visitId || item.visit_id || item.appointmentId || item.appointment_id || '') === String(visit?.id || '')) &&
+      (!companyId || item.companyId === companyId || item.company_id === companyId)
+    );
+    if (sale) {
+      const saleAmount = cmParseAmountValue(sale.total ?? sale.amount ?? sale.value ?? sale.price ?? sale.paidAmount ?? sale.paid_amount);
+      if (saleAmount > 0) return saleAmount;
+    }
+    const service = (db.services || []).find(item => String(item.id) === String(visit?.serviceId || visit?.service_id || ''));
+    return cmParseAmountValue(service?.priceFrom ?? service?.price_to ?? service?.priceTo ?? service?.price ?? 0);
+  };
+
+  const cmImportantInfoHistoryEntries = (db, companyId, customerId) => {
+    const result = [];
+    const pushEntry = (entry) => {
+      if (!entry || String(entry.customerId || '') !== String(customerId || '')) return;
+      const text = String(entry.text || entry.note || entry.importantInfo || entry.important_info || '').trim();
+      if (!text) return;
+      result.push({
+        id: entry.id || `${entry.visitId || ''}-${entry.createdAt || entry.date || result.length}`,
+        companyId: entry.companyId || companyId,
+        customerId: entry.customerId,
+        visitId: entry.visitId || entry.visit_id || '',
+        date: String(entry.date || entry.visitDate || entry.visit_date || entry.createdAt || '').slice(0, 10),
+        time: entry.time || entry.start || '',
+        serviceName: entry.serviceName || entry.service_name || '',
+        employeeName: entry.employeeName || entry.employee_name || '',
+        amount: cmParseAmountValue(entry.amount ?? entry.total ?? entry.value ?? 0),
+        payment: entry.payment || entry.paymentType || entry.payment_type || '',
+        text,
+        createdAt: entry.createdAt || entry.created_at || entry.date || ''
+      });
+    };
+    (db.customerImportantInfoHistory || []).filter(item => !companyId || item.companyId === companyId || item.company_id === companyId).forEach(pushEntry);
+    (db.dashboardVisits || []).filter(visit => (!companyId || visit.companyId === companyId || visit.company_id === companyId) && String(visit.customerId || visit.customer_id || '') === String(customerId || '')).forEach(visit => {
+      const text = cmVisitImportantText(visit);
+      if (!text) return;
+      pushEntry({
+        id: `dashboard-${visit.id}`,
+        companyId,
+        customerId,
+        visitId: visit.id,
+        date: visit.date,
+        time: visit.start || visit.time || '',
+        serviceName: visit.serviceName || ((db.services || []).find(s => String(s.id) === String(visit.serviceId || visit.service_id || ''))?.name || ''),
+        employeeName: visit.employeeName || '',
+        amount: cmVisitAmount(db, companyId, visit),
+        payment: visit.payment || '',
+        text,
+        createdAt: visit.updatedAt || visit.createdAt || visit.date || ''
+      });
+    });
+    (db.visits || db.appointments || []).filter(visit => (!companyId || visit.companyId === companyId || visit.company_id === companyId) && String(visit.customerId || visit.customer_id || '') === String(customerId || '')).forEach(visit => {
+      const text = cmVisitImportantText(visit);
+      if (!text) return;
+      const service = (db.services || []).find(s => String(s.id) === String(visit.serviceId || visit.service_id || ''));
+      const employee = (db.users || db.employees || []).find(e => String(e.id) === String(visit.employeeId || visit.employee_id || ''));
+      pushEntry({
+        id: `visit-${visit.id}`,
+        companyId,
+        customerId,
+        visitId: visit.id,
+        date: visit.date || visit.visit_date,
+        time: visit.time || visit.start || '',
+        serviceName: service?.name || visit.serviceName || '',
+        employeeName: employee?.fullName || employee?.name || visit.employeeName || '',
+        amount: cmVisitAmount(db, companyId, visit),
+        payment: visit.payment || '',
+        text,
+        createdAt: visit.updatedAt || visit.createdAt || visit.date || ''
+      });
+    });
+    const seen = new Set();
+    return result
+      .filter(entry => {
+        const key = [entry.visitId, entry.date, entry.time, entry.text].join('|');
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      })
+      .sort((a,b) => String(b.date || b.createdAt || '').localeCompare(String(a.date || a.createdAt || '')) || String(b.time || '').localeCompare(String(a.time || '')));
+  };
+
+  const cmImportantHistoryPanelHtml = (db, companyId, customerId, limit = 3) => {
+    if (!customerId) return '<div class="cm-important-history-empty">Wybierz klienta, aby zobaczyć jego wcześniejsze ważne informacje.</div>';
+    const entries = cmImportantInfoHistoryEntries(db, companyId, customerId);
+    if (!entries.length) return '<div class="cm-important-history-empty">Brak zapisanych ważnych informacji dla tego klienta.</div>';
+    const visible = entries.slice(0, limit);
+    const rows = visible.map(entry => `<div class="cm-important-history-item"><strong>${escapeHtml(formatIsoDatePL(entry.date) || entry.date || '-')} ${escapeHtml(entry.time || '')}</strong><span>${escapeHtml([entry.serviceName || 'Wizyta', entry.employeeName || '', cmMoneyDisplay(entry.amount), entry.payment || ''].filter(Boolean).join(' — '))}</span><p>${escapeHtml(entry.text)}</p></div>`).join('');
+    const more = entries.length > limit ? `<button type="button" class="bm-light-btn cm-show-full-important-history">Pokaż całą historię (${entries.length})</button>` : '';
+    const all = entries.map(entry => `${formatIsoDatePL(entry.date) || entry.date || '-'} ${entry.time || ''} — ${entry.serviceName || 'Wizyta'} — ${entry.employeeName || ''} — ${cmMoneyDisplay(entry.amount)}${entry.payment ? ' — ' + entry.payment : ''}\n${entry.text}`).join('\n\n');
+    return `<div class="cm-important-history-box" data-full-history="${escapeHtml(all)}"><h4>Ostatnie ważne informacje klienta</h4>${rows}${more}</div>`;
+  };
+
+  const cmCustomerImportantInfoCellHtml = (db, companyId, customer) => {
+    const entries = cmImportantInfoHistoryEntries(db, companyId, customer?.id);
+    const current = String(customer?.importantInfo || '').trim();
+    const last = entries[0];
+    const label = current || last?.text || '—';
+    const title = entries.length
+      ? entries.slice(0, 8).map(entry => `${formatIsoDatePL(entry.date) || entry.date || '-'} ${entry.time || ''} — ${entry.serviceName || 'Wizyta'} — ${cmMoneyDisplay(entry.amount)}${entry.payment ? ' — ' + entry.payment : ''}: ${entry.text}`).join('\n')
+      : label;
+    return `<span class="cm-customer-important-info" title="${escapeHtml(title)}">${escapeHtml(label)}${last ? `<small>${escapeHtml(formatIsoDatePL(last.date) || last.date || '')} · ${escapeHtml(cmMoneyDisplay(last.amount))}</small>` : ''}</span>`;
+  };
+
+  const cmAppendCustomerImportantInfo = (db, companyId, visit, textOverride = '') => {
+    const customerId = String(visit?.customerId || visit?.customer_id || '').trim();
+    const text = String(textOverride || cmVisitImportantText(visit)).trim();
+    if (!customerId || !text) return;
+    db.customerImportantInfoHistory = db.customerImportantInfoHistory || [];
+    const amount = cmVisitAmount(db, companyId, visit);
+    const duplicate = db.customerImportantInfoHistory.some(entry =>
+      String(entry.visitId || '') === String(visit.id || '') &&
+      String(entry.text || '') === text &&
+      String(entry.customerId || '') === customerId
+    );
+    if (duplicate) return;
+    db.customerImportantInfoHistory.push({
+      id: createId('client_info'),
+      companyId,
+      customerId,
+      visitId: visit.id || '',
+      date: visit.date || currentIsoDate(),
+      time: visit.start || visit.time || '',
+      serviceId: visit.serviceId || '',
+      serviceName: visit.serviceName || '',
+      employeeId: visit.employeeId || '',
+      employeeName: visit.employeeName || '',
+      amount,
+      payment: visit.payment || '',
+      text,
+      createdAt: new Date().toISOString()
+    });
+    const customer = (db.customers || []).find(item => String(item.id) === customerId && (!companyId || item.companyId === companyId || item.company_id === companyId));
+    if (customer) {
+      customer.importantInfo = text;
+      customer.updatedAt = currentDisplayDate();
+      customer.lastVisit = formatIsoDatePL(visit.date || currentIsoDate()) || customer.lastVisit || '';
+    }
+  };
+
   const renderDashboard = (ctx) => {
     const { db, company } = ctx;
     const customers = (db.customers || []).filter(c => c.companyId === company.id);
@@ -4016,6 +4177,7 @@ document.addEventListener('DOMContentLoaded', () => {
         <label>Do<select name="end">${timeSelectOptions}</select></label>
         <label>Czas trwania<input name="duration" value="5 min" readonly></label>
         <label>Klient<div class="bm-inline-field"><select name="customerId"><option value="">Wybierz klienta</option>${customerOptions}</select><button type="button" id="dashShowQuickCustomer">Dodaj</button></div></label>
+        <div class="bm-full cm-client-important-history" id="dashboardClientImportantHistory"></div>
         <label>Pracownik<select name="employeeId">${employeeOptions}</select></label>
         <label>Usługi<select name="serviceId"><option value="">Wybierz usługę</option>${serviceOptions}</select></label>
         <label>Zakup produktów<select name="productId"><option value="">Wybierz produkt</option>${productOptions}</select></label>
@@ -4042,6 +4204,7 @@ document.addEventListener('DOMContentLoaded', () => {
         <label>Od<select name="start">${timeSelectOptions}</select></label>
         <label>Do<select name="end">${timeSelectOptions}</select></label>
         <label>Klient<select name="customerId"><option value="">Wybierz klienta</option>${customerOptions}</select></label>
+        <div class="bm-full cm-client-important-history" id="dashboardEditClientImportantHistory"></div>
         <label>Pracownik<select name="employeeId">${employeeOptions}</select></label>
         <label>Usługi<select name="serviceId"><option value="">Wybierz usługę</option>${serviceOptions}</select></label>
         <label>Zakup produktów<select name="productId"><option value="">Wybierz produkt</option>${productOptions}</select></label>
@@ -5915,9 +6078,11 @@ document.addEventListener('DOMContentLoaded', () => {
         <label>Data<input name="date" type="date" value="${toIsoDate(CM_TODAY)}" required></label>
         <label>Godzina<input name="time" type="time" value="10:00" required></label>
         <label>Klient<select name="customerId" required><option value="">Wybierz klienta</option>${customerOptions}</select></label>
+        <div class="bm-full cm-client-important-history" id="visitClientImportantHistory"></div>
         <label>Pracownik<select name="employeeId" required><option value="">Wybierz pracownika</option>${employeeOptions}</select></label>
         <label>Usługa<select name="serviceId" required><option value="">Wybierz usługę</option>${serviceOptions}</select></label>
         <label>Status<select name="status">${visitStatusOptions.filter(s=>s!=='usunięte').map(status => `<option value="${status}">${status}</option>`).join('')}</select></label>
+        <label class="bm-full">Opis / ważna informacja<textarea name="note" placeholder="np. strzyżenie: 3 boki, 6 góra"></textarea></label>
         <button type="submit">Zapisz wizytę</button>
       </form>
       <p id="visitMessage" class="panel-message"></p>
@@ -5930,9 +6095,11 @@ document.addEventListener('DOMContentLoaded', () => {
         <label>Data<input name="date" type="date" required></label>
         <label>Godzina<input name="time" type="time" required></label>
         <label>Klient<select name="customerId" required><option value="">Wybierz klienta</option>${customerOptions}</select></label>
+        <div class="bm-full cm-client-important-history" id="visitEditClientImportantHistory"></div>
         <label>Pracownik<select name="employeeId" required><option value="">Wybierz pracownika</option>${employeeOptions}</select></label>
         <label>Usługa<select name="serviceId" required><option value="">Wybierz usługę</option>${serviceOptions}</select></label>
         <label>Status<select name="status">${visitStatusOptions.map(status => `<option value="${status}">${status}</option>`).join('')}</select></label>
+        <label class="bm-full">Opis / ważna informacja<textarea name="note" placeholder="np. strzyżenie: 3 boki, 6 góra"></textarea></label>
         <button type="submit">Zapisz zmiany</button>
       </form>
       <p id="visitEditMessage" class="panel-message"></p>

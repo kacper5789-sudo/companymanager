@@ -201,11 +201,14 @@
       if (!note) return;
       if (appointmentClientId(visit) !== id) return;
       if (currentVisitId && String(visit.id) === String(currentVisitId)) return;
+      const service = lookups.servicesById?.[visit?.service_id];
       entries.push({
         date: visit.date || String(visit.starts_at || visit.appointment_datetime || visit.created_at || "").slice(0, 10),
         time: appointmentStart(visit),
         title: appointmentServiceLabel(visit, lookups),
         employee: visit.employee_name || "",
+        amount: firstPositiveMoney(visit.total, visit.price, service?.price_from, service?.price, service?.price_to),
+        payment: visit.payment_method || visit.payment || "",
         text: note,
         source: "appointment"
       });
@@ -229,7 +232,9 @@
 
   function clientImportantEntryHtml(entry) {
     const when = [plDate(entry.date), entry.time].filter(Boolean).join(" ");
-    const meta = [when, entry.title, entry.employee].filter(Boolean).join(" — ");
+    const amount = firstPositiveMoney(entry.amount) > 0 ? `${firstPositiveMoney(entry.amount).toFixed(2)} PLN` : "";
+    const payment = entry.payment ? String(entry.payment) : "";
+    const meta = [when, entry.title, entry.employee, amount, payment].filter(Boolean).join(" — ");
     return `<div class="cm-client-important-entry"><span>${escapeHtml(meta || "Wpis")}</span><p>${escapeHtml(entry.text)}</p></div>`;
   }
 

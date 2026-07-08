@@ -267,6 +267,17 @@
     return joined || client.full_name || "-";
   }
 
+
+  function cmMoneyNumber(value) {
+    const n = Number(String(value ?? "").replace(/[^0-9,.-]/g, "").replace(",", "."));
+    return Number.isFinite(n) ? n : 0;
+  }
+
+  function cmMoneyLabel(value) {
+    const n = cmMoneyNumber(value);
+    return n > 0 ? `${n.toFixed(2)} PLN` : "";
+  }
+
   function clientOptionLabel(client) {
     return [clientName(client), client.phone, client.email].filter(Boolean).join(" — ");
   }
@@ -284,7 +295,9 @@
       const note = String(item.note || "").trim();
       if (!note) return;
       const when = [plDate(item.date || String(item.starts_at || item.appointment_datetime || item.created_at || "").slice(0, 10)), item.start_time || item.time || ""].filter(Boolean).join(" ");
-      const label = [when, item.service_name || "Wizyta", item.employee_name || ""].filter(Boolean).join(" — ");
+      const amount = cmMoneyLabel(item.total ?? item.price ?? item.paid_amount ?? item.amount);
+      const payment = item.payment_method || item.payment || "";
+      const label = [when, item.service_name || "Wizyta", item.employee_name || "", amount, payment].filter(Boolean).join(" — ");
       entries.push({ date: item.date || item.created_at || "", label, text: note });
     });
     return entries;
@@ -303,7 +316,7 @@
     try {
       const { data, error } = await window.cmSupabase
         .from("appointments")
-        .select("id, company_id, date, time, start_time, starts_at, appointment_datetime, customer_id, client_id, employee_name, service_name, note, created_at")
+        .select("id, company_id, date, time, start_time, starts_at, appointment_datetime, customer_id, client_id, employee_name, service_name, note, price, total, paid_amount, payment_method, created_at")
         .eq("company_id", companyId)
         .not("note", "is", null)
         .order("date", { ascending: false })
