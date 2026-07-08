@@ -1,4 +1,4 @@
-// CompanyManager — Samouczek wdrożeniowy v305
+// CompanyManager — Samouczek wdrożeniowy v306
 (function () {
   function isTutorialPage() {
     return document.body?.dataset?.panelPage === 'tutorial' || window.location.pathname.includes('tutorial.html');
@@ -344,7 +344,7 @@
           <strong>${progress.done}/${progress.total}</strong>
           <span>ukończonych kroków</span>
           <div class="cm-tutorial-progress"><i style="width:${progress.pct}%"></i></div>
-          <button type="button" class="bm-primary-btn" id="cmTutorialGuidedStart">Uruchom prowadzenie</button>
+          <button type="button" class="bm-primary-btn" id="cmTutorialGuidedStart">Uruchom prowadzenie krok po kroku</button>
           <button type="button" class="bm-secondary-btn" id="cmTutorialReset">Resetuj postęp</button>
         </div>
       </section>
