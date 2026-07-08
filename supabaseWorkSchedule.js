@@ -1,4 +1,4 @@
-// CompanyManager — 121 Grafik: bezpieczny kreator zakresów, masowa edycja, podgląd zapisu
+// CompanyManager — 122 Grafik: stabilny Export Excel i Drukuj grafiku wynikowego
 // work-schedule.html: flexible work hours, edit/delete, download schedule.
 (function () {
   function isPage() {
@@ -508,7 +508,8 @@
         <button type="button" id="finalScheduleNextMonthBtn" class="bm-light-btn cm-work-btn">Kolejny miesiąc</button>
         <button type="button" id="finalScheduleYearBtn" class="bm-light-btn cm-work-btn">Ten rok</button>
         <button type="button" id="finalScheduleApplyBtn" class="bm-primary-btn cm-work-btn cm-work-btn-save">Pokaż</button>
-        <button type="button" id="downloadFinalScheduleBtn" class="bm-light-btn cm-work-btn cm-work-btn-download">Pobierz grafik wynikowy</button>
+        <button type="button" id="downloadFinalScheduleBtn" class="bm-light-btn cm-work-btn cm-work-btn-download" data-final-schedule-export="excel">Export Excel</button>
+        <button type="button" id="printFinalScheduleBtn" class="bm-light-btn cm-work-btn cm-work-btn-print" data-final-schedule-print="true">Drukuj</button>
       </div>
       ${finalSchedulePagerHtml()}
       <div class="bm-table-wrap cm-work-final-wrap">
@@ -923,29 +924,70 @@
 
 
 
-  function downloadFinalCsv() {
+  function finalScheduleExportRows() {
     const dates = dateRange(state.finalFrom, state.finalTo, 370);
     const employees = finalEmployees();
-    if (!employees.length) {
-      alert("Wybierz przynajmniej jednego pracownika i kliknij Pokaż.");
-      return;
-    }
-    const header = ["Data / dzień", ...employees.map(employeeName)];
-    const rows = [header];
-    dates.forEach((date) => {
-      rows.push([`${formatDatePL(date)} ${dayLabel(date)}`, ...employees.map((employee) => finalCell(employee, date))]);
-    });
-    const csv = "\ufeff" + rows.map((row) => row.map(csvCell).join(";")).join("\n");
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+    if (!employees.length) return { error: "Wybierz przynajmniej jednego pracownika i kliknij Pokaż." };
+    if (!dates.length) return { error: "Wybierz poprawny zakres dat i kliknij Pokaż." };
+    const header = ["Data", "Dzień", ...employees.map(employeeName)];
+    const rows = dates.map((date) => [
+      formatDatePL(date),
+      dayLabel(date),
+      ...employees.map((employee) => finalCell(employee, date))
+    ]);
+    return { header, rows, employees, dates };
+  }
+
+  function downloadFinalExcel() {
+    const result = finalScheduleExportRows();
+    if (result.error) { alert(result.error); return; }
+    const { header, rows, employees } = result;
+    const title = `Grafik wynikowy ${formatDatePL(state.finalFrom)} - ${formatDatePL(state.finalTo)}`;
+    const escapeXml = (value) => String(value ?? "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+    const htmlRows = [
+      `<tr><th colspan="${header.length}">${escapeXml(title)}</th></tr>`,
+      `<tr><td colspan="${header.length}">Pracownicy: ${escapeXml(employees.map(employeeName).join(", "))}</td></tr>`,
+      `<tr>${header.map((cell) => `<th>${escapeXml(cell)}</th>`).join("")}</tr>`,
+      ...rows.map((row) => `<tr>${row.map((cell) => `<td>${escapeXml(cell)}</td>`).join("")}</tr>`)
+    ];
+    const html = `<!doctype html><html><head><meta charset="utf-8"><style>table{border-collapse:collapse;font-family:Arial,sans-serif;font-size:12px}th,td{border:1px solid #999;padding:6px 8px;text-align:left}th{font-weight:bold;background:#eeeeee}</style></head><body><table>${htmlRows.join("")}</table></body></html>`;
+    const blob = new Blob([html], { type: "application/vnd.ms-excel;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = `grafik-wynikowy-${state.finalFrom}-${state.finalTo}.csv`;
+    link.download = `grafik-wynikowy-${state.finalFrom}-${state.finalTo}.xls`;
     document.body.appendChild(link);
     link.click();
     link.remove();
     URL.revokeObjectURL(url);
   }
+
+  function printFinalSchedule() {
+    const result = finalScheduleExportRows();
+    if (result.error) { alert(result.error); return; }
+    const { header, rows, employees } = result;
+    const title = `Grafik wynikowy ${formatDatePL(state.finalFrom)} - ${formatDatePL(state.finalTo)}`;
+    const printWindow = window.open("", "_blank", "noopener,noreferrer,width=1200,height=800");
+    if (!printWindow) { alert("Przeglądarka zablokowała okno drukowania. Odblokuj wyskakujące okna dla tej strony."); return; }
+    const escapeXml = (value) => String(value ?? "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+    const html = `<!doctype html><html><head><meta charset="utf-8"><title>${escapeXml(title)}</title><style>
+      body{font-family:Arial,sans-serif;margin:24px;color:#111}h1{font-size:20px;margin:0 0 8px}p{margin:0 0 16px;color:#555}table{border-collapse:collapse;width:100%;font-size:12px}th,td{border:1px solid #aaa;padding:6px 8px;text-align:left;vertical-align:top}th{background:#eee;font-weight:bold}@media print{body{margin:12mm}button{display:none}}
+    </style></head><body><h1>${escapeXml(title)}</h1><p>Pracownicy: ${escapeXml(employees.map(employeeName).join(", "))}</p><table><thead><tr>${header.map((cell) => `<th>${escapeXml(cell)}</th>`).join("")}</tr></thead><tbody>${rows.map((row) => `<tr>${row.map((cell) => `<td>${escapeXml(cell)}</td>`).join("")}</tr>`).join("")}</tbody></table><script>window.onload=function(){window.focus();window.print();};<\/script></body></html>`;
+    printWindow.document.open();
+    printWindow.document.write(html);
+    printWindow.document.close();
+  }
+
+  // Zostawiamy starą nazwę jako alias, żeby starsze handlery nie przestały działać.
+  function downloadFinalCsv() { downloadFinalExcel(); }
 
   function setPendingFinalRange(from, to) {
     if (from) state.pendingFinalFrom = from;
@@ -1017,6 +1059,22 @@
 
   function bindEvents() {
     protectWorkSchedulePanelsFromOutsideClose();
+    document.removeEventListener("click", window.__cmFinalScheduleDelegatedClick || (() => {}), true);
+    window.__cmFinalScheduleDelegatedClick = (event) => {
+      const target = event.target instanceof Element ? event.target : null;
+      if (!target) return;
+      if (target.closest("#downloadFinalScheduleBtn, [data-final-schedule-export]")) {
+        event.preventDefault();
+        event.stopPropagation();
+        downloadFinalExcel();
+      }
+      if (target.closest("#printFinalScheduleBtn, [data-final-schedule-print]")) {
+        event.preventDefault();
+        event.stopPropagation();
+        printFinalSchedule();
+      }
+    };
+    document.addEventListener("click", window.__cmFinalScheduleDelegatedClick, true);
     $$('[data-employee-multi]').forEach((input) => input.addEventListener("change", () => {
       state.selectedEmployeeIds = $$('[data-employee-multi]:checked').map((el) => el.value);
       state.pendingFinalEmployeeIds = state.selectedEmployeeIds.slice();
@@ -1042,7 +1100,8 @@
     $("#finalSchedulePageSize")?.addEventListener("change", (event) => { state.pendingFinalPageSize = Number(event.currentTarget.value || 50); });
     $("#finalSchedulePrevPage")?.addEventListener("click", () => { state.finalPage = Math.max(1, Number(state.finalPage || 1) - 1); render(); document.querySelector(".cm-work-final-section")?.scrollIntoView({ behavior: "smooth", block: "start" }); });
     $("#finalScheduleNextPage")?.addEventListener("click", () => { state.finalPage = Number(state.finalPage || 1) + 1; render(); document.querySelector(".cm-work-final-section")?.scrollIntoView({ behavior: "smooth", block: "start" }); });
-    $("#downloadFinalScheduleBtn")?.addEventListener("click", downloadFinalCsv);
+    $("#downloadFinalScheduleBtn")?.addEventListener("click", downloadFinalExcel);
+    $("#printFinalScheduleBtn")?.addEventListener("click", printFinalSchedule);
     $$(".cm-work-schedule-editor input").forEach((input) => input.addEventListener("change", refreshDurations));
     $$('[data-edit-employee]').forEach((button) => button.addEventListener("click", () => {
       state.selectedEmployeeId = button.dataset.editEmployee;
