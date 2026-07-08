@@ -1,4 +1,4 @@
-// CompanyManager — 122 Grafik: stabilny Export Excel i Drukuj grafiku wynikowego
+// CompanyManager — 123 Grafik: stabilny Export Excel i Drukuj bez przekierowania
 // work-schedule.html: flexible work hours, edit/delete, download schedule.
 (function () {
   function isPage() {
@@ -508,8 +508,8 @@
         <button type="button" id="finalScheduleNextMonthBtn" class="bm-light-btn cm-work-btn">Kolejny miesiąc</button>
         <button type="button" id="finalScheduleYearBtn" class="bm-light-btn cm-work-btn">Ten rok</button>
         <button type="button" id="finalScheduleApplyBtn" class="bm-primary-btn cm-work-btn cm-work-btn-save">Pokaż</button>
-        <button type="button" id="downloadFinalScheduleBtn" class="bm-light-btn cm-work-btn cm-work-btn-download" data-final-schedule-export="excel">Export Excel</button>
-        <button type="button" id="printFinalScheduleBtn" class="bm-light-btn cm-work-btn cm-work-btn-print" data-final-schedule-print="true">Drukuj</button>
+        <button type="button" id="downloadFinalScheduleBtn" class="bm-light-btn cm-work-btn cm-work-btn-download" data-final-schedule-export="excel" data-cm-work-export-action="excel">Export Excel</button>
+        <button type="button" id="printFinalScheduleBtn" class="bm-light-btn cm-work-btn cm-work-btn-print" data-final-schedule-print="true" data-cm-work-export-action="print">Drukuj</button>
       </div>
       ${finalSchedulePagerHtml()}
       <div class="bm-table-wrap cm-work-final-wrap">
@@ -938,9 +938,9 @@
     return { header, rows, employees, dates };
   }
 
-  function downloadFinalExcel() {
+  function finalScheduleHtmlDocument() {
     const result = finalScheduleExportRows();
-    if (result.error) { alert(result.error); return; }
+    if (result.error) return { error: result.error };
     const { header, rows, employees } = result;
     const title = `Grafik wynikowy ${formatDatePL(state.finalFrom)} - ${formatDatePL(state.finalTo)}`;
     const escapeXml = (value) => String(value ?? "")
@@ -948,46 +948,80 @@
       .replace(/</g, "&lt;")
       .replace(/>/g, "&gt;")
       .replace(/"/g, "&quot;");
-    const htmlRows = [
-      `<tr><th colspan="${header.length}">${escapeXml(title)}</th></tr>`,
-      `<tr><td colspan="${header.length}">Pracownicy: ${escapeXml(employees.map(employeeName).join(", "))}</td></tr>`,
-      `<tr>${header.map((cell) => `<th>${escapeXml(cell)}</th>`).join("")}</tr>`,
-      ...rows.map((row) => `<tr>${row.map((cell) => `<td>${escapeXml(cell)}</td>`).join("")}</tr>`)
-    ];
-    const html = `<!doctype html><html><head><meta charset="utf-8"><style>table{border-collapse:collapse;font-family:Arial,sans-serif;font-size:12px}th,td{border:1px solid #999;padding:6px 8px;text-align:left}th{font-weight:bold;background:#eeeeee}</style></head><body><table>${htmlRows.join("")}</table></body></html>`;
-    const blob = new Blob([html], { type: "application/vnd.ms-excel;charset=utf-8" });
+    const headerHtml = header.map((cell) => `<th>${escapeXml(cell)}</th>`).join("");
+    const bodyHtml = rows.map((row) => `<tr>${row.map((cell) => `<td>${escapeXml(cell)}</td>`).join("")}</tr>`).join("");
+    const html = `<!doctype html><html><head><meta charset="utf-8"><title>${escapeXml(title)}</title><style>body{font-family:Arial,sans-serif;margin:24px;color:#111}h1{font-size:20px;margin:0 0 8px}p{margin:0 0 16px;color:#555}table{border-collapse:collapse;width:100%;font-size:12px}th,td{border:1px solid #999;padding:6px 8px;text-align:left;vertical-align:top}th{font-weight:bold;background:#eeeeee}@media print{body{margin:12mm}}</style></head><body><h1>${escapeXml(title)}</h1><p>Pracownicy: ${escapeXml(employees.map(employeeName).join(", "))}</p><table><thead><tr>${headerHtml}</tr></thead><tbody>${bodyHtml}</tbody></table></body></html>`;
+    return { html, title };
+  }
+
+  function downloadFinalExcel(event) {
+    if (event) {
+      event.preventDefault();
+      event.stopPropagation();
+      if (typeof event.stopImmediatePropagation === "function") event.stopImmediatePropagation();
+    }
+    const result = finalScheduleHtmlDocument();
+    if (result.error) { alert(result.error); return false; }
+    const blob = new Blob([result.html], { type: "application/vnd.ms-excel;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
     link.download = `grafik-wynikowy-${state.finalFrom}-${state.finalTo}.xls`;
+    link.rel = "noopener";
+    link.style.display = "none";
+    link.setAttribute("data-cm-download", "true");
+    link.addEventListener("click", (clickEvent) => {
+      clickEvent.stopPropagation();
+      if (typeof clickEvent.stopImmediatePropagation === "function") clickEvent.stopImmediatePropagation();
+    }, true);
     document.body.appendChild(link);
     link.click();
-    link.remove();
-    URL.revokeObjectURL(url);
+    setTimeout(() => {
+      link.remove();
+      URL.revokeObjectURL(url);
+    }, 1000);
+    return false;
   }
 
-  function printFinalSchedule() {
-    const result = finalScheduleExportRows();
-    if (result.error) { alert(result.error); return; }
-    const { header, rows, employees } = result;
-    const title = `Grafik wynikowy ${formatDatePL(state.finalFrom)} - ${formatDatePL(state.finalTo)}`;
-    const printWindow = window.open("", "_blank", "noopener,noreferrer,width=1200,height=800");
-    if (!printWindow) { alert("Przeglądarka zablokowała okno drukowania. Odblokuj wyskakujące okna dla tej strony."); return; }
-    const escapeXml = (value) => String(value ?? "")
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;");
-    const html = `<!doctype html><html><head><meta charset="utf-8"><title>${escapeXml(title)}</title><style>
-      body{font-family:Arial,sans-serif;margin:24px;color:#111}h1{font-size:20px;margin:0 0 8px}p{margin:0 0 16px;color:#555}table{border-collapse:collapse;width:100%;font-size:12px}th,td{border:1px solid #aaa;padding:6px 8px;text-align:left;vertical-align:top}th{background:#eee;font-weight:bold}@media print{body{margin:12mm}button{display:none}}
-    </style></head><body><h1>${escapeXml(title)}</h1><p>Pracownicy: ${escapeXml(employees.map(employeeName).join(", "))}</p><table><thead><tr>${header.map((cell) => `<th>${escapeXml(cell)}</th>`).join("")}</tr></thead><tbody>${rows.map((row) => `<tr>${row.map((cell) => `<td>${escapeXml(cell)}</td>`).join("")}</tr>`).join("")}</tbody></table><script>window.onload=function(){window.focus();window.print();};<\/script></body></html>`;
-    printWindow.document.open();
-    printWindow.document.write(html);
-    printWindow.document.close();
+  function printFinalSchedule(event) {
+    if (event) {
+      event.preventDefault();
+      event.stopPropagation();
+      if (typeof event.stopImmediatePropagation === "function") event.stopImmediatePropagation();
+    }
+    const result = finalScheduleHtmlDocument();
+    if (result.error) { alert(result.error); return false; }
+    const iframe = document.createElement("iframe");
+    iframe.setAttribute("aria-hidden", "true");
+    iframe.setAttribute("data-cm-print-frame", "true");
+    iframe.style.position = "fixed";
+    iframe.style.right = "0";
+    iframe.style.bottom = "0";
+    iframe.style.width = "0";
+    iframe.style.height = "0";
+    iframe.style.border = "0";
+    iframe.style.opacity = "0";
+    document.body.appendChild(iframe);
+    const doc = iframe.contentWindow?.document;
+    if (!doc) { iframe.remove(); alert("Nie udało się przygotować wydruku."); return false; }
+    doc.open();
+    doc.write(result.html);
+    doc.close();
+    setTimeout(() => {
+      try {
+        iframe.contentWindow?.focus();
+        iframe.contentWindow?.print();
+      } finally {
+        setTimeout(() => iframe.remove(), 1500);
+      }
+    }, 250);
+    return false;
   }
 
   // Zostawiamy starą nazwę jako alias, żeby starsze handlery nie przestały działać.
-  function downloadFinalCsv() { downloadFinalExcel(); }
+  function downloadFinalCsv(event) { return downloadFinalExcel(event); }
+  window.cmWorkScheduleDownloadFinalExcel = downloadFinalExcel;
+  window.cmWorkSchedulePrintFinal = printFinalSchedule;
 
   function setPendingFinalRange(from, to) {
     if (from) state.pendingFinalFrom = from;
@@ -1063,16 +1097,15 @@
     window.__cmFinalScheduleDelegatedClick = (event) => {
       const target = event.target instanceof Element ? event.target : null;
       if (!target) return;
-      if (target.closest("#downloadFinalScheduleBtn, [data-final-schedule-export]")) {
-        event.preventDefault();
-        event.stopPropagation();
-        downloadFinalExcel();
-      }
-      if (target.closest("#printFinalScheduleBtn, [data-final-schedule-print]")) {
-        event.preventDefault();
-        event.stopPropagation();
-        printFinalSchedule();
-      }
+      const actionButton = target.closest("#downloadFinalScheduleBtn, #printFinalScheduleBtn, [data-cm-work-export-action]");
+      if (!actionButton) return;
+      event.preventDefault();
+      event.stopPropagation();
+      if (typeof event.stopImmediatePropagation === "function") event.stopImmediatePropagation();
+      const action = actionButton.getAttribute("data-cm-work-export-action") || (actionButton.id === "printFinalScheduleBtn" ? "print" : "excel");
+      if (action === "print") printFinalSchedule(event);
+      else downloadFinalExcel(event);
+      return false;
     };
     document.addEventListener("click", window.__cmFinalScheduleDelegatedClick, true);
     $$('[data-employee-multi]').forEach((input) => input.addEventListener("change", () => {
