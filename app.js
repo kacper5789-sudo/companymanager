@@ -9643,7 +9643,7 @@ document.addEventListener('DOMContentLoaded', () => {
 })();
 
 
-// CompanyManager — Prowadzony tryb samouczka v306 — etap musi być wykonany przed przejściem dalej
+// CompanyManager — Prowadzony tryb samouczka v307 — etap musi być wykonany przed przejściem dalej
 (function () {
   const ACTIVE_KEY = 'cmTutorialGuideActive';
   const INDEX_KEY = 'cmTutorialGuideIndex';
@@ -9832,21 +9832,15 @@ document.addEventListener('DOMContentLoaded', () => {
           <button type="button" class="bm-primary-btn" data-cm-guide-next>${index === steps.length - 1 ? 'Ukończ' : nextLabel}</button>
         </div>`;
       document.body.append(backdrop, spot, pop);
-      let left;
-      let top;
-      const targetIsBig = rect.width > window.innerWidth * 0.55 || rect.height > window.innerHeight * 0.45;
-      if (targetIsBig) {
-        left = Math.max(16, window.innerWidth - 430);
-        top = 96;
-      } else {
-        const gap = 16;
-        left = Math.min(Math.max(16, rect.left), window.innerWidth - 420);
-        top = rect.bottom + gap;
-        pop.classList.remove('is-above');
-        if (top + 260 > window.innerHeight && rect.top > 280) { top = rect.top - 260 - gap; pop.classList.add('is-above'); }
-      }
-      pop.style.left = `${Math.max(16, left)}px`;
-      pop.style.top = `${Math.max(16, top)}px`;
+      // v307: dymek samouczka nie może zasłaniać przycisków modułu,
+      // zwłaszcza przycisku „Dodaj” w pierwszych krokach onboardingu.
+      // Dlatego panel sterujący jest stały w prawym dolnym rogu,
+      // a podświetlenie/strzałka wskazują obszar pracy bez blokowania kliknięć.
+      pop.classList.add('is-docked');
+      pop.style.left = 'auto';
+      pop.style.top = 'auto';
+      pop.style.right = '18px';
+      pop.style.bottom = '18px';
       pop.querySelector('[data-cm-guide-stop]')?.addEventListener('click', clearGuide);
       pop.querySelector('[data-cm-guide-prev]')?.addEventListener('click', () => go(index - 1));
       pop.querySelector('[data-cm-guide-skip]')?.addEventListener('click', () => advance(index, 'skip'));

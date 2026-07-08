@@ -17815,3 +17815,25 @@ body:not(.cm-days-off-modal-open) #cmDaysOffLocalBackdrop {
 .cm-guide-toast.is-error { border-color: rgba(248,113,113,.42); background: linear-gradient(135deg, rgba(127,29,29,.96), rgba(24,28,38,.96)); }
 .cm-guide-popover { pointer-events: auto; }
 .cm-guide-popover .bm-primary-btn[disabled] { opacity: .65; cursor: wait; }
+
+/* CompanyManager — poprawka samouczka v307: dymek nie zasłania przycisku Dodaj */
+.cm-guide-popover.is-docked {
+  left: auto !important;
+  top: auto !important;
+  right: 18px !important;
+  bottom: 18px !important;
+  max-height: calc(100vh - 36px);
+  overflow: auto;
+}
+.cm-guide-popover.is-docked::before { display: none; }
+.cm-guide-running .cm-guide-backdrop,
+.cm-guide-running .cm-guide-spotlight { pointer-events: none !important; }
+@media (max-width: 700px) {
+  .cm-guide-popover.is-docked {
+    left: 12px !important;
+    right: 12px !important;
+    bottom: 12px !important;
+    width: auto !important;
+    max-height: 45vh;
+  }
+}
