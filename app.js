@@ -9641,3 +9641,128 @@ document.addEventListener('DOMContentLoaded', () => {
   setTimeout(() => apply(document), 300);
   window.cmApplyPermissionGuard = apply;
 })();
+
+
+// CompanyManager — Prowadzony tryb samouczka v305
+(function () {
+  const ACTIVE_KEY = 'cmTutorialGuideActive';
+  const INDEX_KEY = 'cmTutorialGuideIndex';
+  const CHECKLIST_KEY = 'cmTutorialChecklistV2';
+  const COMPLETE_KEY = 'cmTutorialCompleted';
+  const STEP_IDS = ['positions','employees','permissions','userLogs','serviceCategories','services','products','passes','companyNotifications','companyProgramSettings','retentionPayments','customers','marketing','workSchedule','daysOff','dashboardAppointments','undoTime','sales','activity','reports'];
+  const steps = [
+    { id:'positions', page:'positions', href:'positions.html', selector:'a[href$="positions.html"], .bm-panel-area, main', title:'Krok 1: Stanowiska pracy', text:'Zacznij tutaj. Najpierw dodaj stanowiska pracy, bo później przypiszesz do nich pracowników i uprawnienia.' },
+    { id:'employees', page:'users', href:'users.html', selector:'a[href$="users.html"], .bm-panel-area, main', title:'Krok 2: Pracownicy / użytkownicy', text:'Dodaj pracownika dopiero po utworzeniu stanowiska. Uzupełnij dane, stanowisko, rolę i dostęp do logowania.' },
+    { id:'permissions', page:'users', href:'users.html', selector:'.bm-panel-area, main', title:'Krok 3: Uprawnienia', text:'W edycji użytkownika ustaw, które zakładki i funkcje pracownik może widzieć oraz wykonywać. To chroni firmę przed przypadkowymi zmianami.' },
+    { id:'userLogs', page:'users', href:'users.html', selector:'.bm-panel-area, main', title:'Krok 4: Dzienniki logowań', text:'W zakładce Użytkownicy sprawdzisz logowania: datę, login, status, IP i przeglądarkę. To nie jest Historia aktywności.' },
+    { id:'serviceCategories', page:'services', href:'services.html', selector:'a[href$="services.html"], .bm-panel-area, main', title:'Krok 5: Kategorie usług', text:'Najpierw dodaj kategorie usług, np. Fryzjer, Paznokcie, Masaż. Dzięki temu cennik i raporty będą czytelne.' },
+    { id:'services', page:'services', href:'services.html', selector:'.bm-panel-area, main', title:'Krok 6: Usługi', text:'Dodaj usługi w kategoriach. Każda usługa powinna mieć czas trwania i cenę, bo wpływa to na Dashboard i raporty.' },
+    { id:'products', page:'products', href:'products.html', selector:'a[href$="products.html"], .bm-panel-area, main', title:'Krok 7: Produkty', text:'Ten krok jest opcjonalny. Dodaj produkty tylko wtedy, gdy firma je sprzedaje albo chce prowadzić magazyn.' },
+    { id:'passes', page:'passes', href:'passes.html', selector:'a[href$="passes.html"], .bm-panel-area, main', title:'Krok 8: Karnety', text:'Karnety są dla pakietów wejść lub kwot do wykorzystania przez klienta. Jeżeli firma ich nie używa, można pominąć.' },
+    { id:'companyNotifications', page:'companyPanel', href:'company-panel.html', selector:'a[href$="company-panel.html"], .bm-panel-area, main', title:'Krok 9: Powiadomienia SMS / Email', text:'W Panelu firmy ustaw automatyczne przypomnienia, potwierdzenia wizyt, wiadomości po wizycie i urodziny. SMS może wymagać operatora i kosztów.' },
+    { id:'companyProgramSettings', page:'companyPanel', href:'company-panel.html', selector:'.bm-panel-area, main', title:'Krok 10: Ustawienia programu', text:'Ustaw język, walutę, zgody marketingowe, godziny pracy firmy, domyślny czas wizyty i przerwy między wizytami.' },
+    { id:'retentionPayments', page:'companyPanel', href:'company-panel.html', selector:'.bm-panel-area, main', title:'Krok 11: Retencja i płatności', text:'Ustaw czas przechowywania danych oraz metody płatności. Dla nowych firm najbezpieczniej zostawić retencję jako „Nigdy”.' },
+    { id:'customers', page:'customers', href:'customers.html', selector:'a[href$="customers.html"], .bm-panel-area, main', title:'Krok 12: Klienci', text:'Dodaj klientów i ich dane kontaktowe. Zgody marketingowe zaznaczaj tylko wtedy, gdy klient faktycznie je wyraził.' },
+    { id:'marketing', page:'marketing', href:'marketing.html', selector:'a[href$="marketing.html"], .bm-panel-area, main', title:'Krok 13: Marketing', text:'Marketing służy do kampanii SMS i Email. Korzystaj z filtrów odbiorców i wysyłaj tylko do osób z odpowiednimi zgodami.' },
+    { id:'workSchedule', page:'workSchedule', href:'work-schedule.html', selector:'a[href$="work-schedule.html"], .bm-panel-area, main', title:'Krok 14: Grafik pracy', text:'Ustal realne godziny pracy pracowników. Dashboard powinien korzystać z grafiku pracownika, nie tylko z godzin firmy.' },
+    { id:'daysOff', page:'daysOff', href:'days-off.html', selector:'a[href$="days-off.html"], .bm-panel-area, main', title:'Krok 15: Dni wolne', text:'Dodaj urlopy, L4 i nieobecności. Dzień wolny blokuje dostępność pracownika niezależnie od ustawionego grafiku.' },
+    { id:'dashboardAppointments', page:'dashboard', href:'dashboard.html', selector:'a[href$="dashboard.html"], .bm-panel-area, main', title:'Krok 16: Dashboard i wizyty', text:'Tu odbywa się codzienna praca: dodawanie wizyt, kończenie wizyt, odwoływanie terminów i kontrola dostępności.' },
+    { id:'undoTime', page:'dashboard', href:'dashboard.html', selector:'.bm-left-info-panel, .bm-panel-area, main', title:'Krok 17: Cofnij Czas', text:'Cofnij Czas pomaga odwrócić świeże pomyłki. Nie zastępuje kopii zapasowej, ale pomaga przy przypadkowych operacjach.' },
+    { id:'sales', page:'sales', href:'sales.html', selector:'a[href$="sales.html"], .bm-panel-area, main', title:'Krok 18: Sprzedaż', text:'Sprzedaż zbiera zakończone wizyty, produkty, karnety i sprzedaż bez wizyty. Te dane są podstawą raportów.' },
+    { id:'activity', page:'activity', href:'activity.html', selector:'a[href$="activity.html"], .bm-panel-area, main', title:'Krok 19: Historia aktywności', text:'Historia aktywności pokazuje, kto dodał, edytował lub usunął dane w firmie. To inne miejsce niż dzienniki logowań.' },
+    { id:'reports', page:'reports', href:'reports.html', selector:'a[href$="reports.html"], .bm-panel-area, main', title:'Krok 20: Raporty', text:'Raporty analizuj na końcu, gdy są już usługi, klienci, grafik, wizyty i sprzedaż.' }
+  ];
+
+  function currentPage() { return document.body?.dataset?.panelPage || ''; }
+  function getIndex() { const n = parseInt(localStorage.getItem(INDEX_KEY) || '0', 10); return Number.isFinite(n) ? Math.max(0, Math.min(n, steps.length - 1)) : 0; }
+  function setIndex(i) { localStorage.setItem(INDEX_KEY, String(Math.max(0, Math.min(i, steps.length - 1)))); }
+  function isActive() { return localStorage.getItem(ACTIVE_KEY) === 'true'; }
+  function markDone(id) {
+    try { const s = JSON.parse(localStorage.getItem(CHECKLIST_KEY) || '{}') || {}; s[id] = true; localStorage.setItem(CHECKLIST_KEY, JSON.stringify(s)); } catch (_) {}
+  }
+  function markAllDone() {
+    try { const s = JSON.parse(localStorage.getItem(CHECKLIST_KEY) || '{}') || {}; STEP_IDS.forEach(id => { s[id] = true; }); localStorage.setItem(CHECKLIST_KEY, JSON.stringify(s)); localStorage.setItem(COMPLETE_KEY, 'true'); } catch (_) {}
+  }
+  function clearGuide() {
+    localStorage.setItem(ACTIVE_KEY, 'false');
+    localStorage.removeItem(INDEX_KEY);
+    document.querySelectorAll('.cm-guide-popover,.cm-guide-spotlight,.cm-guide-backdrop').forEach(el => el.remove());
+    document.documentElement.classList.remove('cm-guide-running');
+  }
+  function waitForPanel(cb, tries=0) {
+    const panelReady = document.querySelector('.bm-panel') || document.querySelector('.bm-panel-area') || document.querySelector('#dashboardRoot');
+    if (panelReady || tries > 40) cb();
+    else setTimeout(() => waitForPanel(cb, tries + 1), 120);
+  }
+  function targetFor(step) {
+    const selectors = String(step.selector || 'main').split(',').map(s => s.trim()).filter(Boolean);
+    for (const selector of selectors) {
+      const el = document.querySelector(selector);
+      if (el) return el;
+    }
+    return document.querySelector('.bm-panel-area') || document.querySelector('main') || document.body;
+  }
+  function place(step, index) {
+    document.querySelectorAll('.cm-guide-popover,.cm-guide-spotlight,.cm-guide-backdrop').forEach(el => el.remove());
+    document.documentElement.classList.add('cm-guide-running');
+    const target = targetFor(step);
+    target.scrollIntoView({ behavior:'smooth', block:'center', inline:'center' });
+    setTimeout(() => {
+      const rect = target.getBoundingClientRect();
+      const pad = 8;
+      const spot = document.createElement('div');
+      spot.className = 'cm-guide-spotlight';
+      spot.style.left = `${Math.max(8, rect.left - pad)}px`;
+      spot.style.top = `${Math.max(8, rect.top - pad)}px`;
+      spot.style.width = `${Math.max(72, rect.width + pad * 2)}px`;
+      spot.style.height = `${Math.max(42, rect.height + pad * 2)}px`;
+      const backdrop = document.createElement('div');
+      backdrop.className = 'cm-guide-backdrop';
+      const pop = document.createElement('section');
+      pop.className = 'cm-guide-popover';
+      pop.innerHTML = `
+        <div class="cm-guide-kicker">Samouczek ${index + 1}/${steps.length}</div>
+        <h3>${step.title}</h3>
+        <p>${step.text}</p>
+        <div class="cm-guide-progress"><i style="width:${Math.round(((index + 1) / steps.length) * 100)}%"></i></div>
+        <div class="cm-guide-actions">
+          <button type="button" class="bm-secondary-btn" data-cm-guide-prev ${index === 0 ? 'disabled' : ''}>Wstecz</button>
+          <button type="button" class="bm-secondary-btn" data-cm-guide-stop>Zakończ tryb</button>
+          <button type="button" class="bm-primary-btn" data-cm-guide-next>${index === steps.length - 1 ? 'Ukończ' : 'Dalej'}</button>
+        </div>`;
+      document.body.append(backdrop, spot, pop);
+      const gap = 16;
+      let left = Math.min(Math.max(16, rect.left), window.innerWidth - 420);
+      let top = rect.bottom + gap;
+      pop.classList.remove('is-above');
+      if (top + 250 > window.innerHeight && rect.top > 260) { top = rect.top - 250 - gap; pop.classList.add('is-above'); }
+      pop.style.left = `${left}px`;
+      pop.style.top = `${Math.max(16, top)}px`;
+      pop.querySelector('[data-cm-guide-stop]')?.addEventListener('click', clearGuide);
+      pop.querySelector('[data-cm-guide-prev]')?.addEventListener('click', () => go(index - 1));
+      pop.querySelector('[data-cm-guide-next]')?.addEventListener('click', () => {
+        markDone(step.id);
+        if (index >= steps.length - 1) { markAllDone(); clearGuide(); alert('Samouczek ukończony. Link do samouczka przejdzie na koniec menu po odświeżeniu lub zmianie zakładki.'); window.location.href = 'dashboard.html'; return; }
+        go(index + 1);
+      });
+    }, 260);
+  }
+  function go(nextIndex) {
+    const safeIndex = Math.max(0, Math.min(nextIndex, steps.length - 1));
+    const step = steps[safeIndex];
+    setIndex(safeIndex);
+    if (currentPage() !== step.page) { window.location.href = step.href; return; }
+    waitForPanel(() => place(step, safeIndex));
+  }
+  function boot() {
+    if (!document.body?.classList?.contains('panel-body')) return;
+    window.cmStartGuidedTutorial = function () { localStorage.setItem(ACTIVE_KEY, 'true'); setIndex(0); window.location.href = 'positions.html'; };
+    if (!isActive()) return;
+    const step = steps[getIndex()];
+    if (currentPage() !== step.page) { window.location.href = step.href; return; }
+    waitForPanel(() => place(step, getIndex()));
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
+  else boot();
+  window.addEventListener('resize', () => { if (isActive()) waitForPanel(() => place(steps[getIndex()], getIndex())); });
+})();

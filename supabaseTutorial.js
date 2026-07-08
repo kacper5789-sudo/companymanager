@@ -1,4 +1,4 @@
-// CompanyManager — Samouczek wdrożeniowy v304
+// CompanyManager — Samouczek wdrożeniowy v305
 (function () {
   function isTutorialPage() {
     return document.body?.dataset?.panelPage === 'tutorial' || window.location.pathname.includes('tutorial.html');
@@ -344,6 +344,7 @@
           <strong>${progress.done}/${progress.total}</strong>
           <span>ukończonych kroków</span>
           <div class="cm-tutorial-progress"><i style="width:${progress.pct}%"></i></div>
+          <button type="button" class="bm-primary-btn" id="cmTutorialGuidedStart">Uruchom prowadzenie</button>
           <button type="button" class="bm-secondary-btn" id="cmTutorialReset">Resetuj postęp</button>
         </div>
       </section>
@@ -364,6 +365,12 @@
         saveState(next);
         render();
       });
+    });
+    area.querySelector('#cmTutorialGuidedStart')?.addEventListener('click', () => {
+      localStorage.setItem('cmTutorialGuideActive', 'true');
+      localStorage.setItem('cmTutorialGuideIndex', '0');
+      localStorage.setItem('cmTutorialCompleted', 'false');
+      window.location.href = 'positions.html';
     });
     area.querySelector('#cmTutorialReset')?.addEventListener('click', () => {
       if (!confirm('Zresetować postęp samouczka?')) return;
