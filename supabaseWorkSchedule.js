@@ -508,7 +508,7 @@
         <button type="button" id="finalScheduleNextMonthBtn" class="bm-light-btn cm-work-btn">Kolejny miesiąc</button>
         <button type="button" id="finalScheduleYearBtn" class="bm-light-btn cm-work-btn">Ten rok</button>
         <button type="button" id="finalScheduleApplyBtn" class="bm-primary-btn cm-work-btn cm-work-btn-save">Pokaż</button>
-        <button type="button" id="downloadFinalScheduleBtn" class="bm-light-btn cm-work-btn cm-work-btn-download" data-final-schedule-export="excel" data-cm-work-export-action="excel">Export Excel</button>
+        <button type="button" id="downloadFinalScheduleBtn" class="bm-light-btn cm-work-btn cm-work-btn-download" data-final-schedule-export="png" data-cm-work-export-action="png">Pobierz PNG</button>
         <button type="button" id="printFinalScheduleBtn" class="bm-light-btn cm-work-btn cm-work-btn-print" data-final-schedule-print="true" data-cm-work-export-action="print">Drukuj</button>
       </div>
       ${finalSchedulePagerHtml()}
@@ -954,64 +954,174 @@
     return { html, title };
   }
 
-  function buildFinalScheduleExcelHtml(result) {
-    const { header, rows, employees } = result;
-    const title = `Grafik wynikowy ${formatDatePL(state.finalFrom)} - ${formatDatePL(state.finalTo)}`;
-    const esc = (value) => String(value ?? '')
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;');
-    const headerHtml = header.map((cell) => `<th style="background:#e8eef8;font-weight:bold;border:1px solid #777;padding:6px;">${esc(cell)}</th>`).join('');
-    const bodyHtml = rows.map((row) => `<tr>${row.map((cell) => `<td style="border:1px solid #999;padding:6px;mso-number-format:'\\@';">${esc(cell)}</td>`).join('')}</tr>`).join('');
-    return `<!doctype html><html><head><meta charset="utf-8"><meta http-equiv="content-type" content="application/vnd.ms-excel; charset=UTF-8"><style>table{border-collapse:collapse;font-family:Arial,sans-serif;font-size:12px}th,td{vertical-align:top}</style></head><body><h2>${esc(title)}</h2><p><strong>Pracownicy:</strong> ${esc(employees.map(employeeName).join(', '))}</p><table><thead><tr>${headerHtml}</tr></thead><tbody>${bodyHtml}</tbody></table></body></html>`;
+  function makePngFileName(result) {
+    const safe = (value) => String(value || "")
+      .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^a-zA-Z0-9_-]+/g, "_")
+      .replace(/^_+|_+$/g, "")
+      .slice(0, 80);
+    const employees = Array.isArray(result?.employees) ? result.employees : [];
+    let who = "pracownicy";
+    if (employees.length === 1) who = safe(employeeName(employees[0])) || "pracownik";
+    else if (employees.length > 1) who = `${employees.length}_pracownikow`;
+    return `grafik-wynikowy-${who}-${state.finalFrom}-${state.finalTo}.png`;
   }
 
-  function buildFinalScheduleCsv(result) {
-    const { header, rows, employees } = result;
-    const meta = [
-      [`Grafik wynikowy ${formatDatePL(state.finalFrom)} - ${formatDatePL(state.finalTo)}`],
-      [`Pracownicy: ${employees.map(employeeName).join(', ')}`],
-      []
-    ];
-    return '\ufeff' + [...meta, header, ...rows].map((row) => row.map(csvCell).join(';')).join('\n');
-  }
-
-  function forceDownloadBlob(blob, filename) {
-    if (window.navigator && typeof window.navigator.msSaveOrOpenBlob === 'function') {
-      window.navigator.msSaveOrOpenBlob(blob, filename);
-      return true;
-    }
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = filename;
-    link.target = '_self';
-    link.rel = 'noopener';
-    link.style.position = 'fixed';
-    link.style.left = '-9999px';
-    link.style.top = '-9999px';
-    link.setAttribute('data-cm-work-download-link', 'true');
-    link.addEventListener('click', (event) => {
-      event.stopPropagation();
-    }, true);
-    document.body.appendChild(link);
-    try {
-      // Nie używamy dispatchEvent(), bo w części przeglądarek taki sztuczny klik
-      // nie uruchamia pobierania pliku. Native click() jest najstabilniejszy.
-      link.click();
-    } catch (error) {
-      console.warn('CompanyManager: native download click failed, opening blob fallback.', error);
-      window.open(url, '_blank', 'noopener');
-    }
-    setTimeout(() => {
-      try { link.remove(); } catch (_) {}
-      try { URL.revokeObjectURL(url); } catch (_) {}
-    }, 5000);
+  function downloadCanvasAsPng(canvas, filename) {
+    if (!canvas) return false;
+    canvas.toBlob((blob) => {
+      if (!blob) { alert("Nie udało się wygenerować pliku PNG."); return; }
+      forceDownloadBlob(blob, filename);
+    }, "image/png");
     return true;
   }
 
-  function downloadFinalExcel(event) {
+  function drawRoundedRect(ctx, x, y, w, h, r) {
+    const radius = Math.min(r, w / 2, h / 2);
+    ctx.beginPath();
+    ctx.moveTo(x + radius, y);
+    ctx.lineTo(x + w - radius, y);
+    ctx.quadraticCurveTo(x + w, y, x + w, y + radius);
+    ctx.lineTo(x + w, y + h - radius);
+    ctx.quadraticCurveTo(x + w, y + h, x + w - radius, y + h);
+    ctx.lineTo(x + radius, y + h);
+    ctx.quadraticCurveTo(x, y + h, x, y + h - radius);
+    ctx.lineTo(x, y + radius);
+    ctx.quadraticCurveTo(x, y, x + radius, y);
+    ctx.closePath();
+  }
+
+  function wrapTextLines(ctx, text, maxWidth) {
+    const value = String(text ?? "");
+    if (!value) return [""];
+    const hardLines = value.split(/\n/);
+    const out = [];
+    hardLines.forEach((line) => {
+      const words = line.split(/\s+/).filter(Boolean);
+      if (!words.length) { out.push(""); return; }
+      let current = "";
+      words.forEach((word) => {
+        const test = current ? `${current} ${word}` : word;
+        if (ctx.measureText(test).width <= maxWidth || !current) current = test;
+        else { out.push(current); current = word; }
+      });
+      if (current) out.push(current);
+    });
+    return out.length ? out : [""];
+  }
+
+  function buildFinalSchedulePngCanvas(result) {
+    const { header, rows, employees } = result;
+    const scale = 2;
+    const padding = 32;
+    const title = `Grafik wynikowy ${formatDatePL(state.finalFrom)} - ${formatDatePL(state.finalTo)}`;
+    const generated = `Wygenerowano przez CompanyManager • ${new Date().toLocaleString("pl-PL")}`;
+
+    const measureCanvas = document.createElement("canvas");
+    const m = measureCanvas.getContext("2d");
+    if (!m) return null;
+
+    const dateColWidth = 150;
+    const employeeColWidth = Math.max(150, Math.min(230, Math.floor(900 / Math.max(1, employees.length))));
+    const colWidths = [dateColWidth, 88, ...employees.map(() => employeeColWidth)];
+    const tableWidth = colWidths.reduce((sum, width) => sum + width, 0);
+    const canvasWidth = Math.max(900, tableWidth + padding * 2);
+    const lineHeight = 18;
+    const cellPadding = 8;
+    const headerHeight = 40;
+
+    m.font = "13px Arial";
+    const rowHeights = rows.map((row) => {
+      let maxLines = 1;
+      row.forEach((cell, idx) => {
+        const lines = wrapTextLines(m, cell, Math.max(40, colWidths[idx] - cellPadding * 2));
+        maxLines = Math.max(maxLines, lines.length);
+      });
+      return Math.max(34, maxLines * lineHeight + cellPadding * 2);
+    });
+    const tableHeight = headerHeight + rowHeights.reduce((sum, height) => sum + height, 0);
+    const metaHeight = 126;
+    const footerHeight = 36;
+    const canvasHeight = padding * 2 + metaHeight + tableHeight + footerHeight;
+
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.ceil(canvasWidth * scale);
+    canvas.height = Math.ceil(canvasHeight * scale);
+    canvas.style.width = `${canvasWidth}px`;
+    canvas.style.height = `${canvasHeight}px`;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return null;
+    ctx.scale(scale, scale);
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+
+    drawRoundedRect(ctx, 16, 16, canvasWidth - 32, canvasHeight - 32, 18);
+    ctx.fillStyle = "#ffffff";
+    ctx.fill();
+    ctx.strokeStyle = "#d7dde8";
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    let y = padding + 8;
+    ctx.fillStyle = "#111827";
+    ctx.font = "bold 24px Arial";
+    ctx.fillText("CompanyManager", padding, y);
+    y += 34;
+    ctx.font = "bold 20px Arial";
+    ctx.fillText(title, padding, y);
+    y += 28;
+    ctx.fillStyle = "#4b5563";
+    ctx.font = "14px Arial";
+    ctx.fillText(`Pracownicy: ${employees.map(employeeName).join(", ")}`, padding, y);
+    y += 22;
+    ctx.fillText(generated, padding, y);
+    y += 28;
+
+    const startX = padding;
+    let x = startX;
+    ctx.font = "bold 13px Arial";
+    ctx.fillStyle = "#e8eef8";
+    ctx.fillRect(startX, y, tableWidth, headerHeight);
+    ctx.strokeStyle = "#8a94a6";
+    ctx.lineWidth = 1;
+    header.forEach((cell, idx) => {
+      const w = colWidths[idx];
+      ctx.strokeRect(x, y, w, headerHeight);
+      ctx.fillStyle = "#111827";
+      const lines = wrapTextLines(ctx, cell, w - cellPadding * 2);
+      lines.slice(0, 2).forEach((line, lineIdx) => {
+        ctx.fillText(line, x + cellPadding, y + 17 + lineIdx * lineHeight);
+      });
+      x += w;
+    });
+    y += headerHeight;
+
+    ctx.font = "13px Arial";
+    rows.forEach((row, rowIdx) => {
+      const rowHeight = rowHeights[rowIdx];
+      x = startX;
+      ctx.fillStyle = rowIdx % 2 === 0 ? "#ffffff" : "#f8fafc";
+      ctx.fillRect(startX, y, tableWidth, rowHeight);
+      row.forEach((cell, idx) => {
+        const w = colWidths[idx];
+        ctx.strokeStyle = "#9aa3b2";
+        ctx.strokeRect(x, y, w, rowHeight);
+        ctx.fillStyle = "#111827";
+        const lines = wrapTextLines(ctx, cell, w - cellPadding * 2);
+        lines.forEach((line, lineIdx) => {
+          if (y + cellPadding + 13 + lineIdx * lineHeight < y + rowHeight - 3) {
+            ctx.fillText(line, x + cellPadding, y + cellPadding + 13 + lineIdx * lineHeight);
+          }
+        });
+        x += w;
+      });
+      y += rowHeight;
+    });
+
+    return canvas;
+  }
+
+  function downloadFinalPng(event) {
     if (event) {
       event.preventDefault();
       event.stopPropagation();
@@ -1019,17 +1129,13 @@
     }
     const result = finalScheduleExportRows();
     if (result.error) { alert(result.error); return false; }
-    const base = `grafik-wynikowy-${state.finalFrom}-${state.finalTo}`;
     try {
-      // Eksport jako HTML .xls — Excel otwiera to jako arkusz, a plik zachowuje układ tabeli.
-      const excelHtml = buildFinalScheduleExcelHtml(result);
-      const blob = new Blob([excelHtml], { type: 'application/vnd.ms-excel;charset=utf-8' });
-      forceDownloadBlob(blob, `${base}.xls`);
+      const canvas = buildFinalSchedulePngCanvas(result);
+      if (!canvas) throw new Error("canvas_not_ready");
+      downloadCanvasAsPng(canvas, makePngFileName(result));
     } catch (error) {
-      console.warn('CompanyManager: Excel HTML export failed, CSV fallback used.', error);
-      const csv = buildFinalScheduleCsv(result);
-      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
-      forceDownloadBlob(blob, `${base}.csv`);
+      console.error("CompanyManager: PNG export failed.", error);
+      alert("Nie udało się wygenerować PNG. Spróbuj użyć przycisku Drukuj.");
     }
     return false;
   }
@@ -1070,8 +1176,8 @@
   }
 
   // Zostawiamy starą nazwę jako alias, żeby starsze handlery nie przestały działać.
-  function downloadFinalCsv(event) { return downloadFinalExcel(event); }
-  window.cmWorkScheduleDownloadFinalExcel = downloadFinalExcel;
+  function downloadFinalCsv(event) { return downloadFinalPng(event); }
+  window.cmWorkScheduleDownloadFinalPng = downloadFinalPng;
   window.cmWorkSchedulePrintFinal = printFinalSchedule;
 
   function setPendingFinalRange(from, to) {
@@ -1153,9 +1259,9 @@
       event.preventDefault();
       event.stopPropagation();
       if (typeof event.stopImmediatePropagation === "function") event.stopImmediatePropagation();
-      const action = actionButton.getAttribute("data-cm-work-export-action") || (actionButton.id === "printFinalScheduleBtn" ? "print" : "excel");
+      const action = actionButton.getAttribute("data-cm-work-export-action") || (actionButton.id === "printFinalScheduleBtn" ? "print" : "png");
       if (action === "print") printFinalSchedule(event);
-      else downloadFinalExcel(event);
+      else downloadFinalPng(event);
       return false;
     };
     document.addEventListener("click", window.__cmFinalScheduleDelegatedClick, true);
@@ -1184,7 +1290,7 @@
     $("#finalSchedulePageSize")?.addEventListener("change", (event) => { state.pendingFinalPageSize = Number(event.currentTarget.value || 50); });
     $("#finalSchedulePrevPage")?.addEventListener("click", () => { state.finalPage = Math.max(1, Number(state.finalPage || 1) - 1); render(); document.querySelector(".cm-work-final-section")?.scrollIntoView({ behavior: "smooth", block: "start" }); });
     $("#finalScheduleNextPage")?.addEventListener("click", () => { state.finalPage = Number(state.finalPage || 1) + 1; render(); document.querySelector(".cm-work-final-section")?.scrollIntoView({ behavior: "smooth", block: "start" }); });
-    $("#downloadFinalScheduleBtn")?.addEventListener("click", downloadFinalExcel);
+    $("#downloadFinalScheduleBtn")?.addEventListener("click", downloadFinalPng);
     $("#printFinalScheduleBtn")?.addEventListener("click", printFinalSchedule);
     $$(".cm-work-schedule-editor input").forEach((input) => input.addEventListener("change", refreshDurations));
     $$('[data-edit-employee]').forEach((button) => button.addEventListener("click", () => {
