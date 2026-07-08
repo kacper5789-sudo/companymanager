@@ -17963,3 +17963,24 @@ body:not(.cm-days-off-modal-open) #cmDaysOffLocalBackdrop {
   border-top: 1px solid rgba(148, 163, 184, .22);
   margin: 9px 0;
 }
+
+
+/* CompanyManager v314 — formularze nie zamykają się po kliknięciu w krawędź,
+   a menu pozostaje klikalne nawet przy otwartym formularzu/grafiku. */
+html.cm-modal-open body #cmGlobalFormOverlay,
+body.cm-modal-open #cmGlobalFormOverlay,
+html[data-cm-modal-open="true"] body #cmGlobalFormOverlay,
+body[data-cm-modal-open="true"] #cmGlobalFormOverlay{
+  pointer-events:none!important;
+}
+html.cm-modal-open body .bm-horizontal-menu,
+body.cm-modal-open .bm-horizontal-menu,
+html[data-cm-modal-open="true"] body .bm-horizontal-menu,
+body[data-cm-modal-open="true"] .bm-horizontal-menu,
+html.cm-modal-open body .bm-admin-dropdown-menu,
+body.cm-modal-open .bm-admin-dropdown-menu,
+html[data-cm-modal-open="true"] body .bm-admin-dropdown-menu,
+body[data-cm-modal-open="true"] .bm-admin-dropdown-menu{
+  position:relative;
+  z-index:10050!important;
+}

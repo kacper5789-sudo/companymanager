@@ -149,6 +149,30 @@
     return active || modalStack.length > 0;
   }
 
+  function getTopOpenModal() {
+    for (let i = modalStack.length - 1; i >= 0; i -= 1) {
+      const panel = modalStack[i];
+      if (panel && isActuallyOpen(panel) && document.documentElement.contains(panel)) return panel;
+    }
+    const active = Array.from(document.querySelectorAll('.' + MODAL_ACTIVE + ':not([hidden]), .' + MODAL_CLASS + ':not([hidden])'))
+      .filter(function (panel) { return isActuallyOpen(panel); });
+    return active.length ? active[active.length - 1] : null;
+  }
+
+  function isNavigationClickTarget(target) {
+    if (!target || !target.closest) return false;
+    const link = target.closest('a[href]');
+    if (!link) return false;
+    const href = String(link.getAttribute('href') || '').trim();
+    if (!href || href === '#' || href.startsWith('javascript:')) return false;
+    return !!link.closest('.bm-nav, .bm-nav-top, .bm-side-nav, .bm-panel-user, .bm-horizontal-menu, .bm-admin-dropdown-menu, header, nav, aside');
+  }
+
+  function isExplicitCloseTarget(target) {
+    if (!target || !target.closest) return false;
+    return !!target.closest('[data-modal-cancel="true"], [data-dashboard-modal-cancel="true"], #dashCancelAppointment, #cancelAddWorkScheduleBtn, #cancelEditWorkScheduleBtn, #cancelDeleteWorkScheduleBtn, .cm-modal-cancel-btn');
+  }
+
   function refreshBlurState() {
     promoteOpenFormPanels();
     syncModalDepths();
@@ -161,7 +185,7 @@
     overlay.setAttribute('aria-hidden', isOpen ? 'false' : 'true');
     overlay.hidden = !isOpen;
     overlay.style.display = isOpen ? 'block' : 'none';
-    overlay.style.pointerEvents = isOpen ? 'auto' : 'none';
+    overlay.style.pointerEvents = 'none';
     overlay.style.opacity = isOpen ? '1' : '0';
   }
 
@@ -342,16 +366,43 @@
     document.addEventListener('click', function (event) {
       const target = event.target;
       if (!(target instanceof HTMLElement)) return;
-      // v312: kliknięcie w tło/krawędź formularza lub grafiku NIE zamyka aktywnego panelu.
-      // Zamknięcie zostaje wyłącznie pod przyciskami Anuluj/Zapisz/Zatwierdź.
+
+      const activePanel = getTopOpenModal();
+
+      // v314: overlay/tło nigdy nie zamyka formularza. Menu główne ma jednak działać normalnie,
+      // żeby użytkownik mógł świadomie przejść do innej zakładki bez klikania Anuluj.
       if (target.id === OVERLAY_ID || target.closest('#' + OVERLAY_ID)) {
         event.preventDefault();
         event.stopPropagation();
         if (typeof event.stopImmediatePropagation === 'function') event.stopImmediatePropagation();
         return;
       }
-      if (target.matches('[data-modal-cancel="true"]')) {
-        const panel = target.closest('.' + MODAL_ACTIVE + ', .' + MODAL_CLASS);
+
+      // Kliknięcie w krawędź / tło aktywnego formularza NIE może zamykać formularza.
+      // To jest globalne zabezpieczenie dla wszystkich modułów: wizyty, klienci, produkty, usługi,
+      // karnety, marketing, dni wolne, grafik pracy, użytkownicy itd.
+      if (activePanel && activePanel.contains(target)) {
+        const interactive = target.closest('button, a[href], input, select, textarea, label, summary, [role="button"], [data-modal-cancel="true"], [data-dashboard-modal-cancel="true"], [data-open-related], [data-action], [data-cm-action], [onclick]');
+        if (!interactive) {
+          event.stopPropagation();
+          if (typeof event.stopImmediatePropagation === 'function') event.stopImmediatePropagation();
+          window.setTimeout(cleanupBlur, 0);
+          return;
+        }
+      }
+
+      // Klik poza aktywnym formularzem nie może zamykać ani resetować edycji.
+      // Wyjątek: klik w link menu/nawigacji — przepuszczamy, bo to świadoma zmiana zakładki.
+      if (activePanel && !activePanel.contains(target) && !isNavigationClickTarget(target)) {
+        event.preventDefault();
+        event.stopPropagation();
+        if (typeof event.stopImmediatePropagation === 'function') event.stopImmediatePropagation();
+        window.setTimeout(cleanupBlur, 0);
+        return;
+      }
+
+      if (target.matches('[data-modal-cancel="true"]') || isExplicitCloseTarget(target)) {
+        const panel = target.closest('.' + MODAL_ACTIVE + ', .' + MODAL_CLASS) || activePanel;
         if (panel) {
           event.preventDefault();
           const parentSelector = panel.getAttribute('data-parent-panel');

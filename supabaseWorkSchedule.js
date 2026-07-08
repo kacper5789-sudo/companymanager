@@ -998,6 +998,11 @@
         return;
       }
 
+      const navLink = target.closest('a[href]');
+      if (navLink && navLink.closest('.bm-nav, .bm-nav-top, .bm-side-nav, .bm-panel-user, .bm-horizontal-menu, .bm-admin-dropdown-menu, header, nav, aside')) {
+        return;
+      }
+
       const insideWorkSchedule = target.closest("#workScheduleRoot, .cm-work-schedule-page, .cm-work-schedule-modal, .cm-work-schedule-editor-wrap, .cm-work-final-section");
       if (!insideWorkSchedule) return;
 

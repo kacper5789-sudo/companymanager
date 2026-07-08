@@ -3785,6 +3785,16 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!(target instanceof HTMLElement)) return;
       if (target.closest('.bm-nested-modal')) return;
       if (target.id === 'cmGlobalFormOverlay') { event.preventDefault(); event.stopPropagation(); return; }
+      const activePanel = document.querySelector('.cm-modal-active:not([hidden]), .cm-as-modal:not([hidden])');
+      if (activePanel && activePanel.contains(target)) {
+        const interactive = target.closest('button, a[href], input, select, textarea, label, summary, [role="button"], [data-modal-cancel="true"], [data-dashboard-modal-cancel="true"], [data-open-related], [data-action], [data-cm-action], [onclick]');
+        if (!interactive) {
+          event.stopPropagation();
+          if (typeof event.stopImmediatePropagation === 'function') event.stopImmediatePropagation();
+          updateGlobalModalState();
+          return;
+        }
+      }
       if (target.matches('[data-modal-cancel="true"]') || (/anuluj/i.test(target.textContent || '') && target.closest('.cm-as-modal'))) {
         const panel = target.closest('.cm-as-modal, .cm-modal-active');
         if (panel) { closeModalPanel(panel); event.preventDefault(); }
@@ -8452,7 +8462,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const closeDeleteCompanyModal = () => { if (deleteCompanyModal) deleteCompanyModal.hidden = true; };
     openDeleteCompanyBtn?.addEventListener('click', () => { if (deleteCompanyModal) deleteCompanyModal.hidden = false; });
     cancelDeleteCompanyBtn?.addEventListener('click', closeDeleteCompanyModal);
-    deleteCompanyModal?.addEventListener('click', event => { if (event.target === deleteCompanyModal) closeDeleteCompanyModal(); });
+    deleteCompanyModal?.addEventListener('click', event => { if (event.target === deleteCompanyModal) { event.preventDefault(); event.stopPropagation(); } });
     document.addEventListener('keydown', event => { if (event.key === 'Escape') closeDeleteCompanyModal(); }, { once:false });
     confirmDeleteCompanyBtn?.addEventListener('click', () => {
       const companyId = deleteCompanySelect?.value || '';
