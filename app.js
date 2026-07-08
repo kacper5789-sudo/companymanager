@@ -9643,54 +9643,109 @@ document.addEventListener('DOMContentLoaded', () => {
 })();
 
 
-// CompanyManager — Prowadzony tryb samouczka v307 — etap musi być wykonany przed przejściem dalej
+// CompanyManager — Kreator pierwszego uruchomienia v308 — ścieżka ADMIN + EMPLOYEE według uprawnień
 (function () {
   const ACTIVE_KEY = 'cmTutorialGuideActive';
   const INDEX_KEY = 'cmTutorialGuideIndex';
   const CHECKLIST_KEY = 'cmTutorialChecklistV2';
   const COMPLETE_KEY = 'cmTutorialCompleted';
-  const BASELINE_KEY = 'cmTutorialGuideBaselineV1';
-  const STEP_IDS = ['positions','employees','permissions','userLogs','serviceCategories','services','products','passes','companyNotifications','companyProgramSettings','retentionPayments','customers','marketing','workSchedule','daysOff','dashboardAppointments','undoTime','sales','activity','reports'];
+  const PATH_KEY = 'cmTutorialPath';
 
-  const steps = [
-    { id:'positions', page:'positions', href:'positions.html', selector:'#positionFormTitle, #positionForm, .bm-panel-area, main', title:'Krok 1: Dodaj stanowisko pracy', text:'Dodaj minimum jedno stanowisko pracy, np. Fryzjer, Kosmetolog, Recepcja albo Manager. Dopiero po zapisaniu stanowiska samouczek pozwoli przejść dalej.', required:true, validate:'positions', fail:'Dodaj i zapisz przynajmniej jedno stanowisko pracy.' },
-    { id:'employees', page:'users', href:'users.html', selector:'#showAddAdminUserBtn, #addAdminUserCard, .bm-panel-area, main', title:'Krok 2: Dodaj pracownika / użytkownika', text:'Dodaj pracownika po utworzeniu stanowiska. Uzupełnij dane, wybierz stanowisko, rolę i zapisz konto.', required:true, validate:'employees', fail:'Dodaj i zapisz przynajmniej jednego pracownika/użytkownika.' },
-    { id:'permissions', page:'users', href:'users.html', selector:'#showEditAdminUserBtn, #editAdminUserCard, .bm-panel-area, main', title:'Krok 3: Nadaj uprawnienia', text:'Edytuj pracownika i ustaw mu dostęp do zakładek oraz funkcji. Po zapisaniu kliknij „Sprawdź etap”.', required:true, validate:'permissions', fail:'Zapisz uprawnienia przynajmniej jednego pracownika albo kliknij „Oznacz ręcznie”, jeżeli uprawnienia są już gotowe.' },
-    { id:'userLogs', page:'users', href:'users.html', selector:'.bm-panel-area, main', title:'Krok 4: Dzienniki logowań', text:'To etap informacyjny. Zobacz, gdzie są dzienniki logowań i do czego służą, potem oznacz etap jako wykonany.', manual:true },
-    { id:'serviceCategories', page:'services', href:'services.html', selector:'#showServiceCategoryManager, #serviceCategoryCard, .bm-panel-area, main', title:'Krok 5: Dodaj kategorię usług', text:'Dodaj kategorię usług, np. Fryzjer damski, Paznokcie, Masaż albo Diagnostyka.', required:true, validate:'serviceCategories', fail:'Dodaj i zapisz przynajmniej jedną kategorię usług.' },
-    { id:'services', page:'services', href:'services.html', selector:'#showAddService, #serviceFormCard, .bm-panel-area, main', title:'Krok 6: Dodaj usługę', text:'Dodaj usługę w kategorii. Usługa powinna mieć nazwę, czas trwania, cenę oraz przypisane stanowisko.', required:true, validate:'services', fail:'Dodaj i zapisz przynajmniej jedną usługę.' },
-    { id:'products', page:'products', href:'products.html', selector:'.bm-panel-area, main', title:'Krok 7: Produkty', text:'Ten krok jest opcjonalny. Dodaj produkty tylko wtedy, gdy firma sprzedaje towar albo prowadzi magazyn.', optional:true, validate:'products', fail:'Dodaj produkt albo pomiń ten krok.' },
-    { id:'passes', page:'passes', href:'passes.html', selector:'.bm-panel-area, main', title:'Krok 8: Karnety', text:'Ten krok jest opcjonalny. Skonfiguruj karnety tylko wtedy, gdy firma sprzedaje pakiety wejść lub pakiety kwotowe.', optional:true, validate:'passes', fail:'Dodaj karnet/typ karnetu albo pomiń ten krok.' },
-    { id:'companyNotifications', page:'companyPanel', href:'company-panel.html', selector:'.bm-panel-area, main', title:'Krok 9: Ustaw powiadomienia SMS / Email', text:'Przejdź przez automaty SMS i Email: przypomnienia, potwierdzenia wizyt, wiadomości po wizycie i urodziny. Po ustawieniu oznacz etap jako wykonany.', manual:true },
-    { id:'companyProgramSettings', page:'companyPanel', href:'company-panel.html', selector:'.bm-panel-area, main', title:'Krok 10: Ustawienia programu', text:'Ustaw język, walutę, zgody marketingowe, godziny pracy firmy, domyślny czas wizyty i przerwę między wizytami.', manual:true },
-    { id:'retentionPayments', page:'companyPanel', href:'company-panel.html', selector:'.bm-panel-area, main', title:'Krok 11: Retencja i płatności', text:'Ustaw czas przechowywania danych oraz metody płatności. Dla nowych firm najbezpieczniej zostawić retencję jako „Nigdy”.', manual:true },
-    { id:'customers', page:'customers', href:'customers.html', selector:'#addClientForm, .bm-panel-area, main', title:'Krok 12: Dodaj klienta', text:'Dodaj minimum jednego klienta. Zgody marketingowe zaznaczaj tylko wtedy, gdy klient faktycznie je wyraził.', required:true, validate:'customers', fail:'Dodaj i zapisz przynajmniej jednego klienta.' },
-    { id:'marketing', page:'marketing', href:'marketing.html', selector:'.bm-panel-area, main', title:'Krok 13: Marketing', text:'Ten krok jest opcjonalny. Zobacz kampanie SMS/Email, filtry odbiorców oraz raporty kampanii.', optional:true, validate:'marketing', fail:'Utwórz kampanię albo pomiń ten krok.' },
-    { id:'workSchedule', page:'workSchedule', href:'work-schedule.html', selector:'.bm-panel-area, main', title:'Krok 14: Ustal grafik pracy', text:'Ustaw grafik pracy pracowników dla konkretnych dni. Bez grafiku Dashboard pokaże „POZA GRAFIKIEM”.', required:true, validate:'workSchedule', fail:'Zapisz przynajmniej jeden wpis grafiku pracy.' },
-    { id:'daysOff', page:'daysOff', href:'days-off.html', selector:'.bm-panel-area, main', title:'Krok 15: Dni wolne', text:'Ten krok może być opcjonalny. Dodaj urlop/L4/nieobecność, jeżeli firma ma taki przypadek, albo pomiń.', optional:true, validate:'daysOff', fail:'Dodaj dzień wolny albo pomiń ten krok.' },
-    { id:'dashboardAppointments', page:'dashboard', href:'dashboard.html', selector:'.bm-panel-area, #dashboardRoot, main', title:'Krok 16: Dodaj wizytę na Dashboardzie', text:'Dodaj wizytę w wolnym slocie pracownika. Potem możesz nauczyć się kończyć lub odwoływać wizyty.', required:true, validate:'appointments', fail:'Dodaj i zapisz przynajmniej jedną wizytę.' },
-    { id:'undoTime', page:'dashboard', href:'dashboard.html', selector:'.bm-left-info-panel, .bm-panel-area, main', title:'Krok 17: Cofnij Czas', text:'To etap informacyjny. Zobacz gdzie jest „Cofnij Czas” i do czego służy, potem oznacz etap jako wykonany.', manual:true },
-    { id:'sales', page:'sales', href:'sales.html', selector:'.bm-panel-area, main', title:'Krok 18: Sprzedaż', text:'Sprzedaż powstaje po zakończeniu wizyt albo przez sprzedaż bez wizyty. Sprawdź filtry i dane sprzedaży.', manual:true, validate:'sales' },
-    { id:'activity', page:'activity', href:'activity.html', selector:'.bm-panel-area, main', title:'Krok 19: Historia aktywności', text:'To etap informacyjny. Zobacz historię aktywności i różnicę względem dzienników logowań.', manual:true },
-    { id:'reports', page:'reports', href:'reports.html', selector:'.bm-panel-area, main', title:'Krok 20: Raporty', text:'Raporty analizuj na końcu, gdy firma ma już usługi, klientów, grafik, wizyty i sprzedaż.', manual:true }
+  const ADMIN_STEPS = [
+    { id:'positions', path:'admin', page:'positions', href:'positions.html', selector:'#positionFormTitle, #positionForm, .bm-panel-area, main', title:'Krok 1: Dodaj stanowisko pracy', text:'Najpierw dodaj minimum jedno stanowisko pracy, np. Fryzjer, Kosmetolog, Recepcja albo Manager. Bez stanowisk trudno poprawnie dodać pracowników i nadać uprawnienia.', required:true, validate:'positions', fail:'Dodaj i zapisz przynajmniej jedno stanowisko pracy.' },
+    { id:'employees', path:'admin', page:'users', href:'users.html', selector:'#showAddAdminUserBtn, #addAdminUserCard, .bm-panel-area, main', title:'Krok 2: Dodaj pracownika / użytkownika', text:'Dodaj pracownika po utworzeniu stanowiska. Uzupełnij dane, wybierz stanowisko, rolę i zapisz konto.', required:true, validate:'employees', fail:'Dodaj i zapisz przynajmniej jednego pracownika/użytkownika.' },
+    { id:'permissions', path:'admin', page:'users', href:'users.html', selector:'#showEditAdminUserBtn, #editAdminUserCard, .bm-panel-area, main', title:'Krok 3: Nadaj uprawnienia', text:'Edytuj pracownika i ustaw mu dostęp do zakładek oraz funkcji. To najważniejszy etap bezpieczeństwa: pracownik powinien widzieć tylko to, czego realnie używa.', required:true, validate:'permissions', fail:'Zapisz uprawnienia przynajmniej jednego pracownika albo użyj opcji ręcznego oznaczenia, jeżeli uprawnienia są już gotowe.' },
+    { id:'userLogs', path:'admin', page:'users', href:'users.html', selector:'.bm-panel-area, main', title:'Krok 4: Dzienniki logowań', text:'Zobacz gdzie są dzienniki logowań. Tu sprawdzisz datę, login, status, IP i przeglądarkę przy próbach logowania.', manual:true },
+    { id:'serviceCategories', path:'admin', page:'services', href:'services.html', selector:'#showServiceCategoryManager, #serviceCategoryCard, .bm-panel-area, main', title:'Krok 5: Dodaj kategorię usług', text:'Dodaj kategorie usług, np. Fryzjer damski, Paznokcie, Masaż albo Diagnostyka. Kategorie porządkują cennik i raporty.', required:true, validate:'serviceCategories', fail:'Dodaj i zapisz przynajmniej jedną kategorię usług.' },
+    { id:'services', path:'admin', page:'services', href:'services.html', selector:'#showAddService, #serviceFormCard, .bm-panel-area, main', title:'Krok 6: Dodaj usługę', text:'Dodaj usługę w kategorii. Usługa powinna mieć nazwę, czas trwania i cenę. Od tego zależą wizyty, sprzedaż i raporty.', required:true, validate:'services', fail:'Dodaj i zapisz przynajmniej jedną usługę.' },
+    { id:'products', path:'admin', page:'products', href:'products.html', selector:'.bm-panel-area, main', title:'Krok 7: Produkty', text:'Jeżeli firma sprzedaje produkty albo prowadzi magazyn, dodaj produkty, ceny i stany. Jeżeli nie używa produktów, możesz pominąć.', optional:true, validate:'products', fail:'Dodaj produkt albo pomiń ten krok.' },
+    { id:'passes', path:'admin', page:'passes', href:'passes.html', selector:'.bm-panel-area, main', title:'Krok 8: Karnety', text:'Skonfiguruj karnety, jeżeli firma sprzedaje pakiety wejść albo pakiety kwotowe. Jeśli firma nie używa karnetów, pomiń etap.', optional:true, validate:'passes', fail:'Dodaj karnet/typ karnetu albo pomiń ten krok.' },
+    { id:'companyNotifications', path:'admin', page:'companyPanel', href:'company-panel.html', selector:'.bm-panel-area, main', title:'Krok 9: Powiadomienia SMS / Email', text:'Przejdź przez automaty SMS i Email: przypomnienie 24h, potwierdzenie wizyty, wiadomość po wizycie i życzenia urodzinowe. SMS wymaga operatora i może generować koszt.', manual:true },
+    { id:'companyProgramSettings', path:'admin', page:'companyPanel', href:'company-panel.html', selector:'.bm-panel-area, main', title:'Krok 10: Ustawienia programu', text:'Ustaw język, walutę, pola zgód marketingowych, godziny pracy firmy, domyślny czas wizyty i przerwę między wizytami. Te ustawienia sterują siatką godzin na Dashboardzie.', manual:true },
+    { id:'retentionPayments', path:'admin', page:'companyPanel', href:'company-panel.html', selector:'.bm-panel-area, main', title:'Krok 11: Retencja i metody płatności', text:'Ustaw czas przechowywania danych oraz metody płatności. Dla nowych firm najbezpieczniej zostawić retencję jako „Nigdy”.', manual:true },
+    { id:'customers', path:'admin', page:'customers', href:'customers.html', selector:'#addClientForm, .bm-panel-area, main', title:'Krok 12: Dodaj klienta', text:'Dodaj minimum jednego klienta. Zgody marketingowe zaznaczaj tylko wtedy, gdy klient faktycznie je wyraził.', required:true, validate:'customers', fail:'Dodaj i zapisz przynajmniej jednego klienta.' },
+    { id:'marketing', path:'admin', page:'marketing', href:'marketing.html', selector:'.bm-panel-area, main', title:'Krok 13: Marketing', text:'Zobacz kampanie SMS/Email, filtry odbiorców oraz raporty kampanii. Jeżeli firma jeszcze nie używa marketingu, możesz pominąć.', optional:true, validate:'marketing', fail:'Utwórz kampanię albo pomiń ten krok.' },
+    { id:'workSchedule', path:'admin', page:'workSchedule', href:'work-schedule.html', selector:'.bm-panel-area, main', title:'Krok 14: Ustal grafik pracy', text:'Ustaw grafik pracy pracowników dla konkretnych dni. Bez grafiku Dashboard pokaże „POZA GRAFIKIEM”.', required:true, validate:'workSchedule', fail:'Zapisz przynajmniej jeden wpis grafiku pracy.' },
+    { id:'daysOff', path:'admin', page:'daysOff', href:'days-off.html', selector:'.bm-panel-area, main', title:'Krok 15: Dni wolne', text:'Dni wolne blokują dostępność pracownika niezależnie od grafiku pracy. Dodaj urlop/L4/nieobecność albo pomiń, jeżeli nie ma takiego przypadku.', optional:true, validate:'daysOff', fail:'Dodaj dzień wolny albo pomiń ten krok.' },
+    { id:'dashboardAppointments', path:'admin', page:'dashboard', href:'dashboard.html', selector:'.bm-panel-area, #dashboardRoot, main', title:'Krok 16: Dodaj wizytę na Dashboardzie', text:'Dodaj wizytę w wolnym slocie pracownika. Potem nauczysz się ją zakończyć lub odwołać.', required:true, validate:'appointments', fail:'Dodaj i zapisz przynajmniej jedną wizytę.' },
+    { id:'undoTime', path:'admin', page:'dashboard', href:'dashboard.html', selector:'.bm-left-info-panel, .bm-panel-area, main', title:'Krok 17: Cofnij Czas', text:'Zobacz gdzie jest „Cofnij Czas”. To szybka pomoc przy świeżych pomyłkach, ale nie zastępuje kopii zapasowej.', manual:true },
+    { id:'sales', path:'admin', page:'sales', href:'sales.html', selector:'.bm-panel-area, main', title:'Krok 18: Sprzedaż', text:'Sprawdź sprzedaż usług, produktów, karnetów i sprzedaż bez wizyty. Dane sprzedaży są podstawą raportów.', manual:true, validate:'sales' },
+    { id:'activity', path:'admin', page:'activity', href:'activity.html', selector:'.bm-panel-area, main', title:'Krok 19: Historia aktywności', text:'Historia aktywności pokazuje ważne operacje wykonane w firmie: kto coś dodał, edytował albo usunął.', manual:true },
+    { id:'reports', path:'admin', page:'reports', href:'reports.html', selector:'.bm-panel-area, main', title:'Krok 20: Raporty', text:'Raporty analizuj na końcu, gdy firma ma już usługi, klientów, grafik, wizyty i sprzedaż.', manual:true }
   ];
 
+  const EMPLOYEE_STEPS = [
+    { id:'employeeWelcome', path:'employee', page:'dashboard', href:'dashboard.html', selector:'.bm-panel-area, #dashboardRoot, main', title:'Krok 1: Dashboard pracownika', text:'To jest Twoje centrum pracy. Widzisz tutaj swoje wizyty, dostępność i najważniejsze akcje na dany dzień.', manual:true, requiredPermission:['open_company_manager','open_appointments','appointments_add','appointments_edit','appointments_finish'] },
+    { id:'employeeAppointments', path:'employee', page:'dashboard', href:'dashboard.html', selector:'.bm-panel-area, #dashboardRoot, main', title:'Krok 2: Wizyty', text:'Naucz się dodawać, edytować, kończyć i odwoływać wizyty. System pokaże tylko akcje, do których masz uprawnienia.', manual:true, requiredPermission:['open_company_manager','open_appointments','appointments_add','appointments_edit','appointments_finish'] },
+    { id:'employeeCustomers', path:'employee', page:'customers', href:'customers.html', selector:'.bm-panel-area, main', title:'Krok 3: Klienci', text:'Tutaj dodajesz klientów, sprawdzasz dane kontaktowe, notatki i historię, jeżeli właściciel nadał Ci taki dostęp.', manual:true, requiredPermission:['open_clients','clients_add','clients_edit','clients_history'] },
+    { id:'employeeProducts', path:'employee', page:'products', href:'products.html', selector:'.bm-panel-area, main', title:'Krok 4: Produkty i magazyn', text:'Ten krok pojawia się tylko, gdy masz dostęp do produktów. Naucz się sprawdzać produkty, sprzedaż i stan magazynowy.', manual:true, requiredPermission:['open_products','products_add','products_edit','warehouse_manage'] },
+    { id:'employeePasses', path:'employee', page:'passes', href:'passes.html', selector:'.bm-panel-area, main', title:'Krok 5: Karnety', text:'Ten krok pojawia się tylko, gdy masz dostęp do karnetów. Zobacz sprzedaż, wykorzystanie i historię karnetu klienta.', manual:true, requiredPermission:['open_passes','passes_add','passes_edit'] },
+    { id:'employeeMarketing', path:'employee', page:'marketing', href:'marketing.html', selector:'.bm-panel-area, main', title:'Krok 6: Marketing', text:'Ten krok pojawia się tylko, gdy masz dostęp do marketingu. Pamiętaj, że kampanie wymagają zgód klientów.', manual:true, requiredPermission:['open_marketing','marketing_sms','marketing_email'] },
+    { id:'employeeDaysOff', path:'employee', page:'daysOff', href:'days-off.html', selector:'.bm-panel-area, main', title:'Krok 7: Dni wolne', text:'Jeżeli masz dostęp do dni wolnych, sprawdź jak zgłosić urlop, L4 albo inną nieobecność.', manual:true, requiredPermission:['open_days_off','days_off_add','days_off_edit'] },
+    { id:'employeeSchedule', path:'employee', page:'workSchedule', href:'work-schedule.html', selector:'.bm-panel-area, main', title:'Krok 8: Grafik pracy', text:'Jeżeli masz dostęp do grafiku, sprawdź swoje godziny pracy i zobacz, jak wpływają na Dashboard.', manual:true, requiredPermission:['open_work_schedule','work_schedule_edit'] },
+    { id:'employeeWalkins', path:'employee', page:'walkins', href:'walkins.html', selector:'.bm-panel-area, main', title:'Krok 9: Sprzedaż bez wizyty', text:'Ten krok pojawia się, gdy możesz wykonywać sprzedaż bez wizyty, np. sprzedaż produktu klientowi bez rezerwacji.', manual:true, requiredPermission:['open_sales_without_visit','sales_without_visit_add'] },
+    { id:'employeeSales', path:'employee', page:'sales', href:'sales.html', selector:'.bm-panel-area, main', title:'Krok 10: Sprzedaż', text:'Jeżeli masz dostęp do sprzedaży, zobacz jak działają filtry, daty, pracownicy i metody płatności.', manual:true, requiredPermission:['open_sales','sales_without_visit_add','passes_add','appointments_finish'] },
+    { id:'employeeReports', path:'employee', page:'reports', href:'reports.html', selector:'.bm-panel-area, main', title:'Krok 11: Raporty', text:'Ten krok pojawia się tylko, gdy masz dostęp do raportów. Sprawdź raport dzienny, okresowy albo pracowników zgodnie z uprawnieniami.', manual:true, requiredPermission:['open_reports','daily_report_today','daily_report_other_days','export_data'] },
+    { id:'employeeDone', path:'employee', page:'dashboard', href:'dashboard.html', selector:'.bm-panel-area, #dashboardRoot, main', title:'Krok końcowy: Gotowe', text:'Szkolenie pracownika zakończone. Widzisz tylko moduły zgodne z Twoimi uprawnieniami.', manual:true }
+  ];
+
+  function norm(raw) { if (!raw) return {}; if (typeof raw === 'object' && !Array.isArray(raw)) return raw; try { return JSON.parse(raw); } catch (_) { return {}; } }
+  function access() { try { return JSON.parse(localStorage.getItem('cm_access') || 'null') || {}; } catch (_) { return {}; } }
+  function role() { return String(access().role || '').toUpperCase(); }
+  function isAdminLike() { const r = role(); return r === 'OWNER' || r === 'ADMIN'; }
+  function perms() { return norm(access().permissions || {}); }
+  function hasPerm(key) {
+    if (!key) return true;
+    if (isAdminLike()) return true;
+    const p = perms();
+    return p.all === true || p.admin === true || p[key] === true || p[key] === 'true' || p[key] === 1 || p[key] === '1';
+  }
+  function hasAny(keys) {
+    if (!Array.isArray(keys) || keys.length === 0) return true;
+    if (isAdminLike()) return true;
+    return keys.some(hasPerm);
+  }
+  function getSelectedPath() {
+    const saved = localStorage.getItem(PATH_KEY);
+    if (saved === 'admin' || saved === 'employee') return saved;
+    return isAdminLike() ? 'admin' : 'employee';
+  }
+  function baseSteps(path = getSelectedPath()) {
+    return path === 'employee' ? EMPLOYEE_STEPS : ADMIN_STEPS;
+  }
+  function visibleSteps(path = getSelectedPath()) {
+    const arr = baseSteps(path).filter(step => path === 'admin' || hasAny(step.requiredPermission));
+    return arr.length ? arr : [EMPLOYEE_STEPS[0], EMPLOYEE_STEPS[EMPLOYEE_STEPS.length - 1]];
+  }
+  function allVisibleIds(path = getSelectedPath()) { return visibleSteps(path).map(s => s.id); }
+
+  window.cmTutorialGetProfile = function () { return { role: role() || 'EMPLOYEE', path: getSelectedPath(), isAdmin: isAdminLike(), permissions: perms() }; };
+  window.cmTutorialGetSteps = visibleSteps;
+  window.cmTutorialStart = function (path) {
+    const finalPath = path === 'employee' ? 'employee' : path === 'admin' ? 'admin' : getSelectedPath();
+    localStorage.setItem(PATH_KEY, finalPath);
+    localStorage.setItem(ACTIVE_KEY, 'true');
+    localStorage.setItem(INDEX_KEY, '0');
+    localStorage.setItem(COMPLETE_KEY, 'false');
+    const first = visibleSteps(finalPath)[0];
+    window.location.href = first?.href || 'dashboard.html';
+  };
+  window.cmTutorialResetProgress = function () {
+    localStorage.removeItem(CHECKLIST_KEY);
+    localStorage.setItem(COMPLETE_KEY, 'false');
+    localStorage.removeItem(INDEX_KEY);
+  };
+
   function currentPage() { return document.body?.dataset?.panelPage || ''; }
-  function getIndex() { const n = parseInt(localStorage.getItem(INDEX_KEY) || '0', 10); return Number.isFinite(n) ? Math.max(0, Math.min(n, steps.length - 1)) : 0; }
-  function setIndex(i) { localStorage.setItem(INDEX_KEY, String(Math.max(0, Math.min(i, steps.length - 1)))); }
+  function getSteps() { return visibleSteps(getSelectedPath()); }
+  function getIndex() { const steps = getSteps(); const n = parseInt(localStorage.getItem(INDEX_KEY) || '0', 10); return Number.isFinite(n) ? Math.max(0, Math.min(n, Math.max(steps.length - 1, 0))) : 0; }
+  function setIndex(i) { const steps = getSteps(); localStorage.setItem(INDEX_KEY, String(Math.max(0, Math.min(i, Math.max(steps.length - 1, 0))))); }
   function isActive() { return localStorage.getItem(ACTIVE_KEY) === 'true'; }
-  function readJson(key, fallback) { try { return JSON.parse(localStorage.getItem(key) || '') || fallback; } catch (_) { return fallback; } }
-  function writeJson(key, value) { try { localStorage.setItem(key, JSON.stringify(value)); } catch (_) {} }
-  function markDone(id) {
-    try { const s = JSON.parse(localStorage.getItem(CHECKLIST_KEY) || '{}') || {}; s[id] = true; localStorage.setItem(CHECKLIST_KEY, JSON.stringify(s)); } catch (_) {}
-  }
-  function markAllDone() {
-    try { const s = JSON.parse(localStorage.getItem(CHECKLIST_KEY) || '{}') || {}; STEP_IDS.forEach(id => { s[id] = true; }); localStorage.setItem(CHECKLIST_KEY, JSON.stringify(s)); localStorage.setItem(COMPLETE_KEY, 'true'); } catch (_) {}
-  }
+  function markDone(id) { try { const s = JSON.parse(localStorage.getItem(CHECKLIST_KEY) || '{}') || {}; s[id] = true; localStorage.setItem(CHECKLIST_KEY, JSON.stringify(s)); } catch (_) {} }
+  function markAllDone() { try { const s = JSON.parse(localStorage.getItem(CHECKLIST_KEY) || '{}') || {}; allVisibleIds().forEach(id => { s[id] = true; }); localStorage.setItem(CHECKLIST_KEY, JSON.stringify(s)); localStorage.setItem(COMPLETE_KEY, 'true'); } catch (_) {} }
   function clearGuide() {
     localStorage.setItem(ACTIVE_KEY, 'false');
     localStorage.removeItem(INDEX_KEY);
-    localStorage.removeItem(BASELINE_KEY);
     document.querySelectorAll('.cm-guide-popover,.cm-guide-spotlight,.cm-guide-backdrop,.cm-guide-toast').forEach(el => el.remove());
     document.documentElement.classList.remove('cm-guide-running');
   }
@@ -9713,10 +9768,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (a?.company_id) return a.company_id;
       }
     } catch (_) {}
-    try {
-      const session = JSON.parse(localStorage.getItem('companyManagerSession') || '{}') || {};
-      return session.activeCompanyId || session.companyId || '';
-    } catch (_) { return ''; }
+    try { const session = JSON.parse(localStorage.getItem('companyManagerSession') || '{}') || {}; return session.activeCompanyId || session.companyId || ''; } catch (_) { return ''; }
   }
   async function countTable(table, extra = {}) {
     const companyId = await getCompanyId();
@@ -9730,11 +9782,7 @@ document.addEventListener('DOMContentLoaded', () => {
   async function countUsers() {
     const companyId = await getCompanyId();
     if (!window.cmSupabase?.rpc || !companyId) return 0;
-    try {
-      const { data, error } = await window.cmSupabase.rpc('admin_list_company_users', { p_company_id: companyId });
-      if (error) return 0;
-      return Array.isArray(data) ? data.length : 0;
-    } catch (_) { return 0; }
+    try { const { data, error } = await window.cmSupabase.rpc('admin_list_company_users', { p_company_id: companyId }); if (error) return 0; return Array.isArray(data) ? data.length : 0; } catch (_) { return 0; }
   }
   async function hasEmployeeWithPermissions() {
     const companyId = await getCompanyId();
@@ -9743,10 +9791,9 @@ document.addEventListener('DOMContentLoaded', () => {
       const { data, error } = await window.cmSupabase.rpc('admin_list_company_users', { p_company_id: companyId });
       if (error || !Array.isArray(data)) return false;
       return data.some((u) => {
-        const role = String(u.role || '').toUpperCase();
-        const raw = u.permissions || u.supabase_permissions || {};
-        const permissions = typeof raw === 'string' ? JSON.parse(raw || '{}') : raw;
-        return role === 'EMPLOYEE' && permissions && Object.keys(permissions).some(k => permissions[k] === true || permissions[k] === 'true' || permissions[k] === 1 || permissions[k] === '1');
+        const r = String(u.role || '').toUpperCase();
+        const p = norm(u.permissions || u.supabase_permissions || {});
+        return r === 'EMPLOYEE' && p && Object.keys(p).some(k => p[k] === true || p[k] === 'true' || p[k] === 1 || p[k] === '1');
       });
     } catch (_) { return false; }
   }
@@ -9758,7 +9805,7 @@ document.addEventListener('DOMContentLoaded', () => {
       case 'serviceCategories': return (await countTable('service_categories', { active:true })) > 0 || (await countTable('service_categories')) > 0;
       case 'services': return (await countTable('services', { active:true })) > 0 || (await countTable('services')) > 0;
       case 'products': return (await countTable('products')) > 0;
-      case 'passes': return (await countTable('passes')) > 0;
+      case 'passes': return (await countTable('passes')) > 0 || (await countTable('pass_types')) > 0;
       case 'customers': return (await countTable('clients', { active:true })) > 0 || (await countTable('clients')) > 0;
       case 'marketing': return (await countTable('marketing_campaigns')) > 0;
       case 'workSchedule': return (await countTable('work_schedule')) > 0;
@@ -9770,18 +9817,15 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   function waitForPanel(cb, tries=0) {
     const panelReady = document.querySelector('.bm-panel') || document.querySelector('.bm-panel-area') || document.querySelector('#dashboardRoot');
-    if (panelReady || tries > 45) cb();
-    else setTimeout(() => waitForPanel(cb, tries + 1), 120);
+    if (panelReady || tries > 45) cb(); else setTimeout(() => waitForPanel(cb, tries + 1), 120);
   }
   function targetFor(step) {
     const selectors = String(step.selector || 'main').split(',').map(s => s.trim()).filter(Boolean);
-    for (const selector of selectors) {
-      const el = document.querySelector(selector);
-      if (el) return el;
-    }
+    for (const selector of selectors) { const el = document.querySelector(selector); if (el) return el; }
     return document.querySelector('.bm-panel-area') || document.querySelector('main') || document.body;
   }
   async function advance(index, mode='check') {
+    const steps = getSteps();
     const step = steps[index];
     const button = document.querySelector('[data-cm-guide-next]');
     if (button) { button.disabled = true; button.textContent = 'Sprawdzam...'; }
@@ -9790,15 +9834,14 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!canPass) { showToast(step.fail || 'Ten etap nie jest jeszcze wykonany.', false); return; }
       markDone(step.id);
       showToast(`Ukończono etap: ${step.title.replace(/^Krok\s+\d+:\s*/,'')}`, true);
-      if (index >= steps.length - 1) {
-        markAllDone(); clearGuide(); alert('Samouczek ukończony. Link do samouczka przejdzie na koniec menu po odświeżeniu lub zmianie zakładki.'); window.location.href = 'dashboard.html'; return;
-      }
+      if (index >= steps.length - 1) { markAllDone(); clearGuide(); alert('🎓 Ukończono szkolenie CompanyManager. Link do samouczka przejdzie na koniec menu po odświeżeniu lub zmianie zakładki.'); window.location.href = 'dashboard.html'; return; }
       setTimeout(() => go(index + 1), 550);
     } finally {
       if (button && document.body.contains(button)) { button.disabled = false; button.textContent = step.manual ? 'Oznacz etap jako gotowy' : 'Sprawdź etap'; }
     }
   }
   function place(step, index) {
+    const steps = getSteps();
     document.querySelectorAll('.cm-guide-popover,.cm-guide-spotlight,.cm-guide-backdrop').forEach(el => el.remove());
     document.documentElement.classList.add('cm-guide-running');
     const target = targetFor(step);
@@ -9815,14 +9858,15 @@ document.addEventListener('DOMContentLoaded', () => {
       const backdrop = document.createElement('div');
       backdrop.className = 'cm-guide-backdrop';
       const pop = document.createElement('section');
-      pop.className = 'cm-guide-popover';
-      const nextLabel = step.manual ? 'Oznacz etap jako gotowy' : (step.optional ? 'Sprawdź etap' : 'Sprawdź etap');
+      pop.className = 'cm-guide-popover is-docked';
+      const nextLabel = step.manual ? 'Oznacz etap jako gotowy' : 'Sprawdź etap';
       const skipBtn = step.optional ? '<button type="button" class="bm-secondary-btn" data-cm-guide-skip>Pomiń</button>' : '';
+      const pathLabel = getSelectedPath() === 'admin' ? 'Wdrożenie właściciela' : 'Szkolenie pracownika';
       pop.innerHTML = `
-        <div class="cm-guide-kicker">Samouczek ${index + 1}/${steps.length}</div>
+        <div class="cm-guide-kicker">${pathLabel} ${index + 1}/${steps.length}</div>
         <h3>${step.title}</h3>
         <p>${step.text}</p>
-        <div class="cm-guide-hint">${step.manual ? 'Ten krok oznaczasz ręcznie po sprawdzeniu ustawień.' : step.optional ? 'Możesz wykonać ten krok albo go pominąć, jeśli firma tego nie używa.' : 'Wykonaj akcję w module. Dopiero potem kliknij „Sprawdź etap”.'}</div>
+        <div class="cm-guide-hint">${step.manual ? 'Ten krok oznaczasz ręcznie po sprawdzeniu modułu.' : step.optional ? 'Możesz wykonać ten krok albo go pominąć, jeśli firma tego nie używa.' : 'Wykonaj akcję w module. Dopiero potem kliknij „Sprawdź etap”.'}</div>
         <div class="cm-guide-progress"><i style="width:${Math.round(((index + 1) / steps.length) * 100)}%"></i></div>
         <div class="cm-guide-actions">
           <button type="button" class="bm-secondary-btn" data-cm-guide-prev ${index === 0 ? 'disabled' : ''}>Wstecz</button>
@@ -9832,15 +9876,6 @@ document.addEventListener('DOMContentLoaded', () => {
           <button type="button" class="bm-primary-btn" data-cm-guide-next>${index === steps.length - 1 ? 'Ukończ' : nextLabel}</button>
         </div>`;
       document.body.append(backdrop, spot, pop);
-      // v307: dymek samouczka nie może zasłaniać przycisków modułu,
-      // zwłaszcza przycisku „Dodaj” w pierwszych krokach onboardingu.
-      // Dlatego panel sterujący jest stały w prawym dolnym rogu,
-      // a podświetlenie/strzałka wskazują obszar pracy bez blokowania kliknięć.
-      pop.classList.add('is-docked');
-      pop.style.left = 'auto';
-      pop.style.top = 'auto';
-      pop.style.right = '18px';
-      pop.style.bottom = '18px';
       pop.querySelector('[data-cm-guide-stop]')?.addEventListener('click', clearGuide);
       pop.querySelector('[data-cm-guide-prev]')?.addEventListener('click', () => go(index - 1));
       pop.querySelector('[data-cm-guide-skip]')?.addEventListener('click', () => advance(index, 'skip'));
@@ -9849,6 +9884,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }, 260);
   }
   function go(nextIndex) {
+    const steps = getSteps();
     const safeIndex = Math.max(0, Math.min(nextIndex, steps.length - 1));
     const step = steps[safeIndex];
     setIndex(safeIndex);
@@ -9857,13 +9893,14 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   function boot() {
     if (!document.body?.classList?.contains('panel-body')) return;
-    window.cmStartGuidedTutorial = function () { localStorage.setItem(ACTIVE_KEY, 'true'); setIndex(0); localStorage.setItem(COMPLETE_KEY, 'false'); window.location.href = 'positions.html'; };
+    window.cmStartGuidedTutorial = function (path) { window.cmTutorialStart(path); };
     if (!isActive()) return;
-    const step = steps[getIndex()];
+    const steps = getSteps();
+    const step = steps[getIndex()] || steps[0];
+    if (!step) return;
     if (currentPage() !== step.page) { window.location.href = step.href; return; }
     waitForPanel(() => place(step, getIndex()));
   }
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
-  else boot();
-  window.addEventListener('resize', () => { if (isActive()) waitForPanel(() => place(steps[getIndex()], getIndex())); });
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
+  window.addEventListener('resize', () => { if (isActive()) { const steps = getSteps(); waitForPanel(() => place(steps[getIndex()] || steps[0], getIndex())); } });
 })();
