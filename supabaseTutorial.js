@@ -1,11 +1,13 @@
-// CompanyManager — Samouczek wdrożeniowy v303
+// CompanyManager — Samouczek wdrożeniowy v304
 (function () {
   function isTutorialPage() {
     return document.body?.dataset?.panelPage === 'tutorial' || window.location.pathname.includes('tutorial.html');
   }
   if (!isTutorialPage()) return;
 
-  const STORAGE_KEY = 'cmTutorialChecklistV1';
+  const STORAGE_KEY = 'cmTutorialChecklistV2';
+  const OLD_STORAGE_KEY = 'cmTutorialChecklistV1';
+  const COMPLETE_KEY = 'cmTutorialCompleted';
 
   function escapeHtml(value) {
     return String(value ?? '').replace(/[&<>"']/g, (char) => ({
@@ -18,8 +20,11 @@
   }
 
   function loadState() {
-    try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}') || {}; }
-    catch (_) { return {}; }
+    try {
+      const current = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}') || {};
+      if (Object.keys(current).length) return current;
+      return JSON.parse(localStorage.getItem(OLD_STORAGE_KEY) || '{}') || {};
+    } catch (_) { return {}; }
   }
 
   function saveState(state) {
@@ -49,7 +54,7 @@
         'Dodaj użytkownika z imieniem, nazwiskiem, telefonem, adresem e-mail i hasłem.',
         'Przypisz stanowisko pracy.',
         'Ustal rolę: ADMIN dla osoby zarządzającej firmą albo EMPLOYEE dla zwykłego pracownika.',
-        'Jeżeli pracownik nie ma się logować, możesz zablokować logowanie.'
+        'Jeżeli pracownik nie ma się logować, możesz zablokować logowanie albo ograniczyć logowanie godzinowe.'
       ]
     },
     {
@@ -66,8 +71,21 @@
       ]
     },
     {
+      id: 'userLogs',
+      title: '4. Użytkownicy — dzienniki logowań',
+      icon: '🧾',
+      href: 'users.html',
+      lead: 'Dzienniki logowań pomagają sprawdzić, kto i kiedy próbował wejść do systemu.',
+      bullets: [
+        'W zakładce Użytkownicy sprawdzisz historię logowań pracowników.',
+        'Dziennik pokazuje m.in. datę, login, status, IP i przeglądarkę.',
+        'To pomaga wykrywać błędne hasła, próby logowania poza godzinami albo problemy pracownika z dostępem.',
+        'Nie myl dzienników logowań z Historią aktywności — to dwa różne miejsca.'
+      ]
+    },
+    {
       id: 'serviceCategories',
-      title: '4. Dodaj kategorie usług',
+      title: '5. Dodaj kategorie usług',
       icon: '🗂️',
       href: 'services.html',
       lead: 'Kategorie porządkują cennik i późniejsze raporty.',
@@ -79,7 +97,7 @@
     },
     {
       id: 'services',
-      title: '5. Dodaj usługi w kategoriach',
+      title: '6. Dodaj usługi w kategoriach',
       icon: '✂️',
       href: 'services.html',
       lead: 'Usługi są podstawą dodawania wizyt, sprzedaży i raportów.',
@@ -91,7 +109,7 @@
     },
     {
       id: 'products',
-      title: '6. Dodaj produkty — opcjonalnie',
+      title: '7. Dodaj produkty — opcjonalnie',
       icon: '📦',
       href: 'products.html',
       lead: 'Produkty są potrzebne tylko firmom, które sprzedają lub zużywają towar.',
@@ -103,21 +121,37 @@
       ]
     },
     {
+      id: 'passes',
+      title: '8. Karnety — kiedy i po co',
+      icon: '🎟️',
+      href: 'passes.html',
+      lead: 'Karnety są dla firm, które sprzedają pakiety wejść albo pakiety kwotowe do wykorzystania przez klienta.',
+      optional: true,
+      bullets: [
+        'Karnet wejściowy oznacza określoną liczbę wejść, np. 5 masaży albo 10 treningów.',
+        'Karnet kwotowy oznacza pulę pieniędzy do wykorzystania na usługi.',
+        'Sprzedaż karnetu jest osobną sprzedażą, a późniejsze użycie karnetu nie powinno podwójnie zawyżać raportów.',
+        'Jeżeli firma nie używa karnetów, ten moduł można pominąć.'
+      ]
+    },
+    {
       id: 'companyNotifications',
-      title: '7. Panel firmy — powiadomienia SMS i Email',
+      title: '9. Panel firmy — powiadomienia SMS i Email',
       icon: '🏢',
       href: 'company-panel.html',
       lead: 'Tu ustawiasz komunikację automatyczną z klientami.',
       bullets: [
-        'Ustaw treść SMS 24h przed wizytą, SMS po dodaniu wizyty, SMS po wizycie i SMS urodzinowy.',
-        'Ustaw analogiczne treści Email: przypomnienie, potwierdzenie, podziękowanie i urodziny.',
-        'SMS wymaga operatora SMS i kosztów wysyłki; Email działa przez skonfigurowaną domenę.',
+        'SMS 24h przed wizytą przypomina klientowi o terminie. Wysyłka SMS wymaga operatora SMS i może generować koszt.',
+        'Email 24h przed wizytą działa podobnie, ale idzie przez skonfigurowaną domenę e-mail.',
+        'Powiadomienie po dodaniu wizyty potwierdza rezerwację klientowi.',
+        'Powiadomienie po wizycie może być podziękowaniem albo prośbą o kontakt/opinię.',
+        'Wiadomość urodzinowa działa na podstawie daty urodzenia klienta.',
         'W treściach używaj zmiennych typu {klient}, {firma}, {data}, {godzina}, {pracownik}.'
       ]
     },
     {
       id: 'companyProgramSettings',
-      title: '8. Panel firmy — ustawienia programu',
+      title: '10. Panel firmy — ustawienia programu',
       icon: '⚙️',
       href: 'company-panel.html',
       lead: 'Te ustawienia sterują zachowaniem całej firmy w systemie.',
@@ -132,7 +166,7 @@
     },
     {
       id: 'retentionPayments',
-      title: '9. Retencja danych i metody płatności',
+      title: '11. Retencja danych i metody płatności',
       icon: '💳',
       href: 'company-panel.html',
       lead: 'To są ustawienia księgowo-porządkowe, które warto ustawić przed pierwszą sprzedażą.',
@@ -145,7 +179,7 @@
     },
     {
       id: 'customers',
-      title: '10. Dodaj klientów',
+      title: '12. Dodaj klientów',
       icon: '👤',
       href: 'customers.html',
       lead: 'Klienci są potrzebni do wizyt, historii, marketingu i raportów.',
@@ -156,8 +190,22 @@
       ]
     },
     {
+      id: 'marketing',
+      title: '13. Marketing — kampanie SMS i Email',
+      icon: '📢',
+      href: 'marketing.html',
+      lead: 'Marketing służy do wysyłania kampanii do klientów, a nie do zwykłej obsługi pojedynczej wizyty.',
+      optional: true,
+      bullets: [
+        'Kampanie Email możesz wysyłać do klientów, którzy mają adres e-mail i odpowiednią zgodę.',
+        'Kampanie SMS wymagają numeru telefonu, zgody SMS i podłączonego operatora SMS.',
+        'Używaj filtrów odbiorców, żeby nie wysyłać wiadomości do całej bazy bez potrzeby.',
+        'Raporty kampanii pokazują statusy odbiorców i pomagają sprawdzić skuteczność wysyłki.'
+      ]
+    },
+    {
       id: 'workSchedule',
-      title: '11. Ustal grafik pracy pracowników',
+      title: '14. Ustal grafik pracy pracowników',
       icon: '🗓️',
       href: 'work-schedule.html',
       lead: 'Dashboard powinien korzystać z realnych godzin pracy pracownika, a nie tylko z godzin pracy firmy.',
@@ -169,8 +217,21 @@
       ]
     },
     {
+      id: 'daysOff',
+      title: '15. Dni wolne pracowników',
+      icon: '🌴',
+      href: 'days-off.html',
+      lead: 'Dni wolne blokują dostępność pracownika niezależnie od tego, czy ma ustawiony grafik pracy.',
+      bullets: [
+        'Dodaj dzień wolny dla konkretnego pracownika i konkretnego zakresu dat.',
+        'Jeżeli pracownik ma dzień wolny, Dashboard powinien traktować go jako niedostępnego.',
+        'Używaj tego do urlopów, L4, nieobecności i dni zamkniętych dla pracownika.',
+        'Dni wolne pomagają też utrzymać poprawne raporty pracy.'
+      ]
+    },
+    {
       id: 'dashboardAppointments',
-      title: '12. Dashboard — dodawanie i obsługa wizyt',
+      title: '16. Dashboard — dodawanie i obsługa wizyt',
       icon: '📅',
       href: 'dashboard.html',
       lead: 'Dashboard jest miejscem codziennej pracy z grafikiem i wizytami.',
@@ -183,8 +244,21 @@
       ]
     },
     {
+      id: 'undoTime',
+      title: '17. Cofnij Czas — co to znaczy',
+      icon: '⏪',
+      href: 'dashboard.html',
+      lead: 'Cofnij Czas to zabezpieczenie, które pozwala wrócić do ostatnich działań, gdy użytkownik popełni błąd.',
+      bullets: [
+        'Przycisk znajduje się w bocznym panelu.',
+        'Służy do cofania wybranych ostatnich operacji, np. przypadkowej zmiany lub usunięcia, jeżeli system zapisał taką akcję.',
+        'Nie traktuj tego jako kopii zapasowej całej firmy — to szybka pomoc przy świeżych pomyłkach.',
+        'Przy poważnych zmianach i tak warto sprawdzić Historię aktywności.'
+      ]
+    },
+    {
       id: 'sales',
-      title: '13. Sprzedaż',
+      title: '18. Sprzedaż',
       icon: '🛒',
       href: 'sales.html',
       lead: 'Sprzedaż pokazuje usługi, produkty, karnety i sprzedaż bez wizyty.',
@@ -196,8 +270,21 @@
       ]
     },
     {
+      id: 'activity',
+      title: '19. Historia aktywności',
+      icon: '🕘',
+      href: 'activity.html',
+      lead: 'Historia aktywności pokazuje ważne operacje wykonane w firmie.',
+      bullets: [
+        'To miejsce pomaga sprawdzić, kto dodał, edytował albo usunął dane.',
+        'Widać tam czytelne opisy zmian, bez potrzeby czytania technicznego JSON-a.',
+        'Historia aktywności jest szczególnie przydatna dla ADMINA i OWNERA przy wyjaśnianiu pomyłek.',
+        'To nie jest dziennik logowań — logowania sprawdzasz w zakładce Użytkownicy.'
+      ]
+    },
+    {
       id: 'reports',
-      title: '14. Raporty',
+      title: '20. Raporty',
       icon: '📊',
       href: 'reports.html',
       lead: 'Raporty analizuj dopiero po ustawieniu podstaw i po wykonaniu realnych wizyt/sprzedaży.',
@@ -212,7 +299,11 @@
 
   function progressText(state) {
     const done = steps.filter(step => state[step.id]).length;
-    return { done, total: steps.length, pct: Math.round((done / steps.length) * 100) };
+    const total = steps.length;
+    const pct = Math.round((done / total) * 100);
+    const complete = done === total;
+    try { localStorage.setItem(COMPLETE_KEY, complete ? 'true' : 'false'); } catch (_) {}
+    return { done, total, pct, complete };
   }
 
   function render() {
@@ -256,6 +347,10 @@
           <button type="button" class="bm-secondary-btn" id="cmTutorialReset">Resetuj postęp</button>
         </div>
       </section>
+      ${progress.complete ? `
+        <section class="cm-tutorial-complete">
+          <strong>Samouczek ukończony.</strong> Od teraz link do Samouczka nie będzie już pierwszy w górnym menu. Po odświeżeniu lub przejściu do innej zakładki pojawi się na końcu, za wyborem języka.
+        </section>` : ''}
       <section class="cm-tutorial-warning">
         <strong>Najważniejsza zasada:</strong> nie zaczynaj od Dashboardu. Najpierw trzeba przygotować stanowiska, pracowników, uprawnienia, usługi, ustawienia firmy, klientów i grafik pracy.
       </section>
@@ -273,6 +368,8 @@
     area.querySelector('#cmTutorialReset')?.addEventListener('click', () => {
       if (!confirm('Zresetować postęp samouczka?')) return;
       localStorage.removeItem(STORAGE_KEY);
+      localStorage.removeItem(OLD_STORAGE_KEY);
+      localStorage.setItem(COMPLETE_KEY, 'false');
       render();
     });
   }

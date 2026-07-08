@@ -1563,9 +1563,20 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }, true);
 
+
+  const CM_TUTORIAL_STEP_IDS = ['positions','employees','permissions','userLogs','serviceCategories','services','products','passes','companyNotifications','companyProgramSettings','retentionPayments','customers','marketing','workSchedule','daysOff','dashboardAppointments','undoTime','sales','activity','reports'];
+  const isCmTutorialCompleted = () => {
+    try {
+      if (localStorage.getItem('cmTutorialCompleted') === 'true') return true;
+      const state = JSON.parse(localStorage.getItem('cmTutorialChecklistV2') || '{}') || {};
+      return CM_TUTORIAL_STEP_IDS.every(id => state[id] === true);
+    } catch (_) { return false; }
+  };
+
   const panelMenu = (panelUser, page) => {
+    const tutorialCompleted = isCmTutorialCompleted();
     const items = [
-      ['tutorial.html','tutorial','Samouczek','🧭'],
+      ...(!tutorialCompleted ? [['tutorial.html','tutorial','Samouczek','🧭']] : []),
       ['visits.html','visits','Wizyty','📅'],
       ['customers.html','customers','Klienci','👤'],
       ['services.html','services','Usługi','✂️'],
@@ -3343,6 +3354,7 @@ document.addEventListener('DOMContentLoaded', () => {
           <a class="bm-horizontal-brand bm-logo-home ${page==='dashboard'?'active':''}" href="dashboard.html" aria-label="CompanyManager — panel główny"><img src="../assets/favicon.png" alt="CM"></a>
           <nav class="bm-nav bm-nav-top">${panelMenu(user, page)}</nav>
           ${languageSelector}
+          ${isCmTutorialCompleted() && canAccessPage(user, 'tutorial') ? `<a class="bm-tutorial-completed-link ${page==='tutorial'?'active':''}" href="tutorial.html"><span class="cm-menu-icon" aria-hidden="true">🧭</span><span class="cm-menu-label">Samouczek</span></a>` : ''}
           ${String(user.role || '').toLowerCase() === 'owner' ? `<a class="bm-owner-top-companies ${page==='companies'?'active':''}" href="companies.html"><span class="cm-menu-icon" aria-hidden="true">👑</span><span class="cm-menu-label">Firmy</span></a>` : ''}
         </header>
 
