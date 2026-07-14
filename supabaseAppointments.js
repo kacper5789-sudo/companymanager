@@ -1126,6 +1126,20 @@
     const filtered = data.appointments.filter((item) => {
       return item.deleted !== true && normalizeAppointmentStatus(item.status) === currentFilter;
     });
+
+    // Tylko zaplanowane wizyty pokazujemy chronologicznie: najbliższa data i godzina na górze.
+    // Pozostałe zakładki zachowują dotychczasową kolejność malejącą z Supabase.
+    if (currentFilter === "zaplanowane") {
+      filtered.sort((a, b) => {
+        const dateCompare = String(appointmentDate(a) || "").localeCompare(String(appointmentDate(b) || ""));
+        if (dateCompare !== 0) return dateCompare;
+
+        const timeCompare = String(appointmentTime(a) || "00:00").localeCompare(String(appointmentTime(b) || "00:00"));
+        if (timeCompare !== 0) return timeCompare;
+
+        return String(a.id || "").localeCompare(String(b.id || ""));
+      });
+    }
     const editable = data.appointments.filter((item) => item.deleted !== true && normalizeAppointmentStatus(item.status) !== "usunięte");
 
     const rows = filtered.map((item) => {
