@@ -154,7 +154,7 @@
   const allPermissionKeys = [...tabPermissions, ...actionPermissions].map(([key]) => key);
 
   const basicEmployeePermissionKeys = [
-    // Zakładki widoczne po kliknięciu „Podstawowe pracownika”
+    // Podstawowe zakładki pracownika
     "open_company_manager",
     "open_positions",
     "open_team",
@@ -167,27 +167,21 @@
     "open_marketing",
     "open_passes",
     "open_owner_page",
-    "open_daily_report",
     "open_work_schedule",
-    "open_sms",
-    "open_email",
+    "open_daily_report",
 
-    // Funkcje systemowe podstawowego pracownika
-    "days_off_add",
-    "clients_add",
-    "clients_history",
-    "services_add",
-    "products_add",
-    "warehouse_manage",
+    // Podstawowe funkcje pracownika
+    "daily_report_today",
+    "passes_add",
+    "sales_without_visit_add",
+    "appointments_unfinished_history",
+    "appointments_history",
     "appointments_add",
     "appointments_edit",
     "appointments_finish",
-    "appointments_history",
-    "sales_without_visit_add",
-    "marketing_sms",
-    "marketing_email",
-    "passes_add",
-    "daily_report_today"
+    "warehouse_manage",
+    "clients_history",
+    "clients_add"
   ];
 
   function normalizeRole(role) {
