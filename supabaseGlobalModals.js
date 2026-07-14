@@ -374,6 +374,12 @@
         return;
       }
 
+      // Formularze użytkowników posiadają własną walidację i zapis Supabase.
+      // Nie wolno globalnemu systemowi modali przechwycić przycisku przed handlerem modułu.
+      if (target.closest('[data-cm-users-submit-action]')) {
+        return;
+      }
+
       const activePanel = getTopOpenModal();
 
       // v314: overlay/tło nigdy nie zamyka formularza. Menu główne ma jednak działać normalnie,

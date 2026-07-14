@@ -3784,6 +3784,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.addEventListener('click', event => {
       const target = event.target;
       if (!(target instanceof HTMLElement)) return;
+      if (target.closest('[data-cm-users-submit-action]')) return;
       if (target.closest('.bm-nested-modal')) return;
       if (target.id === 'cmGlobalFormOverlay') { event.preventDefault(); event.stopPropagation(); return; }
       const activePanel = document.querySelector('.cm-modal-active:not([hidden]), .cm-as-modal:not([hidden])');

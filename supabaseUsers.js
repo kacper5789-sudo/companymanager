@@ -448,7 +448,7 @@
       <form id="addAdminUserForm" class="bm-form-grid cm-admin-user-form">
         ${userFormHtml("add", null, positions)}
         <div class="cm-admin-user-actions">
-          <button id="submitAddAdminUserBtn" type="submit">Dodaj użytkownika</button>
+          <button id="submitAddAdminUserBtn" type="submit" data-cm-users-submit-action="add">Dodaj użytkownika</button>
           <button type="button" class="cm-secondary-action" data-modal-cancel="true">Anuluj</button>
         </div>
       </form>
@@ -461,7 +461,7 @@
         <label class="cm-full-field">Wybierz użytkownika<select name="userId" id="editAdminUserSelect" required>${userOptions}</select></label>
         <div id="editAdminUserFields" class="cm-admin-user-fields cm-form-subgrid"></div>
         <div class="cm-admin-user-actions">
-          <button type="submit">Zatwierdź</button>
+          <button type="submit" id="submitEditAdminUserBtn" data-cm-users-submit-action="edit">Zatwierdź</button>
           <button type="button" class="cm-secondary-action" data-modal-cancel="true">Anuluj</button>
         </div>
       </form><p id="editAdminUserMessage" class="panel-message"></p>` : `<p class="bm-muted">Brak użytkowników do edycji.</p>`}
