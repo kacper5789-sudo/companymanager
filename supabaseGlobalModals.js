@@ -367,6 +367,13 @@
       const target = event.target;
       if (!(target instanceof HTMLElement)) return;
 
+      // Akcje eksportu muszą pozostać klikalne nawet wtedy, gdy globalny system
+      // omyłkowo widzi inny panel jako aktywny modal. Bez tego handler capture
+      // zatrzymywał kliknięcie przed modułem Grafiku pracy.
+      if (target.closest('[data-cm-work-export-action], [data-final-schedule-export], [data-final-schedule-print]')) {
+        return;
+      }
+
       const activePanel = getTopOpenModal();
 
       // v314: overlay/tło nigdy nie zamyka formularza. Menu główne ma jednak działać normalnie,

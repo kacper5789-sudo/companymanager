@@ -508,7 +508,7 @@
         <button type="button" id="finalScheduleNextMonthBtn" class="bm-light-btn cm-work-btn">Kolejny miesiąc</button>
         <button type="button" id="finalScheduleYearBtn" class="bm-light-btn cm-work-btn">Ten rok</button>
         <button type="button" id="finalScheduleApplyBtn" class="bm-primary-btn cm-work-btn cm-work-btn-save">Pokaż</button>
-        <button type="button" id="downloadFinalScheduleBtn" class="bm-light-btn cm-work-btn cm-work-btn-download" data-final-schedule-export="png" data-cm-work-export-action="png">Pobierz PNG</button>
+        <button type="button" id="downloadFinalScheduleBtn" class="bm-light-btn cm-work-btn cm-work-btn-download" data-final-schedule-export="png" data-cm-work-export-action="png" onpointerdown="return window.cmWorkScheduleDownloadFinalPng?.(event)">Pobierz PNG</button>
         <button type="button" id="printFinalScheduleBtn" class="bm-light-btn cm-work-btn cm-work-btn-print" data-final-schedule-print="true" data-cm-work-export-action="print">Drukuj</button>
       </div>
       ${finalSchedulePagerHtml()}
@@ -985,42 +985,29 @@
   }
 
   function downloadCanvasAsPng(canvas, filename) {
-    if (!canvas || !canvas.width || !canvas.height) return false;
-    const safeFilename = filename || `grafik-wynikowy-${new Date().toISOString().slice(0, 10)}.png`;
-
-    // Najpierw używamy synchronicznego dataURL. Dzięki temu kliknięcie pobrania
-    // pozostaje bezpośrednio powiązane z gestem użytkownika i Chrome go nie blokuje.
-    try {
-      const dataUrl = canvas.toDataURL("image/png");
-      if (dataUrl && dataUrl !== "data:,") {
-        const link = document.createElement("a");
-        link.href = dataUrl;
-        link.download = safeFilename;
-        link.rel = "noopener";
-        link.style.display = "none";
-        document.body.appendChild(link);
-        link.click();
-        setTimeout(() => { try { link.remove(); } catch (_) {} }, 500);
-        return true;
-      }
-    } catch (error) {
-      console.warn("CompanyManager PNG dataURL export fallback", error);
-    }
-
-    // Fallback dla przeglądarek, które lepiej obsługują Blob.
+    if (!canvas) return false;
     if (typeof canvas.toBlob === "function") {
       canvas.toBlob((blob) => {
-        if (!blob) {
-          alert("Nie udało się wygenerować pliku PNG. Zmniejsz zakres dat albo użyj opcji Drukuj.");
-          return;
-        }
-        downloadBlobFile(blob, safeFilename);
+        if (!blob) { alert("Nie udało się wygenerować pliku PNG."); return; }
+        downloadBlobFile(blob, filename);
       }, "image/png");
       return true;
     }
-
-    alert("Nie udało się pobrać PNG. Spróbuj ponownie albo użyj opcji Drukuj.");
-    return false;
+    try {
+      const dataUrl = canvas.toDataURL("image/png");
+      const link = document.createElement("a");
+      link.href = dataUrl;
+      link.download = filename || `grafik-wynikowy-${new Date().toISOString().slice(0, 10)}.png`;
+      link.style.display = "none";
+      document.body.appendChild(link);
+      link.click();
+      setTimeout(() => { try { link.remove(); } catch (_) {} }, 250);
+      return true;
+    } catch (error) {
+      console.warn("CompanyManager PNG export failed", error);
+      alert("Nie udało się pobrać PNG. Spróbuj ponownie albo użyj opcji Drukuj.");
+      return false;
+    }
   }
 
   function drawRoundedRect(ctx, x, y, w, h, r) {
@@ -1059,7 +1046,7 @@
 
   function buildFinalSchedulePngCanvas(result) {
     const { header, rows, employees } = result;
-    const preferredScale = 2;
+    const scale = 2;
     const padding = 32;
     const title = `Grafik wynikowy ${formatDatePL(state.finalFrom)} - ${formatDatePL(state.finalTo)}`;
     const generated = `Wygenerowano przez CompanyManager • ${new Date().toLocaleString("pl-PL")}`;
@@ -1090,17 +1077,6 @@
     const metaHeight = 126;
     const footerHeight = 36;
     const canvasHeight = padding * 2 + metaHeight + tableHeight + footerHeight;
-
-    // Chrome i część urządzeń mobilnych odrzucają canvas przekraczający ok. 16k px
-    // na jednym boku. Dla długich zakresów (np. cały rok) skala 2× była za duża,
-    // przez co kliknięcie wyglądało jak martwe. Skala jest teraz dobierana dynamicznie.
-    const maxCanvasSide = 15000;
-    const maxScaleByWidth = maxCanvasSide / Math.max(1, canvasWidth);
-    const maxScaleByHeight = maxCanvasSide / Math.max(1, canvasHeight);
-    const scale = Math.max(0.75, Math.min(preferredScale, maxScaleByWidth, maxScaleByHeight));
-    if (canvasWidth * scale > maxCanvasSide || canvasHeight * scale > maxCanvasSide) {
-      throw new Error("png_range_too_large");
-    }
 
     const canvas = document.createElement("canvas");
     canvas.width = Math.ceil(canvasWidth * scale);
@@ -1179,25 +1155,25 @@
     return canvas;
   }
 
+  let finalPngExportLockUntil = 0;
   function downloadFinalPng(event) {
     if (event) {
       event.preventDefault();
       event.stopPropagation();
       if (typeof event.stopImmediatePropagation === "function") event.stopImmediatePropagation();
     }
+    const now = Date.now();
+    if (now < finalPngExportLockUntil) return false;
+    finalPngExportLockUntil = now + 900;
     const result = finalScheduleExportRows();
     if (result.error) { alert(result.error); return false; }
     try {
       const canvas = buildFinalSchedulePngCanvas(result);
       if (!canvas) throw new Error("canvas_not_ready");
-      const started = downloadCanvasAsPng(canvas, makePngFileName(result));
-      if (!started) throw new Error("png_download_not_started");
+      downloadCanvasAsPng(canvas, makePngFileName(result));
     } catch (error) {
       console.error("CompanyManager: PNG export failed.", error);
-      const tooLarge = error?.message === "png_range_too_large";
-      alert(tooLarge
-        ? "Wybrany zakres jest zbyt duży dla jednego pliku PNG. Wybierz krótszy zakres albo użyj opcji Drukuj."
-        : "Nie udało się wygenerować PNG. Spróbuj ponownie albo użyj przycisku Drukuj.");
+      alert("Nie udało się wygenerować PNG. Spróbuj użyć przycisku Drukuj.");
     }
     return false;
   }
