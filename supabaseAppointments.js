@@ -763,11 +763,11 @@
       const { data: rows, error: readError } = await window.cmSupabase
         .from("appointments")
         .select("id, date, time, start_time, end_time, ends_at, status, deleted")
-        .eq("company_id", ctx.companyId)
-        .eq("deleted", false);
+        .eq("company_id", ctx.companyId);
       if (readError) throw readError;
       const cutoff = Date.now() - (60 * 60 * 1000);
       const overdueIds = (rows || []).filter((item) => {
+        if (item?.deleted === true) return false;
         const status = String(item?.status || "").trim().toLowerCase();
         if (!["zaplanowane", "planned", "scheduled"].includes(status)) return false;
         const end = appointmentEndDateTimeForAutoStatus(item);
