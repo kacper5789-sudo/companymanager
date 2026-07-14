@@ -810,8 +810,12 @@
     // Prefer the SECURITY DEFINER RPC when the migration is installed.
     try {
       const { data, error } = await window.cmSupabase.rpc("auto_mark_unfinished_appointments", { p_company_id: ctx.companyId });
-      if (!error) return Number(data || 0);
-      if (String(error?.code || "") !== "PGRST202" && Number(error?.status || 0) !== 404) {
+      if (!error && Number(data || 0) > 0) {
+        console.info("CompanyManager auto unfinished appointments RPC updated", Number(data || 0));
+      }
+      // Do not return on RPC success. A stale RPC can legitimately return 0
+      // while overdue rows still exist, so the browser fallback must run too.
+      if (error && String(error?.code || "") !== "PGRST202" && Number(error?.status || 0) !== 404) {
         console.warn("CompanyManager auto unfinished appointments RPC skipped", error);
       }
     } catch (error) {

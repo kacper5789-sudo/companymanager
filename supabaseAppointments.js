@@ -756,7 +756,11 @@
     if (!window.cmSupabase || !ctx?.companyId) return 0;
     try {
       const { data, error } = await window.cmSupabase.rpc("auto_mark_unfinished_appointments", { p_company_id: ctx.companyId });
-      if (!error) return Number(data || 0);
+      if (!error && Number(data || 0) > 0) {
+        console.info("CompanyManager auto unfinished appointments RPC updated", Number(data || 0));
+      }
+      // Never return here. Older/stale RPC versions may exist and return 0,
+      // so the browser fallback must still verify overdue appointments.
     } catch (_) {}
 
     try {
