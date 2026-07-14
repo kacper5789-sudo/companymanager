@@ -516,7 +516,10 @@
   function entityConfigs(data) {
     const employees = (data.users || []).filter(activeGenericItem).map((item) => ({
       type: 'employee',
+      // UI Dashboardu operuje na profile.id, ale appointments.employee_id ma FK do employees.id.
+      // Zachowujemy oba identyfikatory i do zapisu używamy employeeRecordId.
       id: String(item.id || ''),
+      employeeRecordId: String(dashboardScheduleEmployeeId(item) || ''),
       label: personName(item),
       name: personName(item),
       haystack: [personName(item), item.email || '', item.phone || ''].join(' ').toLowerCase()
@@ -552,6 +555,7 @@
         hidden.dataset.label = row.label || '';
         hidden.dataset.name = row.name || row.label || '';
         hidden.dataset.price = row.price != null ? String(row.price) : '';
+        hidden.dataset.employeeRecordId = row.employeeRecordId || '';
         hidden.dispatchEvent(new Event('change', { bubbles: true }));
         hidden.dispatchEvent(new Event('input', { bubbles: true }));
         close();
@@ -565,6 +569,7 @@
             hidden.dataset.label = '';
             hidden.dataset.name = '';
             hidden.dataset.price = '';
+            hidden.dataset.employeeRecordId = '';
             hidden.dispatchEvent(new Event('change', { bubbles: true }));
           }
         }
@@ -602,7 +607,10 @@
     const input = form.querySelector(`[data-entity-name="${CSS.escape(fieldName)}"]`);
     const groups = entityConfigs(data || {});
     const type = input?.dataset.entityType || '';
-    const row = (groups[type] || []).find((item) => String(item.id) === String(value || '')) || null;
+    const row = (groups[type] || []).find((item) =>
+      String(item.id) === String(value || '') ||
+      (item.employeeRecordId && String(item.employeeRecordId) === String(value || ''))
+    ) || null;
     if (hidden) {
       hidden.value = row ? row.id : (value || '');
       hidden.dataset.label = row?.label || '';
@@ -1316,6 +1324,7 @@
     const employeeId = String(formData.get("employeeId") || "").trim();
     const employeeHidden = currentForm?.elements?.employeeId || null;
     const employeeName = employeeHidden?.dataset?.name || String(formData.get("employeeName") || "").trim() || null;
+    const employeeRecordId = String(employeeHidden?.dataset?.employeeRecordId || '').trim();
     return {
       company_id: ctx.companyId,
       date,
@@ -1327,10 +1336,8 @@
       appointment_datetime: startsAt,
       customer_id: clientId || null,
       client_id: clientId || null,
-      // Zapisujemy profile.id wybranego pracownika. Dashboard buduje listę pracowników
-      // z company_users_for_dropdown, więc employeeId jest poprawnym ID profilu.
-      // Pozostawienie NULL powodowało utratę pracownika po zakończeniu wizyty.
-      employee_id: employeeId || null,
+      // appointments.employee_id wskazuje public.employees(id), nie profiles(id).
+      employee_id: employeeRecordId || null,
       employee_name: employeeName,
       service_id: serviceId || null,
       product_id: productId || null,
@@ -2002,8 +2009,12 @@
 
     function isWorkerActiveForSelectedDay(employeeId) {
       const id = String(employeeId || "");
-      return !!id && Array.from(document.querySelectorAll(".dash-worker-toggle"))
-        .some((input) => String(input.value) === id && input.checked && !input.disabled);
+      const employee = (data.users || []).find((user) =>
+        String(user?.id || '') === id || String(dashboardScheduleEmployeeId(user)) === id
+      );
+      const dashboardId = String(employee?.id || id);
+      return !!dashboardId && Array.from(document.querySelectorAll(".dash-worker-toggle"))
+        .some((input) => String(input.value) === dashboardId && input.checked && !input.disabled);
     }
 
     document.querySelector("#dashboardAppointmentAddForm")?.addEventListener("submit", async (event) => {
