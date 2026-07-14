@@ -730,17 +730,25 @@
         return;
       }
       const msg = "#editAdminUserMessage";
-      const userId = String(new FormData(form).get("userId") || "");
+      const editFormData = new FormData(form);
+      const userId = String(editFormData.get("userId") || "");
+      const password = String(editFormData.get("password") || "");
+      const passwordConfirm = String(editFormData.get("passwordConfirm") || "");
       const base = formBasePayload(form);
       if (!userId) return setMessage(msg, "Wybierz użytkownika do edycji.", false);
       if (!validatePhone(base.phone)) return setMessage(msg, "Podaj numer telefonu w formacie np. +48321321321.", false);
+      if (password || passwordConfirm) {
+        if (password !== passwordConfirm) return setMessage(msg, "Hasła nie są takie same.", false);
+        if (password.length < 8) return setMessage(msg, "Nowe hasło musi mieć minimum 8 znaków.", false);
+      }
       try {
         const { error } = await rpcUpdateCompanyUserSafe(ctx, {
           p_user_id: userId,
+          p_password: password || null,
           ...base.rpcBase
         });
         if (error) throw error;
-        setMessage(msg, "Użytkownik zaktualizowany w Supabase.", true);
+        setMessage(msg, password ? "Użytkownik i hasło zostały zaktualizowane." : "Użytkownik zaktualizowany w Supabase.", true);
         rerenderUsersAfterSuccess(600);
       } catch (error) {
         console.error("CompanyManager users edit error", error);
