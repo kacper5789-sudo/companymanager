@@ -716,13 +716,13 @@
     }, true);
 
 
-    document.querySelector("#editAdminUserForm")?.addEventListener("submit", async (event) => {
-      event.preventDefault();
-      event.stopPropagation();
-      const form = event.currentTarget;
-      if (activeUsersFormMode !== "edit" || !editPanel || editPanel.hidden) {
-        return;
-      }
+    const editForm = document.querySelector("#editAdminUserForm");
+    const editSubmitButton = editForm?.querySelector('button[type="submit"]');
+    let editUserSubmitting = false;
+
+    async function handleEditUserSubmit(form) {
+      if (!form || editUserSubmitting) return;
+      activeUsersFormMode = "edit";
       const msg = "#editAdminUserMessage";
       const editFormData = new FormData(form);
       const userId = String(editFormData.get("userId") || "");
@@ -730,12 +730,17 @@
       const passwordConfirm = String(editFormData.get("passwordConfirm") || "");
       const base = formBasePayload(form);
       if (!userId) return setMessage(msg, "Wybierz użytkownika do edycji.", false);
+      if (!base.fullName) return setMessage(msg, "Podaj imię i nazwisko.", false);
       if (!validatePhone(base.phone)) return setMessage(msg, "Podaj numer telefonu w formacie np. +48321321321.", false);
       if (password || passwordConfirm) {
         if (password !== passwordConfirm) return setMessage(msg, "Hasła nie są takie same.", false);
         if (password.length < 8) return setMessage(msg, "Nowe hasło musi mieć minimum 8 znaków.", false);
       }
+
+      editUserSubmitting = true;
+      if (editSubmitButton) editSubmitButton.disabled = true;
       try {
+        setMessage(msg, "Zapisywanie zmian...", true);
         const { error } = await rpcUpdateCompanyUserSafe(ctx, {
           p_user_id: userId,
           p_password: password || null,
@@ -747,8 +752,30 @@
       } catch (error) {
         console.error("CompanyManager users edit error", error);
         setMessage(msg, "Błąd edycji użytkownika: " + (error.message || error), false);
+        editUserSubmitting = false;
+        if (editSubmitButton) editSubmitButton.disabled = false;
       }
-    });
+    }
+
+    if (editSubmitButton && !editSubmitButton.dataset.cmUsersEditSubmitReady) {
+      editSubmitButton.dataset.cmUsersEditSubmitReady = "1";
+      editSubmitButton.addEventListener("click", async (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        if (typeof event.stopImmediatePropagation === "function") event.stopImmediatePropagation();
+        activeUsersFormMode = "edit";
+        if (editForm && typeof editForm.reportValidity === "function" && !editForm.reportValidity()) return;
+        await handleEditUserSubmit(editForm);
+      }, true);
+    }
+
+    editForm?.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      if (typeof event.stopImmediatePropagation === "function") event.stopImmediatePropagation();
+      if (!editPanel || editPanel.hidden) return;
+      await handleEditUserSubmit(event.currentTarget);
+    }, true);
 
     document.querySelector("#deleteAdminUserForm")?.addEventListener("submit", async (event) => {
       event.preventDefault();
