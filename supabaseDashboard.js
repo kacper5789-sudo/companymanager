@@ -1513,9 +1513,17 @@
       .sort((a, b) => String(appointmentStart(a) || "").localeCompare(String(appointmentStart(b) || "")));
     const appointmentRows = selectedDayVisits.map((item) => {
       const client = lookups.clientsById[appointmentClientId(item)];
-      const employee = lookups.usersById[item.employee_id];
+      // Część starszych wizyt ma puste employee_id, ale zachowany snapshot employee_name.
+      // Dodatkowo historyczne rekordy mogły wskazywać identyfikator rekordu employee zamiast profile.id.
+      const employee = lookups.usersById[item.employee_id]
+        || Object.values(lookups.usersById || {}).find((user) => String(user?.employee_record_id || user?.employee_id || "") === String(item.employee_id || ""))
+        || findUserByAppointmentEmployeeName(lookups, item)
+        || null;
+      const employeeLabel = employee ? personName(employee) : (item.employee_name || "-");
       const service = lookups.servicesById[item.service_id];
-      return [escapeHtml(plDate(appointmentDate(item))), escapeHtml(`${appointmentStart(item)} - ${appointmentEnd(item)}`), escapeHtml(customerName(client)), escapeHtml(personName(employee)), escapeHtml(serviceName(service)), escapeHtml(item.status || "zaplanowane")];
+      const clientLabel = client ? customerName(client) : (item.customer_name || item.client_name || item.customer_full_name || item.client_full_name || "-");
+      const serviceLabel = service ? serviceName(service) : (item.service_name || "-");
+      return [escapeHtml(plDate(appointmentDate(item))), escapeHtml(`${appointmentStart(item)} - ${appointmentEnd(item)}`), escapeHtml(clientLabel), escapeHtml(employeeLabel), escapeHtml(serviceLabel), escapeHtml(item.status || "zaplanowane")];
     });
 
     const activeWorkerIds = loadActiveWorkerIds(ctx, selectedDate, data.users);
@@ -1687,7 +1695,10 @@
         .filter((input) => input.checked && !input.disabled)
         .map((input) => input.value);
       document.querySelectorAll("[data-employee-id]").forEach((cell) => {
-        cell.classList.toggle("inactive-worker", !active.includes(cell.dataset.employeeId));
+        const isActive = active.includes(cell.dataset.employeeId);
+        cell.classList.toggle("inactive-worker", !isActive);
+        cell.dataset.workerActive = isActive ? "1" : "0";
+        cell.setAttribute("aria-disabled", isActive ? "false" : "true");
       });
       document.querySelectorAll("[data-employee-head]").forEach((head) => {
         head.classList.toggle("inactive-worker", !active.includes(head.dataset.employeeHead));
@@ -1955,7 +1966,7 @@
       slot.addEventListener("click", () => {
         const tooltip = document.querySelector("#dashSlotTooltip");
         if (tooltip) tooltip.hidden = true;
-        if (slot.dataset.workerActive === "0") {
+        if (slot.dataset.workerActive === "0" || slot.classList.contains("inactive-worker")) {
           alert("Ten pracownik jest wyłączony z Dashboardu w tym dniu. Włącz go przyciskiem z liczbą pracowników, aby dodawać lub edytować jego wizyty.");
           return;
         }
@@ -1999,10 +2010,6 @@
       event.preventDefault();
       if (!allowAdd) { setMessage("#dashboardAppointmentMessage", "Brak uprawnienia do dodawania wizyt.", false); return; }
       const payload = payloadFromForm(ctx, new FormData(event.currentTarget), event.currentTarget);
-      if (!isWorkerActiveForSelectedDay(payload.employee_id)) {
-        setMessage("#dashboardEditVisitMessage", "Ten pracownik jest wyłączony z Dashboardu w tym dniu. Najpierw włącz go na liście pracowników.", false);
-        return;
-      }
       if (!isWorkerActiveForSelectedDay(payload.employee_id)) {
         setMessage("#dashboardAppointmentMessage", "Ten pracownik jest wyłączony z Dashboardu w tym dniu. Najpierw włącz go na liście pracowników.", false);
         return;
