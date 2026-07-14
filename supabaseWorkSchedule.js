@@ -508,7 +508,7 @@
         <button type="button" id="finalScheduleNextMonthBtn" class="bm-light-btn cm-work-btn">Kolejny miesiąc</button>
         <button type="button" id="finalScheduleYearBtn" class="bm-light-btn cm-work-btn">Ten rok</button>
         <button type="button" id="finalScheduleApplyBtn" class="bm-primary-btn cm-work-btn cm-work-btn-save">Pokaż</button>
-        <button type="button" id="downloadFinalScheduleBtn" class="bm-light-btn cm-work-btn cm-work-btn-download" data-final-schedule-export="png" data-cm-work-export-action="png" onpointerdown="return window.cmWorkScheduleDownloadFinalPng?.(event)">Pobierz PNG</button>
+        <button type="button" id="downloadFinalScheduleBtn" class="bm-light-btn cm-work-btn cm-work-btn-download" data-final-schedule-export="png" data-cm-work-export-action="png">Pobierz PNG</button>
         <button type="button" id="printFinalScheduleBtn" class="bm-light-btn cm-work-btn cm-work-btn-print" data-final-schedule-print="true" data-cm-work-export-action="print">Drukuj</button>
       </div>
       ${finalSchedulePagerHtml()}
@@ -531,7 +531,7 @@
     if (!state.selectedEmployeeId) state.selectedEmployeeId = state.employees[0].id;
     if (!Array.isArray(state.selectedEmployeeIds) || !state.selectedEmployeeIds.length) state.selectedEmployeeIds = [state.selectedEmployeeId];
     const employee = state.employees.find((row) => String(row.id) === String(state.selectedEmployeeId)) || state.employees[0];
-    target.innerHTML = `<section class="bm-page-card cm-work-schedule-page cm-supabase-work-schedule">
+    target.innerHTML = `<section class="bm-page-card cm-work-schedule-page cm-supabase-work-schedule cm-no-modal" data-cm-no-modal="true">
       <div class="bm-page-head customers-head cm-work-schedule-head">
         <div>
           <h2>Grafik pracy</h2>
@@ -986,28 +986,38 @@
 
   function downloadCanvasAsPng(canvas, filename) {
     if (!canvas) return false;
-    if (typeof canvas.toBlob === "function") {
-      canvas.toBlob((blob) => {
-        if (!blob) { alert("Nie udało się wygenerować pliku PNG."); return; }
-        downloadBlobFile(blob, filename);
-      }, "image/png");
-      return true;
-    }
+    const safeFilename = filename || `grafik-wynikowy-${new Date().toISOString().slice(0, 10)}.png`;
+
+    // Pobieranie musi zostać uruchomione synchronicznie w obrębie zdarzenia click.
+    // Asynchroniczne canvas.toBlob() traciło w Chrome aktywację użytkownika i plik
+    // nie był pobierany, mimo że nie pojawiał się żaden błąd.
     try {
       const dataUrl = canvas.toDataURL("image/png");
       const link = document.createElement("a");
       link.href = dataUrl;
-      link.download = filename || `grafik-wynikowy-${new Date().toISOString().slice(0, 10)}.png`;
+      link.download = safeFilename;
       link.style.display = "none";
       document.body.appendChild(link);
       link.click();
-      setTimeout(() => { try { link.remove(); } catch (_) {} }, 250);
+      link.remove();
       return true;
-    } catch (error) {
-      console.warn("CompanyManager PNG export failed", error);
-      alert("Nie udało się pobrać PNG. Spróbuj ponownie albo użyj opcji Drukuj.");
-      return false;
+    } catch (dataUrlError) {
+      console.warn("CompanyManager: synchronous PNG export failed, using Blob fallback.", dataUrlError);
     }
+
+    if (typeof canvas.toBlob === "function") {
+      canvas.toBlob((blob) => {
+        if (!blob) {
+          alert("Nie udało się wygenerować pliku PNG.");
+          return;
+        }
+        downloadBlobFile(blob, safeFilename);
+      }, "image/png");
+      return true;
+    }
+
+    alert("Nie udało się pobrać PNG. Spróbuj ponownie albo użyj opcji Drukuj.");
+    return false;
   }
 
   function drawRoundedRect(ctx, x, y, w, h, r) {
@@ -1155,16 +1165,12 @@
     return canvas;
   }
 
-  let finalPngExportLockUntil = 0;
   function downloadFinalPng(event) {
     if (event) {
       event.preventDefault();
       event.stopPropagation();
       if (typeof event.stopImmediatePropagation === "function") event.stopImmediatePropagation();
     }
-    const now = Date.now();
-    if (now < finalPngExportLockUntil) return false;
-    finalPngExportLockUntil = now + 900;
     const result = finalScheduleExportRows();
     if (result.error) { alert(result.error); return false; }
     try {
