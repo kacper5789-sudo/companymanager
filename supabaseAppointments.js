@@ -739,6 +739,54 @@
     return person?.full_name || person?.email || person?.name || "-";
   }
 
+  function appointmentEndDateTimeForAutoStatus(item) {
+    const direct = item?.ends_at || item?.appointment_end || item?.end_at || "";
+    if (direct) {
+      const parsed = new Date(direct);
+      if (!Number.isNaN(parsed.getTime())) return parsed;
+    }
+    const date = String(item?.date || "").trim();
+    const time = String(item?.end_time || item?.time || item?.start_time || "").trim().slice(0, 5);
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || !/^\d{2}:\d{2}$/.test(time)) return null;
+    const parsed = new Date(`${date}T${time}:00`);
+    return Number.isNaN(parsed.getTime()) ? null : parsed;
+  }
+
+  async function autoMarkUnfinishedAppointments(ctx) {
+    if (!window.cmSupabase || !ctx?.companyId) return 0;
+    try {
+      const { data, error } = await window.cmSupabase.rpc("auto_mark_unfinished_appointments", { p_company_id: ctx.companyId });
+      if (!error) return Number(data || 0);
+    } catch (_) {}
+
+    try {
+      const { data: rows, error: readError } = await window.cmSupabase
+        .from("appointments")
+        .select("id, date, time, start_time, end_time, ends_at, status, deleted")
+        .eq("company_id", ctx.companyId)
+        .eq("deleted", false);
+      if (readError) throw readError;
+      const cutoff = Date.now() - (60 * 60 * 1000);
+      const overdueIds = (rows || []).filter((item) => {
+        const status = String(item?.status || "").trim().toLowerCase();
+        if (!["zaplanowane", "planned", "scheduled"].includes(status)) return false;
+        const end = appointmentEndDateTimeForAutoStatus(item);
+        return end && end.getTime() < cutoff;
+      }).map((item) => item.id).filter(Boolean);
+      if (!overdueIds.length) return 0;
+      const { error: updateError } = await window.cmSupabase
+        .from("appointments")
+        .update({ status: "niezakończone", updated_at: new Date().toISOString() })
+        .eq("company_id", ctx.companyId)
+        .in("id", overdueIds);
+      if (updateError) throw updateError;
+      return overdueIds.length;
+    } catch (error) {
+      console.warn("CompanyManager appointments auto unfinished skipped", error);
+      return 0;
+    }
+  }
+
   async function fetchAll(ctx) {
     const [appointmentsRes, clientsRes, servicesRes, positionsRes, productsRes, categoriesRes, passesRes, companyRes, usersRes] = await Promise.all([
       window.cmSupabase
@@ -1041,6 +1089,7 @@
 
     let data;
     try {
+      await autoMarkUnfinishedAppointments(ctx);
       data = await fetchAll(ctx);
     } catch (error) {
       console.error("CompanyManager appointments Supabase error:", error);

@@ -616,6 +616,9 @@
       hidden.dataset.label = row?.label || '';
       hidden.dataset.name = row?.name || row?.label || '';
       hidden.dataset.price = row?.price != null ? String(row.price) : '';
+      // Automatyczny wybór pracownika z kolumny Dashboardu musi zachować
+      // employees.id tak samo jak ręczne wskazanie z wyszukiwarki.
+      hidden.dataset.employeeRecordId = row?.employeeRecordId || '';
     }
     if (input) input.value = row ? row.label : '';
   }
@@ -788,15 +791,62 @@
     return ctx;
   }
 
+  function appointmentEndDateTime(item) {
+    const direct = item?.ends_at || item?.appointment_end || item?.end_at || "";
+    if (direct) {
+      const parsed = new Date(direct);
+      if (!Number.isNaN(parsed.getTime())) return parsed;
+    }
+    const date = String(item?.date || "").trim();
+    const time = String(item?.end_time || item?.time || item?.start_time || "").trim().slice(0, 5);
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || !/^\d{2}:\d{2}$/.test(time)) return null;
+    const parsed = new Date(`${date}T${time}:00`);
+    return Number.isNaN(parsed.getTime()) ? null : parsed;
+  }
+
   async function autoMarkUnfinishedAppointments(ctx) {
-    if (!window.cmSupabase || !ctx?.companyId) return;
+    if (!window.cmSupabase || !ctx?.companyId) return 0;
+
+    // Prefer the SECURITY DEFINER RPC when the migration is installed.
     try {
-      const { error } = await window.cmSupabase.rpc("auto_mark_unfinished_appointments", { p_company_id: ctx.companyId });
-      if (error) {
-        console.warn("CompanyManager auto unfinished appointments skipped", error);
+      const { data, error } = await window.cmSupabase.rpc("auto_mark_unfinished_appointments", { p_company_id: ctx.companyId });
+      if (!error) return Number(data || 0);
+      if (String(error?.code || "") !== "PGRST202" && Number(error?.status || 0) !== 404) {
+        console.warn("CompanyManager auto unfinished appointments RPC skipped", error);
       }
     } catch (error) {
-      console.warn("CompanyManager auto unfinished appointments failed", error);
+      console.warn("CompanyManager auto unfinished appointments RPC failed", error);
+    }
+
+    // Fallback for installations where the RPC migration has not yet been run.
+    // A planned visit becomes unfinished only one full hour after its scheduled end.
+    try {
+      const { data: rows, error: readError } = await window.cmSupabase
+        .from("appointments")
+        .select("id, date, time, start_time, end_time, ends_at, status, deleted")
+        .eq("company_id", ctx.companyId)
+        .eq("deleted", false);
+      if (readError) throw readError;
+
+      const cutoff = Date.now() - (60 * 60 * 1000);
+      const overdueIds = (rows || []).filter((item) => {
+        const status = String(item?.status || "").trim().toLowerCase();
+        if (!["zaplanowane", "planned", "scheduled"].includes(status)) return false;
+        const end = appointmentEndDateTime(item);
+        return end && end.getTime() < cutoff;
+      }).map((item) => item.id).filter(Boolean);
+
+      if (!overdueIds.length) return 0;
+      const { error: updateError } = await window.cmSupabase
+        .from("appointments")
+        .update({ status: "niezakończone", updated_at: new Date().toISOString() })
+        .eq("company_id", ctx.companyId)
+        .in("id", overdueIds);
+      if (updateError) throw updateError;
+      return overdueIds.length;
+    } catch (error) {
+      console.warn("CompanyManager auto unfinished appointments fallback skipped", error);
+      return 0;
     }
   }
 
@@ -2007,12 +2057,16 @@
       fillFinishFormById(event.currentTarget.value);
     });
 
-    function isWorkerActiveForSelectedDay(employeeId) {
-      const id = String(employeeId || "");
-      const employee = (data.users || []).find((user) =>
-        String(user?.id || '') === id || String(dashboardScheduleEmployeeId(user)) === id
-      );
-      const dashboardId = String(employee?.id || id);
+    function isWorkerActiveForSelectedDay(employeeId, form = null) {
+      const id = String(employeeId || "").trim();
+      const formProfileId = String(form?.elements?.employeeId?.value || "").trim();
+      const employee = (data.users || []).find((user) => {
+        const profileId = String(user?.id || "");
+        const recordId = String(dashboardScheduleEmployeeId(user) || "");
+        return (id && (profileId === id || recordId === id))
+          || (formProfileId && profileId === formProfileId);
+      });
+      const dashboardId = String(employee?.id || formProfileId || id).trim();
       return !!dashboardId && Array.from(document.querySelectorAll(".dash-worker-toggle"))
         .some((input) => String(input.value) === dashboardId && input.checked && !input.disabled);
     }
@@ -2021,7 +2075,7 @@
       event.preventDefault();
       if (!allowAdd) { setMessage("#dashboardAppointmentMessage", "Brak uprawnienia do dodawania wizyt.", false); return; }
       const payload = payloadFromForm(ctx, new FormData(event.currentTarget), event.currentTarget);
-      if (!isWorkerActiveForSelectedDay(payload.employee_id)) {
+      if (!isWorkerActiveForSelectedDay(payload.employee_id, event.currentTarget)) {
         setMessage("#dashboardAppointmentMessage", "Ten pracownik jest wyłączony z Dashboardu w tym dniu. Najpierw włącz go na liście pracowników.", false);
         return;
       }
