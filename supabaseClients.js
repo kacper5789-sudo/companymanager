@@ -231,6 +231,20 @@
     }
 
     const ctx = { ok: true, access, context, companyId: context.company_id };
+    try {
+      const { data: companySettings, error: companySettingsError } = await window.cmSupabase
+        .from("companies")
+        .select("client_marketing_consent_enabled, client_marketing_consent_explicit")
+        .eq("id", context.company_id)
+        .maybeSingle();
+      if (companySettingsError) throw companySettingsError;
+      ctx.clientMarketingConsentEnabled = companySettings?.client_marketing_consent_enabled !== false;
+      ctx.clientMarketingConsentExplicit = companySettings?.client_marketing_consent_explicit === true;
+    } catch (settingsError) {
+      console.warn("Client marketing consent settings fallback", settingsError?.message || settingsError);
+      ctx.clientMarketingConsentEnabled = true;
+      ctx.clientMarketingConsentExplicit = false;
+    }
     if (!canOpenClients(ctx)) {
       return { ok: false, message: "Brak uprawnienia do otwierania zakładki Klienci." };
     }
@@ -420,11 +434,22 @@
     });
   }
 
-  function customerFormFields(prefix, customer = {}) {
+  function customerFormFields(prefix, customer = {}, consentSettings = {}) {
     const genderOptions = ["kobieta", "mężczyzna"];
     const statusOptions = ["aktywny", "nieaktywny"];
     const yesNoOptions = ["tak", "nie"];
     const status = customer.active === false ? "nieaktywny" : "aktywny";
+    const consentEnabled = consentSettings.enabled !== false;
+    const explicitChoice = consentSettings.explicit === true;
+    const isEdit = Boolean(customer && customer.id);
+    const defaultConsent = explicitChoice ? "nie" : "tak";
+    const smsConsent = isEdit ? boolToTakNie(customer.marketing_sms) : defaultConsent;
+    const emailConsent = isEdit ? boolToTakNie(customer.marketing_email) : defaultConsent;
+    const consentFields = consentEnabled
+      ? `<label>Zgoda na reklamę SMS<select name="marketingSms">${yesNoOptions.map((v) => `<option value="${v}" ${smsConsent === v ? "selected" : ""}>${v}</option>`).join("")}</select></label>
+      <label>Zgoda na reklamę Email<select name="marketingEmail">${yesNoOptions.map((v) => `<option value="${v}" ${emailConsent === v ? "selected" : ""}>${v}</option>`).join("")}</select></label>`
+      : `<input type="hidden" name="marketingSms" value="${isEdit ? smsConsent : "nie"}">
+         <input type="hidden" name="marketingEmail" value="${isEdit ? emailConsent : "nie"}">`;
     return `
       <label>Imię<input name="firstName" placeholder="Imię" value="${escapeHtml(customer.first_name || "")}" required></label>
       <label>Nazwisko<input name="lastName" placeholder="Nazwisko" value="${escapeHtml(customer.last_name || "")}" required></label>
@@ -436,8 +461,7 @@
       <label>Miejscowość<input name="city" placeholder="Miejscowość" value="${escapeHtml(customer.city || "")}"></label>
       <label>Status<select name="status">${statusOptions.map((item) => `<option value="${item}" ${status === item ? "selected" : ""}>${item}</option>`).join("")}</select></label>
       <label>Skąd klient wie o firmie<input name="source" placeholder="np. Google, Facebook, polecenie" value="${escapeHtml(customer.source || "")}"></label>
-      <label>Zgoda na reklamę SMS<select name="marketingSms">${yesNoOptions.map((v) => `<option value="${v}" ${boolToTakNie(customer.marketing_sms) === v ? "selected" : ""}>${v}</option>`).join("")}</select></label>
-      <label>Zgoda na reklamę Email<select name="marketingEmail">${yesNoOptions.map((v) => `<option value="${v}" ${boolToTakNie(customer.marketing_email) === v ? "selected" : ""}>${v}</option>`).join("")}</select></label>
+      ${consentFields}
       <label>Dzień, miesiąc i rok urodzin<input name="birthDate" type="date" value="${escapeHtml(customer.birth_date || "")}" aria-label="Dzień, miesiąc i rok urodzin"></label>
       <label class="full">Ważna informacja<textarea name="importantInfo" placeholder="Ważna informacja">${escapeHtml(customer.notes || "")}</textarea></label>
     `;
@@ -512,7 +536,7 @@
       <section class="bm-page-card" id="customerFormCard" hidden>
         <h2>Dodaj klienta</h2>
         <form id="customerForm" class="bm-form-grid">
-          ${customerFormFields("add")}
+          ${customerFormFields("add", {}, { enabled: ctx.clientMarketingConsentEnabled, explicit: ctx.clientMarketingConsentExplicit })}
           <button type="submit">Zapisz klienta</button>
         </form>
         <p id="customerFormMessage" class="panel-message"></p>
@@ -524,7 +548,7 @@
           <label class="full">Wybierz klienta<select name="clientId" required><option value="">Wybierz...</option>${customerOptions}</select></label>
         </form>
         <form id="customerEditForm" class="bm-form-grid" hidden>
-          ${customerFormFields("edit")}
+          ${customerFormFields("edit", {}, { enabled: ctx.clientMarketingConsentEnabled, explicit: ctx.clientMarketingConsentExplicit })}
           <button type="submit">Zapisz zmiany</button>
         </form>
         <p id="customerEditMessage" class="panel-message"></p>
@@ -599,8 +623,8 @@
     form.city.value = client.city || "";
     form.status.value = client.active === false ? "nieaktywny" : "aktywny";
     form.source.value = client.source || "";
-    form.marketingSms.value = boolToTakNie(client.marketing_sms);
-    form.marketingEmail.value = boolToTakNie(client.marketing_email);
+    if (form.marketingSms) form.marketingSms.value = boolToTakNie(client.marketing_sms);
+    if (form.marketingEmail) form.marketingEmail.value = boolToTakNie(client.marketing_email);
     form.birthDate.value = client.birth_date || "";
     form.importantInfo.value = client.notes || "";
   }

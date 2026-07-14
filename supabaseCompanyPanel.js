@@ -333,7 +333,7 @@
         </fieldset>
         <fieldset class="cm-notification-box cm-marketing-consent-box"><legend>Dodaj klienta — zgoda na reklamę</legend>
           ${check("Pokaż pola zgody marketingowej przy dodawaniu/edycji klienta", "client_marketing_consent_enabled", val(company, "client_marketing_consent_enabled") === "" ? true : checked(company, "client_marketing_consent_enabled"))}
-          ${check("Domyślnie zaznacz zgodę SMS jako NIE / wymaga świadomego wyboru", "client_marketing_consent_explicit", val(company, "client_marketing_consent_explicit") === "" ? true : checked(company, "client_marketing_consent_explicit"))}
+          ${check("Domyślnie ustaw zgodę SMS i Email jako NIE / wymaga świadomego wyboru", "client_marketing_consent_explicit", val(company, "client_marketing_consent_explicit") === "" ? true : checked(company, "client_marketing_consent_explicit"))}
           <p class="bm-muted cm-full-field">Zgody zapisują się przy kliencie jako osobne pola: SMS i Email. Dzięki temu w Marketingu wiadomo, komu można wysłać reklamę.</p>
         </fieldset>
         <fieldset class="cm-notification-box cm-work-hours-box"><legend>Godziny pracy firmy</legend>
@@ -436,6 +436,22 @@
     });
   }
 
+  function bindClientMarketingConsentSettings(root) {
+    const enabled = root.querySelector('input[name="client_marketing_consent_enabled"]');
+    const explicit = root.querySelector('input[name="client_marketing_consent_explicit"]');
+    if (!enabled || !explicit) return;
+    const sync = () => {
+      explicit.disabled = !enabled.checked;
+      const label = explicit.closest('label');
+      if (label) {
+        label.style.opacity = enabled.checked ? '1' : '0.55';
+        label.title = enabled.checked ? '' : 'Najpierw włącz pola zgody marketingowej.';
+      }
+    };
+    sync();
+    enabled.addEventListener('change', sync);
+  }
+
   function bindNotificationToggles(root) {
     $$('[data-notification-fields-for]', root).forEach((fields) => {
       const name = fields.getAttribute('data-notification-fields-for');
@@ -449,6 +465,7 @@
   function bindForms(root, state) {
     bindPaymentMethodButtons(root);
     bindNotificationToggles(root);
+    bindClientMarketingConsentSettings(root);
     $$('[data-company-panel-form]', root).forEach((form) => {
       form.addEventListener("submit", async (event) => {
         event.preventDefault();
