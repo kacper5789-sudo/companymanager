@@ -1327,9 +1327,10 @@
       appointment_datetime: startsAt,
       customer_id: clientId || null,
       client_id: clientId || null,
-      // 037H: nie wysyłamy starego/local employee_id do FK profiles.
-      // Pracownika zapisujemy tekstowo, żeby FK nie blokował zapisu wizyty.
-      employee_id: null,
+      // Zapisujemy profile.id wybranego pracownika. Dashboard buduje listę pracowników
+      // z company_users_for_dropdown, więc employeeId jest poprawnym ID profilu.
+      // Pozostawienie NULL powodowało utratę pracownika po zakończeniu wizyty.
+      employee_id: employeeId || null,
       employee_name: employeeName,
       service_id: serviceId || null,
       product_id: productId || null,
@@ -1371,8 +1372,20 @@
     const clientFallback = item.customer_name || item.client_name || item.customer_full_name || item.client_full_name || "";
     if (clientInput && !clientInput.value && clientFallback) clientInput.value = clientFallback;
 
-    setEntitySearchValue(form, "employeeId", item.employee_id || "", { users: Object.values(safeLookups.usersById || {}) });
-    if (!form.elements.employeeId?.value && item.employee_name && form.elements.employeeId) {
+    // Starsze wizyty mogły mieć employee_id = NULL i tylko employee_name.
+    // W takim przypadku dopasowujemy pracownika po nazwie i od razu ustawiamy jego profile.id.
+    const appointmentEmployee = safeLookups.usersById?.[item.employee_id]
+      || Object.values(safeLookups.usersById || {}).find((user) => String(personName(user)).trim().toLowerCase() === String(item.employee_name || "").trim().toLowerCase())
+      || null;
+    const resolvedEmployeeId = appointmentEmployee?.id || item.employee_id || "";
+    setEntitySearchValue(form, "employeeId", resolvedEmployeeId, { users: Object.values(safeLookups.usersById || {}) });
+    if (form.elements.employeeId && appointmentEmployee) {
+      form.elements.employeeId.value = appointmentEmployee.id;
+      form.elements.employeeId.dataset.name = personName(appointmentEmployee);
+      form.elements.employeeId.dataset.label = personName(appointmentEmployee);
+      const input = form.querySelector('[data-entity-name="employeeId"]');
+      if (input) input.value = personName(appointmentEmployee);
+    } else if (!form.elements.employeeId?.value && item.employee_name && form.elements.employeeId) {
       form.elements.employeeId.value = item.employee_id || "";
       form.elements.employeeId.dataset.name = item.employee_name;
       form.elements.employeeId.dataset.label = item.employee_name;

@@ -988,11 +988,11 @@
     if (!canvas) return false;
     const safeFilename = filename || `grafik-wynikowy-${new Date().toISOString().slice(0, 10)}.png`;
 
-    // Pobieranie musi zostać uruchomione synchronicznie w obrębie zdarzenia click.
-    // Asynchroniczne canvas.toBlob() traciło w Chrome aktywację użytkownika i plik
-    // nie był pobierany, mimo że nie pojawiał się żaden błąd.
+    // Najpierw ścieżka synchroniczna: kliknięcie linku odbywa się w tym samym
+    // geście użytkownika, więc Chrome nie traktuje pobrania jako automatycznego.
     try {
       const dataUrl = canvas.toDataURL("image/png");
+      if (!dataUrl || dataUrl === "data:,") throw new Error("empty_png_data_url");
       const link = document.createElement("a");
       link.href = dataUrl;
       link.download = safeFilename;
@@ -1001,14 +1001,15 @@
       link.click();
       link.remove();
       return true;
-    } catch (dataUrlError) {
-      console.warn("CompanyManager: synchronous PNG export failed, using Blob fallback.", dataUrlError);
+    } catch (syncError) {
+      console.warn("CompanyManager: synchronous PNG download failed, trying Blob.", syncError);
     }
 
+    // Fallback dla przeglądarek, które nie pozwalają utworzyć dużego data URL.
     if (typeof canvas.toBlob === "function") {
       canvas.toBlob((blob) => {
         if (!blob) {
-          alert("Nie udało się wygenerować pliku PNG.");
+          alert("Nie udało się wygenerować pliku PNG. Zmniejsz zakres dat i spróbuj ponownie.");
           return;
         }
         downloadBlobFile(blob, safeFilename);
@@ -1016,7 +1017,7 @@
       return true;
     }
 
-    alert("Nie udało się pobrać PNG. Spróbuj ponownie albo użyj opcji Drukuj.");
+    alert("Ta przeglądarka nie obsługuje eksportu PNG.");
     return false;
   }
 
@@ -1056,7 +1057,6 @@
 
   function buildFinalSchedulePngCanvas(result) {
     const { header, rows, employees } = result;
-    const scale = 2;
     const padding = 32;
     const title = `Grafik wynikowy ${formatDatePL(state.finalFrom)} - ${formatDatePL(state.finalTo)}`;
     const generated = `Wygenerowano przez CompanyManager • ${new Date().toLocaleString("pl-PL")}`;
@@ -1088,9 +1088,17 @@
     const footerHeight = 36;
     const canvasHeight = padding * 2 + metaHeight + tableHeight + footerHeight;
 
+    // Chrome/Edge mają praktyczne limity wymiarów i powierzchni canvasa.
+    // Dobieramy skalę automatycznie, aby eksport działał także dla długich zakresów.
+    const maxDimension = 15000;
+    const maxPixels = 60_000_000;
+    const dimensionScale = Math.min(maxDimension / canvasWidth, maxDimension / canvasHeight);
+    const areaScale = Math.sqrt(maxPixels / Math.max(1, canvasWidth * canvasHeight));
+    const scale = Math.max(0.5, Math.min(2, dimensionScale, areaScale));
+
     const canvas = document.createElement("canvas");
-    canvas.width = Math.ceil(canvasWidth * scale);
-    canvas.height = Math.ceil(canvasHeight * scale);
+    canvas.width = Math.max(1, Math.floor(canvasWidth * scale));
+    canvas.height = Math.max(1, Math.floor(canvasHeight * scale));
     canvas.style.width = `${canvasWidth}px`;
     canvas.style.height = `${canvasHeight}px`;
     const ctx = canvas.getContext("2d");
@@ -1165,21 +1173,38 @@
     return canvas;
   }
 
+  let finalPngExportLockUntil = 0;
   function downloadFinalPng(event) {
     if (event) {
       event.preventDefault();
       event.stopPropagation();
       if (typeof event.stopImmediatePropagation === "function") event.stopImmediatePropagation();
     }
+    const now = Date.now();
+    if (now < finalPngExportLockUntil) return false;
+    finalPngExportLockUntil = now + 900;
+    const button = document.querySelector("#downloadFinalScheduleBtn");
+    const originalText = button?.textContent || "Pobierz PNG";
+    if (button) { button.disabled = true; button.textContent = "Generuję PNG…"; }
     const result = finalScheduleExportRows();
-    if (result.error) { alert(result.error); return false; }
+    if (result.error) {
+      if (button) { button.disabled = false; button.textContent = originalText; }
+      alert(result.error);
+      return false;
+    }
     try {
       const canvas = buildFinalSchedulePngCanvas(result);
       if (!canvas) throw new Error("canvas_not_ready");
-      downloadCanvasAsPng(canvas, makePngFileName(result));
+      const started = downloadCanvasAsPng(canvas, makePngFileName(result));
+      if (!started) throw new Error("download_not_started");
     } catch (error) {
       console.error("CompanyManager: PNG export failed.", error);
-      alert("Nie udało się wygenerować PNG. Spróbuj użyć przycisku Drukuj.");
+      alert("Nie udało się wygenerować PNG. Zmniejsz zakres dat albo użyj przycisku Drukuj.");
+    } finally {
+      setTimeout(() => {
+        if (button) { button.disabled = false; button.textContent = originalText; }
+        finalPngExportLockUntil = 0;
+      }, 250);
     }
     return false;
   }

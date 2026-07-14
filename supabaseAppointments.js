@@ -824,11 +824,21 @@
   }
   function appointmentClientId(item) { return item.customer_id || item.client_id || ""; }
 
+  function appointmentEmployee(item, lookups) {
+    return lookups.usersById[item.employee_id]
+      || Object.values(lookups.usersById || {}).find((user) => String(personName(user)).trim().toLowerCase() === String(item.employee_name || "").trim().toLowerCase())
+      || null;
+  }
+
+  function appointmentEmployeeName(item, lookups) {
+    const user = appointmentEmployee(item, lookups);
+    return user ? personName(user) : (String(item.employee_name || "").trim() || "-");
+  }
+
   function visitLabel(item, lookups) {
     const client = lookups.clientsById[appointmentClientId(item)];
-    const user = lookups.usersById[item.employee_id];
     const service = lookups.servicesById[item.service_id];
-    return `${plDate(appointmentDate(item))} ${appointmentTime(item)} — ${customerName(client)} — ${personName(user)} — ${service?.name || "-"} — ${item.status || "-"}`;
+    return `${plDate(appointmentDate(item))} ${appointmentTime(item)} — ${customerName(client)} — ${appointmentEmployeeName(item, lookups)} — ${service?.name || "-"} — ${item.status || "-"}`;
   }
 
   function options(items, labelFn, empty) {
@@ -1049,13 +1059,12 @@
 
     const rows = filtered.map((item) => {
       const client = lookups.clientsById[appointmentClientId(item)];
-      const user = lookups.usersById[item.employee_id];
       const service = lookups.servicesById[item.service_id];
       return [
         escapeHtml(plDate(appointmentDate(item))),
         escapeHtml(appointmentTime(item)),
         escapeHtml(customerName(client)),
-        escapeHtml(personName(user)),
+        escapeHtml(appointmentEmployeeName(item, lookups)),
         escapeHtml(service?.name || "-"),
         escapeHtml(item.status || "-"),
         escapeHtml(appointmentCancellationReason(item))
