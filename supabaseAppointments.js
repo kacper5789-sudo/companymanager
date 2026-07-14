@@ -803,9 +803,27 @@
       positions: (positionsRes.data || []).filter((item) => item.active !== false),
       products: (productsRes.data || []).filter((item) => item.active !== false),
       categories: (categoriesRes.data || []).filter((item) => item.active !== false),
-      passes: (passesRes.data || []).filter((item) => item.status !== "usunięte" && item.status !== "zrealizowane"),
+      passes: (passesRes.data || []).filter((item) => normalizeAppointmentStatus(item.status) !== "usunięte" && item.status !== "zrealizowane"),
       users: usersRes.data || []
     };
+  }
+
+
+  function normalizeAppointmentStatus(value) {
+    const raw = String(value || "").trim().toLowerCase();
+    const map = {
+      planned: "zaplanowane",
+      scheduled: "zaplanowane",
+      completed: "zakończone",
+      finished: "zakończone",
+      done: "zakończone",
+      cancelled: "odwołane",
+      canceled: "odwołane",
+      unfinished: "niezakończone",
+      incomplete: "niezakończone",
+      deleted: "usunięte"
+    };
+    return map[raw] || raw || "niezakończone";
   }
 
   function appointmentDate(item) { return item.date || ""; }
@@ -1007,7 +1025,7 @@
     if (form.elements.total) form.elements.total.value = firstPositiveMoney(item.total, item.price).toFixed(2);
     if (form.elements.payment) form.elements.payment.value = item.payment_method || "gotówka";
     if (form.elements.note) form.elements.note.value = item.note || "";
-    form.elements.status.value = item.status || "zaplanowane";
+    form.elements.status.value = normalizeAppointmentStatus(item.status) || "zaplanowane";
   }
 
   async function renderAppointments() {
@@ -1053,9 +1071,9 @@
     };
 
     const filtered = data.appointments.filter((item) => {
-      return item.deleted !== true && String(item.status || "niezakończone") === currentFilter;
+      return item.deleted !== true && normalizeAppointmentStatus(item.status) === currentFilter;
     });
-    const editable = data.appointments.filter((item) => item.deleted !== true && item.status !== "usunięte");
+    const editable = data.appointments.filter((item) => item.deleted !== true && normalizeAppointmentStatus(item.status) !== "usunięte");
 
     const rows = filtered.map((item) => {
       const client = lookups.clientsById[appointmentClientId(item)];
@@ -1066,7 +1084,7 @@
         escapeHtml(customerName(client)),
         escapeHtml(appointmentEmployeeName(item, lookups)),
         escapeHtml(service?.name || "-"),
-        escapeHtml(item.status || "-"),
+        escapeHtml(normalizeAppointmentStatus(item.status) || "-"),
         escapeHtml(appointmentCancellationReason(item))
       ];
     });
