@@ -1273,6 +1273,7 @@ document.addEventListener('DOMContentLoaded', () => {
     passes_delete: ['karnety — usuwanie', 'karnety (dodawanie, edycja, usuwanie)'],
     daily_report_today: ['raport dzienny — dziś', 'raport dzienny dzisiejszy (przeglądanie)'],
     daily_report_other_days: ['raport dzienny — inne dni', 'raport dzienny wczorajszy, jutrzejszy (przeglądanie)'],
+    work_schedule_view_all: ['grafik wszystkich pracowników'],
     work_schedule_edit: ['grafik pracy — edycja', 'grafik pracy (edycja, usuwanie)', 'grafik pracy (dodawanie,edycja,usuwanie)'],
     work_schedule_delete: ['grafik pracy — usuwanie', 'grafik pracy (edycja, usuwanie)', 'grafik pracy (dodawanie,edycja,usuwanie)'],
     export_data: ['export danych z całej platformy', 'export/import danych'],

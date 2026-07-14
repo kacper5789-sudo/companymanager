@@ -269,9 +269,31 @@
   }
 
   function hasAccess(ctx) { return hasAnyPermission(ctx, ["open_work_schedule", "work_schedule"]); }
+  function canViewAllSchedules(ctx) { return hasAnyPermission(ctx, ["work_schedule_view_all"]); }
   function canAdd(ctx) { return hasAnyPermission(ctx, ["work_schedule_edit", "work_schedule_delete", "open_work_schedule", "work_schedule"]); }
   function canEdit(ctx) { return hasAnyPermission(ctx, ["work_schedule_edit"]); }
   function canDelete(ctx) { return hasAnyPermission(ctx, ["work_schedule_delete"]); }
+
+  function currentAccountHints(ctx) {
+    const access = ctx?.access || {};
+    const context = ctx?.context || {};
+    return {
+      userId: String(access.user_id || access.id || context.user_id || context.profile_id || "").trim(),
+      email: String(access.email || context.email || "").trim().toLowerCase(),
+      name: normalizeText(access.full_name || access.name || context.full_name || context.name || "")
+    };
+  }
+
+  function isCurrentEmployee(employee, ctx) {
+    const hints = currentAccountHints(ctx);
+    const ids = [employee?.id, employee?.profile_id, employee?.user_id, employee?.employee_record_id, employee?.employee_id]
+      .filter(Boolean).map((value) => String(value));
+    if (hints.userId && ids.includes(hints.userId)) return true;
+    const email = String(employee?.email || employee?.login || "").trim().toLowerCase();
+    if (hints.email && email && hints.email === email) return true;
+    const name = normalizeText(employeeName(employee));
+    return !!(hints.name && name && hints.name === name);
+  }
 
   async function getContext() {
     if (!window.cmSupabase) throw new Error("Nie załadowano połączenia z Supabase.");
@@ -314,7 +336,7 @@
     const byProfileId = new Map(employeeRows.filter((row) => row.profile_id).map((row) => [String(row.profile_id), row]));
     const byName = new Map(employeeRows.map((row) => [normalizeText(row.full_name || ""), row]).filter(([key]) => !!key));
 
-    return (data || [])
+    const mappedTeam = (data || [])
       .filter((row) => normalizeRole(row.role) !== "OWNER")
       .map((row) => {
         const mapped = byProfileId.get(String(row.id)) || byName.get(normalizeText(employeeName(row))) || null;
@@ -326,6 +348,13 @@
         };
       })
       .sort((a, b) => employeeName(a).localeCompare(employeeName(b), "pl"));
+
+    if (canViewAllSchedules(ctx)) return mappedTeam;
+    const ownEmployee = mappedTeam.find((employee) => isCurrentEmployee(employee, ctx));
+    if (!ownEmployee) {
+      throw new Error("Nie można powiązać zalogowanego konta z pracownikiem. Administrator powinien sprawdzić powiązanie profilu użytkownika z rekordem pracownika.");
+    }
+    return [ownEmployee];
   }
 
   async function fetchSchedules(ctx) {
@@ -531,6 +560,7 @@
     if (!state.selectedEmployeeId) state.selectedEmployeeId = state.employees[0].id;
     if (!Array.isArray(state.selectedEmployeeIds) || !state.selectedEmployeeIds.length) state.selectedEmployeeIds = [state.selectedEmployeeId];
     const employee = state.employees.find((row) => String(row.id) === String(state.selectedEmployeeId)) || state.employees[0];
+    const limitedToOwnSchedule = !canViewAllSchedules(state.ctx);
     target.innerHTML = `<section class="bm-page-card cm-work-schedule-page cm-supabase-work-schedule cm-no-modal" data-cm-no-modal="true">
       <div class="bm-page-head customers-head cm-work-schedule-head">
         <div>
@@ -545,7 +575,8 @@
           <div class="cm-work-apply-range-card cm-work-solid-card">
             <div class="cm-work-apply-range-title">Pracownicy do aktualizacji</div>
             <div class="cm-work-employee-multi" id="workScheduleEmployeeMulti">
-              ${state.employees.map((emp) => `<label class="cm-work-employee-pill"><input type="checkbox" data-employee-multi value="${escapeHtml(emp.id)}" ${(state.selectedEmployeeIds || []).map(String).includes(String(emp.id)) ? "checked" : ""}> <span>${escapeHtml(employeeName(emp))}</span></label>`).join("")}
+              ${state.employees.map((emp) => `<label class="cm-work-employee-pill"><input type="checkbox" data-employee-multi value="${escapeHtml(emp.id)}" ${(state.selectedEmployeeIds || []).map(String).includes(String(emp.id)) ? "checked" : ""} ${limitedToOwnSchedule ? "disabled" : ""}> <span>${escapeHtml(employeeName(emp))}</span></label>`).join("")}
+              ${limitedToOwnSchedule ? `<p class="bm-muted" style="width:100%;margin:.45rem 0 0">Widok ograniczony do Twojego grafiku. Uprawnienie „Grafik wszystkich pracowników” pozwala przeglądać pozostałych pracowników.</p>` : ""}
             </div>
             <p class="bm-muted cm-work-range-hint">Możesz zastosować ten sam grafik dla jednego lub wielu pracowników naraz.</p>
           </div>

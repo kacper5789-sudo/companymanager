@@ -144,6 +144,7 @@
     ["passes_delete", "karnety — usuwanie"],
     ["daily_report_today", "raport dzienny — dziś"],
     ["daily_report_other_days", "raport dzienny — inne dni"],
+    ["work_schedule_view_all", "grafik wszystkich pracowników"],
     ["work_schedule_edit", "grafik pracy — edycja"],
     ["work_schedule_delete", "grafik pracy — usuwanie"],
     ["export_data", "export danych"],
