@@ -1234,7 +1234,7 @@
         const inactiveClass = outsideWork || !activeWorkerIds.includes(employee.id) ? " inactive-worker" : "";
         if (!visit) {
           const label = outsideWork ? (isDayOff ? employeeDayOffLabel(dayOffRow) : "POZA GRAFIKIEM") : "FREE";
-          return `<td class="bm-schedule-slot free cm-employee-colored-slot${inactiveClass}" style="${employeeStyle}" data-employee-color="${escapeHtml(employeeColor)}" data-employee-id="${escapeHtml(employee.id)}" data-time="${escapeHtml(slot.start)}" data-date="${escapeHtml(dateIso)}" data-outside-work="${outsideWork ? "1" : "0"}"><span>${label}</span></td>`;
+          return `<td class="bm-schedule-slot free cm-employee-colored-slot${inactiveClass}" style="${employeeStyle}" data-employee-color="${escapeHtml(employeeColor)}" data-employee-id="${escapeHtml(employee.id)}" data-time="${escapeHtml(slot.start)}" data-date="${escapeHtml(dateIso)}" data-outside-work="${outsideWork ? "1" : "0"}" data-worker-active="${activeWorkerIds.includes(employee.id) ? "1" : "0"}"><span>${label}</span></td>`;
         }
         const client = lookups.clientsById[appointmentClientId(visit)];
         const service = lookups.servicesById[visit.service_id];
@@ -1254,7 +1254,7 @@
           `Pracownik: ${personName(employee)}`,
           `Opis: ${visit.note || "Brak opisu"}`
         ].join("\n");
-        return `<td class="bm-schedule-slot busy cm-employee-colored-slot${stateClass}${inactiveClass}" style="${employeeStyle}" data-employee-color="${escapeHtml(employeeColor)}" data-visit-id="${escapeHtml(visit.id)}" data-employee-id="${escapeHtml(employee.id)}" data-time="${escapeHtml(slot.start)}" data-date="${escapeHtml(dateIso)}" data-slot-tooltip="${escapeHtml(tooltip)}"><span>${label}</span></td>`;
+        return `<td class="bm-schedule-slot busy cm-employee-colored-slot${stateClass}${inactiveClass}" style="${employeeStyle}" data-employee-color="${escapeHtml(employeeColor)}" data-visit-id="${escapeHtml(visit.id)}" data-employee-id="${escapeHtml(employee.id)}" data-time="${escapeHtml(slot.start)}" data-date="${escapeHtml(dateIso)}" data-worker-active="${activeWorkerIds.includes(employee.id) ? "1" : "0"}" data-slot-tooltip="${escapeHtml(tooltip)}"><span>${label}</span></td>`;
       }).join("");
       return `<tr><th class="bm-time-col">${escapeHtml(slot.label)}</th>${cells}</tr>`;
     }).join("");
@@ -1955,6 +1955,10 @@
       slot.addEventListener("click", () => {
         const tooltip = document.querySelector("#dashSlotTooltip");
         if (tooltip) tooltip.hidden = true;
+        if (slot.dataset.workerActive === "0") {
+          alert("Ten pracownik jest wyłączony z Dashboardu w tym dniu. Włącz go przyciskiem z liczbą pracowników, aby dodawać lub edytować jego wizyty.");
+          return;
+        }
         if (slot.dataset.outsideWork === "1") {
           alert("Ten termin jest poza grafikiem pracy pracownika albo pracownik ma dzień wolny.");
           return;
@@ -1985,10 +1989,24 @@
       fillFinishFormById(event.currentTarget.value);
     });
 
+    function isWorkerActiveForSelectedDay(employeeId) {
+      const id = String(employeeId || "");
+      return !!id && Array.from(document.querySelectorAll(".dash-worker-toggle"))
+        .some((input) => String(input.value) === id && input.checked && !input.disabled);
+    }
+
     document.querySelector("#dashboardAppointmentAddForm")?.addEventListener("submit", async (event) => {
       event.preventDefault();
       if (!allowAdd) { setMessage("#dashboardAppointmentMessage", "Brak uprawnienia do dodawania wizyt.", false); return; }
       const payload = payloadFromForm(ctx, new FormData(event.currentTarget), event.currentTarget);
+      if (!isWorkerActiveForSelectedDay(payload.employee_id)) {
+        setMessage("#dashboardEditVisitMessage", "Ten pracownik jest wyłączony z Dashboardu w tym dniu. Najpierw włącz go na liście pracowników.", false);
+        return;
+      }
+      if (!isWorkerActiveForSelectedDay(payload.employee_id)) {
+        setMessage("#dashboardAppointmentMessage", "Ten pracownik jest wyłączony z Dashboardu w tym dniu. Najpierw włącz go na liście pracowników.", false);
+        return;
+      }
       const validation = validatePayload(payload);
       if (validation) { setMessage("#dashboardAppointmentMessage", validation, false); return; }
       const { data: inserted, error } = await window.cmSupabase.from("appointments").insert(payload).select("*").single();
